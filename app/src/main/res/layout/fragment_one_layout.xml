@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/root_layout"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:layout_marginBottom="16dp"
+    android:layout_marginLeft="16dp"
+    android:layout_marginRight="16dp"
+    android:layout_marginTop="16dp"
+    tools:context="com.weidi.usefragments.MainActivity">
+
+    <FrameLayout
+        android:id="@+id/fragment1_container_layout"
+        android:layout_alignParentLeft="true"
+        android:layout_width="156dp"
+        android:layout_height="150dp"/>
+
+    <FrameLayout
+        android:id="@+id/fragment2_container_layout"
+        android:layout_alignParentRight="true"
+        android:layout_width="156dp"
+        android:layout_height="150dp"/>
+
+    <FrameLayout
+        android:id="@+id/fragment3_container_layout"
+        android:layout_alignParentLeft="true"
+        android:layout_below="@id/fragment1_container_layout"
+        android:layout_marginTop="16dp"
+        android:layout_width="156dp"
+        android:layout_height="150dp"/>
+
+    <FrameLayout
+        android:id="@+id/fragment4_container_layout"
+        android:layout_alignParentRight="true"
+        android:layout_below="@id/fragment2_container_layout"
+        android:layout_marginTop="16dp"
+        android:layout_width="156dp"
+        android:layout_height="150dp"/>
+
+    <TextView
+        android:id="@+id/title_tv"
+        android:layout_below="@id/fragment3_container_layout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"/>
+
+    <Button
+        android:id="@+id/jump_btn"
+        android:layout_below="@id/title_tv"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"/>
+
+</RelativeLayout>
