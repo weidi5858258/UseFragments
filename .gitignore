@@ -1,6 +1,8 @@
 .git
+.gradle
+.idea
 UseFragments.iml
-app/app/iml
+app/iml
 app/build
 build
 gradle
