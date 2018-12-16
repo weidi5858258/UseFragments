@@ -1,4 +1,4 @@
-package com.weidi.usefragments.test_fragment;
+package com.weidi.usefragments.test_fragment.scene2;
 
 import android.app.Activity;
 import android.os.Bundle;
@@ -18,10 +18,10 @@ import com.weidi.usefragments.tool.MLog;
 /***
  *
  */
-public class EFragment extends BaseFragment {
+public class C22Fragment extends BaseFragment {
 
     private static final String TAG =
-            EFragment.class.getSimpleName();
+            C22Fragment.class.getSimpleName();
 
     private static final boolean DEBUG = true;
     @InjectView(R.id.title_tv)
@@ -29,7 +29,7 @@ public class EFragment extends BaseFragment {
     @InjectView(R.id.jump_btn)
     private Button mJumpBtn;
 
-    public EFragment() {
+    public C22Fragment() {
         super();
     }
 
@@ -186,7 +186,7 @@ public class EFragment extends BaseFragment {
     private void onShow() {
         if (DEBUG)
             MLog.d(TAG, "onShow(): " + this);
-        mTitleView.setText(EFragment.class.getSimpleName());
+        mTitleView.setText(C22Fragment.class.getSimpleName());
         mJumpBtn.setText("跳转到");
     }
 

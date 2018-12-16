@@ -24,6 +24,7 @@ public abstract class BaseFragment extends Fragment {
             BaseFragment.class.getSimpleName();
 
     private static final boolean DEBUG = false;
+    private Activity mActivity;
     private Context mContext;
     private BackHandlerInterface mBackHandlerInterface;
 
@@ -52,6 +53,7 @@ public abstract class BaseFragment extends Fragment {
         }
         if (DEBUG)
             MLog.d(TAG, "onAttach() activity: " + activity);
+        mActivity = activity;
         mContext = activity.getApplicationContext();
         if (!(activity instanceof BackHandlerInterface)) {
             throw new ClassCastException("Hosting Activity must implement BackHandlerInterface");
@@ -196,6 +198,7 @@ public abstract class BaseFragment extends Fragment {
         super.onDestroy();
         if (DEBUG)
             MLog.d(TAG, "onDestroy(): " + this);
+        FragOperManager.getInstance().removeFragment(this);
     }
 
     @Override
@@ -240,19 +243,28 @@ public abstract class BaseFragment extends Fragment {
     private void onShow() {
         if (DEBUG)
             MLog.d(TAG, "onShow(): " + this);
-        if (mBackHandlerInterface != null) {
-            if (FragOperManager.getInstance().getDirectChildFragmentsMap() == null
-                    || FragOperManager.getInstance().getDirectChildFragmentsMap().isEmpty()
-                    || !FragOperManager.getInstance().getDirectChildFragmentsMap().containsKey(this)) {
+
+        Integer[] container_scene =
+                FragOperManager.getInstance().getActivityMap(mActivity);
+        if (mBackHandlerInterface == null
+                || container_scene == null) {
+            return;
+        }
+        if (DEBUG)
+            MLog.d(TAG, "onShow(): " + this.getClass().getName());
+        if (container_scene[1] == FragOperManager.SCENE_NO_OR_ONE_MAIN_FRAGMENT) {
+            if (FragOperManager.getInstance().getParentFragmentsList(mActivity) == null
+                    || FragOperManager.getInstance().getParentFragmentsList(mActivity)
+                    .isEmpty()
+                    || !FragOperManager.getInstance().getParentFragmentsList(mActivity)
+                    .contains(this)) {
                 return;
             }
-            if (DEBUG)
-                MLog.d(TAG, "onShow(): " + this.getClass().getName());
-            // MainActivity.setSelectedFragment(...)
-            mBackHandlerInterface.setSelectedFragment(
-                    this,
-                    this.getClass().getName());
         }
+        // MainActivity.setSelectedFragment(...)
+        mBackHandlerInterface.setSelectedFragment(
+                this,
+                this.getClass().getName());
     }
 
     private void onHide() {

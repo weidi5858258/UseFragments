@@ -67,11 +67,20 @@ public abstract class BaseActivity extends Activity {
         return this.mContext;
     }
 
+    /***
+     目的:
+     有一个现象,当一个Activity中所有的Fragment都被
+     pop掉后,Activity的生命周期不会发生变化,
+     也就是onResume()不会被调用,
+     这样可能在内容显示上面应有问题.
+     */
+    public abstract void onResume_();
+
     /**
      * 打开页面时，页面从右往左滑入
      * 底下的页面不需要有动画
      */
-    protected void enterActivity() {
+    public void enterActivity() {
         try {
             overridePendingTransition(R.anim.push_left_in, R.anim.push_left_out);
         } catch (Exception e) {
@@ -81,7 +90,7 @@ public abstract class BaseActivity extends Activity {
     /**
      * 关闭页面时，页面从左往右滑出
      */
-    protected void exitActivity() {
+    public void exitActivity() {
         try {
             overridePendingTransition(R.anim.push_right_in, R.anim.push_right_out);
         } catch (Exception e) {

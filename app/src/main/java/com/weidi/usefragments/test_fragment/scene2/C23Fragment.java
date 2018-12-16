@@ -1,7 +1,6 @@
-package com.weidi.usefragments.test_fragment;
+package com.weidi.usefragments.test_fragment.scene2;
 
 import android.app.Activity;
-import android.app.Fragment;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.view.LayoutInflater;
@@ -11,7 +10,6 @@ import android.widget.Button;
 import android.widget.TextView;
 
 import com.weidi.usefragments.R;
-import com.weidi.usefragments.fragment.FragOperManager;
 import com.weidi.usefragments.fragment.base.BaseFragment;
 import com.weidi.usefragments.inject.InjectView;
 import com.weidi.usefragments.tool.MLog;
@@ -20,10 +18,10 @@ import com.weidi.usefragments.tool.MLog;
 /***
  *
  */
-public class DFragment extends BaseFragment {
+public class C23Fragment extends BaseFragment {
 
     private static final String TAG =
-            DFragment.class.getSimpleName();
+            C23Fragment.class.getSimpleName();
 
     private static final boolean DEBUG = true;
     @InjectView(R.id.title_tv)
@@ -31,7 +29,7 @@ public class DFragment extends BaseFragment {
     @InjectView(R.id.jump_btn)
     private Button mJumpBtn;
 
-    public DFragment() {
+    public C23Fragment() {
         super();
     }
 
@@ -188,7 +186,7 @@ public class DFragment extends BaseFragment {
     private void onShow() {
         if (DEBUG)
             MLog.d(TAG, "onShow(): " + this);
-        mTitleView.setText(DFragment.class.getSimpleName());
+        mTitleView.setText(C23Fragment.class.getSimpleName());
         mJumpBtn.setText("跳转到");
     }
 
@@ -209,10 +207,7 @@ public class DFragment extends BaseFragment {
         mJumpBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Fragment fragment = new EFragment();
-                FragOperManager.getInstance().enter(getActivity(),
-                        fragment,
-                        EFragment.class.getSimpleName());
+
             }
         });
     }

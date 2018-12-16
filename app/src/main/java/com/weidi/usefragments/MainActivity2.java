@@ -10,11 +10,11 @@ import android.widget.Button;
 
 import com.weidi.usefragments.fragment.FragOperManager;
 import com.weidi.usefragments.fragment.base.BaseFragment;
-import com.weidi.usefragments.test_fragment.AFragment;
-import com.weidi.usefragments.test_fragment.BFragment;
-import com.weidi.usefragments.test_fragment.CFragment;
-import com.weidi.usefragments.test_fragment.DFragment;
-import com.weidi.usefragments.test_fragment.EFragment;
+import com.weidi.usefragments.test_fragment.scene1.AFragment;
+import com.weidi.usefragments.test_fragment.scene1.BFragment;
+import com.weidi.usefragments.test_fragment.scene1.CFragment;
+import com.weidi.usefragments.test_fragment.scene1.DFragment;
+import com.weidi.usefragments.test_fragment.scene1.EFragment;
 
 import java.util.HashMap;
 
@@ -224,10 +224,16 @@ public class MainActivity2 extends BaseActivity
     @Override
     public void onConfigurationChanged(Configuration newConfig) {
         super.onConfigurationChanged(newConfig);
-        // newConfig: {1.0 460mcc1mnc [zh_CN] ldltr sw360dp w640dp h336dp 320dpi nrml long land finger -keyb/v/h -nav/h s.264}
-        // newConfig: {1.0 460mcc1mnc [zh_CN] ldltr sw360dp w360dp h616dp 320dpi nrml long port finger -keyb/v/h -nav/h s.265}
+        // newConfig: {1.0 460mcc1mnc [zh_CN] ldltr sw360dp w640dp h336dp 320dpi nrml long land
+        // finger -keyb/v/h -nav/h s.264}
+        // newConfig: {1.0 460mcc1mnc [zh_CN] ldltr sw360dp w360dp h616dp 320dpi nrml long port
+        // finger -keyb/v/h -nav/h s.265}
         if (DEBUG)
             Log.d(TAG, "onConfigurationChanged() newConfig: " + newConfig);
+    }
+
+    public void onResume_() {
+        mJumpBtn.setVisibility(View.VISIBLE);
     }
 
     @Override

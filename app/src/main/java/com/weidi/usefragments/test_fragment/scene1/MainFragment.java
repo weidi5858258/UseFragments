@@ -1,4 +1,4 @@
-package com.weidi.usefragments.test_fragment;
+package com.weidi.usefragments.test_fragment.scene1;
 
 import android.app.Activity;
 import android.app.Fragment;
@@ -20,10 +20,10 @@ import com.weidi.usefragments.tool.MLog;
 /***
  *
  */
-public class Main2Fragment extends BaseFragment {
+public class MainFragment extends BaseFragment {
 
     private static final String TAG =
-            Main2Fragment.class.getSimpleName();
+            MainFragment.class.getSimpleName();
 
     private static final boolean DEBUG = true;
     @InjectView(R.id.title_tv)
@@ -31,7 +31,7 @@ public class Main2Fragment extends BaseFragment {
     @InjectView(R.id.jump_btn)
     private Button mJumpBtn;
 
-    public Main2Fragment() {
+    public MainFragment() {
         super();
     }
 
@@ -188,7 +188,7 @@ public class Main2Fragment extends BaseFragment {
     private void onShow() {
         if (DEBUG)
             MLog.d(TAG, "onShow(): " + this);
-        mTitleView.setText(Main2Fragment.class.getSimpleName());
+        mTitleView.setText(MainFragment.class.getSimpleName());
         mJumpBtn.setText("跳转到");
     }
 

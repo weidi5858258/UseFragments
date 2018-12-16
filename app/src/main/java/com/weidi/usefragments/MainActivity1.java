@@ -9,15 +9,15 @@ import android.view.View;
 
 import com.weidi.usefragments.fragment.FragOperManager;
 import com.weidi.usefragments.fragment.base.BaseFragment;
-import com.weidi.usefragments.test_fragment.AFragment;
-import com.weidi.usefragments.test_fragment.BFragment;
-import com.weidi.usefragments.test_fragment.CFragment;
-import com.weidi.usefragments.test_fragment.DFragment;
-import com.weidi.usefragments.test_fragment.EFragment;
-import com.weidi.usefragments.test_fragment.Main1Fragment;
-import com.weidi.usefragments.test_fragment.Main2Fragment;
-import com.weidi.usefragments.test_fragment.Main3Fragment;
-import com.weidi.usefragments.test_fragment.Main4Fragment;
+import com.weidi.usefragments.test_fragment.scene1.AFragment;
+import com.weidi.usefragments.test_fragment.scene1.BFragment;
+import com.weidi.usefragments.test_fragment.scene1.CFragment;
+import com.weidi.usefragments.test_fragment.scene1.DFragment;
+import com.weidi.usefragments.test_fragment.scene1.EFragment;
+import com.weidi.usefragments.test_fragment.scene2.Main1Fragment;
+import com.weidi.usefragments.test_fragment.scene2.Main2Fragment;
+import com.weidi.usefragments.test_fragment.scene2.Main3Fragment;
+import com.weidi.usefragments.test_fragment.scene2.Main4Fragment;
 
 import java.util.HashMap;
 
@@ -61,7 +61,7 @@ public class MainActivity1 extends BaseActivity
         setContentView(R.layout.activity_main);
         if (DEBUG)
             Log.d(TAG, "onCreate() savedInstanceState: " + savedInstanceState);
-        FragOperManager.getInstance().addActivity(this, R.id.root_layout);
+        FragOperManager.getInstance().addActivity2(this, R.id.root_layout);
         if (savedInstanceState != null) {
 
         } else {
@@ -72,16 +72,16 @@ public class MainActivity1 extends BaseActivity
         main2Fragment = new Main2Fragment();
         main3Fragment = new Main3Fragment();
         main4Fragment = new Main4Fragment();
-        FragOperManager.getInstance().enter(MainActivity1.this,
+        FragOperManager.getInstance().enter2(MainActivity1.this,
                 main4Fragment,
                 Main4Fragment.class.getSimpleName());
-        FragOperManager.getInstance().enter(MainActivity1.this,
+        FragOperManager.getInstance().enter2(MainActivity1.this,
                 main3Fragment,
                 Main3Fragment.class.getSimpleName());
-        FragOperManager.getInstance().enter(MainActivity1.this,
+        FragOperManager.getInstance().enter2(MainActivity1.this,
                 main2Fragment,
                 Main2Fragment.class.getSimpleName());
-        FragOperManager.getInstance().enter(MainActivity1.this,
+        FragOperManager.getInstance().enter2(MainActivity1.this,
                 main1Fragment,
                 Main1Fragment.class.getSimpleName());
 
@@ -205,6 +205,10 @@ public class MainActivity1 extends BaseActivity
         // finger -keyb/v/h -nav/h s.265}
         if (DEBUG)
             Log.d(TAG, "onConfigurationChanged() newConfig: " + newConfig);
+    }
+
+    public void onResume_() {
+
     }
 
     @Override

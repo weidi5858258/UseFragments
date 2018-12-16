@@ -1,4 +1,4 @@
-package com.weidi.usefragments.test_fragment;
+package com.weidi.usefragments.test_fragment.scene2;
 
 import android.app.Activity;
 import android.app.Fragment;
@@ -14,16 +14,17 @@ import com.weidi.usefragments.R;
 import com.weidi.usefragments.fragment.FragOperManager;
 import com.weidi.usefragments.fragment.base.BaseFragment;
 import com.weidi.usefragments.inject.InjectView;
+import com.weidi.usefragments.test_fragment.scene1.BFragment;
 import com.weidi.usefragments.tool.MLog;
 
 
 /***
  *
  */
-public class C3Fragment extends BaseFragment {
+public class A2Fragment extends BaseFragment {
 
     private static final String TAG =
-            C3Fragment.class.getSimpleName();
+            A2Fragment.class.getSimpleName();
 
     private static final boolean DEBUG = true;
     @InjectView(R.id.title_tv)
@@ -31,7 +32,7 @@ public class C3Fragment extends BaseFragment {
     @InjectView(R.id.jump_btn)
     private Button mJumpBtn;
 
-    public C3Fragment() {
+    public A2Fragment() {
         super();
     }
 
@@ -188,7 +189,7 @@ public class C3Fragment extends BaseFragment {
     private void onShow() {
         if (DEBUG)
             MLog.d(TAG, "onShow(): " + this);
-        mTitleView.setText(C3Fragment.class.getSimpleName());
+        mTitleView.setText(A2Fragment.class.getSimpleName());
         mJumpBtn.setText("跳转到");
     }
 
@@ -209,7 +210,11 @@ public class C3Fragment extends BaseFragment {
         mJumpBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-
+                Fragment fragment = new B2Fragment();
+                FragOperManager.getInstance().enter2(getActivity(),
+                        Main1Fragment.class.getSimpleName(),
+                        fragment,
+                        B2Fragment.class.getSimpleName());
             }
         });
     }
@@ -218,5 +223,4 @@ public class C3Fragment extends BaseFragment {
     public boolean onBackPressed() {
         return false;
     }
-
 }

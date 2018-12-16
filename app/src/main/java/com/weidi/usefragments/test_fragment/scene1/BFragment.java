@@ -1,4 +1,4 @@
-package com.weidi.usefragments.test_fragment;
+package com.weidi.usefragments.test_fragment.scene1;
 
 import android.app.Activity;
 import android.app.Fragment;

@@ -1,4 +1,4 @@
-package com.weidi.usefragments.test_fragment;
+package com.weidi.usefragments.test_fragment.scene2;
 
 import android.app.Activity;
 import android.app.Fragment;
@@ -20,10 +20,10 @@ import com.weidi.usefragments.tool.MLog;
 /***
  *
  */
-public class Main1Fragment extends BaseFragment {
+public class Main2Fragment extends BaseFragment {
 
     private static final String TAG =
-            Main1Fragment.class.getSimpleName();
+            Main2Fragment.class.getSimpleName();
 
     private static final boolean DEBUG = true;
     @InjectView(R.id.title_tv)
@@ -31,7 +31,7 @@ public class Main1Fragment extends BaseFragment {
     @InjectView(R.id.jump_btn)
     private Button mJumpBtn;
 
-    public Main1Fragment() {
+    public Main2Fragment() {
         super();
     }
 
@@ -188,7 +188,7 @@ public class Main1Fragment extends BaseFragment {
     private void onShow() {
         if (DEBUG)
             MLog.d(TAG, "onShow(): " + this);
-        mTitleView.setText(Main1Fragment.class.getSimpleName());
+        mTitleView.setText(Main2Fragment.class.getSimpleName());
         mJumpBtn.setText("跳转到");
     }
 
@@ -209,10 +209,11 @@ public class Main1Fragment extends BaseFragment {
         mJumpBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Fragment fragment = new AFragment();
-                FragOperManager.getInstance().enter(getActivity(),
+                Fragment fragment = new C20Fragment();
+                FragOperManager.getInstance().enter2(getActivity(),
+                        Main2Fragment.class.getSimpleName(),
                         fragment,
-                        AFragment.class.getSimpleName());
+                        C20Fragment.class.getSimpleName());
             }
         });
     }

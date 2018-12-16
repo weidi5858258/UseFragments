@@ -45,6 +45,7 @@
         android:layout_below="@id/fragment3_container_layout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:gravity="center"
         android:layout_marginTop="16dp"/>
 
     <Button

@@ -1,4 +1,4 @@
-package com.weidi.usefragments.test_fragment;
+package com.weidi.usefragments.test_fragment.scene1;
 
 import android.app.Activity;
 import android.app.Fragment;
@@ -20,10 +20,10 @@ import com.weidi.usefragments.tool.MLog;
 /***
  *
  */
-public class Main4Fragment extends BaseFragment {
+public class CFragment extends BaseFragment {
 
     private static final String TAG =
-            Main4Fragment.class.getSimpleName();
+            CFragment.class.getSimpleName();
 
     private static final boolean DEBUG = true;
     @InjectView(R.id.title_tv)
@@ -31,7 +31,7 @@ public class Main4Fragment extends BaseFragment {
     @InjectView(R.id.jump_btn)
     private Button mJumpBtn;
 
-    public Main4Fragment() {
+    public CFragment() {
         super();
     }
 
@@ -52,6 +52,41 @@ public class Main4Fragment extends BaseFragment {
         if (DEBUG)
             MLog.d(TAG, "onCreate(): " + this
                     + " savedInstanceState: " + savedInstanceState);
+
+        Fragment c1Fragment = new C1Fragment();
+        Fragment c2Fragment = new C2Fragment();
+        Fragment c3Fragment = new C3Fragment();
+        Fragment c4Fragment = new C4Fragment();
+        Fragment c5Fragment = new C5Fragment();
+        FragOperManager.getInstance().enter(
+                getActivity(),
+                this,
+                c1Fragment,
+                C1Fragment.class.getSimpleName(),
+                R.id.fragment1_container_layout);
+        FragOperManager.getInstance().enter(
+                getActivity(),
+                this,
+                c2Fragment,
+                C2Fragment.class.getSimpleName(),
+                R.id.fragment2_container_layout);
+        FragOperManager.getInstance().enter(
+                getActivity(),
+                this,
+                c3Fragment,
+                C3Fragment.class.getSimpleName(),
+                R.id.fragment3_container_layout);
+        FragOperManager.getInstance().enter(
+                getActivity(),
+                this,
+                c4Fragment,
+                C4Fragment.class.getSimpleName(),
+                R.id.fragment4_container_layout);
+        FragOperManager.getInstance().enter(
+                getActivity(),
+                this,
+                c5Fragment,
+                C5Fragment.class.getSimpleName());
     }
 
     @Override
@@ -188,7 +223,7 @@ public class Main4Fragment extends BaseFragment {
     private void onShow() {
         if (DEBUG)
             MLog.d(TAG, "onShow(): " + this);
-        mTitleView.setText(Main4Fragment.class.getSimpleName());
+        mTitleView.setText(CFragment.class.getSimpleName());
         mJumpBtn.setText("跳转到");
     }
 
@@ -199,7 +234,7 @@ public class Main4Fragment extends BaseFragment {
 
     @Override
     protected int provideLayout() {
-        return R.layout.fragment_main;
+        return R.layout.fragment_one_layout;
     }
 
     @Override
@@ -209,16 +244,17 @@ public class Main4Fragment extends BaseFragment {
         mJumpBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Fragment fragment = new AFragment();
+                Fragment fragment = new DFragment();
                 FragOperManager.getInstance().enter(getActivity(),
                         fragment,
-                        AFragment.class.getSimpleName());
+                        DFragment.class.getSimpleName());
             }
         });
     }
 
     @Override
     public boolean onBackPressed() {
-        return true;
+        return false;
     }
+
 }

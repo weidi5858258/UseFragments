@@ -1,4 +1,4 @@
-package com.weidi.usefragments.test_fragment;
+package com.weidi.usefragments.test_fragment.scene2;
 
 import android.app.Activity;
 import android.app.Fragment;
@@ -14,16 +14,21 @@ import com.weidi.usefragments.R;
 import com.weidi.usefragments.fragment.FragOperManager;
 import com.weidi.usefragments.fragment.base.BaseFragment;
 import com.weidi.usefragments.inject.InjectView;
+import com.weidi.usefragments.test_fragment.scene1.C1Fragment;
+import com.weidi.usefragments.test_fragment.scene1.C3Fragment;
+import com.weidi.usefragments.test_fragment.scene1.C4Fragment;
+import com.weidi.usefragments.test_fragment.scene1.C5Fragment;
+import com.weidi.usefragments.test_fragment.scene1.DFragment;
 import com.weidi.usefragments.tool.MLog;
 
 
 /***
  *
  */
-public class C2Fragment extends BaseFragment {
+public class C20Fragment extends BaseFragment {
 
     private static final String TAG =
-            C2Fragment.class.getSimpleName();
+            C20Fragment.class.getSimpleName();
 
     private static final boolean DEBUG = true;
     @InjectView(R.id.title_tv)
@@ -31,7 +36,7 @@ public class C2Fragment extends BaseFragment {
     @InjectView(R.id.jump_btn)
     private Button mJumpBtn;
 
-    public C2Fragment() {
+    public C20Fragment() {
         super();
     }
 
@@ -52,6 +57,41 @@ public class C2Fragment extends BaseFragment {
         if (DEBUG)
             MLog.d(TAG, "onCreate(): " + this
                     + " savedInstanceState: " + savedInstanceState);
+
+        Fragment c1Fragment = new C1Fragment();
+        Fragment c2Fragment = new com.weidi.usefragments.test_fragment.scene1.C2Fragment();
+        Fragment c3Fragment = new C3Fragment();
+        Fragment c4Fragment = new C4Fragment();
+        Fragment c5Fragment = new C5Fragment();
+        FragOperManager.getInstance().enter(
+                getActivity(),
+                this,
+                c1Fragment,
+                C1Fragment.class.getSimpleName(),
+                R.id.fragment1_container_layout);
+        FragOperManager.getInstance().enter(
+                getActivity(),
+                this,
+                c2Fragment,
+                com.weidi.usefragments.test_fragment.scene1.C2Fragment.class.getSimpleName(),
+                R.id.fragment2_container_layout);
+        FragOperManager.getInstance().enter(
+                getActivity(),
+                this,
+                c3Fragment,
+                C3Fragment.class.getSimpleName(),
+                R.id.fragment3_container_layout);
+        FragOperManager.getInstance().enter(
+                getActivity(),
+                this,
+                c4Fragment,
+                C4Fragment.class.getSimpleName(),
+                R.id.fragment4_container_layout);
+        FragOperManager.getInstance().enter(
+                getActivity(),
+                this,
+                c5Fragment,
+                C5Fragment.class.getSimpleName());
     }
 
     @Override
@@ -188,7 +228,7 @@ public class C2Fragment extends BaseFragment {
     private void onShow() {
         if (DEBUG)
             MLog.d(TAG, "onShow(): " + this);
-        mTitleView.setText(C2Fragment.class.getSimpleName());
+        mTitleView.setText(C20Fragment.class.getSimpleName());
         mJumpBtn.setText("跳转到");
     }
 
@@ -199,7 +239,7 @@ public class C2Fragment extends BaseFragment {
 
     @Override
     protected int provideLayout() {
-        return R.layout.fragment_main;
+        return R.layout.fragment_one_layout;
     }
 
     @Override
@@ -209,7 +249,10 @@ public class C2Fragment extends BaseFragment {
         mJumpBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-
+                Fragment fragment = new DFragment();
+                FragOperManager.getInstance().enter(getActivity(),
+                        fragment,
+                        DFragment.class.getSimpleName());
             }
         });
     }
