@@ -1,7 +1,6 @@
 package com.weidi.usefragments.test_fragment.scene2;
 
 import android.app.Activity;
-import android.app.Fragment;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.view.LayoutInflater;
@@ -11,25 +10,18 @@ import android.widget.Button;
 import android.widget.TextView;
 
 import com.weidi.usefragments.R;
-import com.weidi.usefragments.fragment.FragOperManager;
 import com.weidi.usefragments.fragment.base.BaseFragment;
 import com.weidi.usefragments.inject.InjectView;
-import com.weidi.usefragments.test_fragment.scene1.C1Fragment;
-import com.weidi.usefragments.test_fragment.scene1.C2Fragment;
-import com.weidi.usefragments.test_fragment.scene1.C3Fragment;
-import com.weidi.usefragments.test_fragment.scene1.C4Fragment;
-import com.weidi.usefragments.test_fragment.scene1.C5Fragment;
-import com.weidi.usefragments.test_fragment.scene1.DFragment;
 import com.weidi.usefragments.tool.MLog;
 
 
 /***
  *
  */
-public class C20Fragment extends BaseFragment {
+public class C25Fragment extends BaseFragment {
 
     private static final String TAG =
-            C20Fragment.class.getSimpleName();
+            C25Fragment.class.getSimpleName();
 
     private static final boolean DEBUG = true;
     @InjectView(R.id.title_tv)
@@ -37,7 +29,7 @@ public class C20Fragment extends BaseFragment {
     @InjectView(R.id.jump_btn)
     private Button mJumpBtn;
 
-    public C20Fragment() {
+    public C25Fragment() {
         super();
     }
 
@@ -58,41 +50,6 @@ public class C20Fragment extends BaseFragment {
         if (DEBUG)
             MLog.d(TAG, "onCreate(): " + this
                     + " savedInstanceState: " + savedInstanceState);
-
-        Fragment c21Fragment = new C21Fragment();
-        Fragment c22Fragment = new C22Fragment();
-        Fragment c23Fragment = new C23Fragment();
-        Fragment c24Fragment = new C24Fragment();
-        Fragment c25Fragment = new C25Fragment();
-        FragOperManager.getInstance().enter(
-                getActivity(),
-                this,
-                c21Fragment,
-                C21Fragment.class.getSimpleName(),
-                R.id.fragment1_container_layout);
-        FragOperManager.getInstance().enter(
-                getActivity(),
-                this,
-                c22Fragment,
-                C22Fragment.class.getSimpleName(),
-                R.id.fragment2_container_layout);
-        FragOperManager.getInstance().enter(
-                getActivity(),
-                this,
-                c23Fragment,
-                C23Fragment.class.getSimpleName(),
-                R.id.fragment3_container_layout);
-        FragOperManager.getInstance().enter(
-                getActivity(),
-                this,
-                c24Fragment,
-                C24Fragment.class.getSimpleName(),
-                R.id.fragment4_container_layout);
-        FragOperManager.getInstance().enter(
-                getActivity(),
-                this,
-                c25Fragment,
-                C25Fragment.class.getSimpleName());
     }
 
     @Override
@@ -229,7 +186,7 @@ public class C20Fragment extends BaseFragment {
     private void onShow() {
         if (DEBUG)
             MLog.d(TAG, "onShow(): " + this);
-        mTitleView.setText(C20Fragment.class.getSimpleName());
+        mTitleView.setText(C25Fragment.class.getSimpleName());
         mJumpBtn.setText("跳转到");
     }
 
@@ -240,7 +197,7 @@ public class C20Fragment extends BaseFragment {
 
     @Override
     protected int provideLayout() {
-        return R.layout.fragment_one_layout;
+        return R.layout.fragment_main;
     }
 
     @Override
@@ -250,10 +207,7 @@ public class C20Fragment extends BaseFragment {
         mJumpBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Fragment fragment = new DFragment();
-                FragOperManager.getInstance().enter(getActivity(),
-                        fragment,
-                        DFragment.class.getSimpleName());
+
             }
         });
     }

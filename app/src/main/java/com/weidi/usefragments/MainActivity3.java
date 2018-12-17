@@ -34,8 +34,7 @@ public class MainActivity3 extends BaseActivity
     private static HashMap<String, Integer> sFragmentBackTypeSMap;
 
     static {
-        // 如果有MainFragment(MainActivity中使用MainFragment,其他Fragment从MainFragment中被开启),
-        // 那么不要把MainFragment加入Map中.
+        // 不要把MainFragment加入Map中,不过加进去的话也没事.
         sFragmentBackTypeSMap = new HashMap<String, Integer>();
         sFragmentBackTypeSMap.put(AFragment.class.getSimpleName(), FragOperManager.POP_BACK_STACK);
         sFragmentBackTypeSMap.put(BFragment.class.getSimpleName(), FragOperManager.POP_BACK_STACK);

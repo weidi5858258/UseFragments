@@ -260,6 +260,11 @@ public abstract class BaseFragment extends Fragment {
                     .contains(this)) {
                 return;
             }
+        } else {
+            if (!FragOperManager.getInstance().isExitFragmentAtMoreMainFragments(this)
+                    || !FragOperManager.getInstance().isExitFragmentAtDirectChildFragments(this)) {
+                return;
+            }
         }
         // MainActivity.setSelectedFragment(...)
         mBackHandlerInterface.setSelectedFragment(

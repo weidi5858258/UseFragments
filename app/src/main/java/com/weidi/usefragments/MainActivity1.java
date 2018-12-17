@@ -9,11 +9,11 @@ import android.view.View;
 
 import com.weidi.usefragments.fragment.FragOperManager;
 import com.weidi.usefragments.fragment.base.BaseFragment;
-import com.weidi.usefragments.test_fragment.scene1.AFragment;
-import com.weidi.usefragments.test_fragment.scene1.BFragment;
-import com.weidi.usefragments.test_fragment.scene1.CFragment;
-import com.weidi.usefragments.test_fragment.scene1.DFragment;
-import com.weidi.usefragments.test_fragment.scene1.EFragment;
+import com.weidi.usefragments.test_fragment.scene2.A2Fragment;
+import com.weidi.usefragments.test_fragment.scene2.B2Fragment;
+import com.weidi.usefragments.test_fragment.scene2.C20Fragment;
+import com.weidi.usefragments.test_fragment.scene2.D2Fragment;
+import com.weidi.usefragments.test_fragment.scene2.E2Fragment;
 import com.weidi.usefragments.test_fragment.scene2.Main1Fragment;
 import com.weidi.usefragments.test_fragment.scene2.Main2Fragment;
 import com.weidi.usefragments.test_fragment.scene2.Main3Fragment;
@@ -37,6 +37,8 @@ public class MainActivity1 extends BaseActivity
 
     private static final boolean DEBUG = true;
     private BaseFragment mBaseFragment;
+    private Fragment mCurShowMainFragment;
+    private Fragment mPreShowMainFragment;
     private static HashMap<String, Integer> sFragmentBackTypeSMap;
 
     private Fragment main1Fragment;
@@ -48,11 +50,12 @@ public class MainActivity1 extends BaseActivity
         // 如果有MainFragment(MainActivity中使用MainFragment,其他Fragment从MainFragment中被开启),
         // 那么不要把MainFragment加入Map中.
         sFragmentBackTypeSMap = new HashMap<String, Integer>();
-        sFragmentBackTypeSMap.put(AFragment.class.getSimpleName(), FragOperManager.POP_BACK_STACK);
-        sFragmentBackTypeSMap.put(BFragment.class.getSimpleName(), FragOperManager.POP_BACK_STACK);
-        sFragmentBackTypeSMap.put(CFragment.class.getSimpleName(), FragOperManager.POP_BACK_STACK);
-        sFragmentBackTypeSMap.put(DFragment.class.getSimpleName(), FragOperManager.POP_BACK_STACK);
-        sFragmentBackTypeSMap.put(EFragment.class.getSimpleName(), FragOperManager.POP_BACK_STACK);
+        sFragmentBackTypeSMap.put(A2Fragment.class.getSimpleName(), FragOperManager.POP_BACK_STACK);
+        sFragmentBackTypeSMap.put(B2Fragment.class.getSimpleName(), FragOperManager.POP_BACK_STACK);
+        sFragmentBackTypeSMap.put(C20Fragment.class.getSimpleName(), FragOperManager
+                .POP_BACK_STACK);
+        sFragmentBackTypeSMap.put(D2Fragment.class.getSimpleName(), FragOperManager.POP_BACK_STACK);
+        sFragmentBackTypeSMap.put(E2Fragment.class.getSimpleName(), FragOperManager.POP_BACK_STACK);
     }
 
     @Override
@@ -72,6 +75,8 @@ public class MainActivity1 extends BaseActivity
         main2Fragment = new Main2Fragment();
         main3Fragment = new Main3Fragment();
         main4Fragment = new Main4Fragment();
+        mCurShowMainFragment = main1Fragment;
+        mPreShowMainFragment = mCurShowMainFragment;
         FragOperManager.getInstance().enter2(MainActivity1.this,
                 main4Fragment,
                 Main4Fragment.class.getSimpleName());
@@ -146,9 +151,7 @@ public class MainActivity1 extends BaseActivity
         if (DEBUG)
             Log.d(TAG, "onBackPressed()");
         if (mBaseFragment == null
-                || mBaseFragment.onBackPressed()
-                || FragOperManager.getInstance().getParentFragmentsList(this) == null
-                || FragOperManager.getInstance().getParentFragmentsList(this).isEmpty()) {
+                || mBaseFragment.onBackPressed()) {
             this.finish();
             this.exitActivity();
             return;
@@ -161,9 +164,21 @@ public class MainActivity1 extends BaseActivity
         for (String key : sFragmentBackTypeSMap.keySet()) {
             if (key.equals(fragmentName)) {
                 int type = sFragmentBackTypeSMap.get(key);
+                /*String mainFragmentTag = null;
+                if(mCurShowMainFragment instanceof Main1Fragment){
+                    mainFragmentTag = Main1Fragment.class.getSimpleName();
+                }else if(mCurShowMainFragment instanceof Main2Fragment){
+                    mainFragmentTag = Main2Fragment.class.getSimpleName();
+                }else if(mCurShowMainFragment instanceof Main3Fragment){
+                    mainFragmentTag = Main3Fragment.class.getSimpleName();
+                }else if(mCurShowMainFragment instanceof Main4Fragment){
+                    mainFragmentTag = Main4Fragment.class.getSimpleName();
+                }*/
                 FragOperManager.getInstance().onEvent(
                         type,
-                        new Object[]{this, mBaseFragment});
+                        new Object[]{this,
+                                mBaseFragment,
+                                mCurShowMainFragment.getClass().getSimpleName()});
                 break;
             }
         }
@@ -225,15 +240,28 @@ public class MainActivity1 extends BaseActivity
                 public void onClick(View v) {
                     switch (v.getId()) {
                         case R.id.main1_btn:
+                            mCurShowMainFragment = main1Fragment;
                             break;
                         case R.id.main2_btn:
+                            mCurShowMainFragment = main2Fragment;
                             break;
                         case R.id.main3_btn:
+                            mCurShowMainFragment = main3Fragment;
                             break;
                         case R.id.main4_btn:
+                            mCurShowMainFragment = main4Fragment;
                             break;
                         default:
                     }
+                    if (mPreShowMainFragment != null
+                            && mCurShowMainFragment != null
+                            && mPreShowMainFragment == mCurShowMainFragment) {
+                        return;
+                    }
+                    mPreShowMainFragment = mCurShowMainFragment;
+                    FragOperManager.getInstance().changeFragment(
+                            MainActivity1.this,
+                            mCurShowMainFragment);
                 }
             };
 }
