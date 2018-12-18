@@ -250,8 +250,6 @@ public abstract class BaseFragment extends Fragment {
                 || container_scene == null) {
             return;
         }
-        if (DEBUG)
-            MLog.d(TAG, "onShow(): " + this.getClass().getName());
         if (container_scene[1] == FragOperManager.SCENE_NO_OR_ONE_MAIN_FRAGMENT) {
             if (FragOperManager.getInstance().getParentFragmentsList(mActivity) == null
                     || FragOperManager.getInstance().getParentFragmentsList(mActivity)
@@ -261,11 +259,16 @@ public abstract class BaseFragment extends Fragment {
                 return;
             }
         } else {
-            if (!FragOperManager.getInstance().isExitFragmentAtMoreMainFragments(this)
-                    || !FragOperManager.getInstance().isExitFragmentAtDirectChildFragments(this)) {
+            /*if (!FragOperManager.getInstance().isExitFragmentAtMoreMainFragments(this)
+                    || FragOperManager.getInstance().isExitFragmentAtDirectChildFragments(this)) {
+                return;
+            }*/
+            if (FragOperManager.getInstance().isExitFragmentAtDirectChildFragments(this)) {
                 return;
             }
         }
+        if (DEBUG)
+            MLog.d(TAG, "onShow(): " + this.getClass().getName());
         // MainActivity.setSelectedFragment(...)
         mBackHandlerInterface.setSelectedFragment(
                 this,

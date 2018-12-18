@@ -227,22 +227,17 @@ public class FragOperManager implements Serializable {
     public boolean isExitFragmentAtDirectChildFragments(Fragment fragment) {
         if (fragment == null
                 || mDirectChildFragmentsMap == null
-                || mDirectChildFragmentsMap.isEmpty()
-                || !mDirectChildFragmentsMap.containsKey(fragment)) {
+                || mDirectChildFragmentsMap.isEmpty()) {
             return false;
         }
 
-        boolean flag = false;
-        for (Fragment mainFragment : mDirectChildFragmentsMap.keySet()) {
-            if (mDirectChildFragmentsMap.get(mainFragment) != null
-                    && mDirectChildFragmentsMap.get(mainFragment).contains(fragment)) {
-                flag = true;
+        for (Fragment parentFragment : mDirectChildFragmentsMap.keySet()) {
+            if (mDirectChildFragmentsMap.get(parentFragment) != null
+                    && mDirectChildFragmentsMap.get(parentFragment).contains(fragment)) {
+                return true;
             }
         }
-        if (flag) {
-            return false;
-        }
-        return true;
+        return false;
     }
 
     public boolean isExitFragmentAtMoreMainFragments(Fragment fragment) {
