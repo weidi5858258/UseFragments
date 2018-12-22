@@ -10,8 +10,10 @@ import android.widget.Button;
 import android.widget.TextView;
 
 import com.weidi.usefragments.R;
+import com.weidi.usefragments.fragment.FragOperManager;
 import com.weidi.usefragments.fragment.base.BaseFragment;
 import com.weidi.usefragments.inject.InjectView;
+import com.weidi.usefragments.test_fragment.scene1.CFragment;
 import com.weidi.usefragments.tool.MLog;
 
 
@@ -207,7 +209,7 @@ public class E2Fragment extends BaseFragment {
         mJumpBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-
+                FragOperManager.getInstance().enter3(new CFragment());
             }
         });
     }

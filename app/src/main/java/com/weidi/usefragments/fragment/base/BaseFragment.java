@@ -250,23 +250,21 @@ public abstract class BaseFragment extends Fragment {
                 || container_scene == null) {
             return;
         }
-        if (container_scene[1] == FragOperManager.SCENE_NO_OR_ONE_MAIN_FRAGMENT) {
-            if (FragOperManager.getInstance().getParentFragmentsList(mActivity) == null
-                    || FragOperManager.getInstance().getParentFragmentsList(mActivity)
-                    .isEmpty()
-                    || !FragOperManager.getInstance().getParentFragmentsList(mActivity)
-                    .contains(this)) {
-                return;
-            }
-        } else {
-            /*if (!FragOperManager.getInstance().isExitFragmentAtMoreMainFragments(this)
-                    || FragOperManager.getInstance().isExitFragmentAtDirectChildFragments(this)) {
-                return;
-            }*/
-            if (FragOperManager.getInstance().isExitFragmentAtDirectChildFragments(this)) {
-                return;
-            }
+        switch (container_scene[1]){
+            case FragOperManager.SCENE_NO_OR_ONE_MAIN_FRAGMENT:
+                if (FragOperManager.getInstance().getParentFragmentsList(mActivity) == null
+                        || FragOperManager.getInstance().getParentFragmentsList(mActivity)
+                        .isEmpty()
+                        || !FragOperManager.getInstance().getParentFragmentsList(mActivity)
+                        .contains(this)) {
+                    return;
+                }
+            case FragOperManager.SCENE_MORE_MAIN_FRAGMENT:
+                if (FragOperManager.getInstance().isExitFragmentAtDirectChildFragments(this)) {
+                    return;
+                }
         }
+
         if (DEBUG)
             MLog.d(TAG, "onShow(): " + this.getClass().getName());
         // MainActivity.setSelectedFragment(...)

@@ -39,23 +39,28 @@ public class MainActivity1 extends BaseActivity
     private BaseFragment mBaseFragment;
     private Fragment mCurShowMainFragment;
     private Fragment mPreShowMainFragment;
-    private static HashMap<String, Integer> sFragmentBackTypeSMap;
 
     private Fragment main1Fragment;
     private Fragment main2Fragment;
     private Fragment main3Fragment;
     private Fragment main4Fragment;
 
+    private static HashMap<String, Integer> sFragmentBackTypeSMap;
+
     static {
         // 如果有MainFragment(MainActivity中使用MainFragment,其他Fragment从MainFragment中被开启),
         // 那么不要把MainFragment加入Map中.
         sFragmentBackTypeSMap = new HashMap<String, Integer>();
-        sFragmentBackTypeSMap.put(A2Fragment.class.getSimpleName(), FragOperManager.POP_BACK_STACK);
-        sFragmentBackTypeSMap.put(B2Fragment.class.getSimpleName(), FragOperManager.POP_BACK_STACK);
-        sFragmentBackTypeSMap.put(C20Fragment.class.getSimpleName(), FragOperManager
-                .POP_BACK_STACK);
-        sFragmentBackTypeSMap.put(D2Fragment.class.getSimpleName(), FragOperManager.POP_BACK_STACK);
-        sFragmentBackTypeSMap.put(E2Fragment.class.getSimpleName(), FragOperManager.POP_BACK_STACK);
+        sFragmentBackTypeSMap.put(A2Fragment.class.getSimpleName(),
+                FragOperManager.POP_BACK_STACK);
+        sFragmentBackTypeSMap.put(B2Fragment.class.getSimpleName(),
+                FragOperManager.POP_BACK_STACK);
+        sFragmentBackTypeSMap.put(C20Fragment.class.getSimpleName(),
+                FragOperManager.POP_BACK_STACK);
+        sFragmentBackTypeSMap.put(D2Fragment.class.getSimpleName(),
+                FragOperManager.POP_BACK_STACK);
+        sFragmentBackTypeSMap.put(E2Fragment.class.getSimpleName(),
+                FragOperManager.POP_BACK_STACK);
     }
 
     @Override
@@ -64,6 +69,7 @@ public class MainActivity1 extends BaseActivity
         setContentView(R.layout.activity_main);
         if (DEBUG)
             Log.d(TAG, "onCreate() savedInstanceState: " + savedInstanceState);
+        FragOperManager.getInstance().setCurShowActivity(this);
         FragOperManager.getInstance().addActivity2(this, R.id.root_layout);
         if (savedInstanceState != null) {
 
@@ -76,19 +82,13 @@ public class MainActivity1 extends BaseActivity
         main3Fragment = new Main3Fragment();
         main4Fragment = new Main4Fragment();
         mCurShowMainFragment = main1Fragment;
-        mPreShowMainFragment = mCurShowMainFragment;
-        FragOperManager.getInstance().enter2(MainActivity1.this,
-                main4Fragment,
-                Main4Fragment.class.getSimpleName());
-        FragOperManager.getInstance().enter2(MainActivity1.this,
-                main3Fragment,
-                Main3Fragment.class.getSimpleName());
-        FragOperManager.getInstance().enter2(MainActivity1.this,
-                main2Fragment,
-                Main2Fragment.class.getSimpleName());
-        FragOperManager.getInstance().enter2(MainActivity1.this,
-                main1Fragment,
-                Main1Fragment.class.getSimpleName());
+        mPreShowMainFragment = main1Fragment;
+        FragOperManager.getInstance().setCurShowFragment(
+                mCurShowMainFragment);
+        FragOperManager.getInstance().enter2(main4Fragment);
+        FragOperManager.getInstance().enter2(main3Fragment);
+        FragOperManager.getInstance().enter2(main2Fragment);
+        FragOperManager.getInstance().enter2(main1Fragment);
 
         findViewById(R.id.main1_btn).setOnClickListener(mViewOnClickListener);
         findViewById(R.id.main2_btn).setOnClickListener(mViewOnClickListener);
@@ -136,6 +136,7 @@ public class MainActivity1 extends BaseActivity
         if (DEBUG)
             Log.d(TAG, "onDestroy()");
         FragOperManager.getInstance().removeActivity(this);
+        FragOperManager.getInstance().setCurShowActivity(null);
         super.onDestroy();
     }
 
@@ -163,29 +164,16 @@ public class MainActivity1 extends BaseActivity
             Log.d(TAG, "onBackPressed() fragmentName: " + fragmentName);
         for (String key : sFragmentBackTypeSMap.keySet()) {
             if (key.equals(fragmentName)) {
-                int type = sFragmentBackTypeSMap.get(key);
-                /*String mainFragmentTag = null;
-                if(mCurShowMainFragment instanceof Main1Fragment){
-                    mainFragmentTag = Main1Fragment.class.getSimpleName();
-                }else if(mCurShowMainFragment instanceof Main2Fragment){
-                    mainFragmentTag = Main2Fragment.class.getSimpleName();
-                }else if(mCurShowMainFragment instanceof Main3Fragment){
-                    mainFragmentTag = Main3Fragment.class.getSimpleName();
-                }else if(mCurShowMainFragment instanceof Main4Fragment){
-                    mainFragmentTag = Main4Fragment.class.getSimpleName();
-                }*/
                 FragOperManager.getInstance().onEvent(
-                        type,
-                        new Object[]{this,
-                                mBaseFragment,
-                                mCurShowMainFragment.getClass().getSimpleName()});
+                        sFragmentBackTypeSMap.get(key),
+                        new Object[]{mBaseFragment});
                 break;
             }
         }
     }
 
     @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         if (DEBUG)
             Log.d(TAG, "onActivityResult() requestCode: " + requestCode +
@@ -253,15 +241,18 @@ public class MainActivity1 extends BaseActivity
                             break;
                         default:
                     }
+                    if (mPreShowMainFragment == null
+                            || mCurShowMainFragment == null) {
+                        return;
+                    }
                     if (mPreShowMainFragment != null
                             && mCurShowMainFragment != null
                             && mPreShowMainFragment == mCurShowMainFragment) {
                         return;
                     }
                     mPreShowMainFragment = mCurShowMainFragment;
-                    FragOperManager.getInstance().changeFragment(
-                            MainActivity1.this,
-                            mCurShowMainFragment);
+                    FragOperManager.getInstance().setCurShowFragment(mCurShowMainFragment);
+                    FragOperManager.getInstance().changeFragment();
                 }
             };
 }

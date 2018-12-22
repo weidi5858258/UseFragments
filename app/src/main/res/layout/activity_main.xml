@@ -24,6 +24,7 @@
             android:layout_weight="1"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
+            android:textSize="18px"
             android:text="Main1\nFragment" />
 
         <Button
@@ -31,6 +32,7 @@
             android:layout_weight="1"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
+            android:textSize="18px"
             android:text="Main2\nFragment" />
 
         <Button
@@ -38,6 +40,7 @@
             android:layout_weight="1"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
+            android:textSize="18px"
             android:text="Main3\nFragment" />
 
         <Button
@@ -45,6 +48,7 @@
             android:layout_weight="1"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
+            android:textSize="18px"
             android:text="Main4\nFragment" />
 
     </LinearLayout>
