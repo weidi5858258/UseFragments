@@ -951,9 +951,9 @@ public class FragOperManager implements Serializable {
             default:
         }
 
-        if (result == 0) {
+        /*if (result == 0) {
             fTransaction.commit();
-        }
+        }*/
 
         return 0;
     }
@@ -1097,8 +1097,12 @@ public class FragOperManager implements Serializable {
                             popMainChildFragment.getClass().getSimpleName() +
                             " popMainChildChildFragment: " +
                             popMainChildChildFragment.getClass().getSimpleName());
+                    FragmentManager manager = mCurShowActivity.getFragmentManager();
+                    FragmentTransaction transaction = manager.beginTransaction();
+                    manager.popBackStackImmediate();
+                    transaction.commitNowAllowingStateLoss();
                     // fManager.popBackStack();
-                    fManager.popBackStackImmediate();
+                    // fManager.popBackStackImmediate();
                 }
             }
         }
@@ -1108,9 +1112,13 @@ public class FragOperManager implements Serializable {
                 mCurShowFragment.getClass().getSimpleName() +
                 " popMainChildFragment: " +
                 popMainChildFragment.getClass().getSimpleName());
+        FragmentManager manager = mCurShowActivity.getFragmentManager();
+        FragmentTransaction transaction = manager.beginTransaction();
+        manager.popBackStackImmediate();
+        transaction.commitNowAllowingStateLoss();
         // pop掉要处理的Fragment
         // fManager.popBackStack();
-        fManager.popBackStackImmediate();
+        // fManager.popBackStackImmediate();
         mainChildFragmentsList.remove(popMainChildFragment);
         mDirectChildFragmentsMap.remove(popMainChildFragment);
 
@@ -1121,11 +1129,16 @@ public class FragOperManager implements Serializable {
                 MLog.d(TAG, "pop_back_stack_scene_2() show" +
                         " mCurShowFragment: " +
                         mCurShowFragment.getClass().getSimpleName());
-                showFragmentUseAnimations(fTransaction);
-                fTransaction.show(mCurShowFragment);
+                manager = mCurShowActivity.getFragmentManager();
+                transaction = manager.beginTransaction();
+                transaction.show(mCurShowFragment);
+                transaction.commitNowAllowingStateLoss();
+                // showFragmentUseAnimations(transaction);
+                // fTransaction.show(mCurShowFragment);
             }
             return 0;
         }
+
         // 处理当前MainFragment下面的其他子类
         for (int i = 0; i < count; i++) {
             Fragment hideFragment = mainChildFragmentsList.get(i);
@@ -1142,7 +1155,11 @@ public class FragOperManager implements Serializable {
                                     popMainChildFragment.getClass().getSimpleName() +
                                     " popMainChildChildFragment: " +
                                     tempFragment.getClass().getSimpleName());
-                            fTransaction.hide(tempFragment);
+                            manager = mCurShowActivity.getFragmentManager();
+                            transaction = manager.beginTransaction();
+                            transaction.hide(tempFragment);
+                            transaction.commitNowAllowingStateLoss();
+                            // fTransaction.hide(tempFragment);
                         }
                     }
                 }
@@ -1151,7 +1168,11 @@ public class FragOperManager implements Serializable {
                         mCurShowFragment.getClass().getSimpleName() +
                         " popMainChildFragment: " +
                         popMainChildFragment.getClass().getSimpleName());
-                fTransaction.hide(hideFragment);
+                manager = mCurShowActivity.getFragmentManager();
+                transaction = manager.beginTransaction();
+                transaction.hide(hideFragment);
+                transaction.commitNowAllowingStateLoss();
+                // fTransaction.hide(hideFragment);
             }
         }
         //
@@ -1168,7 +1189,11 @@ public class FragOperManager implements Serializable {
                             showFragment.getClass().getSimpleName() +
                             " showMainChildChildFragment: " +
                             tempFragment.getClass().getSimpleName());
-                    fTransaction.show(tempFragment);
+                    manager = mCurShowActivity.getFragmentManager();
+                    transaction = manager.beginTransaction();
+                    transaction.show(tempFragment);
+                    transaction.commitNowAllowingStateLoss();
+                    // fTransaction.show(tempFragment);
                 }
             }
         }
@@ -1178,8 +1203,12 @@ public class FragOperManager implements Serializable {
                     mCurShowFragment.getClass().getSimpleName() +
                     " showMainChildFragment: " +
                     showFragment.getClass().getSimpleName());
-            showFragmentUseAnimations(fTransaction);
-            fTransaction.show(showFragment);
+            manager = mCurShowActivity.getFragmentManager();
+            transaction = manager.beginTransaction();
+            transaction.show(showFragment);
+            transaction.commitNowAllowingStateLoss();
+            // showFragmentUseAnimations(fTransaction);
+            // fTransaction.show(showFragment);
         }
 
         return 0;
