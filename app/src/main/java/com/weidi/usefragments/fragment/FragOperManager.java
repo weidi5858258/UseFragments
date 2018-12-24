@@ -162,6 +162,7 @@ public class FragOperManager implements Serializable {
             return;
         }
 
+        mCurShowActivity = activity;
         if (!mActivityMap.containsKey(activity)) {
             Integer[] container_scene = new Integer[2];
             container_scene[0] = containerId;
@@ -516,6 +517,7 @@ public class FragOperManager implements Serializable {
             return;
         }
 
+        mCurShowActivity = activity;
         if (!mActivityMap.containsKey(activity)) {
             Integer[] container_scene = new Integer[2];
             container_scene[0] = containerId;
@@ -1099,7 +1101,8 @@ public class FragOperManager implements Serializable {
                             popMainChildChildFragment.getClass().getSimpleName());
                     FragmentManager manager = mCurShowActivity.getFragmentManager();
                     FragmentTransaction transaction = manager.beginTransaction();
-                    manager.popBackStackImmediate();
+                    manager.popBackStackImmediate(
+                            popMainChildChildFragment.getClass().getSimpleName(), 1);
                     transaction.commitNowAllowingStateLoss();
                     // fManager.popBackStack();
                     // fManager.popBackStackImmediate();
@@ -1114,7 +1117,7 @@ public class FragOperManager implements Serializable {
                 popMainChildFragment.getClass().getSimpleName());
         FragmentManager manager = mCurShowActivity.getFragmentManager();
         FragmentTransaction transaction = manager.beginTransaction();
-        manager.popBackStackImmediate();
+        manager.popBackStackImmediate(popMainChildFragment.getClass().getSimpleName(), 1);
         transaction.commitNowAllowingStateLoss();
         // pop掉要处理的Fragment
         // fManager.popBackStack();

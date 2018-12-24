@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.content.Context;
 import android.os.Bundle;
 
+import com.weidi.usefragments.fragment.FragOperManager;
 import com.weidi.usefragments.tool.MLog;
 
 
@@ -36,6 +37,7 @@ public abstract class BaseActivity extends Activity {
         super.onResume();
         if (DEBUG)
             MLog.d(TAG, "onResume(): " + this);
+        FragOperManager.getInstance().setCurShowActivity(this);
     }
 
     @Override

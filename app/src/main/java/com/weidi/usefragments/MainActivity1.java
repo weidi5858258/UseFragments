@@ -69,7 +69,6 @@ public class MainActivity1 extends BaseActivity
         setContentView(R.layout.activity_main);
         if (DEBUG)
             Log.d(TAG, "onCreate() savedInstanceState: " + savedInstanceState);
-        FragOperManager.getInstance().setCurShowActivity(this);
         FragOperManager.getInstance().addActivity2(this, R.id.root_layout);
         if (savedInstanceState != null) {
 
@@ -136,7 +135,6 @@ public class MainActivity1 extends BaseActivity
         if (DEBUG)
             Log.d(TAG, "onDestroy()");
         FragOperManager.getInstance().removeActivity(this);
-        FragOperManager.getInstance().setCurShowActivity(null);
         super.onDestroy();
     }
 
