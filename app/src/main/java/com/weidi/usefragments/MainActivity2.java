@@ -63,10 +63,7 @@ public class MainActivity2 extends BaseActivity
             @Override
             public void onClick(View v) {
                 mJumpBtn.setVisibility(View.GONE);
-                Fragment fragment = new AFragment();
-                FragOperManager.getInstance().enter(MainActivity2.this,
-                        fragment,
-                        AFragment.class.getSimpleName());
+                FragOperManager.getInstance().enter(new AFragment());
             }
         });
     }
@@ -133,7 +130,7 @@ public class MainActivity2 extends BaseActivity
             this.mSavedInstanceState = null;
         }*/
 
-        mJumpBtn.setVisibility(View.VISIBLE);
+//        mJumpBtn.setVisibility(View.VISIBLE);
     }
 
     @Override
@@ -187,7 +184,7 @@ public class MainActivity2 extends BaseActivity
                 int type = sFragmentBackTypeSMap.get(key);
                 FragOperManager.getInstance().onEvent(
                         type,
-                        new Object[]{this, mBaseFragment});
+                        new Object[]{mBaseFragment});
                 break;
             }
         }

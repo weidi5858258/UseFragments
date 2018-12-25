@@ -293,42 +293,35 @@ public class FragOperManager implements Serializable {
         return null;
     }
 
-    /**
-     * @param activity
+    /***
      * @param fragment
-     * @param tag      不要为null,需要使用到这个tag.
      */
-    public int enter(Activity activity,
-                     Fragment fragment,
-                     String tag) {
-        if (activity == null
-                || fragment == null
-                || TextUtils.isEmpty(tag)
+    public int enter(Fragment fragment) {
+        if (fragment == null
+                || mCurShowActivity == null
                 || mActivityMap == null
                 || mActivityMap.isEmpty()
+                || !mActivityMap.containsKey(mCurShowActivity)
                 || mActivityFragmentsMap == null
-                || mActivityFragmentsMap.isEmpty()) {
+                || mActivityFragmentsMap.isEmpty()
+                || !mActivityFragmentsMap.containsKey(mCurShowActivity)) {
             return -1;
         }
 
-        if (!mActivityMap.containsKey(activity)
-                || !mActivityFragmentsMap.containsKey(activity)) {
-            return -1;
-        }
-
-        Integer[] container_scene = mActivityMap.get(activity);
-        List<Fragment> fragmentsList = mActivityFragmentsMap.get(activity);
+        Integer[] container_scene = mActivityMap.get(mCurShowActivity);
+        List<Fragment> fragmentsList = mActivityFragmentsMap.get(mCurShowActivity);
         if (fragmentsList == null) {
             return -1;
         }
 
-        FragmentTransaction fTransaction = activity.getFragmentManager().beginTransaction();
+        FragmentTransaction fTransaction =
+                mCurShowActivity.getFragmentManager().beginTransaction();
         // 保证fragment在最后一个
         if (!fragmentsList.contains(fragment)) {
             fragmentsList.add(fragment);
             // 不用replace
-            fTransaction.add(container_scene[0], fragment, tag);
-            fTransaction.addToBackStack(tag);
+            fTransaction.add(container_scene[0], fragment, fragment.getClass().getSimpleName());
+            fTransaction.addToBackStack(fragment.getClass().getSimpleName());
         } else {
             fragmentsList.remove(fragment);
             fragmentsList.add(fragment);
@@ -369,7 +362,7 @@ public class FragOperManager implements Serializable {
         return 0;
     }
 
-    /**
+    /***
      * 在一个Fragment中的一个小区域再添加一个小的Fragment.
      * 不过,添加之前,先要移除掉之前的Fragment.
      * 就是先调用一下
@@ -384,27 +377,31 @@ public class FragOperManager implements Serializable {
      * 自己的生命周期没有发生变化,因此这样子不太好,需要改进,
      * 使其也有生命周期(创建时是有生命周期的).
      *
-     * @param activity
      * @param parentFragment
      * @param childFragment
-     * @param tag
      * @param containerId
      */
-    public int enter(Activity activity,
-                     Fragment parentFragment,
+    public int enter(Fragment parentFragment,
                      Fragment childFragment,
-                     String tag,
                      int containerId) {
-        if (activity == null
-                || parentFragment == null
+        if (parentFragment == null
                 || childFragment == null
-                || TextUtils.isEmpty(tag)
+                || mCurShowActivity == null
                 || containerId <= 0
                 || mActivityMap == null
                 || mActivityMap.isEmpty()
-                || !mActivityMap.containsKey(activity)
+                || !mActivityMap.containsKey(mCurShowActivity)
                 || mActivityFragmentsMap == null
+                || mActivityFragmentsMap.isEmpty()
+                || !mActivityFragmentsMap.containsKey(mCurShowActivity)
                 || mDirectChildFragmentsMap == null) {
+            return -1;
+        }
+
+        List<Fragment> fragmentsList = mActivityFragmentsMap.get(mCurShowActivity);
+        if (fragmentsList == null
+                || fragmentsList.isEmpty()
+                || !fragmentsList.contains(parentFragment)) {
             return -1;
         }
 
@@ -421,10 +418,10 @@ public class FragOperManager implements Serializable {
 
         if (!directFragmentsList.contains(childFragment)) {
             FragmentTransaction fTransaction =
-                    activity.getFragmentManager().beginTransaction();
+                    mCurShowActivity.getFragmentManager().beginTransaction();
             directFragmentsList.add(childFragment);
-            fTransaction.add(containerId, childFragment, tag);
-            fTransaction.addToBackStack(tag);
+            fTransaction.add(containerId, childFragment, childFragment.getClass().getSimpleName());
+            fTransaction.addToBackStack(childFragment.getClass().getSimpleName());
 
             showFragmentUseAnimations(fTransaction);
             fTransaction.show(childFragment);
@@ -447,35 +444,28 @@ public class FragOperManager implements Serializable {
      * 只是不需要提供布局文件,它只是用来执行任务,
      * 不需要在显示出来,生命周期跟其他显示出来的Fragment
      * 是一样的.
-     * @param activity
      * @param parentFragment
      * @param childFragment
-     * @param tag
      * @return
      */
-    public int enter(Activity activity,
-                     Fragment parentFragment,
-                     Fragment childFragment,
-                     String tag) {
-        if (activity == null
-                || parentFragment == null
+    public int enter(Fragment parentFragment,
+                     Fragment childFragment) {
+        if (parentFragment == null
                 || childFragment == null
-                || TextUtils.isEmpty(tag)
+                || mCurShowActivity == null
                 || mActivityMap == null
                 || mActivityMap.isEmpty()
+                || !mActivityMap.containsKey(mCurShowActivity)
                 || mActivityFragmentsMap == null
                 || mActivityFragmentsMap.isEmpty()
+                || !mActivityFragmentsMap.containsKey(mCurShowActivity)
                 || mDirectChildFragmentsMap == null) {
             return -1;
         }
 
-        if (!mActivityMap.containsKey(activity)
-                || !mActivityFragmentsMap.containsKey(activity)) {
-            return -1;
-        }
-
-        List<Fragment> fragmentsList = mActivityFragmentsMap.get(activity);
+        List<Fragment> fragmentsList = mActivityFragmentsMap.get(mCurShowActivity);
         if (fragmentsList == null
+                || fragmentsList.isEmpty()
                 || !fragmentsList.contains(parentFragment)) {
             return -1;
         }
@@ -491,11 +481,12 @@ public class FragOperManager implements Serializable {
             return -1;
         }
 
-        FragmentTransaction fTransaction = activity.getFragmentManager().beginTransaction();
+        FragmentTransaction fTransaction =
+                mCurShowActivity.getFragmentManager().beginTransaction();
         if (!directFragmentsList.contains(childFragment)) {
             directFragmentsList.add(childFragment);
-            fTransaction.add(childFragment, tag);
-            fTransaction.addToBackStack(tag);
+            fTransaction.add(childFragment, childFragment.getClass().getSimpleName());
+            fTransaction.addToBackStack(childFragment.getClass().getSimpleName());
         }
         fTransaction.commit();
 
@@ -584,8 +575,6 @@ public class FragOperManager implements Serializable {
     }
 
     /***
-     * 这里的MainActivity1到时需要修改成实际的Activity
-     *
      * @param mainChildFragment
      * @return
      */
@@ -923,10 +912,10 @@ public class FragOperManager implements Serializable {
                 // 不需要先加载一个Fragment
                 switch (exitType) {
                     case HIDE:
-                        result = hide_scene_1(fragment);
+                        result = hide_scene_1(fManager, fTransaction, fragment);
                         break;
                     case POP_BACK_STACK:
-                        result = pop_back_stack_scene_1(fragment);
+                        result = pop_back_stack_scene_1(fManager, fTransaction, fragment);
                         break;
                     default:
                 }
@@ -955,17 +944,17 @@ public class FragOperManager implements Serializable {
             default:
         }
 
-        /*if (result == 0) {
+        if (result == 0) {
             fTransaction.commit();
-        }*/
+        }
 
         return 0;
     }
 
-    private int hide_scene_1(Fragment fragment) {
-        FragmentManager fManager = mCurShowActivity.getFragmentManager();
-        FragmentTransaction fTransaction = fManager.beginTransaction();
-
+    private int hide_scene_1(
+            FragmentManager fManager,
+            FragmentTransaction fTransaction,
+            Fragment fragment) {
         List<Fragment> parentFragmentsList = mActivityFragmentsMap.get(mCurShowActivity);
         if (parentFragmentsList == null
                 || !parentFragmentsList.contains(fragment)) {
@@ -1003,29 +992,31 @@ public class FragOperManager implements Serializable {
         return 0;
     }
 
-    private int pop_back_stack_scene_1(Fragment fragment) {
-        FragmentManager fManager = mCurShowActivity.getFragmentManager();
-        FragmentTransaction fTransaction = fManager.beginTransaction();
-
+    private int pop_back_stack_scene_1(
+            FragmentManager fManager,
+            FragmentTransaction fTransaction,
+            Fragment fragment) {
         List<Fragment> parentFragmentsList = mActivityFragmentsMap.get(mCurShowActivity);
         if (parentFragmentsList == null
                 || !parentFragmentsList.contains(fragment)) {
             return -1;
         }
+
         List<Fragment> directFragmentsList = mDirectChildFragmentsMap.get(fragment);
         if (directFragmentsList != null
                 && !directFragmentsList.isEmpty()) {
             for (Fragment tempFragment : directFragmentsList) {
                 if (!tempFragment.isHidden()) {
-                    // fManager.popBackStack();
-                    fManager.popBackStackImmediate();
+                     fManager.popBackStack();
+//                    fManager.popBackStackImmediate();
                 }
             }
         }
-        // fManager.popBackStack();
-        fManager.popBackStackImmediate();
+         fManager.popBackStack();
+//        fManager.popBackStackImmediate();
         parentFragmentsList.remove(fragment);
         mDirectChildFragmentsMap.remove(fragment);
+
         int count = parentFragmentsList.size();
         if (count < 1) {
             if (mCurShowActivity instanceof BaseActivity) {
@@ -1033,6 +1024,7 @@ public class FragOperManager implements Serializable {
             }
             return 0;
         }
+
         for (int i = 0; i < count; i++) {
             Fragment hideFragment = parentFragmentsList.get(i);
             if (!hideFragment.isHidden()) {

@@ -210,9 +210,7 @@ public class DFragment extends BaseFragment {
             @Override
             public void onClick(View v) {
                 Fragment fragment = new EFragment();
-                FragOperManager.getInstance().enter(getActivity(),
-                        fragment,
-                        EFragment.class.getSimpleName());
+                FragOperManager.getInstance().enter(new EFragment());
             }
         });
     }

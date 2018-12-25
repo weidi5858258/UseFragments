@@ -53,40 +53,25 @@ public class CFragment extends BaseFragment {
             MLog.d(TAG, "onCreate(): " + this
                     + " savedInstanceState: " + savedInstanceState);
 
-        Fragment c1Fragment = new C1Fragment();
-        Fragment c2Fragment = new C2Fragment();
-        Fragment c3Fragment = new C3Fragment();
-        Fragment c4Fragment = new C4Fragment();
-        Fragment c5Fragment = new C5Fragment();
         FragOperManager.getInstance().enter(
-                getActivity(),
                 this,
-                c1Fragment,
-                C1Fragment.class.getSimpleName(),
+                new C1Fragment(),
                 R.id.fragment1_container_layout);
         FragOperManager.getInstance().enter(
-                getActivity(),
                 this,
-                c2Fragment,
-                C2Fragment.class.getSimpleName(),
+                new C2Fragment(),
                 R.id.fragment2_container_layout);
         FragOperManager.getInstance().enter(
-                getActivity(),
                 this,
-                c3Fragment,
-                C3Fragment.class.getSimpleName(),
+                new C3Fragment(),
                 R.id.fragment3_container_layout);
         FragOperManager.getInstance().enter(
-                getActivity(),
                 this,
-                c4Fragment,
-                C4Fragment.class.getSimpleName(),
+                new C4Fragment(),
                 R.id.fragment4_container_layout);
         FragOperManager.getInstance().enter(
-                getActivity(),
                 this,
-                c5Fragment,
-                C5Fragment.class.getSimpleName());
+                new C5Fragment());
     }
 
     @Override
@@ -244,10 +229,7 @@ public class CFragment extends BaseFragment {
         mJumpBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Fragment fragment = new DFragment();
-                FragOperManager.getInstance().enter(getActivity(),
-                        fragment,
-                        DFragment.class.getSimpleName());
+                FragOperManager.getInstance().enter(new DFragment());
             }
         });
     }

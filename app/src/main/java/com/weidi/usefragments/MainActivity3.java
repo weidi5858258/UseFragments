@@ -56,10 +56,7 @@ public class MainActivity3 extends BaseActivity
 
         }
 
-        Fragment fragment = new MainFragment();
-        FragOperManager.getInstance().enter(MainActivity3.this,
-                fragment,
-                MainFragment.class.getSimpleName());
+        FragOperManager.getInstance().enter(new MainFragment());
     }
 
     @Override
@@ -176,7 +173,7 @@ public class MainActivity3 extends BaseActivity
                 int type = sFragmentBackTypeSMap.get(key);
                 FragOperManager.getInstance().onEvent(
                         type,
-                        new Object[]{this, mBaseFragment});
+                        new Object[]{mBaseFragment});
                 break;
             }
         }

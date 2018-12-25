@@ -188,7 +188,7 @@ public class MainFragment extends BaseFragment {
     private void onShow() {
         if (DEBUG)
             MLog.d(TAG, "onShow(): " + this);
-        mTitleView.setText(MainFragment.class.getSimpleName());
+        mTitleView.setText("Activity\n" + MainFragment.class.getSimpleName());
         mJumpBtn.setText("跳转到");
     }
 
@@ -209,10 +209,7 @@ public class MainFragment extends BaseFragment {
         mJumpBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Fragment fragment = new AFragment();
-                FragOperManager.getInstance().enter(getActivity(),
-                        fragment,
-                        AFragment.class.getSimpleName());
+                FragOperManager.getInstance().enter(new AFragment());
             }
         });
     }
