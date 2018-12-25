@@ -8,15 +8,12 @@ import android.app.FragmentTransaction;
 import android.text.TextUtils;
 
 import com.weidi.usefragments.BaseActivity;
-import com.weidi.usefragments.MainActivity;
-import com.weidi.usefragments.MainActivity1;
 import com.weidi.usefragments.R;
 import com.weidi.usefragments.tool.MLog;
 
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -98,18 +95,23 @@ public class FragOperManager implements Serializable {
 
     private volatile static FragOperManager sFragOperManager;
 
+    // 当前正在使用的Activity
+    private Activity mCurShowActivity;
     // 一个Activity对应存放Fragment的布局文件
     private Map<Activity, Integer[]> mActivityMap;
+
     // List<Fragment>有show, hide, pop
     // 在SCENE_NO_OR_ONE_MAIN_FRAGMENT这个场景使用
     private Map<Activity, List<Fragment>> mActivityFragmentsMap;
-    private Activity mCurShowActivity;
+
     // 在SCENE_MORE_MAIN_FRAGMENT这个场景使用
     private Map<Fragment, List<Fragment>> mMoreMainFragmentsMap;
     private Fragment mCurShowFragment;
+
     // List<Fragment>有show, hide, 没有pop
     // 这里的key是mParentFragmentsMap中value值的其中之一
     private Map<Fragment, List<Fragment>> mDirectChildFragmentsMap;
+
     // List<Fragment>有show, hide, 没有pop
     private Map<Fragment, List<Fragment>> mIndirectChildFragmentsMap;
     // 只记录总的Fragment数量
@@ -177,15 +179,15 @@ public class FragOperManager implements Serializable {
 
     public void removeActivity(Activity activity) {
         if (activity == null
-                || mActivityMap == null
-                || mActivityMap.isEmpty()) {
+                || mActivityMap == null) {
             return;
         }
 
         if (mActivityMap.containsKey(activity)) {
             mActivityMap.remove(activity);
         }
-        if (mActivityFragmentsMap.containsKey(activity)) {
+        if (mActivityFragmentsMap != null
+                && mActivityFragmentsMap.containsKey(activity)) {
             mActivityFragmentsMap.remove(activity);
         }
     }
