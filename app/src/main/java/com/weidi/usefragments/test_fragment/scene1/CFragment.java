@@ -53,7 +53,7 @@ public class CFragment extends BaseFragment {
             MLog.d(TAG, "onCreate(): " + this
                     + " savedInstanceState: " + savedInstanceState);
 
-        FragOperManager.getInstance().enter(
+        /*FragOperManager.getInstance().enter(
                 this,
                 new C1Fragment(),
                 R.id.fragment1_container_layout);
@@ -71,7 +71,7 @@ public class CFragment extends BaseFragment {
                 R.id.fragment4_container_layout);
         FragOperManager.getInstance().enter(
                 this,
-                new C5Fragment());
+                new C5Fragment());*/
     }
 
     @Override
@@ -210,6 +210,26 @@ public class CFragment extends BaseFragment {
             MLog.d(TAG, "onShow(): " + this);
         mTitleView.setText(CFragment.class.getSimpleName());
         mJumpBtn.setText("跳转到");
+
+        FragOperManager.getInstance().enter(
+                this,
+                new C1Fragment(),
+                R.id.fragment1_container_layout);
+        FragOperManager.getInstance().enter(
+                this,
+                new C2Fragment(),
+                R.id.fragment2_container_layout);
+        FragOperManager.getInstance().enter(
+                this,
+                new C3Fragment(),
+                R.id.fragment3_container_layout);
+        FragOperManager.getInstance().enter(
+                this,
+                new C4Fragment(),
+                R.id.fragment4_container_layout);
+        FragOperManager.getInstance().enter(
+                this,
+                new C5Fragment());
     }
 
     private void onHide() {
