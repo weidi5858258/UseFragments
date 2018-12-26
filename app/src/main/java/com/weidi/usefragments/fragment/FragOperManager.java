@@ -339,6 +339,39 @@ public class FragOperManager implements Serializable {
                         mDirectChildFragmentsMap.get(shouldHideFragment);
                 if (directFragmentsList != null
                         && !directFragmentsList.isEmpty()) {
+                    FragmentManager fragmentManager =
+                            shouldHideFragment.getChildFragmentManager();
+                    FragmentTransaction transaction =
+                            fragmentManager.beginTransaction();
+                    for (Fragment directChildFragment : directFragmentsList) {
+                        MLog.d(TAG, "enter() directChildFragment.getId(): " +
+                                directChildFragment.getId());
+                        if (!directChildFragment.isHidden()) {
+                            if (directChildFragment.getId() <= 0) {
+                                fTransaction.hide(directChildFragment);
+                            } else {
+                                fragmentManager.popBackStack();
+                            }
+                        }
+                    }
+                    transaction.commit();
+                }
+                // fragment隐藏时的动画
+                // fTransaction.setCustomAnimations(R.anim.push_right_in, R.anim.push_left_out2);
+                // 先把所有的Fragment给隐藏掉.
+                if (!shouldHideFragment.isHidden()) {
+                    fTransaction.hide(shouldHideFragment);
+                }
+            }
+        }
+        /*for (int i = 0; i < count - 1; i++) {
+            // i = count - 1是刚刚add的fragment
+            Fragment shouldHideFragment = fragmentsList.get(i);
+            if (!shouldHideFragment.isHidden()) {
+                List<Fragment> directFragmentsList =
+                        mDirectChildFragmentsMap.get(shouldHideFragment);
+                if (directFragmentsList != null
+                        && !directFragmentsList.isEmpty()) {
                     for (Fragment directChildFragment : directFragmentsList) {
                         if (!directChildFragment.isHidden()) {
                             fTransaction.hide(directChildFragment);
@@ -352,7 +385,7 @@ public class FragOperManager implements Serializable {
                     fTransaction.hide(shouldHideFragment);
                 }
             }
-        }
+        }*/
 
         showFragmentUseAnimations(fTransaction);
         fTransaction.show(fragment);
@@ -425,10 +458,12 @@ public class FragOperManager implements Serializable {
 
         /*if (!directFragmentsList.contains(childFragment)) {
             FragmentTransaction fTransaction =
-                    mCurShowActivity.getFragmentManager().beginTransaction();
+                    parentFragment.getFragmentManager().beginTransaction();
             directFragmentsList.add(childFragment);
             // 使用add和show,在第一次使用的时候正常,第二次就不显示了
-            fTransaction.add(containerId, childFragment, childFragment.getClass().getSimpleName());
+            fTransaction.add(containerId,
+                    childFragment,
+                    childFragment.getClass().getSimpleName());
             fTransaction.addToBackStack(childFragment.getClass().getSimpleName());
 
             showFragmentUseAnimations(fTransaction);
@@ -437,10 +472,10 @@ public class FragOperManager implements Serializable {
         }*/
 
         if (!directFragmentsList.contains(childFragment)) {
-            FragmentTransaction fTransaction =
-                    mCurShowActivity.getFragmentManager().beginTransaction();
             directFragmentsList.add(childFragment);
 
+            FragmentTransaction fTransaction =
+                    parentFragment.getChildFragmentManager().beginTransaction();
             fTransaction.replace(containerId,
                     childFragment,
                     childFragment.getClass().getSimpleName());
@@ -502,14 +537,15 @@ public class FragOperManager implements Serializable {
             return -1;
         }
 
-        FragmentTransaction fTransaction =
-                mCurShowActivity.getFragmentManager().beginTransaction();
         if (!directFragmentsList.contains(childFragment)) {
             directFragmentsList.add(childFragment);
+
+            FragmentTransaction fTransaction =
+                    parentFragment.getFragmentManager().beginTransaction();
             fTransaction.add(childFragment, childFragment.getClass().getSimpleName());
             fTransaction.addToBackStack(childFragment.getClass().getSimpleName());
+            fTransaction.commit();
         }
-        fTransaction.commit();
 
         /*if (mAllFragmentsList != null
                 && !mAllFragmentsList.contains(parentFragment)) {
@@ -1029,12 +1065,12 @@ public class FragOperManager implements Serializable {
             for (Fragment tempFragment : directFragmentsList) {
                 if (!tempFragment.isHidden()) {
                     fManager.popBackStack();
-                    //                    fManager.popBackStackImmediate();
+                    // fManager.popBackStackImmediate();
                 }
             }
         }
         fManager.popBackStack();
-        //        fManager.popBackStackImmediate();
+        // fManager.popBackStackImmediate();
         parentFragmentsList.remove(fragment);
         mDirectChildFragmentsMap.remove(fragment);
 
@@ -1267,6 +1303,34 @@ public class FragOperManager implements Serializable {
                 R.animator.card_flip_left_out,
                 R.animator.card_flip_left_in,
                 R.animator.card_flip_right_out);
+    }
+
+    /***
+     移除某个Fragment.什么场景下会用到这个方法呢?
+     就是某个FragmentA页面中又有另一个FragmentB,那么再次添加FragmentA时,
+     FragmentB会显示不了,需要把之前的FragmentA给删除掉才可以.
+     @param fragmentTag
+     */
+    private void removeSomeOneFragment(Activity activity, String fragmentTag) {
+        /*if (TextUtils.isEmpty(fragmentTag)
+                || mFragmentsList == null
+                || mFragmentsList.isEmpty()) {
+            return;
+        }
+        Fragment fragmentTemp = null;
+        FragmentTransaction fTransaction = activity.getFragmentManager().beginTransaction();
+        for (Fragment fragment : mFragmentsList) {
+            if (fragmentTag.equals(fragment.getClass().getSimpleName())) {
+                fragmentTemp = fragment;
+                fTransaction.remove(fragment);
+                break;
+            }
+        }
+        fTransaction.commit();
+        if (fragmentTemp != null
+                || mFragmentsList.contains(fragmentTemp)) {
+            mFragmentsList.remove(fragmentTemp);
+        }*/
     }
 
     public int enter2(Activity activity,

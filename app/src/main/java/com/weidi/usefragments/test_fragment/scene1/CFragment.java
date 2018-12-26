@@ -72,6 +72,9 @@ public class CFragment extends BaseFragment {
         FragOperManager.getInstance().enter(
                 this,
                 new C5Fragment());*/
+        FragOperManager.getInstance().enter(
+                this,
+                new C5Fragment());
     }
 
     @Override
@@ -227,9 +230,6 @@ public class CFragment extends BaseFragment {
                 this,
                 new C4Fragment(),
                 R.id.fragment4_container_layout);
-        FragOperManager.getInstance().enter(
-                this,
-                new C5Fragment());
     }
 
     private void onHide() {
