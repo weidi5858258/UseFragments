@@ -82,6 +82,7 @@ public class FragOperManager implements Serializable {
 
     private static final String TAG =
             FragOperManager.class.getSimpleName();
+    private static final boolean DEBUG = true;
 
     public static final int HIDE = 0;
     public static final int POP_BACK_STACK = 1;
@@ -110,19 +111,20 @@ public class FragOperManager implements Serializable {
 
     // List<Fragment>有show, hide, 没有pop
     // 这里的key是mParentFragmentsMap中value值的其中之一
-    private Map<Fragment, List<Fragment>> mDirectChildFragmentsMap;
+    private Map<Fragment, List<Fragment>> mDirectNestedFragmentsMap;
 
     // List<Fragment>有show, hide, 没有pop
-    private Map<Fragment, List<Fragment>> mIndirectChildFragmentsMap;
+    private Map<Fragment, List<Fragment>> mIndirectNestedFragmentsMap;
     // 只记录总的Fragment数量
     //private List<Fragment> mAllFragmentsList;
 
     private FragOperManager() {
         mActivityContainersMap = new LinkedHashMap<Activity, Integer[]>();
         mActivityFragmentsMap = new HashMap<Activity, List<Fragment>>();
-        mDirectChildFragmentsMap = new HashMap<Fragment, List<Fragment>>();
-        mIndirectChildFragmentsMap = new HashMap<Fragment, List<Fragment>>();
+        mDirectNestedFragmentsMap = new HashMap<Fragment, List<Fragment>>();
         mMoreMainFragmentsMap = new HashMap<Fragment, List<Fragment>>();
+
+        //mIndirectNestedFragmentsMap = new HashMap<Fragment, List<Fragment>>();
         //mAllFragmentsList = new ArrayList<Fragment>();
     }
 
@@ -137,6 +139,10 @@ public class FragOperManager implements Serializable {
         return sFragOperManager;
     }
 
+    /***
+     * 在BaseActivity中的onResume()方法中调用
+     * @param activity
+     */
     public void setCurShowActivity(Activity activity) {
         mCurShowActivity = activity;
     }
@@ -151,7 +157,11 @@ public class FragOperManager implements Serializable {
     }
 
     /***
-     * 添加activity后,表示要从这个activity开启fragment.
+     * 1.
+     * 在要使用Fragment的Activity的
+     * onCreate(Bundle savedInstanceState)方法中调用
+     * 2.
+     * 添加activity后,表示要从这个activity开启fragment
      *
      * @param activity
      * @param containerId
@@ -177,6 +187,10 @@ public class FragOperManager implements Serializable {
         }
     }
 
+    /***
+     * 在要使用Fragment的Activity的onDestroy()方法中调用
+     * @param activity
+     */
     public void removeActivity(Activity activity) {
         if (activity == null
                 || mActivityContainersMap == null) {
@@ -200,8 +214,9 @@ public class FragOperManager implements Serializable {
             return;
         }
 
-        MLog.d(TAG, "removeFragment() mainFragment: " +
-                mainFragment.getClass().getSimpleName());
+        if (DEBUG)
+            MLog.d(TAG, "removeFragment() mainFragment: " +
+                    mainFragment.getClass().getSimpleName());
         mMoreMainFragmentsMap.remove(mainFragment);
     }
 
@@ -233,29 +248,29 @@ public class FragOperManager implements Serializable {
 
     public List<Fragment> getDirectChildFragmentsList(Fragment fragment) {
         if (fragment == null
-                || mDirectChildFragmentsMap == null
-                || mDirectChildFragmentsMap.isEmpty()
-                || !mDirectChildFragmentsMap.containsKey(fragment)) {
+                || mDirectNestedFragmentsMap == null
+                || mDirectNestedFragmentsMap.isEmpty()
+                || !mDirectNestedFragmentsMap.containsKey(fragment)) {
             return null;
         }
 
-        return mDirectChildFragmentsMap.get(fragment);
+        return mDirectNestedFragmentsMap.get(fragment);
     }
 
     public Map<Fragment, List<Fragment>> getDirectChildFragmentsMap() {
-        return mDirectChildFragmentsMap;
+        return mDirectNestedFragmentsMap;
     }
 
     public boolean isExitFragmentAtDirectChildFragments(Fragment fragment) {
         if (fragment == null
-                || mDirectChildFragmentsMap == null
-                || mDirectChildFragmentsMap.isEmpty()) {
+                || mDirectNestedFragmentsMap == null
+                || mDirectNestedFragmentsMap.isEmpty()) {
             return false;
         }
 
-        for (Fragment parentFragment : mDirectChildFragmentsMap.keySet()) {
-            if (mDirectChildFragmentsMap.get(parentFragment) != null
-                    && mDirectChildFragmentsMap.get(parentFragment).contains(fragment)) {
+        for (Fragment parentFragment : mDirectNestedFragmentsMap.keySet()) {
+            if (mDirectNestedFragmentsMap.get(parentFragment) != null
+                    && mDirectNestedFragmentsMap.get(parentFragment).contains(fragment)) {
                 return true;
             }
         }
@@ -294,6 +309,7 @@ public class FragOperManager implements Serializable {
     }
 
     /***
+     * 在SCENE_NO_OR_ONE_MAIN_FRAGMENT这个场景使用
      * @param fragment
      */
     public int enter(Fragment fragment) {
@@ -336,32 +352,32 @@ public class FragOperManager implements Serializable {
             Fragment shouldHideFragment = fragmentsList.get(i);
             if (!shouldHideFragment.isHidden()) {
                 List<Fragment> directFragmentsList =
-                        mDirectChildFragmentsMap.get(shouldHideFragment);
+                        mDirectNestedFragmentsMap.get(shouldHideFragment);
                 if (directFragmentsList != null
                         && !directFragmentsList.isEmpty()) {
                     FragmentManager fragmentManager =
                             shouldHideFragment.getChildFragmentManager();
-                    FragmentTransaction transaction =
+                    FragmentTransaction fragmentTransaction =
                             fragmentManager.beginTransaction();
                     for (Fragment directChildFragment : directFragmentsList) {
-                        MLog.d(TAG, "enter() directChildFragment.getId(): " +
-                                directChildFragment.getId());
+                        if (DEBUG)
+                            MLog.d(TAG, "enter() directChildFragment.getId(): " +
+                                    directChildFragment.getId());
                         if (!directChildFragment.isHidden()) {
                             if (directChildFragment.getId() <= 0) {
+                                // 没有布局文件可以显示的Fragment
                                 fTransaction.hide(directChildFragment);
                             } else {
                                 fragmentManager.popBackStack();
                             }
                         }
                     }
-                    transaction.commit();
+                    fragmentTransaction.commit();
                 }
                 // fragment隐藏时的动画
                 // fTransaction.setCustomAnimations(R.anim.push_right_in, R.anim.push_left_out2);
                 // 先把所有的Fragment给隐藏掉.
-                if (!shouldHideFragment.isHidden()) {
-                    fTransaction.hide(shouldHideFragment);
-                }
+                fTransaction.hide(shouldHideFragment);
             }
         }
         /*for (int i = 0; i < count - 1; i++) {
@@ -369,7 +385,7 @@ public class FragOperManager implements Serializable {
             Fragment shouldHideFragment = fragmentsList.get(i);
             if (!shouldHideFragment.isHidden()) {
                 List<Fragment> directFragmentsList =
-                        mDirectChildFragmentsMap.get(shouldHideFragment);
+                        mDirectNestedFragmentsMap.get(shouldHideFragment);
                 if (directFragmentsList != null
                         && !directFragmentsList.isEmpty()) {
                     for (Fragment directChildFragment : directFragmentsList) {
@@ -399,6 +415,7 @@ public class FragOperManager implements Serializable {
                 && !mAllFragmentsList.contains(fragment)) {
             mAllFragmentsList.add(fragment);
         }*/
+
         return 0;
     }
 
@@ -431,10 +448,7 @@ public class FragOperManager implements Serializable {
                 || mActivityContainersMap == null
                 || mActivityContainersMap.isEmpty()
                 || !mActivityContainersMap.containsKey(mCurShowActivity)
-                /*|| mActivityFragmentsMap == null
-                || mActivityFragmentsMap.isEmpty()
-                || !mActivityFragmentsMap.containsKey(mCurShowActivity)*/
-                || mDirectChildFragmentsMap == null) {
+                || mDirectNestedFragmentsMap == null) {
             return -1;
         }
 
@@ -445,15 +459,30 @@ public class FragOperManager implements Serializable {
             return -1;
         }*/
 
-        List<Fragment> directFragmentsList = null;
-        if (!mDirectChildFragmentsMap.containsKey(parentFragment)) {
-            directFragmentsList = new ArrayList<Fragment>();
-            mDirectChildFragmentsMap.put(parentFragment, directFragmentsList);
+        List<Fragment> directNestedFragmentsList = null;
+        if (!mDirectNestedFragmentsMap.containsKey(parentFragment)) {
+            directNestedFragmentsList = new ArrayList<Fragment>();
+            mDirectNestedFragmentsMap.put(parentFragment, directNestedFragmentsList);
         } else {
-            directFragmentsList = mDirectChildFragmentsMap.get(parentFragment);
+            directNestedFragmentsList = mDirectNestedFragmentsMap.get(parentFragment);
         }
-        if (directFragmentsList == null) {
+        if (directNestedFragmentsList == null) {
             return -1;
+        }
+
+        if (!directNestedFragmentsList.contains(childFragment)) {
+            directNestedFragmentsList.add(childFragment);
+
+            FragmentTransaction fragmentTransaction =
+                    parentFragment.getChildFragmentManager().beginTransaction();
+            fragmentTransaction.replace(
+                    containerId,
+                    childFragment,
+                    childFragment.getClass().getSimpleName());
+            fragmentTransaction.addToBackStack(childFragment.getClass().getSimpleName());
+            // 嵌套的Fragment不要有动画
+            // showFragmentUseAnimations(fragmentTransaction);
+            fragmentTransaction.commit();
         }
 
         /*if (!directFragmentsList.contains(childFragment)) {
@@ -471,19 +500,6 @@ public class FragOperManager implements Serializable {
             fTransaction.commit();
         }*/
 
-        if (!directFragmentsList.contains(childFragment)) {
-            directFragmentsList.add(childFragment);
-
-            FragmentTransaction fTransaction =
-                    parentFragment.getChildFragmentManager().beginTransaction();
-            fTransaction.replace(containerId,
-                    childFragment,
-                    childFragment.getClass().getSimpleName());
-            fTransaction.addToBackStack(childFragment.getClass().getSimpleName());
-            showFragmentUseAnimations(fTransaction);
-            fTransaction.commit();
-        }
-
         /*if (mAllFragmentsList != null
                 && !mAllFragmentsList.contains(parentFragment)) {
             mAllFragmentsList.add(parentFragment);
@@ -492,6 +508,7 @@ public class FragOperManager implements Serializable {
                 && !mAllFragmentsList.contains(childFragment)) {
             mAllFragmentsList.add(childFragment);
         }*/
+
         return 0;
     }
 
@@ -512,39 +529,37 @@ public class FragOperManager implements Serializable {
                 || mActivityContainersMap == null
                 || mActivityContainersMap.isEmpty()
                 || !mActivityContainersMap.containsKey(mCurShowActivity)
-                || mActivityFragmentsMap == null
-                || mActivityFragmentsMap.isEmpty()
-                || !mActivityFragmentsMap.containsKey(mCurShowActivity)
-                || mDirectChildFragmentsMap == null) {
+                || mDirectNestedFragmentsMap == null) {
             return -1;
         }
 
-        List<Fragment> fragmentsList = mActivityFragmentsMap.get(mCurShowActivity);
+        /*List<Fragment> fragmentsList = mActivityFragmentsMap.get(mCurShowActivity);
         if (fragmentsList == null
                 || fragmentsList.isEmpty()
                 || !fragmentsList.contains(parentFragment)) {
             return -1;
-        }
+        }*/
 
-        List<Fragment> directFragmentsList = null;
-        if (!mDirectChildFragmentsMap.containsKey(parentFragment)) {
-            directFragmentsList = new ArrayList<Fragment>();
-            mDirectChildFragmentsMap.put(parentFragment, directFragmentsList);
+        List<Fragment> directNestedFragmentsList = null;
+        if (!mDirectNestedFragmentsMap.containsKey(parentFragment)) {
+            directNestedFragmentsList = new ArrayList<Fragment>();
+            mDirectNestedFragmentsMap.put(parentFragment, directNestedFragmentsList);
         } else {
-            directFragmentsList = mDirectChildFragmentsMap.get(parentFragment);
+            directNestedFragmentsList = mDirectNestedFragmentsMap.get(parentFragment);
         }
-        if (directFragmentsList == null) {
+        if (directNestedFragmentsList == null) {
             return -1;
         }
 
-        if (!directFragmentsList.contains(childFragment)) {
-            directFragmentsList.add(childFragment);
+        if (!directNestedFragmentsList.contains(childFragment)) {
+            directNestedFragmentsList.add(childFragment);
 
-            FragmentTransaction fTransaction =
-                    parentFragment.getFragmentManager().beginTransaction();
-            fTransaction.add(childFragment, childFragment.getClass().getSimpleName());
-            fTransaction.addToBackStack(childFragment.getClass().getSimpleName());
-            fTransaction.commit();
+            FragmentTransaction fragmentTransaction =
+                    parentFragment.getChildFragmentManager().beginTransaction();
+            fragmentTransaction.add(childFragment, childFragment.getClass().getSimpleName());
+            fragmentTransaction.addToBackStack(childFragment.getClass().getSimpleName());
+            // 不需要显示
+            fragmentTransaction.commit();
         }
 
         /*if (mAllFragmentsList != null
@@ -555,6 +570,7 @@ public class FragOperManager implements Serializable {
                 && !mAllFragmentsList.contains(childFragment)) {
             mAllFragmentsList.add(childFragment);
         }*/
+
         return 0;
     }
 
@@ -577,6 +593,8 @@ public class FragOperManager implements Serializable {
     }
 
     /***
+     * 在SCENE_MORE_MAIN_FRAGMENT这个场景使用
+     *
      * 在MainActivity中预告添加多个MainFragment的方法,
      * 其他地方不能调用.
      *
@@ -593,8 +611,9 @@ public class FragOperManager implements Serializable {
             return -1;
         }
 
-        MLog.d(TAG, "enter2() mCurShowActivity: " +
-                mCurShowActivity.getClass().getSimpleName());
+        if (DEBUG)
+            MLog.d(TAG, "enter2() mCurShowActivity: " +
+                    mCurShowActivity.getClass().getSimpleName());
 
         Integer[] container_scene = mActivityContainersMap.get(mCurShowActivity);
         FragmentTransaction fTransaction = mCurShowActivity.getFragmentManager().beginTransaction();
@@ -648,8 +667,9 @@ public class FragOperManager implements Serializable {
             return -1;
         }
 
-        MLog.d(TAG, "enter3() mCurShowActivity: " +
-                mCurShowActivity.getClass().getSimpleName());
+        if (DEBUG)
+            MLog.d(TAG, "enter3() mCurShowActivity: " +
+                    mCurShowActivity.getClass().getSimpleName());
 
         Integer[] container_scene = mActivityContainersMap.get(mCurShowActivity);
         List<Fragment> mainChildFragmentsList = mMoreMainFragmentsMap.get(mCurShowFragment);
@@ -682,7 +702,7 @@ public class FragOperManager implements Serializable {
         for (int i = 0; i < count - 1; i++) {
             Fragment hideFragment = mainChildFragmentsList.get(i);
             if (!hideFragment.isHidden()) {
-                List<Fragment> directFragmentsList = mDirectChildFragmentsMap.get(hideFragment);
+                List<Fragment> directFragmentsList = mDirectNestedFragmentsMap.get(hideFragment);
                 if (directFragmentsList != null
                         && !directFragmentsList.isEmpty()) {
                     for (Fragment tempFragment : directFragmentsList) {
@@ -725,8 +745,9 @@ public class FragOperManager implements Serializable {
             return -1;
         }
 
-        MLog.d(TAG, "changeFragment() showMainFragment: " +
-                mCurShowFragment.getClass().getSimpleName());
+        if (DEBUG)
+            MLog.d(TAG, "changeFragment() showMainFragment: " +
+                    mCurShowFragment.getClass().getSimpleName());
 
         FragmentManager fManager = mCurShowActivity.getFragmentManager();
         FragmentTransaction fTransaction = fManager.beginTransaction();
@@ -743,36 +764,39 @@ public class FragOperManager implements Serializable {
                         continue;
                     }
                     List<Fragment> directFragmentsList =
-                            mDirectChildFragmentsMap.get(mainChildFragment);
+                            mDirectNestedFragmentsMap.get(mainChildFragment);
                     if (directFragmentsList != null
                             && !directFragmentsList.isEmpty()) {
                         for (Fragment mainChildChildFragment : directFragmentsList) {
                             if (!mainChildChildFragment.isHidden()) {
-                                MLog.d(TAG, "changeFragment() hide" +
-                                        " mainFragment: " +
-                                        mainFragment.getClass().getSimpleName() +
-                                        " mainChildFragment: " +
-                                        mainChildFragment.getClass().getSimpleName() +
-                                        " mainChildChildFragment: " +
-                                        mainChildChildFragment.getClass().getSimpleName());
+                                if (DEBUG)
+                                    MLog.d(TAG, "changeFragment() hide" +
+                                            " mainFragment: " +
+                                            mainFragment.getClass().getSimpleName() +
+                                            " mainChildFragment: " +
+                                            mainChildFragment.getClass().getSimpleName() +
+                                            " mainChildChildFragment: " +
+                                            mainChildChildFragment.getClass().getSimpleName());
                                 fTransaction.hide(mainChildChildFragment);
                             }
                         }
                     }
                     if (!mainChildFragment.isHidden()) {
-                        MLog.d(TAG, "changeFragment() hide" +
-                                " mainFragment: " +
-                                mainFragment.getClass().getSimpleName() +
-                                " mainChildFragment: " +
-                                mainChildFragment.getClass().getSimpleName());
+                        if (DEBUG)
+                            MLog.d(TAG, "changeFragment() hide" +
+                                    " mainFragment: " +
+                                    mainFragment.getClass().getSimpleName() +
+                                    " mainChildFragment: " +
+                                    mainChildFragment.getClass().getSimpleName());
                         fTransaction.hide(mainChildFragment);
                     }
                 }
             }
             if (!mainFragment.isHidden()) {
-                MLog.d(TAG, "changeFragment() hide" +
-                        " mainFragment: " +
-                        mainFragment.getClass().getSimpleName());
+                if (DEBUG)
+                    MLog.d(TAG, "changeFragment() hide" +
+                            " mainFragment: " +
+                            mainFragment.getClass().getSimpleName());
                 fTransaction.hide(mainFragment);
             }
         }
@@ -783,33 +807,36 @@ public class FragOperManager implements Serializable {
             int count = mainChildFragmentsList.size();
             Fragment mainChildFragment = mainChildFragmentsList.get(count - 1);
             List<Fragment> directFragmentsList =
-                    mDirectChildFragmentsMap.get(mainChildFragment);
+                    mDirectNestedFragmentsMap.get(mainChildFragment);
             if (directFragmentsList != null
                     && !directFragmentsList.isEmpty()) {
                 for (Fragment mainChildChildFragment : directFragmentsList) {
                     if (mainChildChildFragment.isHidden()) {
-                        MLog.d(TAG, "changeFragment() show" +
-                                " mCurShowFragment: " +
-                                mCurShowFragment.getClass().getSimpleName() +
-                                " mainChildFragment: " +
-                                mainChildFragment.getClass().getSimpleName() +
-                                " mainChildChildFragment: " +
-                                mainChildChildFragment.getClass().getSimpleName());
+                        if (DEBUG)
+                            MLog.d(TAG, "changeFragment() show" +
+                                    " mCurShowFragment: " +
+                                    mCurShowFragment.getClass().getSimpleName() +
+                                    " mainChildFragment: " +
+                                    mainChildFragment.getClass().getSimpleName() +
+                                    " mainChildChildFragment: " +
+                                    mainChildChildFragment.getClass().getSimpleName());
                         // showFragmentUseAnimations(fTransaction);
                         fTransaction.show(mainChildChildFragment);
                     }
                 }
             }
-            MLog.d(TAG, "changeFragment() show" +
-                    " mCurShowFragment: " +
-                    mCurShowFragment.getClass().getSimpleName() +
-                    " mainChildFragment: " +
-                    mainChildFragment.getClass().getSimpleName());
+            if (DEBUG)
+                MLog.d(TAG, "changeFragment() show" +
+                        " mCurShowFragment: " +
+                        mCurShowFragment.getClass().getSimpleName() +
+                        " mainChildFragment: " +
+                        mainChildFragment.getClass().getSimpleName());
             fTransaction.show(mainChildFragment);
         } else {
-            MLog.d(TAG, "changeFragment() show" +
-                    " mCurShowFragment: " +
-                    mCurShowFragment.getClass().getSimpleName());
+            if (DEBUG)
+                MLog.d(TAG, "changeFragment() show" +
+                        " mCurShowFragment: " +
+                        mCurShowFragment.getClass().getSimpleName());
             //showFragmentUseAnimations(fTransaction);
             fTransaction.show(mCurShowFragment);
         }
@@ -956,8 +983,9 @@ public class FragOperManager implements Serializable {
             return -1;
         }
 
-        MLog.d(TAG, "exit() mCurShowActivity: " +
-                mCurShowActivity.getClass().getSimpleName());
+        if (DEBUG)
+            MLog.d(TAG, "exit() mCurShowActivity: " +
+                    mCurShowActivity.getClass().getSimpleName());
 
         FragmentManager fManager = mCurShowActivity.getFragmentManager();
         FragmentTransaction fTransaction = fManager.beginTransaction();
@@ -1017,7 +1045,7 @@ public class FragOperManager implements Serializable {
                 || !parentFragmentsList.contains(fragment)) {
             return -1;
         }
-        List<Fragment> directFragmentsList = mDirectChildFragmentsMap.get(fragment);
+        List<Fragment> directFragmentsList = mDirectNestedFragmentsMap.get(fragment);
         if (!fragment.isHidden()) {
             if (directFragmentsList != null
                     && !directFragmentsList.isEmpty()) {
@@ -1034,7 +1062,7 @@ public class FragOperManager implements Serializable {
             return 0;
         }
         Fragment showFragment = parentFragmentsList.get(count - 1);
-        directFragmentsList = mDirectChildFragmentsMap.get(showFragment);
+        directFragmentsList = mDirectNestedFragmentsMap.get(showFragment);
         if (directFragmentsList != null && !directFragmentsList.isEmpty()) {
             for (Fragment tempFragment : directFragmentsList) {
                 if (tempFragment.isHidden()) {
@@ -1058,21 +1086,26 @@ public class FragOperManager implements Serializable {
                 || !parentFragmentsList.contains(fragment)) {
             return -1;
         }
-
-        List<Fragment> directFragmentsList = mDirectChildFragmentsMap.get(fragment);
-        if (directFragmentsList != null
-                && !directFragmentsList.isEmpty()) {
-            for (Fragment tempFragment : directFragmentsList) {
-                if (!tempFragment.isHidden()) {
-                    fManager.popBackStack();
-                    // fManager.popBackStackImmediate();
+        // 处理当前这个fragmnet嵌套的fragments
+        List<Fragment> directNestedFragmentsList = mDirectNestedFragmentsMap.get(fragment);
+        if (directNestedFragmentsList != null
+                && !directNestedFragmentsList.isEmpty()) {
+            FragmentManager fragmentManager = fragment.getChildFragmentManager();
+            FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
+            for (Fragment directNestedFragment : directNestedFragmentsList) {
+                if (directNestedFragment == null) {
+                    continue;
+                }
+                if (!directNestedFragment.isHidden()) {
+                    fragmentManager.popBackStack();
                 }
             }
+            fragmentTransaction.commit();
         }
+
         fManager.popBackStack();
-        // fManager.popBackStackImmediate();
         parentFragmentsList.remove(fragment);
-        mDirectChildFragmentsMap.remove(fragment);
+        mDirectNestedFragmentsMap.remove(fragment);
 
         int count = parentFragmentsList.size();
         if (count < 1) {
@@ -1082,26 +1115,34 @@ public class FragOperManager implements Serializable {
             return 0;
         }
 
-        for (int i = 0; i < count; i++) {
-            Fragment hideFragment = parentFragmentsList.get(i);
-            if (!hideFragment.isHidden()) {
-                directFragmentsList = mDirectChildFragmentsMap.get(hideFragment);
-                if (directFragmentsList != null
-                        && !directFragmentsList.isEmpty()) {
-                    for (Fragment tempFragment : directFragmentsList) {
-                        if (!tempFragment.isHidden()) {
-                            fTransaction.hide(tempFragment);
+        for (int i = 0; i < count - 1; i++) {
+            Fragment shouldHideFragment = parentFragmentsList.get(i);
+            if (!shouldHideFragment.isHidden()) {
+                directNestedFragmentsList = mDirectNestedFragmentsMap.get(shouldHideFragment);
+                if (directNestedFragmentsList != null
+                        && !directNestedFragmentsList.isEmpty()) {
+                    FragmentManager fragmentManager = shouldHideFragment.getChildFragmentManager();
+                    FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
+                    for (Fragment directNestedFragment : directNestedFragmentsList) {
+                        if (directNestedFragment.getId() <= 0) {
+                            if (!directNestedFragment.isHidden()) {
+                                fragmentTransaction.hide(directNestedFragment);
+                            }
+                        } else {
+                            fragmentManager.popBackStack();
                         }
                     }
+                    fragmentTransaction.commit();
                 }
-                fTransaction.hide(hideFragment);
+                fTransaction.hide(shouldHideFragment);
             }
         }
+
         Fragment showFragment = parentFragmentsList.get(count - 1);
-        directFragmentsList = mDirectChildFragmentsMap.get(showFragment);
-        if (directFragmentsList != null
-                && !directFragmentsList.isEmpty()) {
-            for (Fragment tempFragment : directFragmentsList) {
+        directNestedFragmentsList = mDirectNestedFragmentsMap.get(showFragment);
+        if (directNestedFragmentsList != null
+                && !directNestedFragmentsList.isEmpty()) {
+            for (Fragment tempFragment : directNestedFragmentsList) {
                 if (tempFragment.isHidden()) {
                     fTransaction.show(tempFragment);
                 }
@@ -1138,18 +1179,19 @@ public class FragOperManager implements Serializable {
 
         // 先处理要pop的Fragment的子类
         List<Fragment> mainChildChildFragmentsList =
-                mDirectChildFragmentsMap.get(popMainChildFragment);
+                mDirectNestedFragmentsMap.get(popMainChildFragment);
         if (mainChildChildFragmentsList != null
                 && !mainChildChildFragmentsList.isEmpty()) {
             for (Fragment popMainChildChildFragment : mainChildChildFragmentsList) {
                 if (!popMainChildChildFragment.isHidden()) {
-                    MLog.d(TAG, "pop_back_stack_scene_2() remove" +
-                            " mCurShowFragment: " +
-                            mCurShowFragment.getClass().getSimpleName() +
-                            " popMainChildFragment: " +
-                            popMainChildFragment.getClass().getSimpleName() +
-                            " popMainChildChildFragment: " +
-                            popMainChildChildFragment.getClass().getSimpleName());
+                    if (DEBUG)
+                        MLog.d(TAG, "pop_back_stack_scene_2() remove" +
+                                " mCurShowFragment: " +
+                                mCurShowFragment.getClass().getSimpleName() +
+                                " popMainChildFragment: " +
+                                popMainChildFragment.getClass().getSimpleName() +
+                                " popMainChildChildFragment: " +
+                                popMainChildChildFragment.getClass().getSimpleName());
                     FragmentManager manager = mCurShowActivity.getFragmentManager();
                     FragmentTransaction transaction = manager.beginTransaction();
                     manager.popBackStackImmediate(
@@ -1161,11 +1203,12 @@ public class FragOperManager implements Serializable {
             }
         }
 
-        MLog.d(TAG, "pop_back_stack_scene_2() popBackStack" +
-                " mCurShowFragment: " +
-                mCurShowFragment.getClass().getSimpleName() +
-                " popMainChildFragment: " +
-                popMainChildFragment.getClass().getSimpleName());
+        if (DEBUG)
+            MLog.d(TAG, "pop_back_stack_scene_2() popBackStack" +
+                    " mCurShowFragment: " +
+                    mCurShowFragment.getClass().getSimpleName() +
+                    " popMainChildFragment: " +
+                    popMainChildFragment.getClass().getSimpleName());
         FragmentManager manager = mCurShowActivity.getFragmentManager();
         FragmentTransaction transaction = manager.beginTransaction();
         manager.popBackStackImmediate(popMainChildFragment.getClass().getSimpleName(), 1);
@@ -1174,15 +1217,16 @@ public class FragOperManager implements Serializable {
         // fManager.popBackStack();
         // fManager.popBackStackImmediate();
         mainChildFragmentsList.remove(popMainChildFragment);
-        mDirectChildFragmentsMap.remove(popMainChildFragment);
+        mDirectNestedFragmentsMap.remove(popMainChildFragment);
 
         int count = mainChildFragmentsList.size();
         if (count < 1) {
             // 当前MainFragment下面没有子类Fragment了
             if (mCurShowFragment.isHidden()) {
-                MLog.d(TAG, "pop_back_stack_scene_2() show" +
-                        " mCurShowFragment: " +
-                        mCurShowFragment.getClass().getSimpleName());
+                if (DEBUG)
+                    MLog.d(TAG, "pop_back_stack_scene_2() show" +
+                            " mCurShowFragment: " +
+                            mCurShowFragment.getClass().getSimpleName());
                 manager = mCurShowActivity.getFragmentManager();
                 transaction = manager.beginTransaction();
                 transaction.show(mCurShowFragment);
@@ -1197,18 +1241,19 @@ public class FragOperManager implements Serializable {
         for (int i = 0; i < count; i++) {
             Fragment hideFragment = mainChildFragmentsList.get(i);
             if (!hideFragment.isHidden()) {
-                mainChildChildFragmentsList = mDirectChildFragmentsMap.get(hideFragment);
+                mainChildChildFragmentsList = mDirectNestedFragmentsMap.get(hideFragment);
                 if (mainChildChildFragmentsList != null
                         && !mainChildChildFragmentsList.isEmpty()) {
                     for (Fragment tempFragment : mainChildChildFragmentsList) {
                         if (!tempFragment.isHidden()) {
-                            MLog.d(TAG, "pop_back_stack_scene_2() hide" +
-                                    " mCurShowFragment: " +
-                                    mCurShowFragment.getClass().getSimpleName() +
-                                    " popMainChildFragment: " +
-                                    popMainChildFragment.getClass().getSimpleName() +
-                                    " popMainChildChildFragment: " +
-                                    tempFragment.getClass().getSimpleName());
+                            if (DEBUG)
+                                MLog.d(TAG, "pop_back_stack_scene_2() hide" +
+                                        " mCurShowFragment: " +
+                                        mCurShowFragment.getClass().getSimpleName() +
+                                        " popMainChildFragment: " +
+                                        popMainChildFragment.getClass().getSimpleName() +
+                                        " popMainChildChildFragment: " +
+                                        tempFragment.getClass().getSimpleName());
                             manager = mCurShowActivity.getFragmentManager();
                             transaction = manager.beginTransaction();
                             transaction.hide(tempFragment);
@@ -1217,11 +1262,12 @@ public class FragOperManager implements Serializable {
                         }
                     }
                 }
-                MLog.d(TAG, "pop_back_stack_scene_2() hide" +
-                        " mCurShowFragment: " +
-                        mCurShowFragment.getClass().getSimpleName() +
-                        " popMainChildFragment: " +
-                        popMainChildFragment.getClass().getSimpleName());
+                if (DEBUG)
+                    MLog.d(TAG, "pop_back_stack_scene_2() hide" +
+                            " mCurShowFragment: " +
+                            mCurShowFragment.getClass().getSimpleName() +
+                            " popMainChildFragment: " +
+                            popMainChildFragment.getClass().getSimpleName());
                 manager = mCurShowActivity.getFragmentManager();
                 transaction = manager.beginTransaction();
                 transaction.hide(hideFragment);
@@ -1231,18 +1277,19 @@ public class FragOperManager implements Serializable {
         }
         //
         Fragment showFragment = mainChildFragmentsList.get(count - 1);
-        mainChildChildFragmentsList = mDirectChildFragmentsMap.get(showFragment);
+        mainChildChildFragmentsList = mDirectNestedFragmentsMap.get(showFragment);
         if (mainChildChildFragmentsList != null
                 && !mainChildChildFragmentsList.isEmpty()) {
             for (Fragment tempFragment : mainChildChildFragmentsList) {
                 if (tempFragment.isHidden()) {
-                    MLog.d(TAG, "pop_back_stack_scene_2() show" +
-                            " mCurShowFragment: " +
-                            mCurShowFragment.getClass().getSimpleName() +
-                            " showMainChildFragment: " +
-                            showFragment.getClass().getSimpleName() +
-                            " showMainChildChildFragment: " +
-                            tempFragment.getClass().getSimpleName());
+                    if (DEBUG)
+                        MLog.d(TAG, "pop_back_stack_scene_2() show" +
+                                " mCurShowFragment: " +
+                                mCurShowFragment.getClass().getSimpleName() +
+                                " showMainChildFragment: " +
+                                showFragment.getClass().getSimpleName() +
+                                " showMainChildChildFragment: " +
+                                tempFragment.getClass().getSimpleName());
                     manager = mCurShowActivity.getFragmentManager();
                     transaction = manager.beginTransaction();
                     transaction.show(tempFragment);
@@ -1252,11 +1299,12 @@ public class FragOperManager implements Serializable {
             }
         }
         if (showFragment.isHidden()) {
-            MLog.d(TAG, "pop_back_stack_scene_2() show" +
-                    " mCurShowFragment: " +
-                    mCurShowFragment.getClass().getSimpleName() +
-                    " showMainChildFragment: " +
-                    showFragment.getClass().getSimpleName());
+            if (DEBUG)
+                MLog.d(TAG, "pop_back_stack_scene_2() show" +
+                        " mCurShowFragment: " +
+                        mCurShowFragment.getClass().getSimpleName() +
+                        " showMainChildFragment: " +
+                        showFragment.getClass().getSimpleName());
             manager = mCurShowActivity.getFragmentManager();
             transaction = manager.beginTransaction();
             transaction.show(showFragment);
@@ -1390,7 +1438,7 @@ public class FragOperManager implements Serializable {
         for (int i = 0; i < count - 1; i++) {
             Fragment hideFragment = mainChildFragmentsList.get(i);
             if (!hideFragment.isHidden()) {
-                List<Fragment> directFragmentsList = mDirectChildFragmentsMap.get(hideFragment);
+                List<Fragment> directFragmentsList = mDirectNestedFragmentsMap.get(hideFragment);
                 if (directFragmentsList != null
                         && !directFragmentsList.isEmpty()) {
                     for (Fragment tempFragment : directFragmentsList) {
