@@ -235,8 +235,7 @@ public class C20Fragment extends BaseFragment {
         mJumpBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Fragment fragment = new DFragment();
-                FragOperManager.getInstance().enter(new DFragment());
+                FragOperManager.getInstance().enter3(new DFragment());
             }
         });
     }

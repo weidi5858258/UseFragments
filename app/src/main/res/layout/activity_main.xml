@@ -5,7 +5,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    tools:context="com.weidi.usefragments.MainActivity">
+    tools:context="com.weidi.usefragments.MainActivity1">
 
     <FrameLayout
         android:id="@+id/root_layout"
@@ -23,7 +23,7 @@
             android:id="@+id/main1_btn"
             android:layout_weight="1"
             android:layout_width="0dp"
-            android:layout_height="wrap_content"
+            android:layout_height="match_parent"
             android:textSize="18px"
             android:text="Main1\nFragment" />
 
@@ -31,7 +31,7 @@
             android:id="@+id/main2_btn"
             android:layout_weight="1"
             android:layout_width="0dp"
-            android:layout_height="wrap_content"
+            android:layout_height="match_parent"
             android:textSize="18px"
             android:text="Main2\nFragment" />
 
@@ -39,7 +39,7 @@
             android:id="@+id/main3_btn"
             android:layout_weight="1"
             android:layout_width="0dp"
-            android:layout_height="wrap_content"
+            android:layout_height="match_parent"
             android:textSize="18px"
             android:text="Main3\nFragment" />
 
@@ -47,7 +47,7 @@
             android:id="@+id/main4_btn"
             android:layout_weight="1"
             android:layout_width="0dp"
-            android:layout_height="wrap_content"
+            android:layout_height="match_parent"
             android:textSize="18px"
             android:text="Main4\nFragment" />
 
