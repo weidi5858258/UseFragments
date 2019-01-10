@@ -1,7 +1,6 @@
 package com.weidi.usefragments.test_fragment.scene1;
 
 import android.app.Activity;
-import android.app.Fragment;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.view.LayoutInflater;
@@ -11,7 +10,6 @@ import android.widget.Button;
 import android.widget.TextView;
 
 import com.weidi.usefragments.R;
-import com.weidi.usefragments.fragment.FragOperManager;
 import com.weidi.usefragments.fragment.base.BaseFragment;
 import com.weidi.usefragments.inject.InjectView;
 import com.weidi.usefragments.tool.MLog;
@@ -20,10 +18,10 @@ import com.weidi.usefragments.tool.MLog;
 /***
  *
  */
-public class C2Fragment extends BaseFragment {
+public class C_1Fragment extends BaseFragment {
 
     private static final String TAG =
-            C2Fragment.class.getSimpleName();
+            C_1Fragment.class.getSimpleName();
 
     private static final boolean DEBUG = true;
     @InjectView(R.id.title_tv)
@@ -31,7 +29,7 @@ public class C2Fragment extends BaseFragment {
     @InjectView(R.id.jump_btn)
     private Button mJumpBtn;
 
-    public C2Fragment() {
+    public C_1Fragment() {
         super();
     }
 
@@ -188,7 +186,7 @@ public class C2Fragment extends BaseFragment {
     private void onShow() {
         if (DEBUG)
             MLog.d(TAG, "onShow(): " + this);
-        mTitleView.setText(C2Fragment.class.getSimpleName());
+        mTitleView.setText(C_1Fragment.class.getSimpleName());
         mJumpBtn.setText("跳转到");
     }
 

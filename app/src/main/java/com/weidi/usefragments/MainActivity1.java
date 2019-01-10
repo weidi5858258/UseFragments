@@ -9,9 +9,14 @@ import android.view.View;
 
 import com.weidi.usefragments.fragment.FragOperManager;
 import com.weidi.usefragments.fragment.base.BaseFragment;
+import com.weidi.usefragments.test_fragment.scene1.AFragment;
+import com.weidi.usefragments.test_fragment.scene1.BFragment;
+import com.weidi.usefragments.test_fragment.scene1.CFragment;
+import com.weidi.usefragments.test_fragment.scene1.DFragment;
+import com.weidi.usefragments.test_fragment.scene1.EFragment;
 import com.weidi.usefragments.test_fragment.scene2.A2Fragment;
 import com.weidi.usefragments.test_fragment.scene2.B2Fragment;
-import com.weidi.usefragments.test_fragment.scene2.C20Fragment;
+import com.weidi.usefragments.test_fragment.scene2.C2Fragment;
 import com.weidi.usefragments.test_fragment.scene2.D2Fragment;
 import com.weidi.usefragments.test_fragment.scene2.E2Fragment;
 import com.weidi.usefragments.test_fragment.scene2.Main1Fragment;
@@ -51,15 +56,36 @@ public class MainActivity1 extends BaseActivity
         // 如果有MainFragment(MainActivity中使用MainFragment,其他Fragment从MainFragment中被开启),
         // 那么不要把MainFragment加入Map中.
         sFragmentBackTypeSMap = new HashMap<String, Integer>();
-        sFragmentBackTypeSMap.put(A2Fragment.class.getSimpleName(),
+        sFragmentBackTypeSMap.put(
+                A2Fragment.class.getSimpleName(),
                 FragOperManager.POP_BACK_STACK);
-        sFragmentBackTypeSMap.put(B2Fragment.class.getSimpleName(),
+        sFragmentBackTypeSMap.put(
+                B2Fragment.class.getSimpleName(),
                 FragOperManager.POP_BACK_STACK);
-        sFragmentBackTypeSMap.put(C20Fragment.class.getSimpleName(),
+        sFragmentBackTypeSMap.put(
+                C2Fragment.class.getSimpleName(),
                 FragOperManager.POP_BACK_STACK);
-        sFragmentBackTypeSMap.put(D2Fragment.class.getSimpleName(),
+        sFragmentBackTypeSMap.put(
+                D2Fragment.class.getSimpleName(),
                 FragOperManager.POP_BACK_STACK);
-        sFragmentBackTypeSMap.put(E2Fragment.class.getSimpleName(),
+        sFragmentBackTypeSMap.put(
+                E2Fragment.class.getSimpleName(),
+                FragOperManager.POP_BACK_STACK);
+
+        sFragmentBackTypeSMap.put(
+                AFragment.class.getSimpleName(),
+                FragOperManager.POP_BACK_STACK);
+        sFragmentBackTypeSMap.put(
+                BFragment.class.getSimpleName(),
+                FragOperManager.POP_BACK_STACK);
+        sFragmentBackTypeSMap.put(
+                CFragment.class.getSimpleName(),
+                FragOperManager.POP_BACK_STACK);
+        sFragmentBackTypeSMap.put(
+                DFragment.class.getSimpleName(),
+                FragOperManager.POP_BACK_STACK);
+        sFragmentBackTypeSMap.put(
+                EFragment.class.getSimpleName(),
                 FragOperManager.POP_BACK_STACK);
     }
 

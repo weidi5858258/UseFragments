@@ -18,10 +18,10 @@ import com.weidi.usefragments.tool.MLog;
 /***
  *
  */
-public class C3Fragment extends BaseFragment {
+public class C_4Fragment extends BaseFragment {
 
     private static final String TAG =
-            C3Fragment.class.getSimpleName();
+            C_4Fragment.class.getSimpleName();
 
     private static final boolean DEBUG = true;
     @InjectView(R.id.title_tv)
@@ -29,7 +29,7 @@ public class C3Fragment extends BaseFragment {
     @InjectView(R.id.jump_btn)
     private Button mJumpBtn;
 
-    public C3Fragment() {
+    public C_4Fragment() {
         super();
     }
 
@@ -186,7 +186,7 @@ public class C3Fragment extends BaseFragment {
     private void onShow() {
         if (DEBUG)
             MLog.d(TAG, "onShow(): " + this);
-        mTitleView.setText(C3Fragment.class.getSimpleName());
+        mTitleView.setText(C_4Fragment.class.getSimpleName());
         mJumpBtn.setText("跳转到");
     }
 

@@ -1,7 +1,6 @@
-package com.weidi.usefragments.test_fragment.scene2;
+package com.weidi.usefragments.test_fragment.scene1;
 
 import android.app.Activity;
-import android.app.Fragment;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.view.LayoutInflater;
@@ -11,25 +10,18 @@ import android.widget.Button;
 import android.widget.TextView;
 
 import com.weidi.usefragments.R;
-import com.weidi.usefragments.fragment.FragOperManager;
 import com.weidi.usefragments.fragment.base.BaseFragment;
 import com.weidi.usefragments.inject.InjectView;
-import com.weidi.usefragments.test_fragment.scene1.C1Fragment;
-import com.weidi.usefragments.test_fragment.scene1.C2Fragment;
-import com.weidi.usefragments.test_fragment.scene1.C3Fragment;
-import com.weidi.usefragments.test_fragment.scene1.C4Fragment;
-import com.weidi.usefragments.test_fragment.scene1.C5Fragment;
-import com.weidi.usefragments.test_fragment.scene1.DFragment;
 import com.weidi.usefragments.tool.MLog;
 
 
 /***
  *
  */
-public class C20Fragment extends BaseFragment {
+public class C_3Fragment extends BaseFragment {
 
     private static final String TAG =
-            C20Fragment.class.getSimpleName();
+            C_3Fragment.class.getSimpleName();
 
     private static final boolean DEBUG = true;
     @InjectView(R.id.title_tv)
@@ -37,7 +29,7 @@ public class C20Fragment extends BaseFragment {
     @InjectView(R.id.jump_btn)
     private Button mJumpBtn;
 
-    public C20Fragment() {
+    public C_3Fragment() {
         super();
     }
 
@@ -58,26 +50,6 @@ public class C20Fragment extends BaseFragment {
         if (DEBUG)
             MLog.d(TAG, "onCreate(): " + this
                     + " savedInstanceState: " + savedInstanceState);
-
-        FragOperManager.getInstance().enter(
-                this,
-                new C21Fragment(),
-                R.id.fragment1_container_layout);
-        FragOperManager.getInstance().enter(
-                this,
-                new C22Fragment(),
-                R.id.fragment2_container_layout);
-        FragOperManager.getInstance().enter(
-                this,
-                new C23Fragment(),
-                R.id.fragment3_container_layout);
-        FragOperManager.getInstance().enter(
-                this,
-                new C24Fragment(),
-                R.id.fragment4_container_layout);
-        FragOperManager.getInstance().enter(
-                this,
-                new C25Fragment());
     }
 
     @Override
@@ -214,7 +186,7 @@ public class C20Fragment extends BaseFragment {
     private void onShow() {
         if (DEBUG)
             MLog.d(TAG, "onShow(): " + this);
-        mTitleView.setText(C20Fragment.class.getSimpleName());
+        mTitleView.setText(C_3Fragment.class.getSimpleName());
         mJumpBtn.setText("跳转到");
     }
 
@@ -225,7 +197,7 @@ public class C20Fragment extends BaseFragment {
 
     @Override
     protected int provideLayout() {
-        return R.layout.fragment_one_layout;
+        return R.layout.fragment_main;
     }
 
     @Override
@@ -235,7 +207,7 @@ public class C20Fragment extends BaseFragment {
         mJumpBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                FragOperManager.getInstance().enter3(new DFragment());
+
             }
         });
     }

@@ -1,7 +1,6 @@
 package com.weidi.usefragments.test_fragment.scene1;
 
 import android.app.Activity;
-import android.app.Fragment;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.view.LayoutInflater;
@@ -55,26 +54,26 @@ public class CFragment extends BaseFragment {
 
         /*FragOperManager.getInstance().enter(
                 this,
-                new C1Fragment(),
+                new C_1Fragment(),
                 R.id.fragment1_container_layout);
         FragOperManager.getInstance().enter(
                 this,
-                new C2Fragment(),
+                new C_2Fragment(),
                 R.id.fragment2_container_layout);
         FragOperManager.getInstance().enter(
                 this,
-                new C3Fragment(),
+                new C_3Fragment(),
                 R.id.fragment3_container_layout);
         FragOperManager.getInstance().enter(
                 this,
-                new C4Fragment(),
+                new C_4Fragment(),
                 R.id.fragment4_container_layout);
         FragOperManager.getInstance().enter(
                 this,
-                new C5Fragment());*/
+                new C_5Fragment());*/
         FragOperManager.getInstance().enter(
                 this,
-                new C5Fragment());
+                new C_5Fragment());
     }
 
     @Override
@@ -216,19 +215,19 @@ public class CFragment extends BaseFragment {
 
         FragOperManager.getInstance().enter(
                 this,
-                new C1Fragment(),
+                new C_1Fragment(),
                 R.id.fragment1_container_layout);
         FragOperManager.getInstance().enter(
                 this,
-                new C2Fragment(),
+                new C_2Fragment(),
                 R.id.fragment2_container_layout);
         FragOperManager.getInstance().enter(
                 this,
-                new C3Fragment(),
+                new C_3Fragment(),
                 R.id.fragment3_container_layout);
         FragOperManager.getInstance().enter(
                 this,
-                new C4Fragment(),
+                new C_4Fragment(),
                 R.id.fragment4_container_layout);
     }
 

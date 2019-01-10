@@ -107,7 +107,7 @@ public class FragOperManager implements Serializable {
 
     // 在SCENE_MORE_MAIN_FRAGMENT这个场景使用
     private Map<Fragment, List<Fragment>> mMoreMainFragmentsMap;
-    private Fragment mCurShowFragment;
+    private Fragment mCurShowMainFragment;
 
     // List<Fragment>有show, hide, 没有pop
     // 这里的key是mParentFragmentsMap中value值的其中之一
@@ -153,7 +153,7 @@ public class FragOperManager implements Serializable {
      * @param fragment
      */
     public void setCurShowFragment(Fragment fragment) {
-        mCurShowFragment = fragment;
+        mCurShowMainFragment = fragment;
     }
 
     /***
@@ -658,13 +658,13 @@ public class FragOperManager implements Serializable {
     public int enter3(Fragment mainChildFragment) {
         if (mainChildFragment == null
                 || mCurShowActivity == null
-                || mCurShowFragment == null
+                || mCurShowMainFragment == null
                 || mActivityContainersMap == null
                 || mActivityContainersMap.isEmpty()
                 || !mActivityContainersMap.containsKey(mCurShowActivity)
                 || mMoreMainFragmentsMap == null
                 || mMoreMainFragmentsMap.isEmpty()
-                || !mMoreMainFragmentsMap.containsKey(mCurShowFragment)) {
+                || !mMoreMainFragmentsMap.containsKey(mCurShowMainFragment)) {
             return -1;
         }
 
@@ -673,61 +673,74 @@ public class FragOperManager implements Serializable {
                     mCurShowActivity.getClass().getSimpleName());
 
         Integer[] container_scene = mActivityContainersMap.get(mCurShowActivity);
-        List<Fragment> mainChildFragmentsList = mMoreMainFragmentsMap.get(mCurShowFragment);
+        List<Fragment> mainChildFragmentsList = mMoreMainFragmentsMap.get(mCurShowMainFragment);
         if (mainChildFragmentsList == null) {
             mainChildFragmentsList = new ArrayList<Fragment>();
+            mMoreMainFragmentsMap.put(mCurShowMainFragment, mainChildFragmentsList);
         }
-        mMoreMainFragmentsMap.put(mCurShowFragment, mainChildFragmentsList);
 
-        FragmentTransaction fragmentTransaction =
+        FragmentTransaction fTransaction =
                 mCurShowActivity.getFragmentManager().beginTransaction();
         // 保证fragment在最后一个
         if (!mainChildFragmentsList.contains(mainChildFragment)) {
             mainChildFragmentsList.add(mainChildFragment);
 
             // 不用replace
-            fragmentTransaction.add(
+            fTransaction.add(
                     container_scene[0],
                     mainChildFragment,
                     mainChildFragment.getClass().getSimpleName());
-            fragmentTransaction.addToBackStack(
+            fTransaction.addToBackStack(
                     mainChildFragment.getClass().getSimpleName());
         } else {
             mainChildFragmentsList.remove(mainChildFragment);
             mainChildFragmentsList.add(mainChildFragment);
         }
 
-        if (!mCurShowFragment.isHidden()) {
-            fragmentTransaction.hide(mCurShowFragment);
+        if (!mCurShowMainFragment.isHidden()) {
+            fTransaction.hide(mCurShowMainFragment);
         }
 
         int count = mainChildFragmentsList.size();
         for (int i = 0; i < count - 1; i++) {
-            Fragment hideFragment = mainChildFragmentsList.get(i);
-            if (!hideFragment.isHidden()) {
-                List<Fragment> directFragmentsList = mDirectNestedFragmentsMap.get(hideFragment);
+            Fragment shouldHideFragment = mainChildFragmentsList.get(i);
+            if (!shouldHideFragment.isHidden()) {
+                List<Fragment> directFragmentsList = mDirectNestedFragmentsMap.get
+                        (shouldHideFragment);
                 if (directFragmentsList != null
                         && !directFragmentsList.isEmpty()) {
-                    for (Fragment tempFragment : directFragmentsList) {
-                        if (!tempFragment.isHidden()) {
-                            fragmentTransaction.hide(tempFragment);
+                    FragmentManager fragmentManager =
+                            shouldHideFragment.getChildFragmentManager();
+                    FragmentTransaction fragmentTransaction =
+                            fragmentManager.beginTransaction();
+                    for (Fragment directChildFragment : directFragmentsList) {
+                        if (DEBUG)
+                            MLog.d(TAG, "enter3() directChildFragment.getId(): " +
+                                    directChildFragment.getId());
+                        if (!directChildFragment.isHidden()) {
+                            if (directChildFragment.getId() <= 0) {
+                                fragmentTransaction.hide(directChildFragment);
+                            } else {
+                                fragmentManager.popBackStack();
+                            }
                         }
                     }
+                    fragmentTransaction.commit();
                 }
                 // fragment隐藏时的动画
                 // fTransaction.setCustomAnimations(R.anim.push_right_in, R.anim.push_left_out2);
                 // 先把所有的Fragment给隐藏掉.
-                fragmentTransaction.hide(hideFragment);
+                fTransaction.hide(shouldHideFragment);
             }
         }
 
-        showFragmentUseAnimations(fragmentTransaction);
-        fragmentTransaction.show(mainChildFragment);
+        showFragmentUseAnimations(fTransaction);
+        fTransaction.show(mainChildFragment);
         // 旋转屏幕,然后去添加一个Fragment,出现异常
         // 旋转屏幕后
         // java.lang.IllegalStateException:
         // Can not perform this action after onSaveInstanceState
-        fragmentTransaction.commit();
+        fTransaction.commit();
 
         /*if (mAllFragmentsList != null
                 && !mAllFragmentsList.contains(fragment)) {
@@ -738,19 +751,19 @@ public class FragOperManager implements Serializable {
 
     public int changeFragment() {
         if (mCurShowActivity == null
-                || mCurShowFragment == null
+                || mCurShowMainFragment == null
                 || mActivityContainersMap == null
                 || mActivityContainersMap.isEmpty()
                 || !mActivityContainersMap.containsKey(mCurShowActivity)
                 || mMoreMainFragmentsMap == null
                 || mMoreMainFragmentsMap.isEmpty()
-                || !mMoreMainFragmentsMap.containsKey(mCurShowFragment)) {
+                || !mMoreMainFragmentsMap.containsKey(mCurShowMainFragment)) {
             return -1;
         }
 
         if (DEBUG)
             MLog.d(TAG, "changeFragment() showMainFragment: " +
-                    mCurShowFragment.getClass().getSimpleName());
+                    mCurShowMainFragment.getClass().getSimpleName());
 
         FragmentManager fManager = mCurShowActivity.getFragmentManager();
         FragmentTransaction fTransaction = fManager.beginTransaction();
@@ -804,7 +817,7 @@ public class FragOperManager implements Serializable {
             }
         }
 
-        mainChildFragmentsList = mMoreMainFragmentsMap.get(mCurShowFragment);
+        mainChildFragmentsList = mMoreMainFragmentsMap.get(mCurShowMainFragment);
         if (mainChildFragmentsList != null
                 && !mainChildFragmentsList.isEmpty()) {
             int count = mainChildFragmentsList.size();
@@ -817,8 +830,8 @@ public class FragOperManager implements Serializable {
                     if (mainChildChildFragment.isHidden()) {
                         if (DEBUG)
                             MLog.d(TAG, "changeFragment() show" +
-                                    " mCurShowFragment: " +
-                                    mCurShowFragment.getClass().getSimpleName() +
+                                    " mCurShowMainFragment: " +
+                                    mCurShowMainFragment.getClass().getSimpleName() +
                                     " mainChildFragment: " +
                                     mainChildFragment.getClass().getSimpleName() +
                                     " mainChildChildFragment: " +
@@ -830,18 +843,18 @@ public class FragOperManager implements Serializable {
             }
             if (DEBUG)
                 MLog.d(TAG, "changeFragment() show" +
-                        " mCurShowFragment: " +
-                        mCurShowFragment.getClass().getSimpleName() +
+                        " mCurShowMainFragment: " +
+                        mCurShowMainFragment.getClass().getSimpleName() +
                         " mainChildFragment: " +
                         mainChildFragment.getClass().getSimpleName());
             fTransaction.show(mainChildFragment);
         } else {
             if (DEBUG)
                 MLog.d(TAG, "changeFragment() show" +
-                        " mCurShowFragment: " +
-                        mCurShowFragment.getClass().getSimpleName());
+                        " mCurShowMainFragment: " +
+                        mCurShowMainFragment.getClass().getSimpleName());
             //showFragmentUseAnimations(fTransaction);
-            fTransaction.show(mCurShowFragment);
+            fTransaction.show(mCurShowMainFragment);
         }
         fTransaction.commit();
 
@@ -1000,20 +1013,26 @@ public class FragOperManager implements Serializable {
                 // 不需要先加载一个Fragment
                 switch (exitType) {
                     case HIDE:
-                        result = hide_scene_1(fManager, fTransaction, fragment);
+                        result = hide_scene_1(
+                                fManager,
+                                fTransaction,
+                                fragment);
                         break;
                     case POP_BACK_STACK:
-                        result = pop_back_stack_scene_1(fManager, fTransaction, fragment);
+                        result = pop_back_stack_scene_1(
+                                fManager,
+                                fTransaction,
+                                fragment);
                         break;
                     default:
                 }
                 break;
 
             case SCENE_MORE_MAIN_FRAGMENT:
-                if (mCurShowFragment == null
+                if (mCurShowMainFragment == null
                         || mMoreMainFragmentsMap == null
                         || mMoreMainFragmentsMap.isEmpty()
-                        || !mMoreMainFragmentsMap.containsKey(mCurShowFragment)) {
+                        || !mMoreMainFragmentsMap.containsKey(mCurShowMainFragment)) {
                     return -1;
                 }
                 switch (exitType) {
@@ -1021,7 +1040,7 @@ public class FragOperManager implements Serializable {
 
                         break;
                     case POP_BACK_STACK:
-                        pop_back_stack_scene_2(
+                        result = pop_back_stack_scene_2(
                                 fManager,
                                 fTransaction,
                                 fragment);
@@ -1178,7 +1197,7 @@ public class FragOperManager implements Serializable {
             FragmentManager fManager,
             FragmentTransaction fTransaction,
             Fragment popMainChildFragment) {
-        List<Fragment> mainChildFragmentsList = mMoreMainFragmentsMap.get(mCurShowFragment);
+        List<Fragment> mainChildFragmentsList = mMoreMainFragmentsMap.get(mCurShowMainFragment);
         if (mainChildFragmentsList == null
                 || mainChildFragmentsList.isEmpty()
                 || !mainChildFragmentsList.contains(popMainChildFragment)) {
@@ -1190,135 +1209,125 @@ public class FragOperManager implements Serializable {
                 mDirectNestedFragmentsMap.get(popMainChildFragment);
         if (mainChildChildFragmentsList != null
                 && !mainChildChildFragmentsList.isEmpty()) {
+            FragmentManager fragmentManager =
+                    popMainChildFragment.getChildFragmentManager();
+            FragmentTransaction fragmentTransaction =
+                    fragmentManager.beginTransaction();
             for (Fragment popMainChildChildFragment : mainChildChildFragmentsList) {
-                if (!popMainChildChildFragment.isHidden()) {
-                    if (DEBUG)
-                        MLog.d(TAG, "pop_back_stack_scene_2() remove" +
-                                " mCurShowFragment: " +
-                                mCurShowFragment.getClass().getSimpleName() +
-                                " popMainChildFragment: " +
-                                popMainChildFragment.getClass().getSimpleName() +
-                                " popMainChildChildFragment: " +
-                                popMainChildChildFragment.getClass().getSimpleName());
-                    FragmentManager manager = mCurShowActivity.getFragmentManager();
-                    FragmentTransaction transaction = manager.beginTransaction();
-                    manager.popBackStackImmediate(
-                            popMainChildChildFragment.getClass().getSimpleName(), 1);
-                    transaction.commitNowAllowingStateLoss();
-                    // fManager.popBackStack();
-                    // fManager.popBackStackImmediate();
-                }
+                fragmentManager.popBackStack();
+                if (DEBUG)
+                    MLog.d(TAG, "pop_back_stack_scene_2() remove" +
+                            " mCurShowMainFragment: " +
+                            mCurShowMainFragment.getClass().getSimpleName() +
+                            " popMainChildFragment: " +
+                            popMainChildFragment.getClass().getSimpleName() +
+                            " popMainChildChildFragment: " +
+                            popMainChildChildFragment.getClass().getSimpleName());
             }
+            fragmentTransaction.commit();
         }
 
         if (DEBUG)
             MLog.d(TAG, "pop_back_stack_scene_2() popBackStack" +
-                    " mCurShowFragment: " +
-                    mCurShowFragment.getClass().getSimpleName() +
+                    " mCurShowMainFragment: " +
+                    mCurShowMainFragment.getClass().getSimpleName() +
                     " popMainChildFragment: " +
                     popMainChildFragment.getClass().getSimpleName());
-        FragmentManager manager = mCurShowActivity.getFragmentManager();
-        FragmentTransaction transaction = manager.beginTransaction();
-        manager.popBackStackImmediate(popMainChildFragment.getClass().getSimpleName(), 1);
-        transaction.commitNowAllowingStateLoss();
+
         // pop掉要处理的Fragment
-        // fManager.popBackStack();
-        // fManager.popBackStackImmediate();
+        fManager.popBackStack();
         mainChildFragmentsList.remove(popMainChildFragment);
         mDirectNestedFragmentsMap.remove(popMainChildFragment);
 
         int count = mainChildFragmentsList.size();
         if (count < 1) {
             // 当前MainFragment下面没有子类Fragment了
-            if (mCurShowFragment.isHidden()) {
+            if (mCurShowMainFragment.isHidden()) {
                 if (DEBUG)
                     MLog.d(TAG, "pop_back_stack_scene_2() show" +
-                            " mCurShowFragment: " +
-                            mCurShowFragment.getClass().getSimpleName());
-                manager = mCurShowActivity.getFragmentManager();
-                transaction = manager.beginTransaction();
-                transaction.show(mCurShowFragment);
-                transaction.commitNowAllowingStateLoss();
-                // showFragmentUseAnimations(transaction);
-                // fTransaction.show(mCurShowFragment);
+                            " mCurShowMainFragment: " +
+                            mCurShowMainFragment.getClass().getSimpleName());
+                fTransaction.show(mCurShowMainFragment);
             }
             return 0;
         }
 
         // 处理当前MainFragment下面的其他子类
-        for (int i = 0; i < count; i++) {
-            Fragment hideFragment = mainChildFragmentsList.get(i);
-            if (!hideFragment.isHidden()) {
-                mainChildChildFragmentsList = mDirectNestedFragmentsMap.get(hideFragment);
+        for (int i = 0; i < count - 1; i++) {
+            Fragment shouldHideFragment = mainChildFragmentsList.get(i);
+            if (!shouldHideFragment.isHidden()) {
+                mainChildChildFragmentsList = mDirectNestedFragmentsMap.get(shouldHideFragment);
                 if (mainChildChildFragmentsList != null
                         && !mainChildChildFragmentsList.isEmpty()) {
-                    for (Fragment tempFragment : mainChildChildFragmentsList) {
-                        if (!tempFragment.isHidden()) {
-                            if (DEBUG)
-                                MLog.d(TAG, "pop_back_stack_scene_2() hide" +
-                                        " mCurShowFragment: " +
-                                        mCurShowFragment.getClass().getSimpleName() +
-                                        " popMainChildFragment: " +
-                                        popMainChildFragment.getClass().getSimpleName() +
-                                        " popMainChildChildFragment: " +
-                                        tempFragment.getClass().getSimpleName());
-                            manager = mCurShowActivity.getFragmentManager();
-                            transaction = manager.beginTransaction();
-                            transaction.hide(tempFragment);
-                            transaction.commitNowAllowingStateLoss();
-                            // fTransaction.hide(tempFragment);
+                    FragmentManager fragmentManager =
+                            popMainChildFragment.getChildFragmentManager();
+                    FragmentTransaction fragmentTransaction =
+                            fragmentManager.beginTransaction();
+                    for (Fragment mainChildChildFragment : mainChildChildFragmentsList) {
+                        if (DEBUG)
+                            MLog.d(TAG, "pop_back_stack_scene_2() hide" +
+                                    " mCurShowMainFragment: " +
+                                    mCurShowMainFragment.getClass().getSimpleName() +
+                                    " shouldHideFragment: " +
+                                    shouldHideFragment.getClass().getSimpleName() +
+                                    " hideMainChildChildFragment: " +
+                                    mainChildChildFragment.getClass().getSimpleName());
+                        if (mainChildChildFragment.getId() <= 0) {
+                            if (!mainChildChildFragment.isHidden()) {
+                                fragmentTransaction.hide(mainChildChildFragment);
+                            }
+                        } else {
+                            fragmentManager.popBackStack();
                         }
                     }
+                    fragmentTransaction.commit();
                 }
+
                 if (DEBUG)
                     MLog.d(TAG, "pop_back_stack_scene_2() hide" +
-                            " mCurShowFragment: " +
-                            mCurShowFragment.getClass().getSimpleName() +
-                            " popMainChildFragment: " +
-                            popMainChildFragment.getClass().getSimpleName());
-                manager = mCurShowActivity.getFragmentManager();
-                transaction = manager.beginTransaction();
-                transaction.hide(hideFragment);
-                transaction.commitNowAllowingStateLoss();
-                // fTransaction.hide(hideFragment);
+                            " mCurShowMainFragment: " +
+                            mCurShowMainFragment.getClass().getSimpleName() +
+                            " shouldHideFragment: " +
+                            shouldHideFragment.getClass().getSimpleName());
+                fTransaction.hide(shouldHideFragment);
             }
         }
+
         //
         Fragment showFragment = mainChildFragmentsList.get(count - 1);
         mainChildChildFragmentsList = mDirectNestedFragmentsMap.get(showFragment);
         if (mainChildChildFragmentsList != null
                 && !mainChildChildFragmentsList.isEmpty()) {
-            for (Fragment tempFragment : mainChildChildFragmentsList) {
-                if (tempFragment.isHidden()) {
+            FragmentManager fragmentManager =
+                    popMainChildFragment.getChildFragmentManager();
+            FragmentTransaction fragmentTransaction =
+                    fragmentManager.beginTransaction();
+            for (Fragment mainChildChildFragment : mainChildChildFragmentsList) {
+                if (mainChildChildFragment.isHidden()) {
                     if (DEBUG)
                         MLog.d(TAG, "pop_back_stack_scene_2() show" +
-                                " mCurShowFragment: " +
-                                mCurShowFragment.getClass().getSimpleName() +
+                                " mCurShowMainFragment: " +
+                                mCurShowMainFragment.getClass().getSimpleName() +
                                 " showMainChildFragment: " +
                                 showFragment.getClass().getSimpleName() +
                                 " showMainChildChildFragment: " +
-                                tempFragment.getClass().getSimpleName());
-                    manager = mCurShowActivity.getFragmentManager();
-                    transaction = manager.beginTransaction();
-                    transaction.show(tempFragment);
-                    transaction.commitNowAllowingStateLoss();
-                    // fTransaction.show(tempFragment);
+                                mainChildChildFragment.getClass().getSimpleName());
+                    if (mainChildChildFragment.getId() <= 0) {
+                        fragmentTransaction.show(mainChildChildFragment);
+                    }
                 }
             }
+            fragmentTransaction.commit();
         }
+
         if (showFragment.isHidden()) {
             if (DEBUG)
                 MLog.d(TAG, "pop_back_stack_scene_2() show" +
-                        " mCurShowFragment: " +
-                        mCurShowFragment.getClass().getSimpleName() +
+                        " mCurShowMainFragment: " +
+                        mCurShowMainFragment.getClass().getSimpleName() +
                         " showMainChildFragment: " +
                         showFragment.getClass().getSimpleName());
-            manager = mCurShowActivity.getFragmentManager();
-            transaction = manager.beginTransaction();
-            transaction.show(showFragment);
-            transaction.commitNowAllowingStateLoss();
-            // showFragmentUseAnimations(fTransaction);
-            // fTransaction.show(showFragment);
+            fTransaction.show(showFragment);
         }
 
         return 0;
