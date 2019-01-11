@@ -6,3 +6,4 @@ app/iml
 app/build
 build
 gradle
+local.properties
