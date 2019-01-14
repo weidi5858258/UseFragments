@@ -15,8 +15,10 @@ import com.weidi.usefragments.test_fragment.scene1.BFragment;
 import com.weidi.usefragments.test_fragment.scene1.CFragment;
 import com.weidi.usefragments.test_fragment.scene1.DFragment;
 import com.weidi.usefragments.test_fragment.scene1.EFragment;
+import com.weidi.usefragments.test_fragment.scene1.TestViewFragment;
 
 import java.util.HashMap;
+import java.util.List;
 
 /***
  场景:
@@ -63,28 +65,46 @@ public class MainActivity2 extends BaseActivity
             @Override
             public void onClick(View v) {
                 mJumpBtn.setVisibility(View.GONE);
-                FragOperManager.getInstance().enter(new AFragment());
+                FragOperManager.getInstance().enter(new TestViewFragment());
             }
         });
     }
 
     @Override
-    public void onStart() {
-        super.onStart();
-        if (DEBUG)
-            Log.d(TAG, "onStart()");
-    }
-
-    @Override
-    protected void onRestart() {
+    public void onRestart() {
         super.onRestart();
+        List<Fragment> parentFragmentsList =
+                FragOperManager.getInstance().getParentFragmentsList(this);
+        if (parentFragmentsList != null && !parentFragmentsList.isEmpty()) {
+            return;
+        }
+
         if (DEBUG)
             Log.d(TAG, "onRestart()");
     }
 
     @Override
+    public void onStart() {
+        super.onStart();
+        List<Fragment> parentFragmentsList =
+                FragOperManager.getInstance().getParentFragmentsList(this);
+        if (parentFragmentsList != null && !parentFragmentsList.isEmpty()) {
+            return;
+        }
+
+        if (DEBUG)
+            Log.d(TAG, "onStart()");
+    }
+
+    @Override
     public void onResume() {
         super.onResume();
+        List<Fragment> parentFragmentsList =
+                FragOperManager.getInstance().getParentFragmentsList(this);
+        if (parentFragmentsList != null && !parentFragmentsList.isEmpty()) {
+            return;
+        }
+
         if (DEBUG)
             Log.d(TAG, "onResume()");
         /***
@@ -130,12 +150,18 @@ public class MainActivity2 extends BaseActivity
             this.mSavedInstanceState = null;
         }*/
 
-//        mJumpBtn.setVisibility(View.VISIBLE);
+        mJumpBtn.setVisibility(View.VISIBLE);
     }
 
     @Override
     public void onPause() {
         super.onPause();
+        List<Fragment> parentFragmentsList =
+                FragOperManager.getInstance().getParentFragmentsList(this);
+        if (parentFragmentsList != null && !parentFragmentsList.isEmpty()) {
+            return;
+        }
+
         if (DEBUG)
             Log.d(TAG, "onPause()");
     }
@@ -143,6 +169,12 @@ public class MainActivity2 extends BaseActivity
     @Override
     public void onStop() {
         super.onStop();
+        List<Fragment> parentFragmentsList =
+                FragOperManager.getInstance().getParentFragmentsList(this);
+        if (parentFragmentsList != null && !parentFragmentsList.isEmpty()) {
+            return;
+        }
+
         if (DEBUG)
             Log.d(TAG, "onStop()");
     }
@@ -225,10 +257,6 @@ public class MainActivity2 extends BaseActivity
         // finger -keyb/v/h -nav/h s.265}
         if (DEBUG)
             Log.d(TAG, "onConfigurationChanged() newConfig: " + newConfig);
-    }
-
-    public void onResume_() {
-        mJumpBtn.setVisibility(View.VISIBLE);
     }
 
     @Override

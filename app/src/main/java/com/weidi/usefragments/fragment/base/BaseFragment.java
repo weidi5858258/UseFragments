@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.app.Fragment;
 import android.content.Context;
 import android.os.Bundle;
+import android.support.annotation.CallSuper;
 import android.support.annotation.Nullable;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -144,6 +145,9 @@ public abstract class BaseFragment extends Fragment {
     @Override
     public void onStart() {
         super.onStart();
+        if (isHidden()) {
+            return;
+        }
         if (DEBUG)
             MLog.d(TAG, "onStart(): " + this);
     }
@@ -155,6 +159,9 @@ public abstract class BaseFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
+        if (isHidden()) {
+            return;
+        }
         if (DEBUG)
             MLog.d(TAG, "onResume(): " + this);
         onShow();
@@ -162,11 +169,32 @@ public abstract class BaseFragment extends Fragment {
 
     /*********************************
      * Paused
+     *
+     * 总结:
+     * onHide()中做的事跟onPause()和onStop()中做的事相当一样.
+     *
+     * 1.
+     * 在Fragment中打开另外一个Fragment(不管这个Fragment是不是被嵌套的)时,
+     * onPause()和onStop()不会被调用.
+     * 只会调用onHide().
+     * 2.
+     * 在Fragment中打开一个Activity,那么
+     * onPause()和onStop()才会被调用.
+     * 不会调用onHide().
+     * 3.
+     * 当前Fragment被pop后,先调用onHide(),
+     * 然后是onPause(),onStop()等生命周期方法.
+     * 4.
+     * 因此在onPause()和onStop()中加了isHidden()判断后,
+     * onPause(),onStop()这两个方法里的代码就不需要再次执行了.
      *********************************/
 
     @Override
     public void onPause() {
         super.onPause();
+        if (isHidden()) {
+            return;
+        }
         if (DEBUG)
             MLog.d(TAG, "onPause(): " + this);
     }
@@ -178,6 +206,9 @@ public abstract class BaseFragment extends Fragment {
     @Override
     public void onStop() {
         super.onStop();
+        if (isHidden()) {
+            return;
+        }
         if (DEBUG)
             MLog.d(TAG, "onStop(): " + this);
     }
@@ -206,6 +237,20 @@ public abstract class BaseFragment extends Fragment {
         super.onDetach();
         if (DEBUG)
             MLog.d(TAG, "onDetach(): " + this);
+    }
+
+    @Override
+    public void onLowMemory() {
+        super.onLowMemory();
+        if (DEBUG)
+            MLog.d(TAG, "onLowMemory(): " + this);
+    }
+
+    @Override
+    public void onTrimMemory(int level) {
+        super.onTrimMemory(level);
+        if (DEBUG)
+            MLog.d(TAG, "onTrimMemory(): " + this + " level: " + level);
     }
 
     /**
@@ -250,7 +295,7 @@ public abstract class BaseFragment extends Fragment {
                 || container_scene == null) {
             return;
         }
-        switch (container_scene[1]){
+        switch (container_scene[1]) {
             case FragOperManager.SCENE_NO_OR_ONE_MAIN_FRAGMENT:
                 if (FragOperManager.getInstance().getParentFragmentsList(mActivity) == null
                         || FragOperManager.getInstance().getParentFragmentsList(mActivity)

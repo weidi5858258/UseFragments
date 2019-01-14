@@ -108,7 +108,7 @@ public class MainActivity1 extends BaseActivity
         main4Fragment = new Main4Fragment();
         mCurShowMainFragment = main1Fragment;
         mPreShowMainFragment = main1Fragment;
-        FragOperManager.getInstance().setCurShowFragment(
+        FragOperManager.getInstance().setCurUsedFragment(
                 mCurShowMainFragment);
         FragOperManager.getInstance().enter2(main4Fragment);
         FragOperManager.getInstance().enter2(main3Fragment);
@@ -122,17 +122,17 @@ public class MainActivity1 extends BaseActivity
     }
 
     @Override
+    public void onRestart() {
+        super.onRestart();
+        if (DEBUG)
+            Log.d(TAG, "onRestart()");
+    }
+
+    @Override
     public void onStart() {
         super.onStart();
         if (DEBUG)
             Log.d(TAG, "onStart()");
-    }
-
-    @Override
-    protected void onRestart() {
-        super.onRestart();
-        if (DEBUG)
-            Log.d(TAG, "onRestart()");
     }
 
     @Override
@@ -234,10 +234,6 @@ public class MainActivity1 extends BaseActivity
             Log.d(TAG, "onConfigurationChanged() newConfig: " + newConfig);
     }
 
-    public void onResume_() {
-
-    }
-
     @Override
     public void setSelectedFragment(BaseFragment selectedFragment, String fragmentTag) {
         if (DEBUG)
@@ -275,7 +271,7 @@ public class MainActivity1 extends BaseActivity
                         return;
                     }
                     mPreShowMainFragment = mCurShowMainFragment;
-                    FragOperManager.getInstance().setCurShowFragment(mCurShowMainFragment);
+                    FragOperManager.getInstance().setCurUsedFragment(mCurShowMainFragment);
                     FragOperManager.getInstance().changeFragment();
                 }
             };

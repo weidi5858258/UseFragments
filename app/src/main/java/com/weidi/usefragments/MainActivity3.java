@@ -15,8 +15,10 @@ import com.weidi.usefragments.test_fragment.scene1.CFragment;
 import com.weidi.usefragments.test_fragment.scene1.DFragment;
 import com.weidi.usefragments.test_fragment.scene1.EFragment;
 import com.weidi.usefragments.test_fragment.scene1.MainFragment;
+import com.weidi.usefragments.test_fragment.scene1.TestViewFragment;
 
 import java.util.HashMap;
+import java.util.List;
 
 /***
  场景:
@@ -56,26 +58,47 @@ public class MainActivity3 extends BaseActivity
 
         }
 
-        FragOperManager.getInstance().enter(new MainFragment());
+        FragOperManager.getInstance().enter(new TestViewFragment());
     }
 
     @Override
-    public void onStart() {
-        super.onStart();
-        if (DEBUG)
-            Log.d(TAG, "onStart()");
-    }
-
-    @Override
-    protected void onRestart() {
+    public void onRestart() {
         super.onRestart();
+        List<Fragment> parentFragmentsList =
+                FragOperManager.getInstance().getParentFragmentsList(this);
+        if (parentFragmentsList != null
+                && parentFragmentsList.size() != 1) {
+            return;
+        }
+
         if (DEBUG)
             Log.d(TAG, "onRestart()");
     }
 
     @Override
+    public void onStart() {
+        super.onStart();
+        List<Fragment> parentFragmentsList =
+                FragOperManager.getInstance().getParentFragmentsList(this);
+        if (parentFragmentsList != null
+                && parentFragmentsList.size() != 1) {
+            return;
+        }
+
+        if (DEBUG)
+            Log.d(TAG, "onStart()");
+    }
+
+    @Override
     public void onResume() {
         super.onResume();
+        List<Fragment> parentFragmentsList =
+                FragOperManager.getInstance().getParentFragmentsList(this);
+        if (parentFragmentsList != null
+                && parentFragmentsList.size() != 1) {
+            return;
+        }
+
         if (DEBUG)
             Log.d(TAG, "onResume()");
         /***
@@ -125,6 +148,13 @@ public class MainActivity3 extends BaseActivity
     @Override
     public void onPause() {
         super.onPause();
+        List<Fragment> parentFragmentsList =
+                FragOperManager.getInstance().getParentFragmentsList(this);
+        if (parentFragmentsList != null
+                && parentFragmentsList.size() != 1) {
+            return;
+        }
+
         if (DEBUG)
             Log.d(TAG, "onPause()");
     }
@@ -132,6 +162,13 @@ public class MainActivity3 extends BaseActivity
     @Override
     public void onStop() {
         super.onStop();
+        List<Fragment> parentFragmentsList =
+                FragOperManager.getInstance().getParentFragmentsList(this);
+        if (parentFragmentsList != null
+                && parentFragmentsList.size() != 1) {
+            return;
+        }
+
         if (DEBUG)
             Log.d(TAG, "onStop()");
     }
@@ -208,14 +245,12 @@ public class MainActivity3 extends BaseActivity
     @Override
     public void onConfigurationChanged(Configuration newConfig) {
         super.onConfigurationChanged(newConfig);
-        // newConfig: {1.0 460mcc1mnc [zh_CN] ldltr sw360dp w640dp h336dp 320dpi nrml long land finger -keyb/v/h -nav/h s.264}
-        // newConfig: {1.0 460mcc1mnc [zh_CN] ldltr sw360dp w360dp h616dp 320dpi nrml long port finger -keyb/v/h -nav/h s.265}
+        // newConfig: {1.0 460mcc1mnc [zh_CN] ldltr sw360dp w640dp h336dp 320dpi nrml long land
+        // finger -keyb/v/h -nav/h s.264}
+        // newConfig: {1.0 460mcc1mnc [zh_CN] ldltr sw360dp w360dp h616dp 320dpi nrml long port
+        // finger -keyb/v/h -nav/h s.265}
         if (DEBUG)
             Log.d(TAG, "onConfigurationChanged() newConfig: " + newConfig);
-    }
-
-    public void onResume_() {
-
     }
 
     @Override

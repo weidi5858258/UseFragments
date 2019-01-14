@@ -11,7 +11,7 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
         <activity
-            android:name=".MainActivity1"
+            android:name=".MainActivity3"
             android:configChanges="keyboardHidden|screenLayout|screenSize|smallestScreenSize|orientation">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -21,7 +21,7 @@
         </activity>
 
         <activity
-            android:name=".MainActivity3"
+            android:name=".MainActivity2"
             android:configChanges="keyboardHidden|screenLayout|screenSize|smallestScreenSize|orientation"/>
     </application>
 

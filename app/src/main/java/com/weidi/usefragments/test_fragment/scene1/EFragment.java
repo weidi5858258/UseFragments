@@ -98,6 +98,9 @@ public class EFragment extends BaseFragment {
     @Override
     public void onStart() {
         super.onStart();
+        if (isHidden()) {
+            return;
+        }
         if (DEBUG)
             MLog.d(TAG, "onStart(): " + this);
     }
@@ -109,6 +112,9 @@ public class EFragment extends BaseFragment {
     @Override
     public void onResume() {
         super.onResume();
+        if (isHidden()) {
+            return;
+        }
         if (DEBUG)
             MLog.d(TAG, "onResume(): " + this);
         onShow();
@@ -121,6 +127,9 @@ public class EFragment extends BaseFragment {
     @Override
     public void onPause() {
         super.onPause();
+        if (isHidden()) {
+            return;
+        }
         if (DEBUG)
             MLog.d(TAG, "onPause(): " + this);
     }
@@ -132,6 +141,9 @@ public class EFragment extends BaseFragment {
     @Override
     public void onStop() {
         super.onStop();
+        if (isHidden()) {
+            return;
+        }
         if (DEBUG)
             MLog.d(TAG, "onStop(): " + this);
     }

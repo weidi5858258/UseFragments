@@ -19,18 +19,16 @@ import com.weidi.usefragments.tool.MLog;
 /***
  *
  */
-public class CFragment extends BaseFragment {
+public class TestViewFragment extends BaseFragment {
 
     private static final String TAG =
-            CFragment.class.getSimpleName();
+            TestViewFragment.class.getSimpleName();
 
     private static final boolean DEBUG = true;
-    @InjectView(R.id.title_tv)
-    private TextView mTitleView;
     @InjectView(R.id.jump_btn)
     private Button mJumpBtn;
 
-    public CFragment() {
+    public TestViewFragment() {
         super();
     }
 
@@ -51,29 +49,6 @@ public class CFragment extends BaseFragment {
         if (DEBUG)
             MLog.d(TAG, "onCreate(): " + this
                     + " savedInstanceState: " + savedInstanceState);
-
-        /*FragOperManager.getInstance().enter(
-                this,
-                new C_1Fragment(),
-                R.id.fragment1_container_layout);
-        FragOperManager.getInstance().enter(
-                this,
-                new C_2Fragment(),
-                R.id.fragment2_container_layout);
-        FragOperManager.getInstance().enter(
-                this,
-                new C_3Fragment(),
-                R.id.fragment3_container_layout);
-        FragOperManager.getInstance().enter(
-                this,
-                new C_4Fragment(),
-                R.id.fragment4_container_layout);
-        FragOperManager.getInstance().enter(
-                this,
-                new C_5Fragment());*/
-        FragOperManager.getInstance().enter(
-                this,
-                new C_5Fragment());
     }
 
     @Override
@@ -222,25 +197,7 @@ public class CFragment extends BaseFragment {
     private void onShow() {
         if (DEBUG)
             MLog.d(TAG, "onShow(): " + this);
-        mTitleView.setText(CFragment.class.getSimpleName());
         mJumpBtn.setText("跳转到");
-
-        FragOperManager.getInstance().enter(
-                this,
-                new C_1Fragment(),
-                R.id.fragment1_container_layout);
-        FragOperManager.getInstance().enter(
-                this,
-                new C_2Fragment(),
-                R.id.fragment2_container_layout);
-        FragOperManager.getInstance().enter(
-                this,
-                new C_3Fragment(),
-                R.id.fragment3_container_layout);
-        FragOperManager.getInstance().enter(
-                this,
-                new C_4Fragment(),
-                R.id.fragment4_container_layout);
     }
 
     private void onHide() {
@@ -250,7 +207,7 @@ public class CFragment extends BaseFragment {
 
     @Override
     protected int provideLayout() {
-        return R.layout.fragment_one_layout;
+        return R.layout.fragment_test_view;
     }
 
     @Override
@@ -260,14 +217,13 @@ public class CFragment extends BaseFragment {
         mJumpBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                FragOperManager.getInstance().enter(new DFragment());
+                FragOperManager.getInstance().enter(new AFragment());
             }
         });
     }
 
     @Override
     public boolean onBackPressed() {
-        return false;
+        return true;
     }
-
 }
