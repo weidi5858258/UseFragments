@@ -5,13 +5,18 @@ import android.app.Activity;
 import android.app.Fragment;
 import android.app.FragmentManager;
 import android.app.FragmentTransaction;
+import android.os.Handler;
+import android.os.Looper;
 import android.text.TextUtils;
 
 import com.weidi.usefragments.BaseActivity;
 import com.weidi.usefragments.R;
+import com.weidi.usefragments.fragment.base.BaseFragment;
 import com.weidi.usefragments.tool.MLog;
 
 import java.io.Serializable;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -22,6 +27,7 @@ import java.util.Map;
 //import android.support.v4.app.FragmentActivity;
 //import android.support.v4.app.FragmentManager;
 //import android.support.v4.app.FragmentTransaction;
+
 /***
  Activity中使用Fragment一般有三种情况:
  1.
@@ -138,6 +144,8 @@ public class FragOperManager implements Serializable {
     private Map<Fragment, List<Fragment>> mIndirectNestedFragmentsMap;
     // 只记录总的Fragment数量
     //private List<Fragment> mAllFragmentsList;
+
+    private Handler mUiHandler = new Handler(Looper.getMainLooper());
 
     private FragOperManager() {
         mActivityContainersMap = new LinkedHashMap<Activity, Integer[]>();
@@ -1366,6 +1374,17 @@ public class FragOperManager implements Serializable {
         }
 
         Fragment shouldShowFragment = parentFragmentsList.get(count - 1);
+        if (shouldShowFragment.isHidden()) {
+            if (DEBUG)
+                MLog.d(TAG, "pop_back_stack_scene_1() show" +
+                        " mCurUsedActivity: " +
+                        mCurUsedActivity.getClass().getSimpleName() +
+                        " shouldShowFragment: " +
+                        shouldShowFragment.getClass().getSimpleName());
+
+            showFragmentUseAnimations(fTransaction);
+            fTransaction.show(shouldShowFragment);
+        }
         directNestedFragmentsList = mDirectNestedFragmentsMap.get(shouldShowFragment);
         if (directNestedFragmentsList != null
                 && !directNestedFragmentsList.isEmpty()) {
@@ -1389,17 +1408,6 @@ public class FragOperManager implements Serializable {
             }
             fragmentTransaction.commit();
         }
-        if (shouldShowFragment.isHidden()) {
-            if (DEBUG)
-                MLog.d(TAG, "pop_back_stack_scene_1() show" +
-                        " mCurUsedActivity: " +
-                        mCurUsedActivity.getClass().getSimpleName() +
-                        " shouldShowFragment: " +
-                        shouldShowFragment.getClass().getSimpleName());
-
-            showFragmentUseAnimations(fTransaction);
-            fTransaction.show(shouldShowFragment);
-        }
 
         return 0;
     }
@@ -1417,7 +1425,7 @@ public class FragOperManager implements Serializable {
     private int pop_back_stack_scene_2(
             FragmentManager fManager,
             FragmentTransaction fTransaction,
-            Fragment shouldPopMainChildFragment) {
+            final Fragment shouldPopMainChildFragment) {
         List<Fragment> mainChildFragmentsList = mMoreMainFragmentsMap.get(mCurUsedMainFragment);
         if (mainChildFragmentsList == null
                 || mainChildFragmentsList.isEmpty()
@@ -1460,11 +1468,24 @@ public class FragOperManager implements Serializable {
                     shouldPopMainChildFragment.getClass().getSimpleName());
 
         // 这里是硬伤(没有被弹出去)
-        FragmentManager fManager_ = mCurUsedActivity.getFragmentManager();
+        /*FragmentManager fManager_ = mCurUsedActivity.getFragmentManager();
         FragmentTransaction fTransaction_ = fManager_.beginTransaction();
+        // 方式一(不灵)
         fManager_.popBackStack();
-        // fTransaction_.remove(shouldPopMainChildFragment);
-        fTransaction_.commit();
+        fTransaction_.commit();*/
+
+        /*FragmentManager fManager_ = mCurUsedActivity.getFragmentManager();
+        FragmentTransaction fTransaction_ = fManager_.beginTransaction();
+        // 方式二(暂时代替方式)
+        if (!shouldPopMainChildFragment.isHidden()) {
+            fTransaction_.hide(shouldPopMainChildFragment);
+        }
+        fTransaction_.remove(shouldPopMainChildFragment);
+        fTransaction_.commit();*/
+
+        if (!shouldPopMainChildFragment.isHidden()) {
+            fTransaction.hide(shouldPopMainChildFragment);
+        }
 
         mainChildFragmentsList.remove(shouldPopMainChildFragment);
         mDirectNestedFragmentsMap.remove(shouldPopMainChildFragment);
@@ -1481,6 +1502,14 @@ public class FragOperManager implements Serializable {
                             mCurUsedMainFragment.getClass().getSimpleName());
                 fTransaction.show(mCurUsedMainFragment);
             }
+            fTransaction.remove(shouldPopMainChildFragment);
+            fTransaction.detach(shouldPopMainChildFragment);
+            mUiHandler.postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    onDestroyAndOnDetach(shouldPopMainChildFragment);
+                }
+            }, 50);
             return 0;
         }
 
@@ -1584,8 +1613,35 @@ public class FragOperManager implements Serializable {
             }
             fragmentTransaction.commit();
         }
+        fTransaction.remove(shouldPopMainChildFragment);
+        mUiHandler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                onDestroyAndOnDetach(shouldPopMainChildFragment);
+            }
+        }, 50);
 
         return 0;
+    }
+
+    private void onDestroyAndOnDetach(Fragment shouldPopMainChildFragment) {
+        try {
+            Class clazz = Class.forName("android.app.Fragment");
+            Method performDestroy = clazz.getDeclaredMethod("performDestroy");
+            Method performDetach = clazz.getDeclaredMethod("performDetach");
+            performDestroy.setAccessible(true);
+            performDetach.setAccessible(true);
+            performDestroy.invoke(shouldPopMainChildFragment);
+            performDetach.invoke(shouldPopMainChildFragment);
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        } catch (NoSuchMethodException e) {
+            e.printStackTrace();
+        } catch (IllegalAccessException e) {
+            e.printStackTrace();
+        } catch (InvocationTargetException e) {
+            e.printStackTrace();
+        }
     }
 
     /*private void popBackStackAll() {
