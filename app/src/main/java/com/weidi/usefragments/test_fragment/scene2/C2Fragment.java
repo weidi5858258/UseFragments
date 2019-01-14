@@ -258,7 +258,7 @@ public class C2Fragment extends BaseFragment {
         mJumpBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                FragOperManager.getInstance().enter3(new DFragment());
+                FragOperManager.getInstance().enter3(new D2Fragment());
             }
         });
     }

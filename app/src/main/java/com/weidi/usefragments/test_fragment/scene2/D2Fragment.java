@@ -222,7 +222,7 @@ public class D2Fragment extends BaseFragment {
         mJumpBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                FragOperManager.getInstance().enter3(new EFragment());
+                FragOperManager.getInstance().enter3(new E2Fragment());
             }
         });
     }

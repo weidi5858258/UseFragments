@@ -1,6 +1,7 @@
 package com.weidi.usefragments.test_fragment.scene2;
 
 import android.app.Activity;
+import android.content.Intent;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.view.LayoutInflater;
@@ -9,11 +10,11 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.TextView;
 
+import com.weidi.usefragments.BaseActivity;
+import com.weidi.usefragments.MainActivity2;
 import com.weidi.usefragments.R;
-import com.weidi.usefragments.fragment.FragOperManager;
 import com.weidi.usefragments.fragment.base.BaseFragment;
 import com.weidi.usefragments.inject.InjectView;
-import com.weidi.usefragments.test_fragment.scene1.CFragment;
 import com.weidi.usefragments.tool.MLog;
 
 
@@ -221,7 +222,10 @@ public class E2Fragment extends BaseFragment {
         mJumpBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                FragOperManager.getInstance().enter3(new CFragment());
+                // FragOperManager.getInstance().enter3(new CFragment());
+
+                ((BaseActivity)getActivity()).enterActivity();
+                startActivity(new Intent(getActivity(), MainActivity2.class));
             }
         });
     }

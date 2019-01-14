@@ -870,8 +870,8 @@ public class FragOperManager implements Serializable {
             return -1;
         }
 
-        FragmentManager fManager = mCurUsedActivity.getFragmentManager();
-        FragmentTransaction fTransaction = fManager.beginTransaction();
+        FragmentManager fManager = null;
+        FragmentTransaction fTransaction = null;
         List<Fragment> mainChildFragmentsList = null;
         for (Fragment shouldHideMainFragment : mMoreMainFragmentsMap.keySet()) {
             if (shouldHideMainFragment == null) {
@@ -939,7 +939,11 @@ public class FragOperManager implements Serializable {
                                 shouldHideMainFragment.getClass().getSimpleName() +
                                 " shouldHideMainChildFragment: " +
                                 shouldHideMainChildFragment.getClass().getSimpleName());
+
+                    fManager = mCurUsedActivity.getFragmentManager();
+                    fTransaction = fManager.beginTransaction();
                     fTransaction.hide(shouldHideMainChildFragment);
+                    fTransaction.commit();
                 }
             }
             if (!shouldHideMainFragment.isHidden()) {
@@ -949,7 +953,11 @@ public class FragOperManager implements Serializable {
                             mCurUsedActivity.getClass().getSimpleName() +
                             " shouldHideMainFragment: " +
                             shouldHideMainFragment.getClass().getSimpleName());
+
+                fManager = mCurUsedActivity.getFragmentManager();
+                fTransaction = fManager.beginTransaction();
                 fTransaction.hide(shouldHideMainFragment);
+                fTransaction.commit();
             }
         }
 
@@ -967,7 +975,11 @@ public class FragOperManager implements Serializable {
                             mCurUsedMainFragment.getClass().getSimpleName() +
                             " shouldShowMainChildFragment: " +
                             shouldShowMainChildFragment.getClass().getSimpleName());
+
+                fManager = mCurUsedActivity.getFragmentManager();
+                fTransaction = fManager.beginTransaction();
                 fTransaction.show(shouldShowMainChildFragment);
+                fTransaction.commit();
             }
             List<Fragment> mainChildChildFragmentsList =
                     mDirectNestedFragmentsMap.get(shouldShowMainChildFragment);
@@ -1006,11 +1018,14 @@ public class FragOperManager implements Serializable {
                             mCurUsedActivity.getClass().getSimpleName() +
                             " mCurUsedMainFragment: " +
                             mCurUsedMainFragment.getClass().getSimpleName());
+
+                fManager = mCurUsedActivity.getFragmentManager();
+                fTransaction = fManager.beginTransaction();
                 //showFragmentUseAnimations(fTransaction);
                 fTransaction.show(mCurUsedMainFragment);
+                fTransaction.commit();
             }
         }
-        fTransaction.commit();
 
         return 0;
     }
@@ -1205,9 +1220,9 @@ public class FragOperManager implements Serializable {
             default:
         }
 
-        if (result == 0) {
+        /*if (result == 0) {
             fTransaction.commit();
-        }
+        }*/
 
         return 0;
     }
@@ -1296,11 +1311,11 @@ public class FragOperManager implements Serializable {
                     " shouldPopFragment: " +
                     shouldPopFragment.getClass().getSimpleName());
 
-        FragmentManager fManager_ = mCurUsedActivity.getFragmentManager();
-        FragmentTransaction fTransaction_ = fManager_.beginTransaction();
+        fManager = mCurUsedActivity.getFragmentManager();
+        fTransaction = fManager.beginTransaction();
         // pop掉要处理的Fragment
-        fManager_.popBackStack();
-        fTransaction_.commit();
+        fManager.popBackStack();
+        fTransaction.commit();
 
         parentFragmentsList.remove(shouldPopFragment);
         mDirectNestedFragmentsMap.remove(shouldPopFragment);
@@ -1369,7 +1384,10 @@ public class FragOperManager implements Serializable {
                             " shouldHideFragment: " +
                             shouldHideFragment.getClass().getSimpleName());
 
+                fManager = mCurUsedActivity.getFragmentManager();
+                fTransaction = fManager.beginTransaction();
                 fTransaction.hide(shouldHideFragment);
+                fTransaction.commit();
             }
         }
 
@@ -1382,8 +1400,11 @@ public class FragOperManager implements Serializable {
                         " shouldShowFragment: " +
                         shouldShowFragment.getClass().getSimpleName());
 
+            fManager = mCurUsedActivity.getFragmentManager();
+            fTransaction = fManager.beginTransaction();
             showFragmentUseAnimations(fTransaction);
             fTransaction.show(shouldShowFragment);
+            fTransaction.commit();
         }
         directNestedFragmentsList = mDirectNestedFragmentsMap.get(shouldShowFragment);
         if (directNestedFragmentsList != null
@@ -1484,14 +1505,20 @@ public class FragOperManager implements Serializable {
         fTransaction_.commit();*/
 
         if (!shouldPopMainChildFragment.isHidden()) {
+            fManager = mCurUsedActivity.getFragmentManager();
+            fTransaction = fManager.beginTransaction();
             fTransaction.hide(shouldPopMainChildFragment);
+            fTransaction.commit();
         }
+
 
         mainChildFragmentsList.remove(shouldPopMainChildFragment);
         mDirectNestedFragmentsMap.remove(shouldPopMainChildFragment);
 
         int count = mainChildFragmentsList.size();
         if (count < 1) {
+            fManager = mCurUsedActivity.getFragmentManager();
+            fTransaction = fManager.beginTransaction();
             // 当前MainFragment下面没有子Fragment了
             if (mCurUsedMainFragment.isHidden()) {
                 if (DEBUG)
@@ -1510,6 +1537,7 @@ public class FragOperManager implements Serializable {
                     onDestroyAndOnDetach(shouldPopMainChildFragment);
                 }
             }, 50);
+            fTransaction.commit();
             return 0;
         }
 
@@ -1571,7 +1599,11 @@ public class FragOperManager implements Serializable {
                             mCurUsedMainFragment.getClass().getSimpleName() +
                             " shouldHideMainChildFragment: " +
                             shouldHideMainChildFragment.getClass().getSimpleName());
+
+                fManager = mCurUsedActivity.getFragmentManager();
+                fTransaction = fManager.beginTransaction();
                 fTransaction.hide(shouldHideMainChildFragment);
+                fTransaction.commit();
             }
         }
 
@@ -1585,7 +1617,11 @@ public class FragOperManager implements Serializable {
                         mCurUsedMainFragment.getClass().getSimpleName() +
                         " shouldShowMainChildFragment: " +
                         shouldShowMainChildFragment.getClass().getSimpleName());
+
+            fManager = mCurUsedActivity.getFragmentManager();
+            fTransaction = fManager.beginTransaction();
             fTransaction.show(shouldShowMainChildFragment);
+            fTransaction.commit();
         }
         mainChildChildFragmentsList = mDirectNestedFragmentsMap.get(shouldShowMainChildFragment);
         if (mainChildChildFragmentsList != null
@@ -1613,6 +1649,9 @@ public class FragOperManager implements Serializable {
             }
             fragmentTransaction.commit();
         }
+
+        fManager = mCurUsedActivity.getFragmentManager();
+        fTransaction = fManager.beginTransaction();
         fTransaction.remove(shouldPopMainChildFragment);
         mUiHandler.postDelayed(new Runnable() {
             @Override
@@ -1620,6 +1659,7 @@ public class FragOperManager implements Serializable {
                 onDestroyAndOnDetach(shouldPopMainChildFragment);
             }
         }, 50);
+        fTransaction.commit();
 
         return 0;
     }
