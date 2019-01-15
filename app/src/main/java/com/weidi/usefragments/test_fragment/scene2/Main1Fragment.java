@@ -1,7 +1,10 @@
 package com.weidi.usefragments.test_fragment.scene2;
 
 import android.app.Activity;
-import android.app.Fragment;
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.view.LayoutInflater;
@@ -9,12 +12,12 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.weidi.usefragments.R;
 import com.weidi.usefragments.fragment.FragOperManager;
 import com.weidi.usefragments.fragment.base.BaseFragment;
 import com.weidi.usefragments.inject.InjectView;
-import com.weidi.usefragments.test_fragment.scene1.AFragment;
 import com.weidi.usefragments.tool.MLog;
 
 
@@ -53,6 +56,9 @@ public class Main1Fragment extends BaseFragment {
         if (DEBUG)
             MLog.d(TAG, "onCreate(): " + this
                     + " savedInstanceState: " + savedInstanceState);
+
+        // 注册监听
+        registerHeadsetPlugReceiver();
     }
 
     @Override
@@ -163,6 +169,9 @@ public class Main1Fragment extends BaseFragment {
         super.onDestroy();
         if (DEBUG)
             MLog.d(TAG, "onDestroy(): " + this);
+
+        //注销监听
+        getContext().unregisterReceiver(mHeadsetPlugReceiver);
     }
 
     @Override
@@ -231,4 +240,36 @@ public class Main1Fragment extends BaseFragment {
     public boolean onBackPressed() {
         return true;
     }
+
+    // Android监听耳机的插拔事件
+    private HeadsetPlugReceiver mHeadsetPlugReceiver;
+
+    private void registerHeadsetPlugReceiver() {
+        mHeadsetPlugReceiver = new HeadsetPlugReceiver();
+        IntentFilter filter = new IntentFilter();
+        filter.addAction("android.intent.action.HEADSET_PLUG");
+        getContext().registerReceiver(mHeadsetPlugReceiver, filter);
+    }
+
+    private static class HeadsetPlugReceiver extends BroadcastReceiver {
+
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            if (intent.hasExtra("state")) {
+                switch (intent.getIntExtra("state", 0)) {
+                    case 0:
+                        if (DEBUG)
+                            MLog.d(TAG, "onReceive() headset not connected");
+                        break;
+                    case 1:
+                        if (DEBUG)
+                            MLog.d(TAG, "onReceive() headset  connected");
+                        break;
+                    default:
+                }
+            }
+        }
+
+    }
+
 }
