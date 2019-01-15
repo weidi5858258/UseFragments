@@ -1,7 +1,7 @@
 package com.weidi.usefragments.test_fragment.scene2;
 
 import android.app.Activity;
-import android.app.Fragment;
+import android.content.res.Resources;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.view.LayoutInflater;
@@ -14,7 +14,6 @@ import com.weidi.usefragments.R;
 import com.weidi.usefragments.fragment.FragOperManager;
 import com.weidi.usefragments.fragment.base.BaseFragment;
 import com.weidi.usefragments.inject.InjectView;
-import com.weidi.usefragments.test_fragment.scene1.BFragment;
 import com.weidi.usefragments.tool.MLog;
 
 
@@ -53,6 +52,8 @@ public class A2Fragment extends BaseFragment {
         if (DEBUG)
             MLog.d(TAG, "onCreate(): " + this
                     + " savedInstanceState: " + savedInstanceState);
+
+        getStatusBarHeight();
     }
 
     @Override
@@ -231,4 +232,20 @@ public class A2Fragment extends BaseFragment {
     public boolean onBackPressed() {
         return false;
     }
+
+    private int getStatusBarHeight() {
+        Resources resources = getActivity().getResources();
+        int resourceId = resources.getIdentifier(
+                "status_bar_height",
+                "dimen",
+                "android");
+        int height = resources.getDimensionPixelSize(resourceId);
+
+        // getStatusBarHeight() height: 48
+        if (DEBUG)
+            MLog.d(TAG, "getStatusBarHeight() height: " + height);
+
+        return height;
+    }
+
 }

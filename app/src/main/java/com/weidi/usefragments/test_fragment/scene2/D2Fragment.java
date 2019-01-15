@@ -212,7 +212,7 @@ public class D2Fragment extends BaseFragment {
 
     @Override
     protected int provideLayout() {
-        return R.layout.fragment_main;
+        return R.layout.fragment_test_edittext;
     }
 
     @Override

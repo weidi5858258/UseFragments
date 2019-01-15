@@ -3,6 +3,7 @@ package com.weidi.usefragments;
 import android.app.Fragment;
 import android.content.Intent;
 import android.content.res.Configuration;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
@@ -119,6 +120,9 @@ public class MainActivity1 extends BaseActivity
         findViewById(R.id.main2_btn).setOnClickListener(mViewOnClickListener);
         findViewById(R.id.main3_btn).setOnClickListener(mViewOnClickListener);
         findViewById(R.id.main4_btn).setOnClickListener(mViewOnClickListener);
+
+        findViewById(R.id.main1_btn).setBackgroundColor(
+                getResources().getColor(android.R.color.holo_green_light));
     }
 
     @Override
@@ -158,10 +162,24 @@ public class MainActivity1 extends BaseActivity
 
     @Override
     public void onDestroy() {
+        super.onDestroy();
         if (DEBUG)
             Log.d(TAG, "onDestroy()");
         FragOperManager.getInstance().removeActivity(this);
-        super.onDestroy();
+    }
+
+    @Override
+    public void onLowMemory() {
+        super.onLowMemory();
+        if (DEBUG)
+            Log.d(TAG, "onLowMemory()");
+    }
+
+    @Override
+    public void onTrimMemory(int level) {
+        super.onTrimMemory(level);
+        if (DEBUG)
+            Log.d(TAG, "onTrimMemory() level: " + level);
     }
 
     /***
@@ -242,22 +260,42 @@ public class MainActivity1 extends BaseActivity
         mBaseFragment = selectedFragment;
     }
 
+    private void restoreBackgroundColor() {
+        findViewById(R.id.main1_btn).setBackgroundColor(
+                getResources().getColor(android.R.color.holo_orange_light));
+        findViewById(R.id.main2_btn).setBackgroundColor(
+                getResources().getColor(android.R.color.holo_orange_light));
+        findViewById(R.id.main3_btn).setBackgroundColor(
+                getResources().getColor(android.R.color.holo_orange_light));
+        findViewById(R.id.main4_btn).setBackgroundColor(
+                getResources().getColor(android.R.color.holo_orange_light));
+    }
+
     private View.OnClickListener mViewOnClickListener =
             new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
+                    restoreBackgroundColor();
                     switch (v.getId()) {
                         case R.id.main1_btn:
                             mCurShowMainFragment = main1Fragment;
+                            findViewById(R.id.main1_btn).setBackgroundColor(
+                                    getResources().getColor(android.R.color.holo_green_light));
                             break;
                         case R.id.main2_btn:
                             mCurShowMainFragment = main2Fragment;
+                            findViewById(R.id.main2_btn).setBackgroundColor(
+                                    getResources().getColor(android.R.color.holo_green_light));
                             break;
                         case R.id.main3_btn:
                             mCurShowMainFragment = main3Fragment;
+                            findViewById(R.id.main3_btn).setBackgroundColor(
+                                    getResources().getColor(android.R.color.holo_green_light));
                             break;
                         case R.id.main4_btn:
                             mCurShowMainFragment = main4Fragment;
+                            findViewById(R.id.main4_btn).setBackgroundColor(
+                                    getResources().getColor(android.R.color.holo_green_light));
                             break;
                         default:
                     }

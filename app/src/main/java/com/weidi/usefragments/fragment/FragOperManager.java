@@ -151,7 +151,7 @@ public class FragOperManager implements Serializable {
         mActivityContainersMap = new LinkedHashMap<Activity, Integer[]>();
         mActivityFragmentsMap = new LinkedHashMap<Activity, List<Fragment>>();
         mDirectNestedFragmentsMap = new LinkedHashMap<Fragment, List<Fragment>>();
-        mMoreMainFragmentsMap = new LinkedHashMap<Fragment, List<Fragment>>();
+        mMoreMainFragmentsMap = new LinkedHashMap<Fragment, List<Fragment>>(4);
 
         //mIndirectNestedFragmentsMap = new HashMap<Fragment, List<Fragment>>();
         //mAllFragmentsList = new ArrayList<Fragment>();
@@ -672,6 +672,10 @@ public class FragOperManager implements Serializable {
         FragmentTransaction fragmentTransaction = null;
 
         for (Fragment shouldHideMainFragment : mMoreMainFragmentsMap.keySet()) {
+            if (shouldShowMainFragment.getClass().getSimpleName().equals(
+                    shouldHideMainFragment.getClass().getSimpleName())) {
+                continue;
+            }
             if (!shouldHideMainFragment.isHidden()) {
                 if (DEBUG)
                     MLog.d(TAG, "enter2() hide" +

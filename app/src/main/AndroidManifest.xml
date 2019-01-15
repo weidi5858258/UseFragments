@@ -23,6 +23,10 @@
         <activity
             android:name=".MainActivity2"
             android:configChanges="keyboardHidden|screenLayout|screenSize|smallestScreenSize|orientation"/>
+
+        <activity
+            android:name=".MainActivity3"
+            android:configChanges="keyboardHidden|screenLayout|screenSize|smallestScreenSize|orientation"/>
     </application>
 
 </manifest>
