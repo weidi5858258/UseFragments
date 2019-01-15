@@ -1,12 +1,18 @@
 package com.weidi.usefragments;
 
 import android.app.Fragment;
+import android.content.Context;
 import android.content.Intent;
 import android.content.res.Configuration;
 import android.graphics.Color;
+import android.graphics.PixelFormat;
 import android.os.Bundle;
+import android.os.IBinder;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.View;
+import android.view.WindowManager;
+import android.widget.RelativeLayout;
 
 import com.weidi.usefragments.fragment.FragOperManager;
 import com.weidi.usefragments.fragment.base.BaseFragment;
@@ -253,11 +259,64 @@ public class MainActivity1 extends BaseActivity
     }
 
     @Override
+    public void onWindowFocusChanged(boolean hasFocus) {
+        super.onWindowFocusChanged(hasFocus);
+        if (DEBUG)
+            Log.d(TAG, "onWindowFocusChanged() hasFocus: " + hasFocus);
+
+        if (hasFocus) {
+            showWindow();
+        } else {
+            if (mWindowManager != null && mToolView != null) {
+                mWindowManager.removeView(mToolView);
+                mWMLayoutParams = null;
+            }
+        }
+    }
+
+    @Override
     public void setSelectedFragment(BaseFragment selectedFragment, String fragmentTag) {
         if (DEBUG)
             Log.d(TAG, "setSelectedFragment() selectedFragment: "
                     + selectedFragment.getClass().getSimpleName());
         mBaseFragment = selectedFragment;
+    }
+
+    private WindowManager.LayoutParams mWMLayoutParams;
+    private WindowManager mWindowManager;
+    private View mToolView;
+
+    private void showWindow() {
+        if (mWMLayoutParams != null) {
+            return;
+        }
+        mToolView =
+                View.inflate(this, R.layout.activity_title_view, null);
+        mWindowManager = (WindowManager) getSystemService(Context.WINDOW_SERVICE);
+        mWMLayoutParams = new WindowManager.LayoutParams();
+        //悬浮窗参数设置
+        mWMLayoutParams.format = PixelFormat.RGBA_8888;
+        mWMLayoutParams.flags = WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL
+                | WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE;
+        mWMLayoutParams.gravity = Gravity.RIGHT | Gravity.TOP;
+        mWMLayoutParams.width = 80;//悬浮窗宽度
+        mWMLayoutParams.height = 80;//悬浮窗高度
+        mWMLayoutParams.x = 720;//悬浮窗位置
+        mWMLayoutParams.y = 0;//悬浮窗位置
+        //重点,类型设置为dialog类型,可无视权限!
+        mWMLayoutParams.type =
+                WindowManager.LayoutParams.TYPE_APPLICATION_ATTACHED_DIALOG;
+        //重点,必须设置此参数,用于窗口机制验证
+        IBinder windowToken = this.getWindow().getDecorView().getWindowToken();
+        mWMLayoutParams.token = windowToken;
+        mWindowManager.addView(mToolView, mWMLayoutParams);
+
+        mToolView.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                onBackPressed();
+            }
+        });
     }
 
     private void restoreBackgroundColor() {
