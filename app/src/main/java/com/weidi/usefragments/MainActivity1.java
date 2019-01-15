@@ -126,6 +126,7 @@ public class MainActivity1 extends BaseActivity
         findViewById(R.id.main2_btn).setOnClickListener(mViewOnClickListener);
         findViewById(R.id.main3_btn).setOnClickListener(mViewOnClickListener);
         findViewById(R.id.main4_btn).setOnClickListener(mViewOnClickListener);
+        findViewById(R.id.back_btn).setOnClickListener(mViewOnClickListener);
 
         findViewById(R.id.main1_btn).setBackgroundColor(
                 getResources().getColor(android.R.color.holo_green_light));
@@ -264,14 +265,14 @@ public class MainActivity1 extends BaseActivity
         if (DEBUG)
             Log.d(TAG, "onWindowFocusChanged() hasFocus: " + hasFocus);
 
-        if (hasFocus) {
+        /*if (hasFocus) {
             showWindow();
         } else {
             if (mWindowManager != null && mToolView != null) {
                 mWindowManager.removeView(mToolView);
                 mWMLayoutParams = null;
             }
-        }
+        }*/
     }
 
     @Override
@@ -334,6 +335,10 @@ public class MainActivity1 extends BaseActivity
             new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
+                    if (v.getId() == R.id.back_btn) {
+                        onBackPressed();
+                        return;
+                    }
                     restoreBackgroundColor();
                     switch (v.getId()) {
                         case R.id.main1_btn:
