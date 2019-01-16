@@ -368,11 +368,26 @@ public abstract class BaseFragment extends Fragment {
             MLog.d(TAG, "onHide(): " + printThis());
     }
 
+    public Activity getAttachedActivity() {
+        if (mActivity == null) {
+            mActivity = getActivity();
+        }
+        if (mActivity == null) {
+            throw new NullPointerException(
+                    "BaseFragment getAttachedActivity() mActivity is null.");
+        }
+        return mActivity;
+    }
+
     public Context getContext() {
         if (mContext == null) {
-            if (getActivity() != null) {
-                mContext = getActivity().getApplicationContext();
+            if (getAttachedActivity() != null) {
+                mContext = getAttachedActivity().getApplicationContext();
             }
+        }
+        if (mContext == null) {
+            throw new NullPointerException(
+                    "BaseFragment getContext() mContext is null.");
         }
         return mContext;
     }
