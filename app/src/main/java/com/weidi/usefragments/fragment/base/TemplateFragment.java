@@ -1,35 +1,27 @@
-package com.weidi.usefragments.test_fragment.scene1;
+package com.weidi.usefragments.fragment.base;
 
 import android.app.Activity;
+import android.content.Context;
+import android.content.res.Configuration;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
-import android.widget.TextView;
 
 import com.weidi.usefragments.R;
-import com.weidi.usefragments.fragment.base.BaseFragment;
-import com.weidi.usefragments.inject.InjectView;
 import com.weidi.usefragments.tool.MLog;
 
 
-/***
- *
- */
-public class C_3Fragment extends BaseFragment {
+public class TemplateFragment extends BaseFragment {
 
     private static final String TAG =
-            C_3Fragment.class.getSimpleName();
+            TemplateFragment.class.getSimpleName();
 
     private static final boolean DEBUG = true;
-    @InjectView(R.id.title_tv)
-    private TextView mTitleView;
-    @InjectView(R.id.jump_btn)
-    private Button mJumpBtn;
 
-    public C_3Fragment() {
+    public TemplateFragment() {
         super();
     }
 
@@ -38,10 +30,17 @@ public class C_3Fragment extends BaseFragment {
      *********************************/
 
     @Override
+    public void onAttach(Context context) {
+        super.onAttach(context);
+        if (DEBUG)
+            MLog.d(TAG, "onAttach(): " + this + " context: " + context);
+    }
+
+    @Override
     public void onAttach(Activity activity) {
         super.onAttach(activity);
         if (DEBUG)
-            MLog.d(TAG, "onAttach() activity: " + activity);
+            MLog.d(TAG, "onAttach(): " + this + " activity: " + activity);
     }
 
     @Override
@@ -69,12 +68,6 @@ public class C_3Fragment extends BaseFragment {
         if (DEBUG)
             MLog.d(TAG, "onViewCreated(): " + this
                     + " savedInstanceState: " + savedInstanceState);
-        mJumpBtn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-
-            }
-        });
     }
 
     @Override
@@ -175,8 +168,50 @@ public class C_3Fragment extends BaseFragment {
             MLog.d(TAG, "onDetach(): " + this);
     }
 
+    @Override
+    public void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        if (DEBUG)
+            MLog.d(TAG, "onSaveInstanceState(): " + this);
+    }
+
+    @Override
+    public void onConfigurationChanged(Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+        if (DEBUG)
+            MLog.d(TAG, "onConfigurationChanged(): " + this);
+    }
+
+    @Override
+    public void onLowMemory() {
+        super.onLowMemory();
+        if (DEBUG)
+            MLog.d(TAG, "onLowMemory(): " + this);
+    }
+
+    @Override
+    public void onTrimMemory(int level) {
+        super.onTrimMemory(level);
+        if (DEBUG)
+            MLog.d(TAG, "onTrimMemory(): " + this + " level: " + level);
+    }
+
+    @Override
+    public void onRequestPermissionsResult(
+            int requestCode,
+            @NonNull String[] permissions,
+            @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (DEBUG)
+            MLog.d(TAG, "onRequestPermissionsResult(): " + this +
+                    " requestCode: " + requestCode);
+    }
+
     /**
      * Very important
+     * 子类必须重写这个方法,并调用
+     * super.onHiddenChanged(hidden);
+     * <p>
      * true表示被隐藏了,false表示被显示了
      * Fragment:
      * 被show()或者hide()时才会回调这个方法,
@@ -185,6 +220,9 @@ public class C_3Fragment extends BaseFragment {
      * 如果是弹出一个DialogActivity窗口,则应该会被回调,
      * 因为当前Fragment所在的Activity的生命周期发生了变化,
      * 则当前Fragment的生命周期也会发生变化.
+     * <p>
+     * 从BFragment返回到AFragment时,
+     * AFragment的这个方法比onPause()要早执行.
      *
      * @param hidden if true that mean hidden
      */
@@ -200,19 +238,6 @@ public class C_3Fragment extends BaseFragment {
         }
     }
 
-    // 写这个方法只是为了不直接调用onResume()方法
-    private void onShow() {
-        if (DEBUG)
-            MLog.d(TAG, "onShow(): " + this);
-        mTitleView.setText(C_3Fragment.class.getSimpleName());
-        mJumpBtn.setText("跳转到");
-    }
-
-    private void onHide() {
-        if (DEBUG)
-            MLog.d(TAG, "onHide(): " + this);
-    }
-
     @Override
     protected int provideLayout() {
         return R.layout.fragment_main;
@@ -221,6 +246,18 @@ public class C_3Fragment extends BaseFragment {
     @Override
     public boolean onBackPressed() {
         return false;
+    }
+
+    /////////////////////////////////////////////////////////////////
+
+    private void onShow() {
+        if (DEBUG)
+            MLog.d(TAG, "onShow(): " + this);
+    }
+
+    private void onHide() {
+        if (DEBUG)
+            MLog.d(TAG, "onHide(): " + this);
     }
 
 }

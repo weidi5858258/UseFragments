@@ -72,6 +72,15 @@ public class E2Fragment extends BaseFragment {
         if (DEBUG)
             MLog.d(TAG, "onViewCreated(): " + this
                     + " savedInstanceState: " + savedInstanceState);
+        mJumpBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                // FragOperManager.getInstance().enter3(new CFragment());
+
+                ((BaseActivity)getActivity()).enterActivity();
+                startActivity(new Intent(getActivity(), MainActivity2.class));
+            }
+        });
     }
 
     @Override
@@ -213,21 +222,6 @@ public class E2Fragment extends BaseFragment {
     @Override
     protected int provideLayout() {
         return R.layout.fragment_main;
-    }
-
-    @Override
-    protected void afterInitView(LayoutInflater inflater,
-                                 ViewGroup container,
-                                 Bundle savedInstanceState) {
-        mJumpBtn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                // FragOperManager.getInstance().enter3(new CFragment());
-
-                ((BaseActivity)getActivity()).enterActivity();
-                startActivity(new Intent(getActivity(), MainActivity2.class));
-            }
-        });
     }
 
     @Override

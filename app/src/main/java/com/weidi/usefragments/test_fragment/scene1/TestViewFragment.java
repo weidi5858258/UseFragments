@@ -68,6 +68,12 @@ public class TestViewFragment extends BaseFragment {
         if (DEBUG)
             MLog.d(TAG, "onViewCreated(): " + this
                     + " savedInstanceState: " + savedInstanceState);
+        mJumpBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                FragOperManager.getInstance().enter(new AFragment());
+            }
+        });
     }
 
     @Override
@@ -208,18 +214,6 @@ public class TestViewFragment extends BaseFragment {
     @Override
     protected int provideLayout() {
         return R.layout.fragment_test_view;
-    }
-
-    @Override
-    protected void afterInitView(LayoutInflater inflater,
-                                 ViewGroup container,
-                                 Bundle savedInstanceState) {
-        mJumpBtn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                FragOperManager.getInstance().enter(new AFragment());
-            }
-        });
     }
 
     @Override

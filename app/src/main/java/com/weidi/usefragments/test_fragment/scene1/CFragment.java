@@ -93,6 +93,12 @@ public class CFragment extends BaseFragment {
         if (DEBUG)
             MLog.d(TAG, "onViewCreated(): " + this
                     + " savedInstanceState: " + savedInstanceState);
+        mJumpBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                FragOperManager.getInstance().enter(new DFragment());
+            }
+        });
     }
 
     @Override
@@ -251,18 +257,6 @@ public class CFragment extends BaseFragment {
     @Override
     protected int provideLayout() {
         return R.layout.fragment_one_layout;
-    }
-
-    @Override
-    protected void afterInitView(LayoutInflater inflater,
-                                 ViewGroup container,
-                                 Bundle savedInstanceState) {
-        mJumpBtn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                FragOperManager.getInstance().enter(new DFragment());
-            }
-        });
     }
 
     @Override

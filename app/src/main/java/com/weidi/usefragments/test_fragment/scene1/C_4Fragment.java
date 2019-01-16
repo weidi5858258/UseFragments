@@ -69,6 +69,12 @@ public class C_4Fragment extends BaseFragment {
         if (DEBUG)
             MLog.d(TAG, "onViewCreated(): " + this
                     + " savedInstanceState: " + savedInstanceState);
+        mJumpBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+
+            }
+        });
     }
 
     @Override
@@ -212,17 +218,6 @@ public class C_4Fragment extends BaseFragment {
         return R.layout.fragment_main;
     }
 
-    @Override
-    protected void afterInitView(LayoutInflater inflater,
-                                 ViewGroup container,
-                                 Bundle savedInstanceState) {
-        mJumpBtn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-
-            }
-        });
-    }
 
     @Override
     public boolean onBackPressed() {

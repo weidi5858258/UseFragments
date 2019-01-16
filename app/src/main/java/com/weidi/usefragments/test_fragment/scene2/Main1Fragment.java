@@ -78,6 +78,12 @@ public class Main1Fragment extends BaseFragment {
         if (DEBUG)
             MLog.d(TAG, "onViewCreated(): " + this
                     + " savedInstanceState: " + savedInstanceState);
+        mJumpBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                FragOperManager.getInstance().enter3(new A2Fragment());
+            }
+        });
     }
 
     @Override
@@ -225,23 +231,11 @@ public class Main1Fragment extends BaseFragment {
     }
 
     @Override
-    protected void afterInitView(LayoutInflater inflater,
-                                 ViewGroup container,
-                                 Bundle savedInstanceState) {
-        mJumpBtn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                FragOperManager.getInstance().enter3(new A2Fragment());
-            }
-        });
-    }
-
-    @Override
     public boolean onBackPressed() {
         return true;
     }
 
-    // Android监听耳机的插拔事件
+    // Android监听耳机的插拔事件(经过测试可行)
     private HeadsetPlugReceiver mHeadsetPlugReceiver;
 
     private void registerHeadsetPlugReceiver() {

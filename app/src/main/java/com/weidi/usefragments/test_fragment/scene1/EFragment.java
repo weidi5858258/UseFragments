@@ -73,6 +73,13 @@ public class EFragment extends BaseFragment {
         if (DEBUG)
             MLog.d(TAG, "onViewCreated(): " + this
                     + " savedInstanceState: " + savedInstanceState);
+        mJumpBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                ((BaseActivity) getActivity()).enterActivity();
+                startActivity(new Intent(getActivity(), MainActivity3.class));
+            }
+        });
     }
 
     @Override
@@ -214,19 +221,6 @@ public class EFragment extends BaseFragment {
     @Override
     protected int provideLayout() {
         return R.layout.fragment_main;
-    }
-
-    @Override
-    protected void afterInitView(LayoutInflater inflater,
-                                 ViewGroup container,
-                                 Bundle savedInstanceState) {
-        mJumpBtn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                ((BaseActivity)getActivity()).enterActivity();
-                startActivity(new Intent(getActivity(), MainActivity3.class));
-            }
-        });
     }
 
     @Override

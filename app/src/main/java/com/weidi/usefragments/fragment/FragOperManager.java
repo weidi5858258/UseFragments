@@ -1,6 +1,5 @@
 package com.weidi.usefragments.fragment;
 
-import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.Fragment;
 import android.app.FragmentManager;
@@ -11,7 +10,6 @@ import android.text.TextUtils;
 
 import com.weidi.usefragments.BaseActivity;
 import com.weidi.usefragments.R;
-import com.weidi.usefragments.fragment.base.BaseFragment;
 import com.weidi.usefragments.tool.MLog;
 
 import java.io.Serializable;
@@ -97,7 +95,7 @@ import java.util.Map;
  * 然后再通过保存切换的状态，发现结果非常完美。
  * <p>
  * 只能在v4包中才能使用
- * fTransaction.setCustomAnimations(R.anim.push_left_in, R.anim.push_left_out);
+ * fTransaction.setCustomAnimations(R.anim.push_left_in, R.anim.enter);
  *
  *
  *
@@ -363,6 +361,7 @@ public class FragOperManager implements Serializable {
         if (!fragmentsList.contains(shouldShowFragment)) {
             fragmentsList.add(shouldShowFragment);
 
+            // addFragmentUseAnimations(fTransaction);
             // 不用replace
             fTransaction.add(
                     container_scene[0],
@@ -465,7 +464,7 @@ public class FragOperManager implements Serializable {
                     mCurUsedActivity.getClass().getSimpleName() +
                     " shouldShowFragment: " +
                     shouldShowFragment.getClass().getSimpleName());
-        showFragmentUseAnimations(fTransaction);
+        /*addFragmentUseAnimations(fTransaction);*/
         fTransaction.show(shouldShowFragment);
         // 旋转屏幕,然后去添加一个Fragment,出现异常
         // 旋转屏幕后
@@ -547,7 +546,7 @@ public class FragOperManager implements Serializable {
             fragmentTransaction.addToBackStack(
                     shouldReplaceChildFragment.getClass().getSimpleName());
             // 嵌套的Fragment不要有动画
-            // showFragmentUseAnimations(fragmentTransaction);
+            // addFragmentUseAnimations(fragmentTransaction);
             fragmentTransaction.commit();
         }
 
@@ -753,6 +752,7 @@ public class FragOperManager implements Serializable {
         if (!mainChildFragmentsList.contains(shouldShowMainChildFragment)) {
             mainChildFragmentsList.add(shouldShowMainChildFragment);
 
+            addFragmentUseAnimations(fTransaction);
             // 不用replace
             fTransaction.add(
                     container_scene[0],
@@ -832,9 +832,7 @@ public class FragOperManager implements Serializable {
                             mCurUsedMainFragment.getClass().getSimpleName() +
                             " shouldHideMainChildFragment: " +
                             shouldHideMainChildFragment.getClass().getSimpleName());
-                // fragment隐藏时的动画
-                // fTransaction.setCustomAnimations(R.anim.push_right_in, R.anim.push_left_out2);
-                // 先把所有的Fragment给隐藏掉.
+
                 fTransaction.hide(shouldHideMainChildFragment);
             }
         }
@@ -847,7 +845,7 @@ public class FragOperManager implements Serializable {
                     mCurUsedMainFragment.getClass().getSimpleName() +
                     " shouldShowMainChildFragment: " +
                     shouldShowMainChildFragment.getClass().getSimpleName());
-        showFragmentUseAnimations(fTransaction);
+        /*addFragmentUseAnimations(fTransaction);*/
         fTransaction.show(shouldShowMainChildFragment);
         // 旋转屏幕,然后去添加一个Fragment,出现异常
         // 旋转屏幕后
@@ -1025,7 +1023,7 @@ public class FragOperManager implements Serializable {
 
                 fManager = mCurUsedActivity.getFragmentManager();
                 fTransaction = fManager.beginTransaction();
-                //showFragmentUseAnimations(fTransaction);
+                //addFragmentUseAnimations(fTransaction);
                 fTransaction.show(mCurUsedMainFragment);
                 fTransaction.commit();
             }
@@ -1265,7 +1263,7 @@ public class FragOperManager implements Serializable {
                 }
             }
         }
-        showFragmentUseAnimations(fTransaction);
+        addFragmentUseAnimations(fTransaction);
         fTransaction.show(showFragment);
         parentFragmentsList.remove(fragment);
         parentFragmentsList.add(0, fragment);
@@ -1282,7 +1280,7 @@ public class FragOperManager implements Serializable {
             return -1;
         }
 
-        // 处理当前这个fragmnet嵌套的fragments
+        // 处理当前这个Fragmnet嵌套的子Fragment
         List<Fragment> directNestedFragmentsList =
                 mDirectNestedFragmentsMap.get(shouldPopFragment);
         if (directNestedFragmentsList != null
@@ -1317,6 +1315,7 @@ public class FragOperManager implements Serializable {
 
         fManager = mCurUsedActivity.getFragmentManager();
         fTransaction = fManager.beginTransaction();
+        popCurAndShowPreFragmentUseAnimations(fTransaction);
         // pop掉要处理的Fragment
         fManager.popBackStack();
         fTransaction.commit();
@@ -1406,10 +1405,12 @@ public class FragOperManager implements Serializable {
 
             fManager = mCurUsedActivity.getFragmentManager();
             fTransaction = fManager.beginTransaction();
-            showFragmentUseAnimations(fTransaction);
+            // showPreFragmentUseAnimations(fTransaction);
+            // popCurAndShowPreFragmentUseAnimations(fTransaction);
             fTransaction.show(shouldShowFragment);
             fTransaction.commit();
         }
+        // 处理其子Fragment
         directNestedFragmentsList = mDirectNestedFragmentsMap.get(shouldShowFragment);
         if (directNestedFragmentsList != null
                 && !directNestedFragmentsList.isEmpty()) {
@@ -1478,19 +1479,11 @@ public class FragOperManager implements Serializable {
                             shouldPopMainChildFragment.getClass().getSimpleName() +
                             " shouldPopMainChildChildFragment: " +
                             shouldPopMainChildChildFragment.getClass().getSimpleName());
+
                 fragmentManager.popBackStack();
             }
             fragmentTransaction.commit();
         }
-
-        if (DEBUG)
-            MLog.d(TAG, "pop_back_stack_scene_2() pop" +
-                    " mCurUsedActivity: " +
-                    mCurUsedActivity.getClass().getSimpleName() +
-                    " mCurUsedMainFragment: " +
-                    mCurUsedMainFragment.getClass().getSimpleName() +
-                    " shouldPopMainChildFragment: " +
-                    shouldPopMainChildFragment.getClass().getSimpleName());
 
         // 这里是硬伤(没有被弹出去)
         /*FragmentManager fManager_ = mCurUsedActivity.getFragmentManager();
@@ -1508,13 +1501,21 @@ public class FragOperManager implements Serializable {
         fTransaction_.remove(shouldPopMainChildFragment);
         fTransaction_.commit();*/
 
+        if (DEBUG)
+            MLog.d(TAG, "pop_back_stack_scene_2() pop" +
+                    " mCurUsedActivity: " +
+                    mCurUsedActivity.getClass().getSimpleName() +
+                    " mCurUsedMainFragment: " +
+                    mCurUsedMainFragment.getClass().getSimpleName() +
+                    " shouldPopMainChildFragment: " +
+                    shouldPopMainChildFragment.getClass().getSimpleName());
+
         if (!shouldPopMainChildFragment.isHidden()) {
             fManager = mCurUsedActivity.getFragmentManager();
             fTransaction = fManager.beginTransaction();
             fTransaction.hide(shouldPopMainChildFragment);
             fTransaction.commit();
         }
-
 
         mainChildFragmentsList.remove(shouldPopMainChildFragment);
         mDirectNestedFragmentsMap.remove(shouldPopMainChildFragment);
@@ -1531,6 +1532,8 @@ public class FragOperManager implements Serializable {
                             mCurUsedActivity.getClass().getSimpleName() +
                             " mCurUsedMainFragment: " +
                             mCurUsedMainFragment.getClass().getSimpleName());
+
+                popCurAndShowPreFragmentUseAnimations(fTransaction);
                 fTransaction.show(mCurUsedMainFragment);
             }
             fTransaction.remove(shouldPopMainChildFragment);
@@ -1574,6 +1577,7 @@ public class FragOperManager implements Serializable {
                                             " shouldHideMainChildChildFragment: " +
                                             shouldHideMainChildChildFragment
                                                     .getClass().getSimpleName());
+
                                 fragmentTransaction.hide(shouldHideMainChildChildFragment);
                             }
                         } else {
@@ -1588,6 +1592,7 @@ public class FragOperManager implements Serializable {
                                         " shouldPopMainChildChildFragment: " +
                                         shouldHideMainChildChildFragment
                                                 .getClass().getSimpleName());
+
                             fragmentManager.popBackStack();
                             iterator.remove();
                         }
@@ -1624,6 +1629,7 @@ public class FragOperManager implements Serializable {
 
             fManager = mCurUsedActivity.getFragmentManager();
             fTransaction = fManager.beginTransaction();
+            showPreFragmentUseAnimations(fTransaction);
             fTransaction.show(shouldShowMainChildFragment);
             fTransaction.commit();
         }
@@ -1647,6 +1653,7 @@ public class FragOperManager implements Serializable {
                                     shouldShowMainChildFragment.getClass().getSimpleName() +
                                     " shouldShowMainChildChildFragment: " +
                                     shouldShowMainChildChildFragment.getClass().getSimpleName());
+
                         fragmentTransaction.show(shouldShowMainChildChildFragment);
                     }
                 }
@@ -1656,6 +1663,7 @@ public class FragOperManager implements Serializable {
 
         fManager = mCurUsedActivity.getFragmentManager();
         fTransaction = fManager.beginTransaction();
+        popCurFragmentUseAnimations(fTransaction);
         fTransaction.remove(shouldPopMainChildFragment);
         mUiHandler.postDelayed(new Runnable() {
             @Override
@@ -1710,19 +1718,47 @@ public class FragOperManager implements Serializable {
     }*/
 
     // fragment显示时的动画
-    private void showFragmentUseAnimations(FragmentTransaction fTransaction) {
+    private void addFragmentUseAnimations(FragmentTransaction fTransaction) {
+        /***
+         参数含义:
+         假如从AFragment打开BFragment
+         @AnimatorRes int enter BFragment被打开时的动画
+         @AnimatorRes int exit  AFragment被隐藏时的动画
+         */
         fTransaction.setCustomAnimations(
+                R.animator.enter_right_in,
+                R.animator.exit_left_out);
+        /*fTransaction.setCustomAnimations(
                 R.animator.push_left_in,
-                R.animator.push_left_out);
+                R.animator.enter);*/
     }
 
-    @SuppressLint("ResourceType")
-    private void popFragmentUseAnimations(FragmentTransaction fTransaction) {
+    private void popCurAndShowPreFragmentUseAnimations(FragmentTransaction fTransaction) {
         fTransaction.setCustomAnimations(
+                R.animator.enter_left_in,
+                R.animator.exit_right_out);
+    }
+
+    private void popCurFragmentUseAnimations(FragmentTransaction fTransaction) {
+        fTransaction.setCustomAnimations(
+                R.animator.enter,
+                R.animator.exit_right_out);
+        /*fTransaction.setCustomAnimations(
                 R.animator.card_flip_right_in,
                 R.animator.card_flip_left_out,
                 R.animator.card_flip_left_in,
-                R.animator.card_flip_right_out);
+                R.animator.card_flip_right_out);*/
+    }
+
+    private void showPreFragmentUseAnimations(FragmentTransaction fTransaction) {
+        fTransaction.setCustomAnimations(
+                R.animator.enter_left_in,
+                R.animator.exit);
+        /*fTransaction.setCustomAnimations(
+                R.animator.card_flip_right_in,
+                R.animator.card_flip_left_out,
+                R.animator.card_flip_left_in,
+                R.animator.card_flip_right_out);*/
     }
 
     /***
@@ -1826,7 +1862,7 @@ public class FragOperManager implements Serializable {
             }
         }
 
-        showFragmentUseAnimations(fTransaction);
+        addFragmentUseAnimations(fTransaction);
         fTransaction.show(fragment);
         // 旋转屏幕,然后去添加一个Fragment,出现异常
         // 旋转屏幕后

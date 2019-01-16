@@ -1,5 +1,6 @@
 package com.weidi.usefragments.test_fragment.scene2;
 
+import android.animation.Animator;
 import android.app.Activity;
 import android.content.res.Resources;
 import android.os.Bundle;
@@ -7,6 +8,8 @@ import android.support.annotation.Nullable;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
 import android.widget.Button;
 import android.widget.TextView;
 
@@ -73,6 +76,12 @@ public class A2Fragment extends BaseFragment {
         if (DEBUG)
             MLog.d(TAG, "onViewCreated(): " + this
                     + " savedInstanceState: " + savedInstanceState);
+        mJumpBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                FragOperManager.getInstance().enter3(new B2Fragment());
+            }
+        });
     }
 
     @Override
@@ -198,6 +207,20 @@ public class A2Fragment extends BaseFragment {
         }
     }
 
+    /*@Override
+    public Animator onCreateAnimator(int transit, boolean enter, int nextAnim) {
+        super.onCreateAnimator(transit, enter, nextAnim);
+        if (DEBUG)
+            MLog.d(TAG, "onCreateAnimator(): " + this +
+                    " transit: " + transit + " enter: " + enter + " nextAnim: " + nextAnim);
+        *//*if (enter) {
+            return AnimationUtils.loadAnimation(getContext(), R.anim.slide_right_in);
+        } else {
+            return AnimationUtils.loadAnimation(getContext(), R.anim.slide_left_out);
+        }*//*
+        return null;
+    }*/
+
     // 写这个方法只是为了不直接调用onResume()方法
     private void onShow() {
         if (DEBUG)
@@ -214,18 +237,6 @@ public class A2Fragment extends BaseFragment {
     @Override
     protected int provideLayout() {
         return R.layout.fragment_main;
-    }
-
-    @Override
-    protected void afterInitView(LayoutInflater inflater,
-                                 ViewGroup container,
-                                 Bundle savedInstanceState) {
-        mJumpBtn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                FragOperManager.getInstance().enter3(new B2Fragment());
-            }
-        });
     }
 
     @Override

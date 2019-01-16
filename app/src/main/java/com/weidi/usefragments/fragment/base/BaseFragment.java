@@ -1,10 +1,12 @@
 package com.weidi.usefragments.fragment.base;
 
+import android.animation.Animator;
 import android.app.Activity;
 import android.app.Fragment;
 import android.content.Context;
+import android.content.res.Configuration;
 import android.os.Bundle;
-import android.support.annotation.CallSuper;
+import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -47,15 +49,25 @@ public abstract class BaseFragment extends Fragment {
      *********************************/
 
     @Override
+    public void onAttach(Context context) {
+        super.onAttach(context);
+        if (context == null) {
+            throw new NullPointerException("BaseFragment onAttach() context is null.");
+        }
+        if (DEBUG)
+            MLog.d(TAG, "onAttach(): " + this + " context: " + context);
+        mContext = context;
+    }
+
+    @Override
     public void onAttach(Activity activity) {
         super.onAttach(activity);
         if (activity == null) {
-            throw new NullPointerException("BaseFragment onAttach():activity is null.");
+            throw new NullPointerException("BaseFragment onAttach() activity is null.");
         }
         if (DEBUG)
-            MLog.d(TAG, "onAttach() activity: " + activity);
+            MLog.d(TAG, "onAttach(): " + this + " activity: " + activity);
         mActivity = activity;
-        mContext = activity.getApplicationContext();
         if (!(activity instanceof BackHandlerInterface)) {
             throw new ClassCastException("Hosting Activity must implement BackHandlerInterface");
         } else {
@@ -109,7 +121,10 @@ public abstract class BaseFragment extends Fragment {
         if (savedInstanceState == null) {
             view = inflater.inflate(provideLayout(), null);
             InjectUtils.inject(this, view);
-            afterInitView(inflater, container, savedInstanceState);
+        }
+        if (view == null) {
+            throw new NullPointerException(
+                    "BaseFragment onCreateView() view is null.");
         }
         return view;
     }
@@ -240,6 +255,20 @@ public abstract class BaseFragment extends Fragment {
     }
 
     @Override
+    public void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        if (DEBUG)
+            MLog.d(TAG, "onSaveInstanceState(): " + this);
+    }
+
+    @Override
+    public void onConfigurationChanged(Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+        if (DEBUG)
+            MLog.d(TAG, "onConfigurationChanged(): " + this);
+    }
+
+    @Override
     public void onLowMemory() {
         super.onLowMemory();
         if (DEBUG)
@@ -251,6 +280,25 @@ public abstract class BaseFragment extends Fragment {
         super.onTrimMemory(level);
         if (DEBUG)
             MLog.d(TAG, "onTrimMemory(): " + this + " level: " + level);
+    }
+
+    @Override
+    public void onRequestPermissionsResult(
+            int requestCode,
+            @NonNull String[] permissions,
+            @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (DEBUG)
+            MLog.d(TAG, "onRequestPermissionsResult(): " + this +
+                    " requestCode: " + requestCode);
+    }
+
+    @Override
+    public Animator onCreateAnimator(int transit, boolean enter, int nextAnim) {
+        if (DEBUG)
+            MLog.d(TAG, "onCreateAnimator(): " + this +
+                    " transit: " + transit + " enter: " + enter + " nextAnim: " + nextAnim);
+        return super.onCreateAnimator(transit, enter, nextAnim);
     }
 
     /**
@@ -337,23 +385,6 @@ public abstract class BaseFragment extends Fragment {
     }
 
     protected abstract int provideLayout();
-
-    /**
-     * 供子类调用，初始化组件，统一接口
-     *
-     * @return
-     */
-    //    protected abstract void initViewBefore(Bundle savedInstanceState);
-
-    /***
-     * 供子类调用，初始化数据，统一接口
-     *
-     * @return
-     */
-    protected abstract void afterInitView(
-            LayoutInflater inflater,
-            ViewGroup container,
-            Bundle savedInstanceState);
 
     /***
      * 所有继承BaseFragment的子类都将在这个方法中实现物理Back键按下后的逻辑

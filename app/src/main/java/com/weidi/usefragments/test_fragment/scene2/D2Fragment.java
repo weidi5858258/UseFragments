@@ -72,6 +72,12 @@ public class D2Fragment extends BaseFragment {
         if (DEBUG)
             MLog.d(TAG, "onViewCreated(): " + this
                     + " savedInstanceState: " + savedInstanceState);
+        mJumpBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                FragOperManager.getInstance().enter3(new E2Fragment());
+            }
+        });
     }
 
     @Override
@@ -213,18 +219,6 @@ public class D2Fragment extends BaseFragment {
     @Override
     protected int provideLayout() {
         return R.layout.fragment_test_edittext;
-    }
-
-    @Override
-    protected void afterInitView(LayoutInflater inflater,
-                                 ViewGroup container,
-                                 Bundle savedInstanceState) {
-        mJumpBtn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                FragOperManager.getInstance().enter3(new E2Fragment());
-            }
-        });
     }
 
     @Override
