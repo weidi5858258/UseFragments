@@ -58,7 +58,7 @@ public class MainActivity3 extends BaseActivity
 
         }
 
-        FragOperManager.getInstance().enter(new TestViewFragment());
+        FragOperManager.getInstance().enter(new MainFragment());
     }
 
     @Override

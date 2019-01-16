@@ -207,20 +207,6 @@ public class A2Fragment extends BaseFragment {
         }
     }
 
-    /*@Override
-    public Animator onCreateAnimator(int transit, boolean enter, int nextAnim) {
-        super.onCreateAnimator(transit, enter, nextAnim);
-        if (DEBUG)
-            MLog.d(TAG, "onCreateAnimator(): " + this +
-                    " transit: " + transit + " enter: " + enter + " nextAnim: " + nextAnim);
-        *//*if (enter) {
-            return AnimationUtils.loadAnimation(getContext(), R.anim.slide_right_in);
-        } else {
-            return AnimationUtils.loadAnimation(getContext(), R.anim.slide_left_out);
-        }*//*
-        return null;
-    }*/
-
     // 写这个方法只是为了不直接调用onResume()方法
     private void onShow() {
         if (DEBUG)

@@ -43,6 +43,9 @@ public class MainActivity2 extends BaseActivity
         sFragmentBackTypeSMap.put(CFragment.class.getSimpleName(), FragOperManager.POP_BACK_STACK);
         sFragmentBackTypeSMap.put(DFragment.class.getSimpleName(), FragOperManager.POP_BACK_STACK);
         sFragmentBackTypeSMap.put(EFragment.class.getSimpleName(), FragOperManager.POP_BACK_STACK);
+        sFragmentBackTypeSMap.put(
+                TestViewFragment.class.getSimpleName(),
+                FragOperManager.POP_BACK_STACK);
     }
 
     private Button mJumpBtn;

@@ -218,6 +218,6 @@ public class TestViewFragment extends BaseFragment {
 
     @Override
     public boolean onBackPressed() {
-        return true;
+        return false;
     }
 }
