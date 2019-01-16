@@ -1,6 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.weidi.usefragments">
+          package="com.weidi.usefragments">
+
+    <!--相机权限-->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <!--使用摄像头硬件功能-->
+    <uses-feature android:name="android.hardware.camera" />
+    <!--自动对焦功能-->
+    <uses-feature android:name="android.hardware.camera.autofocus" />
+    <!--闪光灯功能-->
+    <uses-feature android:name="android.hardware.camera.flash" />
+    <!-- 录音权限 -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <!-- 读写权限-->
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
 
     <application
         android:name=".MyApplication"
@@ -10,13 +23,15 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
+
         <activity
             android:name=".MainActivity1"
+            android:screenOrientation="portrait"
             android:configChanges="keyboardHidden|screenLayout|screenSize|smallestScreenSize|orientation">
             <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
+                <action android:name="android.intent.action.MAIN"/>
 
-                <category android:name="android.intent.category.LAUNCHER" />
+                <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
         <activity
@@ -26,6 +41,21 @@
         <activity
             android:name=".MainActivity3"
             android:configChanges="keyboardHidden|screenLayout|screenSize|smallestScreenSize|orientation"/>
+
+        <!--<activity
+            android:name=".MainActivity2">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".MainActivity1"/>
+
+        <activity
+            android:name=".MainActivity3"/>-->
+
     </application>
 
 </manifest>

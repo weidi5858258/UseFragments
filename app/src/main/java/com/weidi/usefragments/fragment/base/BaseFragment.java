@@ -55,7 +55,7 @@ public abstract class BaseFragment extends Fragment {
             throw new NullPointerException("BaseFragment onAttach() context is null.");
         }
         if (DEBUG)
-            MLog.d(TAG, "onAttach(): " + this + " context: " + context);
+            MLog.d(TAG, "onAttach(): " + printThis() + " context: " + context);
         mContext = context;
     }
 
@@ -66,7 +66,7 @@ public abstract class BaseFragment extends Fragment {
             throw new NullPointerException("BaseFragment onAttach() activity is null.");
         }
         if (DEBUG)
-            MLog.d(TAG, "onAttach(): " + this + " activity: " + activity);
+            MLog.d(TAG, "onAttach(): " + printThis() + " activity: " + activity);
         mActivity = activity;
         if (!(activity instanceof BackHandlerInterface)) {
             throw new ClassCastException("Hosting Activity must implement BackHandlerInterface");
@@ -79,7 +79,7 @@ public abstract class BaseFragment extends Fragment {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         if (DEBUG)
-            MLog.d(TAG, "onCreate(): " + this
+            MLog.d(TAG, "onCreate(): " + printThis()
                     + " savedInstanceState: " + savedInstanceState);
         /**
          * 一旦我们设置 setRetainInstance(true)，意味着在 Activity 重绘时，
@@ -113,15 +113,12 @@ public abstract class BaseFragment extends Fragment {
             Bundle savedInstanceState) {
         super.onCreateView(inflater, container, savedInstanceState);
         if (DEBUG)
-            MLog.d(TAG, "onCreateView(): " + this
+            MLog.d(TAG, "onCreateView(): " + printThis()
                     + " savedInstanceState: " + savedInstanceState);
         // 如果写成inflater.inflate(provideLayout(), container)这样的话,
         // 那么会报异常,具体异常就是已经有一个子类的parent,添加之前先要移除这个parent.
-        View view = null;
-        if (savedInstanceState == null) {
-            view = inflater.inflate(provideLayout(), null);
-            InjectUtils.inject(this, view);
-        }
+        View view = inflater.inflate(provideLayout(), null);
+        InjectUtils.inject(this, view);
         if (view == null) {
             throw new NullPointerException(
                     "BaseFragment onCreateView() view is null.");
@@ -133,7 +130,7 @@ public abstract class BaseFragment extends Fragment {
     public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
         if (DEBUG)
-            MLog.d(TAG, "onViewCreated(): " + this
+            MLog.d(TAG, "onViewCreated(): " + printThis()
                     + " savedInstanceState: " + savedInstanceState);
     }
 
@@ -141,7 +138,7 @@ public abstract class BaseFragment extends Fragment {
     public void onViewStateRestored(Bundle savedInstanceState) {
         super.onViewStateRestored(savedInstanceState);
         if (DEBUG)
-            MLog.d(TAG, "onViewStateRestored(): " + this
+            MLog.d(TAG, "onViewStateRestored(): " + printThis()
                     + " savedInstanceState: " + savedInstanceState);
     }
 
@@ -149,7 +146,7 @@ public abstract class BaseFragment extends Fragment {
     public void onActivityCreated(Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
         if (DEBUG)
-            MLog.d(TAG, "onActivityCreated(): " + this
+            MLog.d(TAG, "onActivityCreated(): " + printThis()
                     + " savedInstanceState: " + savedInstanceState);
     }
 
@@ -164,7 +161,7 @@ public abstract class BaseFragment extends Fragment {
             return;
         }
         if (DEBUG)
-            MLog.d(TAG, "onStart(): " + this);
+            MLog.d(TAG, "onStart(): " + printThis());
     }
 
     /*********************************
@@ -178,7 +175,7 @@ public abstract class BaseFragment extends Fragment {
             return;
         }
         if (DEBUG)
-            MLog.d(TAG, "onResume(): " + this);
+            MLog.d(TAG, "onResume(): " + printThis());
         onShow();
     }
 
@@ -211,7 +208,7 @@ public abstract class BaseFragment extends Fragment {
             return;
         }
         if (DEBUG)
-            MLog.d(TAG, "onPause(): " + this);
+            MLog.d(TAG, "onPause(): " + printThis());
     }
 
     /*********************************
@@ -225,7 +222,7 @@ public abstract class BaseFragment extends Fragment {
             return;
         }
         if (DEBUG)
-            MLog.d(TAG, "onStop(): " + this);
+            MLog.d(TAG, "onStop(): " + printThis());
     }
 
     /*********************************
@@ -236,14 +233,14 @@ public abstract class BaseFragment extends Fragment {
     public void onDestroyView() {
         super.onDestroyView();
         if (DEBUG)
-            MLog.d(TAG, "onDestroyView(): " + this);
+            MLog.d(TAG, "onDestroyView(): " + printThis());
     }
 
     @Override
     public void onDestroy() {
         super.onDestroy();
         if (DEBUG)
-            MLog.d(TAG, "onDestroy(): " + this);
+            MLog.d(TAG, "onDestroy(): " + printThis());
         FragOperManager.getInstance().removeFragment(this);
     }
 
@@ -251,35 +248,35 @@ public abstract class BaseFragment extends Fragment {
     public void onDetach() {
         super.onDetach();
         if (DEBUG)
-            MLog.d(TAG, "onDetach(): " + this);
+            MLog.d(TAG, "onDetach(): " + printThis());
     }
 
     @Override
     public void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
         if (DEBUG)
-            MLog.d(TAG, "onSaveInstanceState(): " + this);
+            MLog.d(TAG, "onSaveInstanceState(): " + printThis());
     }
 
     @Override
     public void onConfigurationChanged(Configuration newConfig) {
         super.onConfigurationChanged(newConfig);
         if (DEBUG)
-            MLog.d(TAG, "onConfigurationChanged(): " + this);
+            MLog.d(TAG, "onConfigurationChanged(): " + printThis());
     }
 
     @Override
     public void onLowMemory() {
         super.onLowMemory();
         if (DEBUG)
-            MLog.d(TAG, "onLowMemory(): " + this);
+            MLog.d(TAG, "onLowMemory(): " + printThis());
     }
 
     @Override
     public void onTrimMemory(int level) {
         super.onTrimMemory(level);
         if (DEBUG)
-            MLog.d(TAG, "onTrimMemory(): " + this + " level: " + level);
+            MLog.d(TAG, "onTrimMemory(): " + printThis() + " level: " + level);
     }
 
     @Override
@@ -289,14 +286,14 @@ public abstract class BaseFragment extends Fragment {
             @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         if (DEBUG)
-            MLog.d(TAG, "onRequestPermissionsResult(): " + this +
+            MLog.d(TAG, "onRequestPermissionsResult(): " + printThis() +
                     " requestCode: " + requestCode);
     }
 
     @Override
     public Animator onCreateAnimator(int transit, boolean enter, int nextAnim) {
         if (DEBUG)
-            MLog.d(TAG, "onCreateAnimator(): " + this +
+            MLog.d(TAG, "onCreateAnimator(): " + printThis() +
                     " transit: " + transit + " enter: " + enter + " nextAnim: " + nextAnim);
         return super.onCreateAnimator(transit, enter, nextAnim);
     }
@@ -324,7 +321,7 @@ public abstract class BaseFragment extends Fragment {
     public void onHiddenChanged(boolean hidden) {
         super.onHiddenChanged(hidden);
         if (DEBUG)
-            MLog.d(TAG, "onHiddenChanged(): " + this + " hidden: " + hidden);
+            MLog.d(TAG, "onHiddenChanged(): " + printThis() + " hidden: " + hidden);
         if (hidden) {
             onHide();
         } else {
@@ -335,7 +332,7 @@ public abstract class BaseFragment extends Fragment {
     // 写这个方法只是为了不直接调用onResume()方法
     private void onShow() {
         if (DEBUG)
-            MLog.d(TAG, "onShow(): " + this);
+            MLog.d(TAG, "onShow(): " + printThis());
 
         Integer[] container_scene =
                 FragOperManager.getInstance().getActivityMap(mActivity);
@@ -368,7 +365,7 @@ public abstract class BaseFragment extends Fragment {
 
     private void onHide() {
         if (DEBUG)
-            MLog.d(TAG, "onHide(): " + this);
+            MLog.d(TAG, "onHide(): " + printThis());
     }
 
     public Context getContext() {
@@ -418,6 +415,14 @@ public abstract class BaseFragment extends Fragment {
                     R.anim.push_right_in, R.anim.push_right_out);
         } catch (Exception e) {
         }
+    }
+
+    protected String printThis() {
+        // com.weidi.usefragments.MainActivity2@416c7b
+        String temp = this.toString();
+        int lastIndex = temp.lastIndexOf(".");
+        temp = temp.substring(lastIndex + 1, temp.length());
+        return temp;
     }
 
 

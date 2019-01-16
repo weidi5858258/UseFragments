@@ -24,12 +24,14 @@ import com.weidi.usefragments.test_fragment.scene1.EFragment;
 import com.weidi.usefragments.test_fragment.scene2.A2Fragment;
 import com.weidi.usefragments.test_fragment.scene2.B2Fragment;
 import com.weidi.usefragments.test_fragment.scene2.C2Fragment;
+import com.weidi.usefragments.test_fragment.scene2.Camera2Fragment;
 import com.weidi.usefragments.test_fragment.scene2.D2Fragment;
 import com.weidi.usefragments.test_fragment.scene2.E2Fragment;
 import com.weidi.usefragments.test_fragment.scene2.Main1Fragment;
 import com.weidi.usefragments.test_fragment.scene2.Main2Fragment;
 import com.weidi.usefragments.test_fragment.scene2.Main3Fragment;
 import com.weidi.usefragments.test_fragment.scene2.Main4Fragment;
+import com.weidi.usefragments.tool.MLog;
 
 import java.util.HashMap;
 
@@ -78,21 +80,8 @@ public class MainActivity1 extends BaseActivity
         sFragmentBackTypeSMap.put(
                 E2Fragment.class.getSimpleName(),
                 FragOperManager.POP_BACK_STACK);
-
         sFragmentBackTypeSMap.put(
-                AFragment.class.getSimpleName(),
-                FragOperManager.POP_BACK_STACK);
-        sFragmentBackTypeSMap.put(
-                BFragment.class.getSimpleName(),
-                FragOperManager.POP_BACK_STACK);
-        sFragmentBackTypeSMap.put(
-                CFragment.class.getSimpleName(),
-                FragOperManager.POP_BACK_STACK);
-        sFragmentBackTypeSMap.put(
-                DFragment.class.getSimpleName(),
-                FragOperManager.POP_BACK_STACK);
-        sFragmentBackTypeSMap.put(
-                EFragment.class.getSimpleName(),
+                Camera2Fragment.class.getSimpleName(),
                 FragOperManager.POP_BACK_STACK);
     }
 
@@ -101,7 +90,8 @@ public class MainActivity1 extends BaseActivity
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         if (DEBUG)
-            Log.d(TAG, "onCreate() savedInstanceState: " + savedInstanceState);
+            MLog.d(TAG, "onCreate(): " + printThis()
+                    + " savedInstanceState: " + savedInstanceState);
         FragOperManager.getInstance().addActivity2(this, R.id.root_layout);
         if (savedInstanceState != null) {
 

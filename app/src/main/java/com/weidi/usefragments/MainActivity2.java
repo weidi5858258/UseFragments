@@ -32,7 +32,7 @@ public class MainActivity2 extends BaseActivity
     private static final String TAG =
             MainActivity2.class.getSimpleName();
 
-    private static final boolean DEBUG = true;
+    private static final boolean DEBUG = false;
     private BaseFragment mBaseFragment;
     private static HashMap<String, Integer> sFragmentBackTypeSMap;
 

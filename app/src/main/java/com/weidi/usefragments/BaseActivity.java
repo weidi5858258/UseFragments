@@ -2,6 +2,8 @@ package com.weidi.usefragments;
 
 import android.app.Activity;
 import android.content.Context;
+import android.content.Intent;
+import android.content.res.Configuration;
 import android.graphics.PixelFormat;
 import android.os.Bundle;
 import android.os.IBinder;
@@ -19,14 +21,14 @@ public abstract class BaseActivity extends Activity {
     private static final String TAG =
             BaseActivity.class.getSimpleName();
 
-    private static final boolean DEBUG = false;
+    private static final boolean DEBUG = true;
     private Context mContext = null;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         if (DEBUG)
-            MLog.d(TAG, "onCreate(): " + this
+            MLog.d(TAG, "onCreate(): " + printThis()
                     + " savedInstanceState: " + savedInstanceState);
         this.mContext = this.getApplicationContext();
     }
@@ -35,21 +37,21 @@ public abstract class BaseActivity extends Activity {
     public void onRestart() {
         super.onRestart();
         if (DEBUG)
-            MLog.d(TAG, "onRestart(): " + this);
+            MLog.d(TAG, "onRestart(): " + printThis());
     }
 
     @Override
     public void onStart() {
         super.onStart();
         if (DEBUG)
-            MLog.d(TAG, "onStart(): " + this);
+            MLog.d(TAG, "onStart(): " + printThis());
     }
 
     @Override
     public void onResume() {
         super.onResume();
         if (DEBUG)
-            MLog.d(TAG, "onResume(): " + this);
+            MLog.d(TAG, "onResume(): " + printThis());
         FragOperManager.getInstance().setCurUsedActivity(this);
     }
 
@@ -57,36 +59,78 @@ public abstract class BaseActivity extends Activity {
     public void onPause() {
         super.onPause();
         if (DEBUG)
-            MLog.d(TAG, "onPause(): " + this);
+            MLog.d(TAG, "onPause(): " + printThis());
     }
 
     @Override
     public void onStop() {
         super.onStop();
         if (DEBUG)
-            MLog.d(TAG, "onStop(): " + this);
+            MLog.d(TAG, "onStop(): " + printThis());
     }
 
     @Override
     public void onDestroy() {
         super.onDestroy();
         if (DEBUG)
-            MLog.d(TAG, "onDestroy(): " + this);
+            MLog.d(TAG, "onDestroy(): " + printThis());
         exitActivity();
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (DEBUG)
+            Log.d(TAG, "onActivityResult(): " + printThis() +
+                    " requestCode: " + requestCode +
+                    " resultCode: " + resultCode +
+                    " data: " + data);
+    }
+
+    @Override
+    public void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        if (DEBUG)
+            Log.d(TAG, "onSaveInstanceState(): " + printThis() +
+                    " outState: " + outState);
+    }
+
+    @Override
+    public void onRestoreInstanceState(Bundle savedInstanceState) {
+        super.onRestoreInstanceState(savedInstanceState);
+        if (DEBUG)
+            Log.d(TAG, "onRestoreInstanceState(): " + printThis() +
+                    " savedInstanceState: " + savedInstanceState);
+    }
+
+    /**
+     * 当配置发生变化时，不会重新启动Activity。但是会回调此方法，用户自行进行对屏幕旋转后进行处理.
+     */
+    @Override
+    public void onConfigurationChanged(Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+        // newConfig: {1.0 460mcc1mnc [zh_CN] ldltr sw360dp w640dp h336dp 320dpi nrml long land
+        // finger -keyb/v/h -nav/h s.264}
+        // newConfig: {1.0 460mcc1mnc [zh_CN] ldltr sw360dp w360dp h616dp 320dpi nrml long port
+        // finger -keyb/v/h -nav/h s.265}
+        if (DEBUG)
+            Log.d(TAG, "onConfigurationChanged(): " + printThis() +
+                    " newConfig: " + newConfig);
     }
 
     @Override
     public void onBackPressed() {
         super.onBackPressed();
         if (DEBUG)
-            MLog.d(TAG, "onBackPressed(): " + this);
+            MLog.d(TAG, "onBackPressed(): " + printThis());
     }
 
     @Override
     public void onWindowFocusChanged(boolean hasFocus) {
         super.onWindowFocusChanged(hasFocus);
         if (DEBUG)
-            MLog.d(TAG, "onWindowFocusChanged() hasFocus: " + hasFocus);
+            MLog.d(TAG, "onWindowFocusChanged(): " + printThis() +
+                    " hasFocus: " + hasFocus);
 
         /*if (hasFocus) {
             showWindow();
@@ -124,6 +168,14 @@ public abstract class BaseActivity extends Activity {
             overridePendingTransition(R.anim.push_right_in, R.anim.push_right_out);
         } catch (Exception e) {
         }
+    }
+
+    protected String printThis() {
+        // com.weidi.usefragments.MainActivity2@416c7b
+        String temp = this.toString();
+        int lastIndex = temp.lastIndexOf(".");
+        temp = temp.substring(lastIndex + 1, temp.length());
+        return temp;
     }
 
     private WindowManager.LayoutParams mWMLayoutParams;

@@ -233,18 +233,45 @@ public class FragOperManager implements Serializable {
         }
     }
 
-    public void removeFragment(Fragment mainFragment) {
-        if (mainFragment == null
+    public void removeFragment(Fragment fragment) {
+        if (fragment == null
+                || mActivityFragmentsMap == null
                 || mMoreMainFragmentsMap == null
-                || mMoreMainFragmentsMap.isEmpty()
-                || !mMoreMainFragmentsMap.containsKey(mainFragment)) {
+                || mDirectNestedFragmentsMap == null) {
             return;
         }
 
+        if (mCurUsedActivity != null
+                && mActivityFragmentsMap.containsKey(mCurUsedActivity)) {
+            List<Fragment> fragmentsList =
+                    mActivityFragmentsMap.get(mCurUsedActivity);
+            if (fragmentsList != null
+                    && fragmentsList.contains(fragment)) {
+                fragmentsList.remove(fragment);
+            }
+        }
+
+        if (mMoreMainFragmentsMap.containsKey(fragment)) {
+            mMoreMainFragmentsMap.remove(fragment);
+        }
+
+        if (mCurUsedMainFragment != null
+                && mMoreMainFragmentsMap.containsKey(mCurUsedMainFragment)) {
+            List<Fragment> mainChildFragmentsList =
+                    mMoreMainFragmentsMap.get(mCurUsedMainFragment);
+            if (mainChildFragmentsList != null
+                    && mainChildFragmentsList.contains(fragment)) {
+                mainChildFragmentsList.remove(fragment);
+            }
+        }
+
+        if (mDirectNestedFragmentsMap.containsKey(fragment)) {
+            mDirectNestedFragmentsMap.remove(fragment);
+        }
+
         if (DEBUG)
-            MLog.d(TAG, "removeFragment() mainFragment: " +
-                    mainFragment.getClass().getSimpleName());
-        mMoreMainFragmentsMap.remove(mainFragment);
+            MLog.d(TAG, "removeFragment() fragment: " +
+                    fragment.getClass().getSimpleName());
     }
 
     public Integer[] getActivityMap(Activity activity) {
