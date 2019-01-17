@@ -13,7 +13,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.weidi.usefragments.R;
 import com.weidi.usefragments.fragment.FragOperManager;
@@ -70,6 +69,7 @@ public class Main1Fragment extends BaseFragment {
         if (DEBUG)
             MLog.d(TAG, "onCreateView(): " + this
                     + " savedInstanceState: " + savedInstanceState);
+
         return super.onCreateView(inflater, container, savedInstanceState);
     }
 
@@ -79,6 +79,7 @@ public class Main1Fragment extends BaseFragment {
         if (DEBUG)
             MLog.d(TAG, "onViewCreated(): " + this
                     + " savedInstanceState: " + savedInstanceState);
+
         mJumpBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -236,6 +237,7 @@ public class Main1Fragment extends BaseFragment {
             MLog.d(TAG, "onShow(): " + this);
         mTitleView.setText(Main1Fragment.class.getSimpleName());
         mJumpBtn.setText("跳转到");
+        setStatusBarColor(getAttachedActivity(), android.R.color.holo_blue_light);
     }
 
     private void onHide() {

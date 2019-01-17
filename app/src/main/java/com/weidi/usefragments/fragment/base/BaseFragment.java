@@ -5,12 +5,15 @@ import android.app.Activity;
 import android.app.Fragment;
 import android.content.Context;
 import android.content.res.Configuration;
+import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.Window;
+import android.view.WindowManager;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.FrameLayout;
 
@@ -536,6 +539,25 @@ public abstract class BaseFragment extends Fragment {
         } catch (NoSuchFieldException e) {
             e.printStackTrace();
         } catch (IllegalAccessException e) {
+            e.printStackTrace();
+        }
+    }
+
+    protected static void setStatusBarColor(Activity activity, int color) {
+        try {
+            if (activity == null || color <= 0) {
+                return;
+            }
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                Window window = activity.getWindow();
+                window.addFlags(
+                        WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
+                window.setStatusBarColor(
+                        activity.getApplicationContext().getResources().getColor(color));
+                // 底部导航栏
+                // window.setNavigationBarColor(activity.getResources().getColor(colorResId));
+            }
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
