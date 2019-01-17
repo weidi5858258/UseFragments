@@ -15,30 +15,34 @@
     <FrameLayout
         android:id="@+id/fragment1_container_layout"
         android:layout_alignParentLeft="true"
-        android:layout_width="156dp"
-        android:layout_height="150dp"/>
+        android:background="@android:color/holo_green_light"
+        android:layout_width="262dp"
+        android:layout_height="85dp"/>
 
     <FrameLayout
         android:id="@+id/fragment2_container_layout"
         android:layout_alignParentRight="true"
-        android:layout_width="156dp"
-        android:layout_height="150dp"/>
+        android:background="@android:color/holo_blue_light"
+        android:layout_width="262dp"
+        android:layout_height="85dp"/>
 
     <FrameLayout
         android:id="@+id/fragment3_container_layout"
         android:layout_alignParentLeft="true"
         android:layout_below="@id/fragment1_container_layout"
+        android:background="@android:color/holo_red_light"
         android:layout_marginTop="16dp"
-        android:layout_width="156dp"
-        android:layout_height="150dp"/>
+        android:layout_width="262dp"
+        android:layout_height="85dp"/>
 
     <FrameLayout
         android:id="@+id/fragment4_container_layout"
         android:layout_alignParentRight="true"
         android:layout_below="@id/fragment2_container_layout"
+        android:background="@android:color/holo_purple"
         android:layout_marginTop="16dp"
-        android:layout_width="156dp"
-        android:layout_height="150dp"/>
+        android:layout_width="262dp"
+        android:layout_height="85dp"/>
 
     <TextView
         android:id="@+id/title_tv"

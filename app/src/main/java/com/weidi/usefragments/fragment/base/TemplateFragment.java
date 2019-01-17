@@ -181,7 +181,8 @@ public class TemplateFragment extends BaseFragment {
     public void onConfigurationChanged(Configuration newConfig) {
         super.onConfigurationChanged(newConfig);
         if (DEBUG)
-            MLog.d(TAG, "onConfigurationChanged(): " + printThis());
+            MLog.d(TAG, "onConfigurationChanged(): " + printThis() +
+                    " newConfig: " + newConfig);
     }
 
     @Override

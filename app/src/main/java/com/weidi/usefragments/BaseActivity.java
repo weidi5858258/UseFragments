@@ -1,6 +1,7 @@
 package com.weidi.usefragments;
 
 import android.app.Activity;
+import android.app.Fragment;
 import android.content.Context;
 import android.content.Intent;
 import android.content.res.Configuration;
@@ -11,9 +12,13 @@ import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
 import android.view.WindowManager;
+import android.widget.FrameLayout;
 
 import com.weidi.usefragments.fragment.FragOperManager;
 import com.weidi.usefragments.tool.MLog;
+
+import java.util.List;
+import java.util.Map;
 
 
 public abstract class BaseActivity extends Activity {
@@ -104,7 +109,10 @@ public abstract class BaseActivity extends Activity {
     }
 
     /**
-     * 当配置发生变化时，不会重新启动Activity。但是会回调此方法，用户自行进行对屏幕旋转后进行处理.
+     * 当配置发生变化时，不会重新启动Activity。
+     * 但是会回调此方法，用户自行进行对屏幕旋转后进行处理.
+     * <p>
+     * 横竖屏切换改变布局,参照MainActivity1
      */
     @Override
     public void onConfigurationChanged(Configuration newConfig) {
@@ -116,6 +124,30 @@ public abstract class BaseActivity extends Activity {
         if (DEBUG)
             Log.d(TAG, "onConfigurationChanged(): " + printThis() +
                     " newConfig: " + newConfig);
+
+        // 通知所有的Fragment配置发生了变化
+        Map<Fragment, List<Fragment>> mapTemp =
+                FragOperManager.getInstance().getMainFragmentsMap();
+        for (Map.Entry<Fragment, List<Fragment>> map : mapTemp.entrySet()) {
+            // mainFragment
+            if (map.getKey().isHidden()) {
+                map.getKey().onConfigurationChanged(newConfig);
+            }
+            // mainChildFragment
+            List<Fragment> mainChildFragmentsList = map.getValue();
+            if (mainChildFragmentsList == null
+                    || mainChildFragmentsList.isEmpty()) {
+                continue;
+            }
+            for (Fragment mainChildFragment : mainChildFragmentsList) {
+                if (mainChildFragment == null) {
+                    continue;
+                }
+                if (mainChildFragment.isHidden()) {
+                    mainChildFragment.onConfigurationChanged(newConfig);
+                }
+            }
+        }
     }
 
     @Override
@@ -168,6 +200,32 @@ public abstract class BaseActivity extends Activity {
             overridePendingTransition(R.anim.push_right_in, R.anim.push_right_out);
         } catch (Exception e) {
         }
+    }
+
+    public static FrameLayout getContentLayout(Activity activity) {
+        if (activity == null) {
+            return null;
+        }
+        View view = activity.findViewById(android.R.id.content);
+        if (view != null && view instanceof FrameLayout) {
+            return (FrameLayout) view;
+
+        }
+        return null;
+    }
+
+    public static View getRootView(Activity activity) {
+        if (activity == null) {
+            return null;
+        }
+        View view = activity.findViewById(android.R.id.content);
+        if (view != null && view instanceof FrameLayout) {
+            FrameLayout contentView = (FrameLayout) view;
+            if (contentView.getChildCount() > 0) {
+                return contentView.getChildAt(0);
+            }
+        }
+        return null;
     }
 
     protected String printThis() {

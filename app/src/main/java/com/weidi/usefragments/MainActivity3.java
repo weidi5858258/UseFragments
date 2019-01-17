@@ -51,7 +51,7 @@ public class MainActivity3 extends BaseActivity
         setContentView(R.layout.activity_main3);
         if (DEBUG)
             Log.d(TAG, "onCreate() savedInstanceState: " + savedInstanceState);
-        FragOperManager.getInstance().addActivity(this, R.id.root_layout);
+        FragOperManager.getInstance().addActivity(this, R.id.content_layout);
         if (savedInstanceState != null) {
 
         } else {

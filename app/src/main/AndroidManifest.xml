@@ -24,9 +24,9 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
 
+        <!--android:screenOrientation="portrait" 强制竖屏-->
         <activity
             android:name=".MainActivity1"
-            android:screenOrientation="portrait"
             android:configChanges="keyboardHidden|screenLayout|screenSize|smallestScreenSize|orientation">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>

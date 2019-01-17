@@ -11,15 +11,22 @@ import android.support.annotation.Nullable;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.inputmethod.InputMethodManager;
+import android.widget.FrameLayout;
 
+import com.weidi.usefragments.BaseActivity;
 import com.weidi.usefragments.R;
 import com.weidi.usefragments.fragment.FragOperManager;
 import com.weidi.usefragments.inject.InjectUtils;
 import com.weidi.usefragments.tool.MLog;
 
+import java.lang.reflect.Field;
+
 
 /***
- *
+ 如果在子类Fragment切换横竖屏时需要变换布局,
+ 那么在一开始的时候就要设计好代码的组织架构,
+ 弄成方法便于调用.
  */
 public abstract class BaseFragment extends Fragment {
 
@@ -30,6 +37,11 @@ public abstract class BaseFragment extends Fragment {
     private Activity mActivity;
     private Context mContext;
     private BackHandlerInterface mBackHandlerInterface;
+
+    // 当前配置
+    private Configuration mCurConfiguration;
+    // 当前屏幕方向
+    private int mOrientation = Configuration.ORIENTATION_UNDEFINED;
 
     /***
      要开启Fragment的Activity必须要实现这个接口
@@ -115,6 +127,10 @@ public abstract class BaseFragment extends Fragment {
         if (DEBUG)
             MLog.d(TAG, "onCreateView(): " + printThis()
                     + " savedInstanceState: " + savedInstanceState);
+
+        this.inflater = inflater;
+        this.container = container;
+        this.savedInstanceState = savedInstanceState;
         // 如果写成inflater.inflate(provideLayout(), container)这样的话,
         // 那么会报异常,具体异常就是已经有一个子类的parent,添加之前先要移除这个parent.
         View view = inflater.inflate(provideLayout(), null);
@@ -132,6 +148,9 @@ public abstract class BaseFragment extends Fragment {
         if (DEBUG)
             MLog.d(TAG, "onViewCreated(): " + printThis()
                     + " savedInstanceState: " + savedInstanceState);
+
+        // 在子类中给某些View设置监听事件
+        // View的内容显示在onShow()方法中进行
     }
 
     @Override
@@ -176,6 +195,7 @@ public abstract class BaseFragment extends Fragment {
         }
         if (DEBUG)
             MLog.d(TAG, "onResume(): " + printThis());
+
         onShow();
     }
 
@@ -258,11 +278,31 @@ public abstract class BaseFragment extends Fragment {
             MLog.d(TAG, "onSaveInstanceState(): " + printThis());
     }
 
+    /***
+     横竖屏切换改变布局,参照C2Fragment
+
+     只能改变当前显示的Fragment的布局,
+     没有显示的不会改变
+     */
     @Override
     public void onConfigurationChanged(Configuration newConfig) {
         super.onConfigurationChanged(newConfig);
+        this.mCurConfiguration = newConfig;
+        if (isHidden()
+                || mOrientation == mCurConfiguration.orientation) {
+            if (DEBUG)
+                MLog.d(TAG, "onConfigurationChanged()" +
+                        " return mOrientation: " + mOrientation +
+                        " mCurConfiguration.mOrientation: " +
+                        mCurConfiguration.orientation);
+            return;
+        }
         if (DEBUG)
-            MLog.d(TAG, "onConfigurationChanged(): " + printThis());
+            MLog.d(TAG, "onConfigurationChanged(): " + printThis() +
+                    " newConfig: " + newConfig);
+
+        handleConfigurationChangedEvent(newConfig, true, false);
+        mOrientation = mCurConfiguration.orientation;
     }
 
     @Override
@@ -334,6 +374,33 @@ public abstract class BaseFragment extends Fragment {
         if (DEBUG)
             MLog.d(TAG, "onShow(): " + printThis());
 
+        if (mCurConfiguration != null) {
+            if (mOrientation == mCurConfiguration.orientation) {
+                if (DEBUG)
+                    // 不需要变换布局
+                    MLog.d(TAG, "onShow() 1 " + printThis());
+            } else {
+                handleConfigurationChangedEvent(mCurConfiguration, false, false);
+                mOrientation = mCurConfiguration.orientation;
+                if (DEBUG)
+                    MLog.d(TAG, "onShow() 2 " + printThis());
+            }
+        } else {
+            if (DEBUG)
+                // 第一次显示(不需要变换布局)
+                MLog.d(TAG, "onShow() 3 " + printThis());
+            if (mOrientation == Configuration.ORIENTATION_UNDEFINED) {
+                Configuration configuration = getResources().getConfiguration();
+                if (configuration != null) {
+                    // 打开Fragment并且显示的时候记录屏幕方向
+                    mOrientation = configuration.orientation;
+                }
+            }
+        }
+
+        if (DEBUG)
+            MLog.d(TAG, "onShow() mOrientation: " + mOrientation);
+
         Integer[] container_scene =
                 FragOperManager.getInstance().getActivityMap(mActivity);
         if (mBackHandlerInterface == null
@@ -366,6 +433,17 @@ public abstract class BaseFragment extends Fragment {
     private void onHide() {
         if (DEBUG)
             MLog.d(TAG, "onHide(): " + printThis());
+
+        // 隐藏软键盘
+        InputMethodManager inputMethodManager =
+                (InputMethodManager) getContext().getSystemService(
+                        Context.INPUT_METHOD_SERVICE);
+        if (inputMethodManager != null
+                && getView() != null
+                && inputMethodManager.isActive()) {
+            inputMethodManager.hideSoftInputFromWindow(
+                    getView().getWindowToken(), 0);
+        }
     }
 
     public Activity getAttachedActivity() {
@@ -409,26 +487,56 @@ public abstract class BaseFragment extends Fragment {
      */
     public abstract boolean onBackPressed();
 
-    /**
-     * 打开页面时，页面从右往左滑入
-     * 底下的页面不需要有动画
+    private LayoutInflater inflater;
+    private ViewGroup container;
+    private Bundle savedInstanceState;
+
+    /***
+     * 子类可能需要去实现
+     * 子类覆写了这个方法,那么子类必须先调用父类这个方法,并且必须把override设为true.
+     *
+     * @param newConfig
+     * @param needToDo
+     * @param override true时表示子类已经覆写这个方法
      */
-    public void startFragmentAnim() {
-        try {
-            getActivity().overridePendingTransition(
-                    R.anim.push_left_in, R.anim.push_left_out);
-        } catch (Exception e) {
+    protected void handleConfigurationChangedEvent(
+            Configuration newConfig,
+            boolean needToDo,
+            boolean override) {
+        if (override) {
+            // 固定写法
+            FrameLayout contentLayout = BaseActivity.getContentLayout(getAttachedActivity());
+            if (contentLayout != null) {
+                FragOperManager.getInstance().popDirectNestedFragments(this);
+                // 得到放Fragment的容器布局
+                FrameLayout fragmentContentLayout = contentLayout.findViewById(R.id.content_layout);
+                fragmentContentLayout.removeView(getView());
+
+                // 子类需要有onCreateView(...)方法
+                View newView = onCreateView(inflater, container, savedInstanceState);
+                setView(this, newView);
+                // 子类可能需要有onViewCreated(...)方法
+                // 在这个方法中做找控件,设置监听之类的事
+                onViewCreated(newView, savedInstanceState);
+                fragmentContentLayout.addView(newView);
+            }
         }
+
+        // needToDo为true时,需要为各种View重新赋值.见C2Fragment
     }
 
-    /**
-     * 关闭页面时，页面从左往右滑出
-     */
-    public void finishFragmentAnim() {
+    protected static void setView(Fragment fragment, View newView) {
         try {
-            getActivity().overridePendingTransition(
-                    R.anim.push_right_in, R.anim.push_right_out);
-        } catch (Exception e) {
+            Class clazz = Class.forName("android.app.Fragment");
+            Field mView = clazz.getDeclaredField("mView");
+            mView.setAccessible(true);
+            mView.set(fragment, newView);
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        } catch (NoSuchFieldException e) {
+            e.printStackTrace();
+        } catch (IllegalAccessException e) {
+            e.printStackTrace();
         }
     }
 
@@ -439,7 +547,6 @@ public abstract class BaseFragment extends Fragment {
         temp = temp.substring(lastIndex + 1, temp.length());
         return temp;
     }
-
 
     /***
      代码备份:

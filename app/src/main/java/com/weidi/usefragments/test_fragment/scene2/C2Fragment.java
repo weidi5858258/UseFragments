@@ -1,19 +1,21 @@
 package com.weidi.usefragments.test_fragment.scene2;
 
 import android.app.Activity;
+import android.content.res.Configuration;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.FrameLayout;
 import android.widget.TextView;
 
+import com.weidi.usefragments.BaseActivity;
 import com.weidi.usefragments.R;
 import com.weidi.usefragments.fragment.FragOperManager;
 import com.weidi.usefragments.fragment.base.BaseFragment;
 import com.weidi.usefragments.inject.InjectView;
-import com.weidi.usefragments.test_fragment.scene1.DFragment;
 import com.weidi.usefragments.tool.MLog;
 
 
@@ -82,6 +84,7 @@ public class C2Fragment extends BaseFragment {
         if (DEBUG)
             MLog.d(TAG, "onCreateView(): " + this
                     + " savedInstanceState: " + savedInstanceState);
+
         return super.onCreateView(inflater, container, savedInstanceState);
     }
 
@@ -91,6 +94,7 @@ public class C2Fragment extends BaseFragment {
         if (DEBUG)
             MLog.d(TAG, "onViewCreated(): " + this
                     + " savedInstanceState: " + savedInstanceState);
+
         mJumpBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -197,6 +201,13 @@ public class C2Fragment extends BaseFragment {
             MLog.d(TAG, "onDetach(): " + this);
     }
 
+    @Override
+    public void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        if (DEBUG)
+            MLog.d(TAG, "onSaveInstanceState(): " + printThis());
+    }
+
     /**
      * Very important
      * true表示被隐藏了,false表示被显示了
@@ -226,9 +237,28 @@ public class C2Fragment extends BaseFragment {
     private void onShow() {
         if (DEBUG)
             MLog.d(TAG, "onShow(): " + this);
+
         mTitleView.setText(C2Fragment.class.getSimpleName());
         mJumpBtn.setText("跳转到");
+        loadDirectNestedFragments();
+    }
 
+    private void onHide() {
+        if (DEBUG)
+            MLog.d(TAG, "onHide(): " + this);
+    }
+
+    @Override
+    protected int provideLayout() {
+        return R.layout.fragment_one_layout;
+    }
+
+    @Override
+    public boolean onBackPressed() {
+        return false;
+    }
+
+    private void loadDirectNestedFragments() {
         FragOperManager.getInstance().enter(
                 this,
                 new C21Fragment(),
@@ -247,19 +277,15 @@ public class C2Fragment extends BaseFragment {
                 R.id.fragment4_container_layout);
     }
 
-    private void onHide() {
-        if (DEBUG)
-            MLog.d(TAG, "onHide(): " + this);
-    }
+    protected void handleConfigurationChangedEvent(
+            Configuration newConfig,
+            boolean needToDo,
+            boolean override) {
+        super.handleConfigurationChangedEvent(newConfig, needToDo, true);
 
-    @Override
-    protected int provideLayout() {
-        return R.layout.fragment_one_layout;
-    }
-
-    @Override
-    public boolean onBackPressed() {
-        return false;
+        if (needToDo) {
+            onShow();
+        }
     }
 
 }

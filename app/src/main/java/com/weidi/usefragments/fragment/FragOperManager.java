@@ -311,6 +311,37 @@ public class FragOperManager implements Serializable {
         return mDirectNestedFragmentsMap;
     }
 
+    public void popDirectNestedFragments(Fragment parentFragment) {
+        if (parentFragment == null
+                || mDirectNestedFragmentsMap == null
+                || mDirectNestedFragmentsMap.isEmpty()
+                || !mDirectNestedFragmentsMap.containsKey(parentFragment)) {
+            return;
+        }
+
+        List<Fragment> childFragmentsList =
+                mDirectNestedFragmentsMap.get(parentFragment);
+        if (childFragmentsList == null
+                || childFragmentsList.isEmpty()) {
+            return;
+        }
+
+        FragmentManager fragmentManager =
+                parentFragment.getChildFragmentManager();
+        FragmentTransaction fragmentTransaction =
+                fragmentManager.beginTransaction();
+        for (Fragment childFragment : childFragmentsList) {
+            if (childFragment == null) {
+                continue;
+            }
+
+            if (childFragment.getId() > 0) {
+                fragmentManager.popBackStack();
+            }
+        }
+        fragmentTransaction.commit();
+    }
+
     public boolean isExitFragmentAtDirectChildFragments(Fragment fragment) {
         if (fragment == null
                 || mDirectNestedFragmentsMap == null
@@ -341,6 +372,10 @@ public class FragOperManager implements Serializable {
             }
         }
         return false;
+    }
+
+    public Map<Fragment, List<Fragment>> getMainFragmentsMap() {
+        return mMoreMainFragmentsMap;
     }
 
     public List<Fragment> getMoreMainFragmentsMap(String mainFragmentTag) {

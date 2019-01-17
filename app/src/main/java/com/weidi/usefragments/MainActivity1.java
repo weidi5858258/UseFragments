@@ -1,26 +1,17 @@
 package com.weidi.usefragments;
 
+import android.app.Activity;
 import android.app.Fragment;
-import android.content.Context;
 import android.content.Intent;
 import android.content.res.Configuration;
-import android.graphics.Color;
-import android.graphics.PixelFormat;
 import android.os.Bundle;
-import android.os.IBinder;
+import android.text.TextUtils;
 import android.util.Log;
-import android.view.Gravity;
 import android.view.View;
-import android.view.WindowManager;
-import android.widget.RelativeLayout;
+import android.widget.FrameLayout;
 
 import com.weidi.usefragments.fragment.FragOperManager;
 import com.weidi.usefragments.fragment.base.BaseFragment;
-import com.weidi.usefragments.test_fragment.scene1.AFragment;
-import com.weidi.usefragments.test_fragment.scene1.BFragment;
-import com.weidi.usefragments.test_fragment.scene1.CFragment;
-import com.weidi.usefragments.test_fragment.scene1.DFragment;
-import com.weidi.usefragments.test_fragment.scene1.EFragment;
 import com.weidi.usefragments.test_fragment.scene2.A2Fragment;
 import com.weidi.usefragments.test_fragment.scene2.B2Fragment;
 import com.weidi.usefragments.test_fragment.scene2.C2Fragment;
@@ -35,6 +26,8 @@ import com.weidi.usefragments.test_fragment.scene2.Main4Fragment;
 import com.weidi.usefragments.tool.MLog;
 
 import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /***
  场景:
@@ -59,6 +52,8 @@ public class MainActivity1 extends BaseActivity
     private Fragment main2Fragment;
     private Fragment main3Fragment;
     private Fragment main4Fragment;
+
+    private View mRootView;
 
     private static HashMap<String, Integer> sFragmentBackTypeSMap;
 
@@ -92,11 +87,19 @@ public class MainActivity1 extends BaseActivity
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
+        mRootView = View.inflate(this, R.layout.activity_main, null);
+        FrameLayout contentLayout = getContentLayout(this);
+        if (contentLayout != null) {
+            contentLayout.addView(mRootView);
+        } else {
+            finish();
+            return;
+        }
+        // setContentView(R.layout.activity_main);
         if (DEBUG)
             MLog.d(TAG, "onCreate(): " + printThis()
                     + " savedInstanceState: " + savedInstanceState);
-        FragOperManager.getInstance().addActivity2(this, R.id.root_layout);
+        FragOperManager.getInstance().addActivity2(this, R.id.content_layout);
         if (savedInstanceState != null) {
 
         } else {
@@ -251,6 +254,8 @@ public class MainActivity1 extends BaseActivity
         // finger -keyb/v/h -nav/h s.265}
         if (DEBUG)
             Log.d(TAG, "onConfigurationChanged() newConfig: " + newConfig);
+
+        handleConfigurationChangedEvent();
     }
 
     @Override
@@ -259,6 +264,97 @@ public class MainActivity1 extends BaseActivity
             Log.d(TAG, "setSelectedFragment() selectedFragment: "
                     + selectedFragment.getClass().getSimpleName());
         mBaseFragment = selectedFragment;
+    }
+
+    private void handleConfigurationChangedEvent() {
+        // 得到系统提供的用于显示用户界面的ContentLayout
+        FrameLayout contentLayout = getContentLayout(this);
+        if (contentLayout != null) {
+            // 得到用于显示Fragment内容的容器布局
+            FrameLayout fragmentContentLayout = mRootView.findViewById(R.id.content_layout);
+
+            Map<Fragment, List<Fragment>> mapTemp =
+                    FragOperManager.getInstance().getMainFragmentsMap();
+            for (Map.Entry<Fragment, List<Fragment>> map : mapTemp.entrySet()) {
+                String fragmentName = map.getKey().getClass().getSimpleName();
+                if (TextUtils.isEmpty(fragmentName)) {
+                    continue;
+                }
+                // remove mainFragment
+                fragmentContentLayout.removeView(map.getKey().getView());
+                List<Fragment> mainChildFragmentsList = map.getValue();
+                if (mainChildFragmentsList == null
+                        || mainChildFragmentsList.isEmpty()) {
+                    continue;
+                }
+                for (Fragment mainChildFragment : mainChildFragmentsList) {
+                    if (mainChildFragment == null) {
+                        continue;
+                    }
+                    fragmentContentLayout.removeView(mainChildFragment.getView());
+                }
+            }
+            contentLayout.removeView(mRootView);
+
+            // 当前Activity的新布局
+            mRootView = View.inflate(this, R.layout.activity_main, null);
+            fragmentContentLayout = mRootView.findViewById(R.id.content_layout);
+            for (Map.Entry<Fragment, List<Fragment>> map : mapTemp.entrySet()) {
+                String fragmentName = map.getKey().getClass().getSimpleName();
+                if (TextUtils.isEmpty(fragmentName)) {
+                    continue;
+                }
+                fragmentContentLayout.addView(map.getKey().getView());
+                List<Fragment> mainChildFragmentsList = map.getValue();
+                if (mainChildFragmentsList == null
+                        || mainChildFragmentsList.isEmpty()) {
+                    continue;
+                }
+                for (Fragment mainChildFragment : mainChildFragmentsList) {
+                    if (mainChildFragment == null) {
+                        continue;
+                    }
+                    fragmentContentLayout.addView(mainChildFragment.getView());
+                }
+            }
+            contentLayout.addView(mRootView);
+
+            findViewById(R.id.main1_btn).setOnClickListener(mViewOnClickListener);
+            findViewById(R.id.main2_btn).setOnClickListener(mViewOnClickListener);
+            findViewById(R.id.main3_btn).setOnClickListener(mViewOnClickListener);
+            findViewById(R.id.main4_btn).setOnClickListener(mViewOnClickListener);
+            findViewById(R.id.back_btn).setOnClickListener(mViewOnClickListener);
+
+            if (mCurShowMainFragment == null) {
+                return;
+            }
+            String mainFragmentName = mCurShowMainFragment.getClass().getSimpleName();
+            if (TextUtils.isEmpty(mainFragmentName)) {
+                mCurShowMainFragment = main1Fragment;
+                findViewById(R.id.main1_btn).setBackgroundColor(
+                        getResources().getColor(android.R.color.holo_green_light));
+                mPreShowMainFragment = mCurShowMainFragment;
+                FragOperManager.getInstance().setCurUsedFragment(mCurShowMainFragment);
+                FragOperManager.getInstance().changeFragment();
+                return;
+            }
+            if (mainFragmentName.equals(Main1Fragment.class.getSimpleName())) {
+                findViewById(R.id.main1_btn).setBackgroundColor(
+                        getResources().getColor(android.R.color.holo_green_light));
+            } else if (mainFragmentName.equals(Main2Fragment.class.getSimpleName())) {
+                findViewById(R.id.main2_btn).setBackgroundColor(
+                        getResources().getColor(android.R.color.holo_green_light));
+            } else if (mainFragmentName.equals(Main3Fragment.class.getSimpleName())) {
+                findViewById(R.id.main3_btn).setBackgroundColor(
+                        getResources().getColor(android.R.color.holo_green_light));
+            } else if (mainFragmentName.equals(Main4Fragment.class.getSimpleName())) {
+                findViewById(R.id.main4_btn).setBackgroundColor(
+                        getResources().getColor(android.R.color.holo_green_light));
+            }
+        } else {
+            finish();
+            return;
+        }
     }
 
     private void restoreBackgroundColor() {
@@ -278,6 +374,16 @@ public class MainActivity1 extends BaseActivity
                 public void onClick(View v) {
                     if (v.getId() == R.id.back_btn) {
                         onBackPressed();
+
+                        // test
+                        /*FrameLayout fragmentLayout = mRootView.findViewById(R.id.content_layout);
+                        FrameLayout fragmentLayoutTest = mRootView.findViewById(R.id
+                        .content_layout_test);
+                        LinearLayout fragmentRootLayout = mRootView.findViewById(R.id.root_layout);
+                        fragmentLayout.removeView(fragmentRootLayout);
+                        fragmentLayoutTest.addView(fragmentRootLayout);
+                        fragmentRootLayout.invalidate();
+                        fragmentLayoutTest.invalidate();*/
                         return;
                     }
                     restoreBackgroundColor();

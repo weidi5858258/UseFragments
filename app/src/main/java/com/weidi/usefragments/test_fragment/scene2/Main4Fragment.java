@@ -2,6 +2,7 @@ package com.weidi.usefragments.test_fragment.scene2;
 
 import android.app.Activity;
 import android.app.Fragment;
+import android.content.res.Configuration;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.view.LayoutInflater;
@@ -178,6 +179,23 @@ public class Main4Fragment extends BaseFragment {
             MLog.d(TAG, "onDetach(): " + this);
     }
 
+    @Override
+    public void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        if (DEBUG)
+            MLog.d(TAG, "onSaveInstanceState(): " + printThis());
+    }
+
+    @Override
+    public void onConfigurationChanged(Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+        if (isHidden()) {
+            return;
+        }
+        if (DEBUG)
+            MLog.d(TAG, "onConfigurationChanged(): " + printThis());
+    }
+
     /**
      * Very important
      * true表示被隐藏了,false表示被显示了
@@ -218,7 +236,7 @@ public class Main4Fragment extends BaseFragment {
 
     @Override
     protected int provideLayout() {
-        return R.layout.fragment_main;
+        return R.layout.fragment_main4;
     }
 
     @Override

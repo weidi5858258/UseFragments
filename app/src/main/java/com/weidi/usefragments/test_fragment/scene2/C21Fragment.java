@@ -193,6 +193,7 @@ public class C21Fragment extends BaseFragment {
         super.onHiddenChanged(hidden);
         if (DEBUG)
             MLog.d(TAG, "onHiddenChanged(): " + this + " hidden: " + hidden);
+
         if (hidden) {
             onHide();
         } else {
