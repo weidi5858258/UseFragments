@@ -44,6 +44,8 @@ public abstract class BaseFragment extends Fragment {
     // 当前配置
     private Configuration mCurConfiguration;
     // 当前屏幕方向
+    // Configuration.ORIENTATION_PORTRAIT  竖屏
+    // Configuration.ORIENTATION_LANDSCAPE 横屏
     private int mOrientation = Configuration.ORIENTATION_UNDEFINED;
 
     /***

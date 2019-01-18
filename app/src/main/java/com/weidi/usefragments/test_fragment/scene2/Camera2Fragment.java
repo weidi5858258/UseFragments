@@ -21,6 +21,7 @@ import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraDevice;
 import android.hardware.camera2.CameraManager;
 import android.hardware.camera2.CameraMetadata;
+import android.hardware.camera2.CaptureFailure;
 import android.hardware.camera2.CaptureRequest;
 import android.hardware.camera2.CaptureResult;
 import android.hardware.camera2.TotalCaptureResult;
@@ -171,6 +172,7 @@ public class Camera2Fragment extends BaseFragment
         }
         if (DEBUG)
             MLog.d(TAG, "onResume(): " + printThis());
+
         onShow();
     }
 
@@ -355,6 +357,46 @@ public class Camera2Fragment extends BaseFragment
 
     private static final SparseIntArray ORIENTATIONS = new SparseIntArray();
 
+    /***
+     Surface.ROTATION_0
+     表示的是手机竖屏方向向上(也就是竖屏时的值),
+     后面几个以此为基准依次以顺时针90度递增.
+
+     int rotation = activity.getWindowManager().getDefaultDisplay().getRotation();
+     这个rotation就是
+     Surface.ROTATION_0,
+     Surface.ROTATION_90,
+     Surface.ROTATION_180,
+     Surface.ROTATION_270
+     其中的一个值,
+     根据这个值然后返回后面的值.
+
+     三星Note2手机.
+     手机竖屏时,rotation = 0
+     从手机竖屏逆时针旋转90度,rotation = 1
+     从手机竖屏逆时针旋转180度,rotation = 2
+     从手机竖屏逆时针旋转270度,rotation = 3
+     从手机竖屏顺时针旋转90度,相当于逆时针旋转270度,rotation = 3
+     从手机竖屏顺时针旋转180度,相当于逆时针旋转180度,rotation = 2
+     从手机竖屏顺时针旋转270度,相当于逆时针旋转90度,rotation = 1
+
+     总结:
+     首先得认识这样一个事实,
+     就是在这里有一个默认值,这个值就是Surface.ROTATION_0(为0),
+     即手机竖屏时(传感器在最上面的状态,也就是我们一般竖屏拿手机的状态).
+     然后得到的rotation的值就是屏幕旋转后的值,
+     这个值是相对于这个默认值来说的.
+     这个值可以理解为屏幕方向的值(也可以说是固定的值)
+     这些值就是(手机一般为这样,可能跟平板得到的值不一样)
+     自然竖屏 0 表示我们一般拿手机的姿势
+     自然横屏 1 表示我们横向拿手机的姿势,摄像头在左手边
+     反向竖屏 2 表示我们把手机拿反的姿势
+     反向横屏 3 表示我们横向拿手机的姿势,摄像头在右手边
+
+     上面说了一大堆,就是在说rotation为我们放置手机时得到的一个状态值.
+     手机摄像头的传感器的默认方向为我们横向拿手机,摄像头在左手边时的一个方向.
+     此时的rotation为1.
+     */
     static {
         ORIENTATIONS.append(Surface.ROTATION_0, 90);
         ORIENTATIONS.append(Surface.ROTATION_90, 0);
@@ -516,6 +558,7 @@ public class Camera2Fragment extends BaseFragment
 
         @Override
         public void onImageAvailable(ImageReader reader) {
+            // 当图片可得到的时候获取图片并保存
             mBackgroundHandler.post(new ImageSaver(reader.acquireNextImage(), mFile));
         }
 
@@ -553,11 +596,44 @@ public class Camera2Fragment extends BaseFragment
      */
     private int mSensorOrientation;
 
-    /**
-     * A {@link CameraCaptureSession.CaptureCallback} that handles events related to JPEG capture.
+    /***
+     A {@link CameraCaptureSession.CaptureCallback} that handles events related to JPEG capture.
+     预览
+     拍照
      */
     private CameraCaptureSession.CaptureCallback mCaptureCallback =
             new CameraCaptureSession.CaptureCallback() {
+
+                public void onCaptureStarted(
+                        @NonNull CameraCaptureSession session,
+                        @NonNull CaptureRequest request,
+                        long timestamp,
+                        long frameNumber) {
+                    // default empty implementation
+                }
+
+                @Override
+                public void onCaptureProgressed(
+                        @NonNull CameraCaptureSession session,
+                        @NonNull CaptureRequest request,
+                        @NonNull CaptureResult partialResult) {
+                    process(partialResult);
+                }
+
+                @Override
+                public void onCaptureCompleted(
+                        @NonNull CameraCaptureSession session,
+                        @NonNull CaptureRequest request,
+                        @NonNull TotalCaptureResult result) {
+                    process(result);
+                }
+
+                public void onCaptureFailed(
+                        @NonNull CameraCaptureSession session,
+                        @NonNull CaptureRequest request,
+                        @NonNull CaptureFailure failure) {
+                    // default empty implementation
+                }
 
                 private void process(CaptureResult result) {
                     switch (mState) {
@@ -565,17 +641,27 @@ public class Camera2Fragment extends BaseFragment
                             // We have nothing to do when the camera preview is working normally.
                             break;
                         }
+                        /***
+                         等待对焦
+                         */
                         case STATE_WAITING_LOCK: {
                             Integer afState = result.get(CaptureResult.CONTROL_AF_STATE);
                             if (afState == null) {
+                                if (DEBUG)
+                                    MLog.d(TAG, "mCaptureCallback STATE_WAITING_LOCK" +
+                                            " process() afState is null");
                                 captureStillPicture();
                             } else if (CaptureResult.CONTROL_AF_STATE_FOCUSED_LOCKED == afState ||
                                     CaptureResult.CONTROL_AF_STATE_NOT_FOCUSED_LOCKED == afState) {
                                 // CONTROL_AE_STATE can be null on some devices
                                 Integer aeState = result.get(CaptureResult.CONTROL_AE_STATE);
+                                if (DEBUG)
+                                    MLog.d(TAG, "mCaptureCallback STATE_WAITING_LOCK" +
+                                            " process() afState: " + aeState);
                                 if (aeState == null ||
                                         aeState == CaptureResult.CONTROL_AE_STATE_CONVERGED) {
                                     mState = STATE_PICTURE_TAKEN;
+                                    // 对焦完成
                                     captureStillPicture();
                                 } else {
                                     runPrecaptureSequence();
@@ -596,28 +682,18 @@ public class Camera2Fragment extends BaseFragment
                         case STATE_WAITING_NON_PRECAPTURE: {
                             // CONTROL_AE_STATE can be null on some devices
                             Integer aeState = result.get(CaptureResult.CONTROL_AE_STATE);
-                            if (aeState == null || aeState != CaptureResult
-                                    .CONTROL_AE_STATE_PRECAPTURE) {
+                            if (aeState == null ||
+                                    aeState != CaptureResult.CONTROL_AE_STATE_PRECAPTURE) {
+                                if (DEBUG)
+                                    MLog.d(TAG, "mCaptureCallback STATE_WAITING_NON_PRECAPTURE" +
+                                            " process() afState: " + aeState);
+
                                 mState = STATE_PICTURE_TAKEN;
                                 captureStillPicture();
                             }
                             break;
                         }
                     }
-                }
-
-                @Override
-                public void onCaptureProgressed(@NonNull CameraCaptureSession session,
-                                                @NonNull CaptureRequest request,
-                                                @NonNull CaptureResult partialResult) {
-                    process(partialResult);
-                }
-
-                @Override
-                public void onCaptureCompleted(@NonNull CameraCaptureSession session,
-                                               @NonNull CaptureRequest request,
-                                               @NonNull TotalCaptureResult result) {
-                    process(result);
                 }
 
             };
@@ -706,11 +782,20 @@ public class Camera2Fragment extends BaseFragment
      * @param width  The width of available size for camera preview
      * @param height The height of available size for camera preview
      */
-    private void setUpCameraOutputs(int width, int height) {
+    private void setupCameraOutputs(int width, int height) {
+        if (DEBUG)
+            MLog.d(TAG, "setupCameraOutputs()" +
+                    " width: " + width +
+                    " height: " + height);
+
         Activity activity = getActivity();
         CameraManager manager = (CameraManager) activity.getSystemService(Context.CAMERA_SERVICE);
         try {
             for (String cameraId : manager.getCameraIdList()) {
+                if (DEBUG)
+                    MLog.d(TAG, "setupCameraOutputs()" +
+                            " cameraId: " + cameraId);
+
                 CameraCharacteristics characteristics
                         = manager.getCameraCharacteristics(cameraId);
 
@@ -726,28 +811,45 @@ public class Camera2Fragment extends BaseFragment
                     continue;
                 }
 
+                // 拍照时使用最大的宽高
                 // For still image captures, we use the largest available size.
                 Size largest = Collections.max(
                         Arrays.asList(map.getOutputSizes(ImageFormat.JPEG)),
                         new CompareSizesByArea());
-                mImageReader = ImageReader.newInstance(largest.getWidth(), largest.getHeight(),
-                        ImageFormat.JPEG, /*maxImages*/2);
+                if (DEBUG)
+                    // largest.getWidth(): 3264 largest.getHeight(): 2448
+                    MLog.d(TAG, "setupCameraOutputs() " + printThis() +
+                            " largest.getWidth(): " + largest.getWidth() +
+                            " largest.getHeight(): " + largest.getHeight());
+                mImageReader = ImageReader.newInstance(
+                        largest.getWidth(),
+                        largest.getHeight(),
+                        ImageFormat.JPEG,
+                        /*maxImages*/2);
                 mImageReader.setOnImageAvailableListener(
-                        mOnImageAvailableListener, mBackgroundHandler);
+                        mOnImageAvailableListener,
+                        mBackgroundHandler);
 
                 // Find out if we need to swap dimension to get the preview size relative to sensor
                 // coordinate.
                 int displayRotation = activity.getWindowManager().getDefaultDisplay().getRotation();
-                //noinspection ConstantConditions
-                mSensorOrientation = characteristics.get(CameraCharacteristics.SENSOR_ORIENTATION);
+                // noinspection ConstantConditions
+                mSensorOrientation = characteristics.get(
+                        CameraCharacteristics.SENSOR_ORIENTATION);
+                if (DEBUG)
+                    MLog.d(TAG, "setupCameraOutputs() " + printThis() +
+                            " displayRotation: " + displayRotation +
+                            " mSensorOrientation: " + mSensorOrientation);
                 boolean swappedDimensions = false;
                 switch (displayRotation) {
+                    // 竖屏
                     case Surface.ROTATION_0:
                     case Surface.ROTATION_180:
                         if (mSensorOrientation == 90 || mSensorOrientation == 270) {
                             swappedDimensions = true;
                         }
                         break;
+                    // 横屏
                     case Surface.ROTATION_90:
                     case Surface.ROTATION_270:
                         if (mSensorOrientation == 0 || mSensorOrientation == 180) {
@@ -764,6 +866,11 @@ public class Camera2Fragment extends BaseFragment
                 int rotatedPreviewHeight = height;
                 int maxPreviewWidth = displaySize.x;
                 int maxPreviewHeight = displaySize.y;
+                if (DEBUG)
+                    // maxPreviewWidth: 720 maxPreviewHeight: 1280
+                    MLog.d(TAG, "setupCameraOutputs()" +
+                            " maxPreviewWidth: " + maxPreviewWidth +
+                            " maxPreviewHeight: " + maxPreviewHeight);
 
                 if (swappedDimensions) {
                     rotatedPreviewWidth = height;
@@ -783,12 +890,22 @@ public class Camera2Fragment extends BaseFragment
                 // Danger, W.R.! Attempting to use too large a preview size could  exceed the camera
                 // bus' bandwidth limitation, resulting in gorgeous previews but the storage of
                 // garbage capture data.
-                mPreviewSize = chooseOptimalSize(map.getOutputSizes(SurfaceTexture.class),
-                        rotatedPreviewWidth, rotatedPreviewHeight, maxPreviewWidth,
-                        maxPreviewHeight, largest);
+                mPreviewSize = chooseOptimalSize(
+                        map.getOutputSizes(SurfaceTexture.class),
+                        rotatedPreviewWidth,
+                        rotatedPreviewHeight,
+                        maxPreviewWidth,
+                        maxPreviewHeight,
+                        largest);
+                if (DEBUG)
+                    // mPreviewSize.getWidth(): 960 mPreviewSize.getHeight(): 720
+                    MLog.d(TAG, "setupCameraOutputs()" +
+                            " mPreviewSize.getWidth(): " + mPreviewSize.getWidth() +
+                            " mPreviewSize.getHeight(): " + mPreviewSize.getHeight());
 
                 // We fit the aspect ratio of TextureView to the size of preview we picked.
                 int orientation = getResources().getConfiguration().orientation;
+                // 横屏
                 if (orientation == Configuration.ORIENTATION_LANDSCAPE) {
                     mTextureView.setAspectRatio(
                             mPreviewSize.getWidth(), mPreviewSize.getHeight());
@@ -798,7 +915,8 @@ public class Camera2Fragment extends BaseFragment
                 }
 
                 // Check if the flash is supported.
-                Boolean available = characteristics.get(CameraCharacteristics.FLASH_INFO_AVAILABLE);
+                Boolean available = characteristics.get(
+                        CameraCharacteristics.FLASH_INFO_AVAILABLE);
                 mFlashSupported = available == null ? false : available;
 
                 mCameraId = cameraId;
@@ -824,7 +942,7 @@ public class Camera2Fragment extends BaseFragment
             return;
         }
 
-        setUpCameraOutputs(width, height);
+        setupCameraOutputs(width, height);
         configureTransform(width, height);
         Activity activity = getActivity();
         CameraManager manager =
@@ -904,9 +1022,15 @@ public class Camera2Fragment extends BaseFragment
             // This is the output Surface we need to start preview.
             Surface surface = new Surface(texture);
 
+            /***
+             TEMPLATE_PREVIEW        创建一个适合于相机预览窗口的请求
+             TEMPLATE_STILL_CAPTURE  创建适用于静态图像捕获的请求
+             TEMPLATE_RECORD         创建适合录像的请求
+             TEMPLATE_VIDEO_SNAPSHOT 在录制视频时创建适合静态图像捕获的请求
+             */
             // We set up a CaptureRequest.Builder with the output Surface.
-            mPreviewRequestBuilder
-                    = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
+            mPreviewRequestBuilder = mCameraDevice.createCaptureRequest(
+                    CameraDevice.TEMPLATE_PREVIEW);
             mPreviewRequestBuilder.addTarget(surface);
 
             // Here, we create a CameraCaptureSession for camera preview.
@@ -915,8 +1039,8 @@ public class Camera2Fragment extends BaseFragment
                     new CameraCaptureSession.StateCallback() {
 
                         @Override
-                        public void onConfigured(@NonNull CameraCaptureSession
-                                                         cameraCaptureSession) {
+                        public void onConfigured(
+                                @NonNull CameraCaptureSession cameraCaptureSession) {
                             // The camera is already closed
                             if (null == mCameraDevice) {
                                 return;
@@ -924,11 +1048,14 @@ public class Camera2Fragment extends BaseFragment
 
                             // When the session is ready, we start displaying the preview.
                             mCaptureSession = cameraCaptureSession;
+
                             try {
+                                // 自动对焦
                                 // Auto focus should be continuous for camera preview.
                                 mPreviewRequestBuilder.set(
                                         CaptureRequest.CONTROL_AF_MODE,
                                         CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE);
+
                                 // Flash is automatically enabled when necessary.
                                 setAutoFlash(mPreviewRequestBuilder);
 
@@ -936,6 +1063,8 @@ public class Camera2Fragment extends BaseFragment
                                 mPreviewRequest = mPreviewRequestBuilder.build();
                                 mCaptureSession.setRepeatingRequest(
                                         mPreviewRequest,
+                                        // 如果想要拍照,那么绝不能设置为null
+                                        // 如果单纯预览,那么可以设置为null
                                         mCaptureCallback,
                                         mBackgroundHandler);
                             } catch (CameraAccessException e) {
@@ -958,12 +1087,17 @@ public class Camera2Fragment extends BaseFragment
     /**
      * Configures the necessary {@link android.graphics.Matrix} transformation to `mTextureView`.
      * This method should be called after the camera preview size is determined in
-     * setUpCameraOutputs and also the size of `mTextureView` is fixed.
+     * setupCameraOutputs and also the size of `mTextureView` is fixed.
      *
      * @param viewWidth  The width of `mTextureView`
      * @param viewHeight The height of `mTextureView`
      */
     private void configureTransform(int viewWidth, int viewHeight) {
+        if (DEBUG)
+            MLog.d(TAG, "configureTransform()" +
+                    " viewWidth: " + viewWidth +
+                    " viewHeight: " + viewHeight);
+
         Activity activity = getActivity();
         if (null == mTextureView || null == mPreviewSize || null == activity) {
             return;
@@ -974,7 +1108,8 @@ public class Camera2Fragment extends BaseFragment
         RectF bufferRect = new RectF(0, 0, mPreviewSize.getHeight(), mPreviewSize.getWidth());
         float centerX = viewRect.centerX();
         float centerY = viewRect.centerY();
-        if (Surface.ROTATION_90 == rotation || Surface.ROTATION_270 == rotation) {
+        if (Surface.ROTATION_90 == rotation
+                || Surface.ROTATION_270 == rotation) {
             bufferRect.offset(centerX - bufferRect.centerX(), centerY - bufferRect.centerY());
             matrix.setRectToRect(viewRect, bufferRect, Matrix.ScaleToFit.FILL);
             float scale = Math.max(
@@ -997,17 +1132,23 @@ public class Camera2Fragment extends BaseFragment
 
     /**
      * Lock the focus as the first step for a still image capture.
+     * 将焦点锁定为静态图像捕获的第一步(对焦)
      */
     private void lockFocus() {
+        if (DEBUG)
+            MLog.d(TAG, "lockFocus(): " + printThis());
         try {
             // This is how to tell the camera to lock focus.
+            // 请求等待焦点
             mPreviewRequestBuilder.set(
                     CaptureRequest.CONTROL_AF_TRIGGER,
                     CameraMetadata.CONTROL_AF_TRIGGER_START);
+
             // Tell #mCaptureCallback to wait for the lock.
             mState = STATE_WAITING_LOCK;
             mCaptureSession.capture(
                     mPreviewRequestBuilder.build(),
+                    // 这里好像可以设置为null
                     mCaptureCallback,
                     mBackgroundHandler);
         } catch (CameraAccessException e) {
@@ -1020,11 +1161,14 @@ public class Camera2Fragment extends BaseFragment
      * we get a response in {@link #mCaptureCallback} from {@link #lockFocus()}.
      */
     private void runPrecaptureSequence() {
+        if (DEBUG)
+            MLog.d(TAG, "runPrecaptureSequence(): " + printThis());
         try {
             // This is how to tell the camera to trigger.
             mPreviewRequestBuilder.set(
                     CaptureRequest.CONTROL_AE_PRECAPTURE_TRIGGER,
                     CaptureRequest.CONTROL_AE_PRECAPTURE_TRIGGER_START);
+
             // Tell #mCaptureCallback to wait for the precapture sequence to be set.
             mState = STATE_WAITING_PRECAPTURE;
             mCaptureSession.capture(
@@ -1041,6 +1185,8 @@ public class Camera2Fragment extends BaseFragment
      * {@link #mCaptureCallback} from both {@link #lockFocus()}.
      */
     private void captureStillPicture() {
+        if (DEBUG)
+            MLog.d(TAG, "captureStillPicture(): " + printThis());
         try {
             final Activity activity = getActivity();
             if (null == activity || null == mCameraDevice) {
@@ -1051,32 +1197,39 @@ public class Camera2Fragment extends BaseFragment
                     mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);
             captureBuilder.addTarget(mImageReader.getSurface());
 
-            // Use the same AE and AF modes as the preview.
+            // 自动对焦
             captureBuilder.set(
                     CaptureRequest.CONTROL_AF_MODE,
                     CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE);
             setAutoFlash(captureBuilder);
 
+            /***
+             拍出来的照片需要旋转多少角度(由getOrientation(rotation)得到)后,
+             才能达到照片的图像信息跟预览时的图像信息保持一致.
+             */
             // Orientation
             int rotation = activity.getWindowManager().getDefaultDisplay().getRotation();
+            // CaptureRequest.JPEG_ORIENTATION的值是针对顺时针旋转而言的
             captureBuilder.set(
                     CaptureRequest.JPEG_ORIENTATION,
                     getOrientation(rotation));
 
-            CameraCaptureSession.CaptureCallback CaptureCallback
-                    = new CameraCaptureSession.CaptureCallback() {
+            CameraCaptureSession.CaptureCallback CaptureCallback =
+                    new CameraCaptureSession.CaptureCallback() {
 
-                @Override
-                public void onCaptureCompleted(@NonNull CameraCaptureSession session,
-                                               @NonNull CaptureRequest request,
-                                               @NonNull TotalCaptureResult result) {
-                    showToast("Saved: " + mFile);
-                    Log.d(TAG, mFile.toString());
-                    unlockFocus();
-                }
-            };
+                        @Override
+                        public void onCaptureCompleted(
+                                @NonNull CameraCaptureSession session,
+                                @NonNull CaptureRequest request,
+                                @NonNull TotalCaptureResult result) {
+                            showToast("Saved: " + mFile);
+                            unlockFocus();
+                        }
+                    };
 
+            // 停止连续取景
             mCaptureSession.stopRepeating();
+            // 捕获图片
             mCaptureSession.capture(
                     captureBuilder.build(),
                     CaptureCallback,
@@ -1091,13 +1244,50 @@ public class Camera2Fragment extends BaseFragment
      *
      * @param rotation The screen rotation.
      * @return The JPEG orientation (one of 0, 90, 270, and 360)
+     * 返回值的意思是拍出来的照片如果要跟预览画面一致,
+     * 那么在拍照的时候需要旋转0, 90, 270, or 360这样的角度才能达到想要的效果.
      */
     private int getOrientation(int rotation) {
         // Sensor orientation is 90 for most devices, or 270 for some devices (eg. Nexus 5X)
         // We have to take that into account and rotate JPEG properly.
         // For devices with orientation of 90, we simply return our mapping from ORIENTATIONS.
         // For devices with orientation of 270, we need to rotate the JPEG 180 degrees.
-        return (ORIENTATIONS.get(rotation) + mSensorOrientation + 270) % 360;
+        int orientation = (ORIENTATIONS.get(rotation) + mSensorOrientation + 270) % 360;
+        if (DEBUG)
+            MLog.d(TAG, "getOrientation() " + printThis() +
+                    " rotation: " + rotation +
+                    " mSensorOrientation: " + mSensorOrientation +
+                    " orientation: " + orientation);
+        /***
+         rotation的值一般在手机系统中定义好的,手机怎么拿就有不同的值.
+
+         rotation: 0 mSensorOrientation: 90 orientation: 90(竖屏)
+         意思就是说手机竖屏拍照时,
+         需要一个90度的结果才能使得拍出来的照片的方向跟预览时的方向保持一致
+         rotation: 1 mSensorOrientation: 90 orientation: 0 (横屏)
+         意思就是说手机横屏拍照时,
+         需要一个0度的结果才能使得拍出来的照片的方向跟预览时的方向保持一致
+         rotation: 2 mSensorOrientation: 90 orientation: 270
+         rotation: 3 mSensorOrientation: 90 orientation: 180
+
+         mSensorOrientation: 90
+         含义:
+         "手机的自然方向"
+         "摄像头的自然方向"
+         90就是这两个"自然方向"的差值
+
+         我们一般使用手机是用左手拿手机,手机的姿势是竖屏,摄像头在上面.
+         这个时候的状态为"手机的自然方向"或者"屏幕的自然方向".
+         但是摄像头的传感器方向("摄像头的自然方向":横屏,摄像头在左边)跟"屏幕的自然方向"
+         不一定一致,得到的90就是说它们在角度上相差了90度(为逆时针的差值).
+         也就是说"屏幕的自然方向"按逆时针旋转90度后它们才保持一致,
+         这时拍出来的照片在视觉上是正常的.
+         当它们两个的角度不一致(mSensorOrientation为0说明一致,不为0说明不一致)时进行拍照,
+         那么需要把"摄像头的自然方向"(横屏,摄像头在左边)开始顺时针旋转一定的角度与"手机的自然方向"
+         达到重合后,这样拍摄出来的照片在视觉上才是正常的.
+         orientation的值就是这个需要"旋转一定的角度".
+         */
+        return orientation;
     }
 
     /**
@@ -1105,20 +1295,28 @@ public class Camera2Fragment extends BaseFragment
      * finished.
      */
     private void unlockFocus() {
+        if (DEBUG)
+            MLog.d(TAG, "unlockFocus(): " + printThis());
         try {
             // Reset the auto-focus trigger
+            // 重置自动对焦
             mPreviewRequestBuilder.set(
                     CaptureRequest.CONTROL_AF_TRIGGER,
                     CameraMetadata.CONTROL_AF_TRIGGER_CANCEL);
             setAutoFlash(mPreviewRequestBuilder);
             mCaptureSession.capture(
                     mPreviewRequestBuilder.build(),
+                    // 这里好像可以设置为null
                     mCaptureCallback,
                     mBackgroundHandler);
+
             // After this, the camera will go back to the normal state of preview.
             mState = STATE_PREVIEW;
+            // 打开连续取景模式
             mCaptureSession.setRepeatingRequest(
                     mPreviewRequest,
+                    // 如果想要拍照,那么绝不能设置为null
+                    // 如果单纯预览,那么可以设置为null
                     mCaptureCallback,
                     mBackgroundHandler);
         } catch (CameraAccessException e) {
@@ -1146,6 +1344,11 @@ public class Camera2Fragment extends BaseFragment
         }
     }
 
+    /***
+     开始预览时
+     开始拍照时
+     重新预览时
+     */
     private void setAutoFlash(CaptureRequest.Builder requestBuilder) {
         if (mFlashSupported) {
             requestBuilder.set(
@@ -1202,7 +1405,7 @@ public class Camera2Fragment extends BaseFragment
     /**
      * Compares two {@code Size}s based on their areas.
      */
-    static class CompareSizesByArea implements Comparator<Size> {
+    private static class CompareSizesByArea implements Comparator<Size> {
 
         @Override
         public int compare(Size lhs, Size rhs) {
