@@ -13,6 +13,7 @@ import android.widget.FrameLayout;
 import com.weidi.usefragments.fragment.FragOperManager;
 import com.weidi.usefragments.fragment.base.BaseFragment;
 import com.weidi.usefragments.test_fragment.scene2.A2Fragment;
+import com.weidi.usefragments.test_fragment.scene2.AudioFragment;
 import com.weidi.usefragments.test_fragment.scene2.B2Fragment;
 import com.weidi.usefragments.test_fragment.scene2.C2Fragment;
 import com.weidi.usefragments.test_fragment.scene2.Camera2Fragment;
@@ -81,6 +82,9 @@ public class MainActivity1 extends BaseActivity
                 FragOperManager.POP_BACK_STACK);
         sFragmentBackTypeSMap.put(
                 CameraPreviewFragment.class.getSimpleName(),
+                FragOperManager.POP_BACK_STACK);
+        sFragmentBackTypeSMap.put(
+                AudioFragment.class.getSimpleName(),
                 FragOperManager.POP_BACK_STACK);
     }
 

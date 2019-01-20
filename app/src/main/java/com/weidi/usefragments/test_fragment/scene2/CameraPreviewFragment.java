@@ -10,9 +10,12 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.ImageFormat;
 import android.graphics.Matrix;
 import android.graphics.Point;
+import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.SurfaceTexture;
 import android.hardware.camera2.CameraAccessException;
@@ -20,18 +23,24 @@ import android.hardware.camera2.CameraCaptureSession;
 import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraDevice;
 import android.hardware.camera2.CameraManager;
+import android.hardware.camera2.CameraMetadata;
 import android.hardware.camera2.CaptureFailure;
 import android.hardware.camera2.CaptureRequest;
 import android.hardware.camera2.CaptureResult;
 import android.hardware.camera2.TotalCaptureResult;
 import android.hardware.camera2.params.StreamConfigurationMap;
+import android.media.Image;
+import android.media.ImageReader;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
+import android.os.Message;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v13.app.FragmentCompat;
 import android.support.v4.content.ContextCompat;
+import android.text.TextUtils;
 import android.util.Log;
 import android.util.Size;
 import android.util.SparseIntArray;
@@ -40,6 +49,7 @@ import android.view.Surface;
 import android.view.TextureView;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 import android.widget.Toast;
 
 import com.weidi.usefragments.R;
@@ -47,6 +57,9 @@ import com.weidi.usefragments.fragment.base.BaseFragment;
 import com.weidi.usefragments.tool.AutoFitTextureView;
 import com.weidi.usefragments.tool.MLog;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -117,8 +130,9 @@ public class CameraPreviewFragment extends BaseFragment
 
         mTextureView = (AutoFitTextureView) view.findViewById(R.id.texture);
         mTextureView2 = (AutoFitTextureView) view.findViewById(R.id.texture2);
+        mImageViewTest = view.findViewById(R.id.img_test);
         mTextureView.setOnClickListener(mOnClickListener);
-        mTextureView2.setOnClickListener(mOnClickListener);
+        // mTextureView2.setOnClickListener(mOnClickListener);
     }
 
     @Override
@@ -339,6 +353,8 @@ public class CameraPreviewFragment extends BaseFragment
         stopBackgroundThread();
     }
 
+    private ImageView mImageViewTest;
+
     /**
      * Conversion from screen rotation to JPEG orientation.
      */
@@ -365,6 +381,11 @@ public class CameraPreviewFragment extends BaseFragment
      * A reference to the opened {@link CameraDevice}.
      */
     private CameraDevice mCameraDevice;
+
+    /**
+     * An {@link ImageReader} that handles still image capture.
+     */
+    private ImageReader mImageReader;
 
     /**
      * An additional thread for running tasks that shouldn't block the UI.
@@ -396,6 +417,7 @@ public class CameraPreviewFragment extends BaseFragment
      */
     private boolean mFlashSupported;
 
+
     private View.OnClickListener mOnClickListener =
             new View.OnClickListener() {
 
@@ -419,6 +441,93 @@ public class CameraPreviewFragment extends BaseFragment
                         e.printStackTrace();
                     }*/
                 }
+            };
+
+    private Handler mUiHandler = new Handler() {
+        @Override
+        public void handleMessage(Message msg) {
+            if (msg != null && msg.obj != null && msg.obj instanceof Bitmap) {
+                mImageViewTest.setImageBitmap((Bitmap) msg.obj);
+            }
+        }
+    };
+
+    /**
+     * This a callback object for the {@link ImageReader}.
+     * "onImageAvailable" will be called when a
+     * still image is ready to be saved.
+     */
+    private final ImageReader.OnImageAvailableListener mOnImageAvailableListener =
+            new ImageReader.OnImageAvailableListener() {
+
+                @Override
+                public void onImageAvailable(ImageReader reader) {
+                    if (DEBUG)
+                        MLog.d(TAG, "onImageAvailable()");
+                    if (reader == null) {
+                        if (DEBUG)
+                            MLog.d(TAG, "onImageAvailable() reader is null.");
+                        return;
+                    }
+
+                    Image image = null;
+                    try {
+                        // 最后一帧
+                        image = reader.acquireLatestImage();
+                        if (image == null) {
+                            if (DEBUG)
+                                MLog.d(TAG, "onImageAvailable() image is null.");
+                            return;
+                        }
+
+                        /*ByteBuffer buffer = image.getPlanes()[0].getBuffer();
+                        byte[] bytes = new byte[buffer.remaining()];
+                        buffer.get(bytes);
+                        Bitmap photoBitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
+                        if (photoBitmap == null) {
+                            if (DEBUG)
+                                MLog.d(TAG, "onImageAvailable() photoBitmap is null.");
+                            return;
+                        }*/
+
+                        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+                        for (int i = 0; i < 3; i++) {
+                            ByteBuffer byteBuffer = image.getPlanes()[i].getBuffer();
+                            byte[] bytes = new byte[byteBuffer.remaining()];
+                            byteBuffer.get(bytes);
+                            try {
+                                outputStream.write(bytes);
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                            }
+                        }
+                        byte[] previewData = outputStream.toByteArray();
+
+                        Bitmap photoBitmap = BitmapFactory.decodeByteArray(
+                                previewData,
+                                0,
+                                previewData.length);
+
+                        if (photoBitmap == null) {
+                            if (DEBUG)
+                                MLog.d(TAG, "onImageAvailable() photoBitmap is null.");
+                            return;
+                        }
+
+                        if (DEBUG)
+                            MLog.d(TAG, "onImageAvailable() photoBitmap: " + photoBitmap);
+                        Message msg = mUiHandler.obtainMessage();
+                        msg.obj = photoBitmap;
+                        mUiHandler.sendMessage(msg);
+
+                    } finally {
+                        if (image != null) {
+                            image.close();
+                            image = null;
+                        }
+                    }
+                }
+
             };
 
     /**
@@ -460,35 +569,43 @@ public class CameraPreviewFragment extends BaseFragment
     /**
      * {@link CameraDevice.StateCallback} is called when {@link CameraDevice} changes its state.
      */
-    private final CameraDevice.StateCallback mStateCallback = new CameraDevice.StateCallback() {
+    private final CameraDevice.StateCallback mStateCallback =
+            new CameraDevice.StateCallback() {
 
-        @Override
-        public void onOpened(@NonNull CameraDevice cameraDevice) {
-            // This method is called when the camera is opened.  We start camera preview here.
-            mCameraOpenCloseLock.release();
-            mCameraDevice = cameraDevice;
-            createCameraPreviewSession();
-        }
+                @Override
+                public void onOpened(@NonNull CameraDevice cameraDevice) {
+                    // This method is called when the camera is opened.  We start camera preview
+                    // here.
+                    if (DEBUG)
+                        MLog.d(TAG, "mStateCallback onOpened()");
+                    mCameraOpenCloseLock.release();
+                    mCameraDevice = cameraDevice;
+                    createCameraPreviewSession();
+                }
 
-        @Override
-        public void onDisconnected(@NonNull CameraDevice cameraDevice) {
-            mCameraOpenCloseLock.release();
-            cameraDevice.close();
-            mCameraDevice = null;
-        }
+                @Override
+                public void onDisconnected(@NonNull CameraDevice cameraDevice) {
+                    if (DEBUG)
+                        MLog.d(TAG, "mStateCallback onDisconnected()");
+                    mCameraOpenCloseLock.release();
+                    cameraDevice.close();
+                    mCameraDevice = null;
+                }
 
-        @Override
-        public void onError(@NonNull CameraDevice cameraDevice, int error) {
-            mCameraOpenCloseLock.release();
-            cameraDevice.close();
-            mCameraDevice = null;
-            Activity activity = getActivity();
-            if (null != activity) {
-                activity.finish();
-            }
-        }
+                @Override
+                public void onError(@NonNull CameraDevice cameraDevice, int error) {
+                    if (DEBUG)
+                        MLog.d(TAG, "mStateCallback onError()");
+                    mCameraOpenCloseLock.release();
+                    cameraDevice.close();
+                    mCameraDevice = null;
+                    Activity activity = getActivity();
+                    if (null != activity) {
+                        activity.finish();
+                    }
+                }
 
-    };
+            };
 
     /**
      * Camera state: Showing camera preview.
@@ -684,12 +801,26 @@ public class CameraPreviewFragment extends BaseFragment
                 }
 
                 mTextureView.setAspectRatio(width, height);
-                mTextureView2.setAspectRatio(width, height);
+                // mTextureView2.setAspectRatio(width, height);
 
                 // Check if the flash is supported.
                 Boolean available = cameraCharacteristics.get(
                         CameraCharacteristics.FLASH_INFO_AVAILABLE);
                 mFlashSupported = available == null ? false : available;
+
+                /*mImageReader = ImageReader.newInstance(
+                        3264,
+                        2448,
+                        ImageFormat.YUV_420_888,
+                        1);*/
+                /*mImageReader = ImageReader.newInstance(
+                        720,
+                        556,
+                        ImageFormat.YUV_420_888,
+                        1);
+                mImageReader.setOnImageAvailableListener(
+                        mOnImageAvailableListener,
+                        mBackgroundHandler);*/
 
                 mCameraId = cameraId;
                 return;
@@ -744,6 +875,10 @@ public class CameraPreviewFragment extends BaseFragment
                 mCameraDevice.close();
                 mCameraDevice = null;
             }
+            if (null != mImageReader) {
+                mImageReader.close();
+                mImageReader = null;
+            }
         } catch (InterruptedException e) {
             throw new RuntimeException("Interrupted while trying to lock camera closing.", e);
         } finally {
@@ -790,11 +925,35 @@ public class CameraPreviewFragment extends BaseFragment
             // We set up a CaptureRequest.Builder with the output Surface.
             mPreviewRequestBuilder
                     = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
+
+            mPreviewRequestBuilder.set(
+                    CaptureRequest.SCALER_CROP_REGION,
+                    new Rect(0, 0, 720, 556));
+            mPreviewRequestBuilder.set(
+                    CaptureRequest.CONTROL_AF_MODE,
+                    CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE);
+            mPreviewRequestBuilder.set(
+                    CaptureRequest.CONTROL_AE_MODE,
+                    CaptureRequest.CONTROL_AE_MODE_ON_AUTO_FLASH);
+            mPreviewRequestBuilder.set(
+                    CaptureRequest.CONTROL_MODE,
+                    CameraMetadata.CONTROL_MODE_AUTO);
+
+            mImageReader = ImageReader.newInstance(
+                    720,
+                    556,
+                    ImageFormat.YUV_420_888,
+                    2);
+            mImageReader.setOnImageAvailableListener(
+                    mOnImageAvailableListener,
+                    mBackgroundHandler);
+
             mPreviewRequestBuilder.addTarget(surface);
+            mPreviewRequestBuilder.addTarget(mImageReader.getSurface());
 
             // Here, we create a CameraCaptureSession for camera preview.
             mCameraDevice.createCaptureSession(
-                    Arrays.asList(surface),
+                    Arrays.asList(surface, mImageReader.getSurface()),
                     new CameraCaptureSession.StateCallback() {
 
                         @Override
@@ -808,19 +967,23 @@ public class CameraPreviewFragment extends BaseFragment
                             // When the session is ready, we start displaying the preview.
                             mCameraCaptureSession = cameraCaptureSession;
                             try {
-                                // Auto focus should be continuous for camera preview.
+                                /*// Auto focus should be continuous for camera preview.
                                 mPreviewRequestBuilder.set(
                                         CaptureRequest.CONTROL_AF_MODE,
                                         CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE);
                                 // Flash is automatically enabled when necessary.
-                                setAutoFlash(mPreviewRequestBuilder);
+                                setAutoFlash(mPreviewRequestBuilder);*/
 
                                 // Finally, we start displaying the camera preview.
                                 mPreviewRequest = mPreviewRequestBuilder.build();
                                 mCameraCaptureSession.setRepeatingRequest(
                                         mPreviewRequest,
+                                        null,
+                                        null);
+                                /*mCameraCaptureSession.setRepeatingRequest(
+                                        mPreviewRequest,
                                         mCaptureCallback,
-                                        mBackgroundHandler);
+                                        mBackgroundHandler);*/
                             } catch (CameraAccessException e) {
                                 e.printStackTrace();
                             }
@@ -921,6 +1084,47 @@ public class CameraPreviewFragment extends BaseFragment
                             })
                     .create();
         }
+    }
+
+    private boolean mIsOpened = false;
+
+    // 经测试可用
+    private void useFlashLight() {
+        CameraManager cameraManager =
+                (CameraManager) getAttachedActivity().getSystemService(
+                        Context.CAMERA_SERVICE);
+        if (cameraManager == null) {
+            return;
+        }
+        String cameraId = null;
+        try {
+            cameraId = cameraManager.getCameraIdList()[0];
+        } catch (CameraAccessException e) {
+            e.printStackTrace();
+            return;
+        }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            if (mIsOpened) {
+                try {
+                    //关闭camera闪光灯
+                    cameraManager.setTorchMode(cameraId, false);
+                } catch (CameraAccessException e) {
+                    e.printStackTrace();
+                    return;
+                }
+            } else {
+                try {
+                    //开启camera闪光灯
+                    cameraManager.setTorchMode(cameraId, true);
+                } catch (CameraAccessException e) {
+                    e.printStackTrace();
+                    return;
+                }
+            }
+        }
+
+        mIsOpened = !mIsOpened;
     }
 
 }
