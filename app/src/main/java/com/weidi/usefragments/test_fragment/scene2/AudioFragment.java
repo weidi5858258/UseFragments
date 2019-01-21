@@ -10,14 +10,11 @@ import android.media.AudioManager;
 import android.media.AudioRecord;
 import android.media.AudioTrack;
 import android.media.MediaRecorder;
-import android.media.MediaSyncEvent;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.Environment;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.annotation.RequiresApi;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -35,7 +32,6 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.Date;
 
 
 @RequiresApi(api = Build.VERSION_CODES.N)
@@ -190,6 +186,8 @@ public class AudioFragment extends BaseFragment {
         super.onDestroy();
         if (DEBUG)
             MLog.d(TAG, "onDestroy() " + printThis());
+
+        onHide();
     }
 
     @Override
@@ -277,6 +275,7 @@ public class AudioFragment extends BaseFragment {
      * 但是其他的采样率（22050, 16000, 11025）在一些设备上也可以使用
      */
     private static final int sampleRateInHz = 44100;
+    // private static final int sampleRateInHz = 11025;
     /***
      * 声道数
      * CHANNEL_IN_MONO
@@ -286,6 +285,7 @@ public class AudioFragment extends BaseFragment {
     // private static final int channelConfig_record = AudioFormat.CHANNEL_CONFIGURATION_MONO;
     // private static final int channelConfig_track = AudioFormat.CHANNEL_CONFIGURATION_MONO;
     private static final int channelConfig_record = AudioFormat.CHANNEL_IN_MONO;
+    // 在我的手机上不能使用,一使用就出错
     private static final int channelConfig_track = AudioFormat.CHANNEL_OUT_MONO;
     /***
      * 返回的音频数据的格式。
@@ -314,11 +314,16 @@ public class AudioFragment extends BaseFragment {
     private SimpleDateFormat mSimpleDateFormat = new SimpleDateFormat("yyyyMMddHHmmssSSS");
 
     private void init() {
+        initAudioRecord();
+        initAudioTrack();
+    }
+
+    private void initAudioRecord() {
         if (mAudioRecord == null) {
             int bufferSizeInBytes = AudioRecord.getMinBufferSize(
                     sampleRateInHz,
                     channelConfig_record,
-                    audioFormat);
+                    audioFormat) * 2;
             if (DEBUG)
                 MLog.d(TAG, "init() bufferSizeInBytes: " + bufferSizeInBytes);
             mAudioRecord = new AudioRecord(
@@ -328,13 +333,14 @@ public class AudioFragment extends BaseFragment {
                     audioFormat,
                     bufferSizeInBytes);
         }
+    }
 
+    private void initAudioTrack() {
         if (mAudioTrack == null) {
-            /*int bufferSizeInBytes = AudioRecord.getMinBufferSize(
+            int bufferSizeInBytes = AudioRecord.getMinBufferSize(
                     sampleRateInHz,
-                    channelConfig_track,
-                    audioFormat);*/
-            int bufferSizeInBytes = 4096;
+                    channelConfig_record,
+                    audioFormat) * 2;
             if (DEBUG)
                 MLog.d(TAG, "init() bufferSizeInBytes: " + bufferSizeInBytes);
             AudioAttributes attributes = new AudioAttributes.Builder()
@@ -360,8 +366,16 @@ public class AudioFragment extends BaseFragment {
         if (DEBUG)
             MLog.d(TAG, "onShow() " + printThis());
 
-        mControlBtn.setText("录音");
-        mPlayBtn.setText("播放");
+        if (mRecordRunning) {
+            mControlBtn.setText("停止录音");
+        } else {
+            mControlBtn.setText("录音");
+        }
+        if (mTrackRunning) {
+            mPlayBtn.setText("停止播放");
+        } else {
+            mPlayBtn.setText("播放");
+        }
         mConvertBtn.setText("pcm To wav");
         mJumpBtn.setText("跳转到");
     }
@@ -369,6 +383,20 @@ public class AudioFragment extends BaseFragment {
     private void onHide() {
         if (DEBUG)
             MLog.d(TAG, "onHide() " + printThis());
+
+        if (mAudioRecord != null
+                && mAudioRecord.getState() == AudioRecord.STATE_INITIALIZED) {
+            mAudioRecord.stop();
+            mAudioRecord.release();
+            mAudioRecord = null;
+        }
+
+        if (mAudioTrack != null
+                && mAudioTrack.getState() == AudioRecord.STATE_INITIALIZED) {
+            mAudioTrack.stop();
+            mAudioTrack.release();
+            mAudioTrack = null;
+        }
     }
 
     @InjectOnClick({R.id.control_btn, R.id.play_btn, R.id.convert_btn, R.id.jump_btn})
@@ -394,7 +422,7 @@ public class AudioFragment extends BaseFragment {
 
         if (mRecordRunning) {
             mControlBtn.setText("停止录音");
-            init();
+            initAudioRecord();
             // start record
             if (mAudioRecord != null
                     && mAudioRecord.getState() == AudioRecord.STATE_INITIALIZED) {
@@ -418,7 +446,7 @@ public class AudioFragment extends BaseFragment {
 
         if (mTrackRunning) {
             mPlayBtn.setText("停止播放");
-            init();
+            initAudioTrack();
             // start track
             if (mAudioTrack != null
                     && mAudioTrack.getState() == AudioRecord.STATE_INITIALIZED) {
@@ -461,7 +489,7 @@ public class AudioFragment extends BaseFragment {
                 int bufferSizeInBytes = AudioRecord.getMinBufferSize(
                         sampleRateInHz,
                         channelConfig_record,
-                        audioFormat);
+                        audioFormat) * 2;
                 mAudioData = new byte[bufferSizeInBytes];
 
                 if (DEBUG)
@@ -514,11 +542,11 @@ public class AudioFragment extends BaseFragment {
                     return;
                 }
 
-                /*int bufferSizeInBytes = AudioRecord.getMinBufferSize(
+                int bufferSizeInBytes = AudioRecord.getMinBufferSize(
                         sampleRateInHz,
-                        channelConfig_track,
-                        audioFormat);*/
-                int bufferSizeInBytes = 4096;
+                        channelConfig_record,
+                        audioFormat) * 2;
+                // int bufferSizeInBytes = 4096;
                 mAudioData = new byte[bufferSizeInBytes];
 
                 if (DEBUG)
