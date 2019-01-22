@@ -550,7 +550,12 @@ public abstract class BaseFragment extends Fragment {
         }
     }
 
-    protected static void setStatusBar(Activity activity) {
+    /***
+     *
+     * @param activity
+     * @param isDark 想要状态栏中的内容能看到,需要设置为true
+     */
+    protected static void setStatusBar(Activity activity, boolean isDark) {
         try {
             if (activity == null) {
                 return;
@@ -567,6 +572,15 @@ public abstract class BaseFragment extends Fragment {
                         decorView.setSystemUiVisibility(option);
                         window.setStatusBarColor(Color.TRANSPARENT);
                         window.setNavigationBarColor(Color.TRANSPARENT);
+
+                        // 使得状态栏中的图标能够看清楚
+                        option = decorView.getSystemUiVisibility();
+                        if (isDark) {
+                            option |= View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
+                        } else {
+                            option &= ~View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
+                        }
+                        decorView.setSystemUiVisibility(option);
                     }
                 }
             }
@@ -582,7 +596,6 @@ public abstract class BaseFragment extends Fragment {
         temp = temp.substring(lastIndex + 1, temp.length());
         return temp;
     }
-
 
     /***
      代码备份:

@@ -225,7 +225,7 @@ public class Main2Fragment extends BaseFragment {
             MLog.d(TAG, "onShow(): " + this);
         mTitleView.setText(Main2Fragment.class.getSimpleName());
         mJumpBtn.setText("跳转到");
-        setStatusBar(getAttachedActivity());
+        setStatusBar(getAttachedActivity(), true);
     }
 
     private void onHide() {
