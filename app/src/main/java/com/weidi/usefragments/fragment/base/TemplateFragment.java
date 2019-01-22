@@ -11,9 +11,12 @@ import android.view.View;
 import android.view.ViewGroup;
 
 import com.weidi.usefragments.R;
+import com.weidi.usefragments.inject.InjectOnClick;
 import com.weidi.usefragments.tool.MLog;
 
-
+/***
+ 框架模板类
+ */
 public class TemplateFragment extends BaseFragment {
 
     private static final String TAG =
@@ -51,6 +54,8 @@ public class TemplateFragment extends BaseFragment {
         if (DEBUG)
             MLog.d(TAG, "onCreate() " + printThis() +
                     " savedInstanceState: " + savedInstanceState);
+
+        initData();
     }
 
     @Override
@@ -71,6 +76,8 @@ public class TemplateFragment extends BaseFragment {
         if (DEBUG)
             MLog.d(TAG, "onViewCreated() " + printThis() +
                     " savedInstanceState: " + savedInstanceState);
+
+        initView(view, savedInstanceState);
     }
 
     @Override
@@ -163,6 +170,8 @@ public class TemplateFragment extends BaseFragment {
         super.onDestroy();
         if (DEBUG)
             MLog.d(TAG, "onDestroy() " + printThis());
+
+
     }
 
     @Override
@@ -170,6 +179,8 @@ public class TemplateFragment extends BaseFragment {
         super.onDetach();
         if (DEBUG)
             MLog.d(TAG, "onDetach() " + printThis());
+
+        destroy();
     }
 
     @Override
@@ -179,6 +190,7 @@ public class TemplateFragment extends BaseFragment {
             MLog.d(TAG, "onSaveInstanceState() " + printThis());
     }
 
+    @Override
     public void handleConfigurationChangedEvent(
             Configuration newConfig,
             boolean needToDo,
@@ -186,7 +198,7 @@ public class TemplateFragment extends BaseFragment {
         super.handleConfigurationChangedEvent(newConfig, needToDo, true);
 
         if (needToDo) {
-
+            onShow();
         }
     }
 
@@ -242,14 +254,44 @@ public class TemplateFragment extends BaseFragment {
 
     /////////////////////////////////////////////////////////////////
 
+    /***
+     代码执行的内容跟onStart(),onResume()一样,
+     因此在某些情况下要么执行onStart(),onResume()方法,要么执行onShow()方法.
+     一般做的事是设置View的内容
+     */
     private void onShow() {
         if (DEBUG)
             MLog.d(TAG, "onShow() " + printThis());
     }
 
+    /***
+     代码执行的内容跟onPause(),onStop()一样,
+     因此在某些情况下要么执行onPause(),onStop()方法,要么执行onHide()方法.
+     一般做的事是视频的暂停,摄像头的关闭
+     */
     private void onHide() {
         if (DEBUG)
             MLog.d(TAG, "onHide() " + printThis());
+    }
+
+    private void initData() {
+
+    }
+
+    private void initView(View view, Bundle savedInstanceState) {
+
+    }
+
+    private void destroy() {
+
+    }
+
+    @InjectOnClick({R.id.jump_btn})
+    private void onClick(View v) {
+        switch (v.getId()) {
+            case R.id.jump_btn:
+                break;
+        }
     }
 
 }

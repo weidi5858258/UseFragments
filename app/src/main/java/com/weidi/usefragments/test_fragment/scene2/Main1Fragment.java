@@ -237,7 +237,7 @@ public class Main1Fragment extends BaseFragment {
             MLog.d(TAG, "onShow(): " + this);
         mTitleView.setText(Main1Fragment.class.getSimpleName());
         mJumpBtn.setText("跳转到");
-        setStatusBarColor(getAttachedActivity(), android.R.color.holo_blue_light);
+        setStatusBar(getAttachedActivity());
     }
 
     private void onHide() {

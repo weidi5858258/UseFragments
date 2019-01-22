@@ -1,7 +1,6 @@
 package com.weidi.usefragments.test_fragment.scene2;
 
 import android.app.Activity;
-import android.app.Fragment;
 import android.content.res.Configuration;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
@@ -15,7 +14,6 @@ import com.weidi.usefragments.R;
 import com.weidi.usefragments.fragment.FragOperManager;
 import com.weidi.usefragments.fragment.base.BaseFragment;
 import com.weidi.usefragments.inject.InjectView;
-import com.weidi.usefragments.test_fragment.scene1.AFragment;
 import com.weidi.usefragments.tool.MLog;
 
 
@@ -227,7 +225,7 @@ public class Main4Fragment extends BaseFragment {
             MLog.d(TAG, "onShow(): " + this);
         mTitleView.setText(Main4Fragment.class.getSimpleName());
         mJumpBtn.setText("跳转到");
-        setStatusBarColor(getAttachedActivity(), android.R.color.holo_purple);
+        setStatusBar(getAttachedActivity());
     }
 
     private void onHide() {

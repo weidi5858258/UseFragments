@@ -5,6 +5,7 @@ import android.app.Activity;
 import android.app.Fragment;
 import android.content.Context;
 import android.content.res.Configuration;
+import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
@@ -84,6 +85,7 @@ public abstract class BaseFragment extends Fragment {
         }
         if (DEBUG)
             MLog.d(TAG, "onAttach(): " + printThis() + " activity: " + activity);
+
         mActivity = activity;
         if (!(activity instanceof BackHandlerInterface)) {
             throw new ClassCastException("Hosting Activity must implement BackHandlerInterface");
@@ -266,6 +268,7 @@ public abstract class BaseFragment extends Fragment {
         super.onDestroy();
         if (DEBUG)
             MLog.d(TAG, "onDestroy(): " + printThis());
+
         FragOperManager.getInstance().removeFragment(this);
     }
 
@@ -367,6 +370,7 @@ public abstract class BaseFragment extends Fragment {
         super.onHiddenChanged(hidden);
         if (DEBUG)
             MLog.d(TAG, "onHiddenChanged(): " + printThis() + " hidden: " + hidden);
+
         if (hidden) {
             onHide();
         } else {
@@ -439,15 +443,16 @@ public abstract class BaseFragment extends Fragment {
         if (DEBUG)
             MLog.d(TAG, "onHide(): " + printThis());
 
-        // 隐藏软键盘
-        InputMethodManager inputMethodManager =
-                (InputMethodManager) getContext().getSystemService(
-                        Context.INPUT_METHOD_SERVICE);
-        if (inputMethodManager != null
-                && getView() != null
-                && inputMethodManager.isActive()) {
-            inputMethodManager.hideSoftInputFromWindow(
-                    getView().getWindowToken(), 0);
+        if (getView() != null) {
+            // 隐藏软键盘
+            InputMethodManager inputMethodManager =
+                    (InputMethodManager) getContext().getSystemService(
+                            Context.INPUT_METHOD_SERVICE);
+            if (inputMethodManager != null
+                    && inputMethodManager.isActive()) {
+                inputMethodManager.hideSoftInputFromWindow(
+                        getView().getWindowToken(), 0);
+            }
         }
     }
 
@@ -545,19 +550,25 @@ public abstract class BaseFragment extends Fragment {
         }
     }
 
-    protected static void setStatusBarColor(Activity activity, int color) {
+    protected static void setStatusBar(Activity activity) {
         try {
-            if (activity == null || color <= 0) {
+            if (activity == null) {
                 return;
             }
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            if (Build.VERSION.SDK_INT >= 21) {
                 Window window = activity.getWindow();
-                window.addFlags(
-                        WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
-                window.setStatusBarColor(
-                        activity.getApplicationContext().getResources().getColor(color));
-                // 底部导航栏
-                // window.setNavigationBarColor(activity.getResources().getColor(colorResId));
+                if (window != null) {
+                    View decorView = window.getDecorView();
+                    if (decorView != null) {
+                        // 使状态栏和导航栏都透明
+                        int option = View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                                | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                                | View.SYSTEM_UI_FLAG_LAYOUT_STABLE;
+                        decorView.setSystemUiVisibility(option);
+                        window.setStatusBarColor(Color.TRANSPARENT);
+                        window.setNavigationBarColor(Color.TRANSPARENT);
+                    }
+                }
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -571,6 +582,7 @@ public abstract class BaseFragment extends Fragment {
         temp = temp.substring(lastIndex + 1, temp.length());
         return temp;
     }
+
 
     /***
      代码备份:
