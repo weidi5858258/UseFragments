@@ -949,7 +949,7 @@ public class CameraPreviewFragment extends BaseFragment
                     mBackgroundHandler);
 
             mPreviewRequestBuilder.addTarget(surface);
-            mPreviewRequestBuilder.addTarget(mImageReader.getSurface());
+            // mPreviewRequestBuilder.addTarget(mImageReader.getSurface());
 
             // Here, we create a CameraCaptureSession for camera preview.
             mCameraDevice.createCaptureSession(

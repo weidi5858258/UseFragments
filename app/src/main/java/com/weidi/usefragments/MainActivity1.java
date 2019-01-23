@@ -25,6 +25,7 @@ import com.weidi.usefragments.test_fragment.scene2.Main2Fragment;
 import com.weidi.usefragments.test_fragment.scene2.Main3Fragment;
 import com.weidi.usefragments.test_fragment.scene2.Main4Fragment;
 import com.weidi.usefragments.tool.MLog;
+import com.weidi.usefragments.tool.PermissionsUtils;
 
 import java.util.HashMap;
 import java.util.List;
@@ -62,6 +63,7 @@ public class MainActivity1 extends BaseActivity
         // 如果有MainFragment(MainActivity中使用MainFragment,其他Fragment从MainFragment中被开启),
         // 那么不要把MainFragment加入Map中.
         sFragmentBackTypeSMap = new HashMap<String, Integer>();
+        sFragmentBackTypeSMap.clear();
         sFragmentBackTypeSMap.put(
                 A2Fragment.class.getSimpleName(),
                 FragOperManager.POP_BACK_STACK);

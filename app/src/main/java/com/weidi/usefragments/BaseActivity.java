@@ -17,6 +17,7 @@ import android.widget.FrameLayout;
 
 import com.weidi.usefragments.fragment.FragOperManager;
 import com.weidi.usefragments.tool.MLog;
+import com.weidi.usefragments.tool.PermissionsUtils;
 
 import java.util.List;
 import java.util.Map;
@@ -149,6 +150,23 @@ public abstract class BaseActivity extends Activity {
                 }
             }
         }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(
+            int requestCode,
+            String[] permissions,
+            int[] grantResults) {
+        /*if (permissions != null) {
+            for (String permission : permissions) {
+                Log.i(TAG, "onRequestPermissionsResult(): " + permission);
+            }
+        }*/
+
+        PermissionsUtils.onRequestPermissionsResult(
+                this,
+                permissions,
+                grantResults);
     }
 
     @Override

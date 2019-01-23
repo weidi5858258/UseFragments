@@ -1,6 +1,7 @@
 package com.weidi.usefragments.test_fragment.scene2;
 
 import android.app.Activity;
+import android.app.Fragment;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -19,6 +20,7 @@ import com.weidi.usefragments.fragment.FragOperManager;
 import com.weidi.usefragments.fragment.base.BaseFragment;
 import com.weidi.usefragments.inject.InjectView;
 import com.weidi.usefragments.tool.MLog;
+import com.weidi.usefragments.tool.PermissionsUtils;
 
 
 /***
@@ -130,6 +132,7 @@ public class Main1Fragment extends BaseFragment {
         }
         if (DEBUG)
             MLog.d(TAG, "onResume(): " + this);
+
         onShow();
     }
 

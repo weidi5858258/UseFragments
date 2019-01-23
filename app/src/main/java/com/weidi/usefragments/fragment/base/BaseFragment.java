@@ -14,7 +14,6 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
-import android.view.WindowManager;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.FrameLayout;
 
@@ -23,6 +22,7 @@ import com.weidi.usefragments.R;
 import com.weidi.usefragments.fragment.FragOperManager;
 import com.weidi.usefragments.inject.InjectUtils;
 import com.weidi.usefragments.tool.MLog;
+import com.weidi.usefragments.tool.PermissionsUtils;
 
 import java.lang.reflect.Field;
 
@@ -336,6 +336,11 @@ public abstract class BaseFragment extends Fragment {
         if (DEBUG)
             MLog.d(TAG, "onRequestPermissionsResult(): " + printThis() +
                     " requestCode: " + requestCode);
+
+        PermissionsUtils.onRequestPermissionsResult(
+                this,
+                permissions,
+                grantResults);
     }
 
     @Override
