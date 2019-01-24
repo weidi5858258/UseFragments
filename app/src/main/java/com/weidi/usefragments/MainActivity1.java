@@ -90,6 +90,11 @@ public class MainActivity1 extends BaseActivity
                 FragOperManager.POP_BACK_STACK);
     }
 
+    // Used to load the 'native-lib' library on application startup.
+    static {
+        System.loadLibrary("native-lib");
+    }
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -133,6 +138,10 @@ public class MainActivity1 extends BaseActivity
 
         findViewById(R.id.main1_btn).setBackgroundColor(
                 getResources().getColor(android.R.color.holo_green_light));
+
+        // test
+        if (DEBUG)
+            Log.d(TAG, "onCreate() stringFromJNI(): " + stringFromJNI());
     }
 
     @Override
@@ -430,4 +439,11 @@ public class MainActivity1 extends BaseActivity
                     FragOperManager.getInstance().changeFragment();
                 }
             };
+
+    /**
+     * A native method that is implemented by the 'native-lib' native library,
+     * which is packaged with this application.
+     */
+    public native String stringFromJNI();
+
 }
