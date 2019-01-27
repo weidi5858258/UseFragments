@@ -8,6 +8,8 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.res.Configuration;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.support.annotation.Nullable;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -238,6 +240,7 @@ public class Main1Fragment extends BaseFragment {
     private void onShow() {
         if (DEBUG)
             MLog.d(TAG, "onShow(): " + this);
+
         mTitleView.setText(Main1Fragment.class.getSimpleName());
         mJumpBtn.setText("跳转到");
         setStatusBar(getAttachedActivity(), true);

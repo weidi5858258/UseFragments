@@ -14,32 +14,38 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 
 public class VideoPlayer {
-    private static final String TAG = "TAG";
+
+    private static final String TAG = "VideoPlayer";
     private static final long TIMEOUT_US = 10000;
+    private IPlayerCallBack callBack;
     private VideoThread videoThread;
     private AudioThread audioThread;
     private boolean isPlaying;
-    private String filePath;
-    private Surface surface;
+    private String mVideoPath;
+    private Surface mSurface;
 
-    public VideoPlayer(Surface surface, String filePath) {
-        this.surface = surface;
-        this.filePath = filePath;
+    public VideoPlayer(Surface mSurface, String mVideoPath) {
+        this.mSurface = mSurface;
+        this.mVideoPath = mVideoPath;
     }
 
-    public VideoPlayer(Surface surface) {
-        this.surface = surface;
+    public VideoPlayer(Surface mSurface) {
+        this.mSurface = mSurface;
     }
 
-    public void setFilePath(String filePath) {
-        this.filePath = filePath;
+    public void setmVideoPath(String mVideoPath) {
+        this.mVideoPath = mVideoPath;
+    }
+
+    public void setCallBack(IPlayerCallBack callBack) {
+        this.callBack = callBack;
     }
 
     public boolean isPlaying() {
         return isPlaying;
     }
 
-    public void play() {
+    public void start() {
         isPlaying = true;
         if (videoThread == null) {
             videoThread = new VideoThread();
@@ -51,12 +57,25 @@ public class VideoPlayer {
         }
     }
 
+    public void play() {
+        isPlaying = true;
+        /*if (videoThread == null) {
+            videoThread = new VideoThread();
+            videoThread.start();
+        }
+        if (audioThread == null) {
+            audioThread = new AudioThread();
+            audioThread.start();
+        }*/
+    }
+
     public void stop() {
         isPlaying = false;
     }
 
     public void destroy() {
         stop();
+
         if (audioThread != null) audioThread.interrupt();
         if (videoThread != null) videoThread.interrupt();
     }
@@ -142,15 +161,15 @@ public class VideoPlayer {
     private class VideoThread extends Thread {
         @Override
         public void run() {
-            if (surface == null || !surface.isValid()) {
-                Log.e("TAG", "surface invalid!");
+            if (mSurface == null || !mSurface.isValid()) {
+                Log.e("TAG", "mSurface invalid!");
                 return;
             }
 
             MediaExtractor videoExtractor = new MediaExtractor();
             MediaCodec videoDecode = null;
             try {
-                videoExtractor.setDataSource(filePath);
+                videoExtractor.setDataSource(mVideoPath);
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -162,11 +181,12 @@ public class VideoPlayer {
                 int width = mediaFormat.getInteger(MediaFormat.KEY_WIDTH);
                 int height = mediaFormat.getInteger(MediaFormat.KEY_HEIGHT);
                 float time = mediaFormat.getLong(MediaFormat.KEY_DURATION) / 1000000;
+                callBack.videoAspect(width, height, time);
                 videoExtractor.selectTrack(videoTrackIndex);
                 try {
                     videoDecode = MediaCodec.createDecoderByType(
                             mediaFormat.getString(MediaFormat.KEY_MIME));
-                    videoDecode.configure(mediaFormat, surface, null, 0);
+                    videoDecode.configure(mediaFormat, mSurface, null, 0);
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -243,7 +263,7 @@ public class VideoPlayer {
             MediaExtractor audioExtractor = new MediaExtractor();
             MediaCodec audioDecode = null;
             try {
-                audioExtractor.setDataSource(filePath);
+                audioExtractor.setDataSource(mVideoPath);
             } catch (IOException e) {
                 e.printStackTrace();
             }

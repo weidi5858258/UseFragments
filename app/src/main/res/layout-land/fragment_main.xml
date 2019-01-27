@@ -11,7 +11,7 @@
     android:layout_marginLeft="16dp"
     android:layout_marginRight="16dp"
     android:orientation="vertical"
-    android:background="@drawable/han_clothes_00011"
+    android:background="@drawable/han_clothes_00002"
     android:gravity="center">
 
     <TextView

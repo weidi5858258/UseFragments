@@ -138,6 +138,7 @@ public abstract class BaseFragment extends Fragment {
         this.inflater = inflater;
         this.container = container;
         this.savedInstanceState = savedInstanceState;
+
         // 如果写成inflater.inflate(provideLayout(), container)这样的话,
         // 那么会报异常,具体异常就是已经有一个子类的parent,添加之前先要移除这个parent.
         View view = inflater.inflate(provideLayout(), null);
@@ -146,6 +147,7 @@ public abstract class BaseFragment extends Fragment {
             throw new NullPointerException(
                     "BaseFragment onCreateView() view is null.");
         }
+
         return view;
     }
 
@@ -518,6 +520,8 @@ public abstract class BaseFragment extends Fragment {
             Configuration newConfig,
             boolean needToDo,
             boolean override) {
+        // handleBeforeOfConfigurationChangedEvent();
+
         if (override) {
             // 固定写法
             FrameLayout contentLayout = BaseActivity.getContentLayout(getAttachedActivity());
@@ -540,7 +544,7 @@ public abstract class BaseFragment extends Fragment {
         // needToDo为true时,需要为各种View重新赋值.见C2Fragment
     }
 
-    protected static void setView(Fragment fragment, View newView) {
+    private static void setView(Fragment fragment, View newView) {
         try {
             Class clazz = Class.forName("android.app.Fragment");
             Field mView = clazz.getDeclaredField("mView");
@@ -654,5 +658,32 @@ public abstract class BaseFragment extends Fragment {
             this.mSavedInstanceState = null;
         }
     }*/
+
+    /***
+     <external-path/>
+     Environment.getExternalStorageDirectory(): /storage/emulated/0
+
+     <external-files-path/>
+     getExternalFilesDir(null):   /storage/emulated/0/Android/data/io.github.jiyangg
+     .videoplayerdemo/files
+     getExternalFilesDir("test"): /storage/emulated/0/Android/data/io.github.jiyangg
+     .videoplayerdemo/files/test
+
+     <external-cache-path/>
+     getExternalCacheDir():       /storage/emulated/0/Android/data/io.github.jiyangg
+     .videoplayerdemo/cache
+
+     <files-path/>
+     getFilesDir(): /data/user/0/io.github.jiyangg.videoplayerdemo/files
+
+     <cache-path/>
+     getCacheDir(): /data/user/0/io.github.jiyangg.videoplayerdemo/cache
+
+     Environment.getDataDirectory(): /data
+     Environment.getRootDirectory(): /system
+     Environment.getDownloadCacheDirectory(): /cache
+     Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MOVIES):
+     /storage/emulated/0/Movies
+     */
 
 }

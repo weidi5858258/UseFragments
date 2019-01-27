@@ -1,9 +1,11 @@
-package com.weidi.usefragments.fragment.base;
+package com.weidi.usefragments.test_fragment.scene2;
 
 import android.app.Activity;
 import android.content.Context;
 import android.content.res.Configuration;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.view.LayoutInflater;
@@ -11,20 +13,22 @@ import android.view.View;
 import android.view.ViewGroup;
 
 import com.weidi.usefragments.R;
+import com.weidi.usefragments.fragment.base.BaseFragment;
 import com.weidi.usefragments.inject.InjectOnClick;
+import com.weidi.usefragments.inject.InjectView;
 import com.weidi.usefragments.tool.MLog;
 
 /***
- 框架模板类
+
  */
-public class TemplateFragment extends BaseFragment {
+public class DecodePlayFragment extends BaseFragment {
 
     private static final String TAG =
-            TemplateFragment.class.getSimpleName();
+            DecodePlayFragment.class.getSimpleName();
 
     private static final boolean DEBUG = true;
 
-    public TemplateFragment() {
+    public DecodePlayFragment() {
         super();
     }
 
@@ -248,7 +252,7 @@ public class TemplateFragment extends BaseFragment {
 
     @Override
     protected int provideLayout() {
-        return R.layout.fragment_main;
+        return R.layout.fragment_decode_play;
     }
 
     @Override
@@ -257,6 +261,10 @@ public class TemplateFragment extends BaseFragment {
     }
 
     /////////////////////////////////////////////////////////////////
+
+    private String mVideoPath;
+    @InjectView(R.id.playerview)
+    private PlayerView mPlayerView;
 
     /***
      代码执行的内容跟onStart(),onResume()一样,
@@ -267,6 +275,15 @@ public class TemplateFragment extends BaseFragment {
         if (DEBUG)
             MLog.d(TAG, "onShow() " + printThis());
 
+        /*new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                if (mPlayerView != null) {
+                    mPlayerView.start();
+                }
+            }
+        }, 3000);*/
+        mPlayerView.play();
     }
 
     /***
@@ -277,22 +294,31 @@ public class TemplateFragment extends BaseFragment {
     private void onHide() {
         if (DEBUG)
             MLog.d(TAG, "onHide() " + printThis());
+
+        if (mPlayerView != null) {
+            mPlayerView.pause();
+        }
     }
 
     private void initData() {
-
+        mVideoPath = "/storage/2430-1702/Download/shape_of_my_heart.mp4";
     }
 
     private void initView(View view, Bundle savedInstanceState) {
-
+        mPlayerView.setVideoFilePath(mVideoPath);
     }
 
     private void handleBeforeOfConfigurationChangedEvent() {
-
+        if (mPlayerView != null) {
+            mPlayerView.pause();
+            mPlayerView.destroy();
+        }
     }
 
     private void destroy() {
-
+        if (mPlayerView != null) {
+            mPlayerView.destroy();
+        }
     }
 
     @InjectOnClick({R.id.jump_btn})
