@@ -17,7 +17,7 @@
             android:layout_height="wrap_content"
             android:text="SurfaceView"/>
 
-        <com.weidi.usefragments.test_fragment.scene2.PlayerView
+        <com.weidi.usefragments.media.PlayerView
             android:id="@+id/playerview"
             android:layout_width="match_parent"
             android:layout_height="match_parent"/>

@@ -6,7 +6,7 @@
     android:layout_height="match_parent"
     android:orientation="vertical">
 
-    <com.weidi.usefragments.test_fragment.scene2.PlayerView
+    <com.weidi.usefragments.media.PlayerView
         android:layout_marginTop="24dp"
         android:id="@+id/playerview"
         android:layout_width="match_parent"

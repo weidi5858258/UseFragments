@@ -211,6 +211,7 @@ public class A2Fragment extends BaseFragment {
     private void onShow() {
         if (DEBUG)
             MLog.d(TAG, "onShow(): " + this);
+
         mTitleView.setText(A2Fragment.class.getSimpleName());
         mJumpBtn.setText("跳转到");
     }

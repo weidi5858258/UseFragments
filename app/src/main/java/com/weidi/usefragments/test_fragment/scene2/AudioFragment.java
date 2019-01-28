@@ -411,7 +411,7 @@ public class AudioFragment extends BaseFragment {
             case R.id.convert_btn:
                 break;
             case R.id.jump_btn:
-                FragOperManager.getInstance().enter3(new A2Fragment());
+                FragOperManager.getInstance().enter3(new RecordScreenFragment());
                 break;
             default:
         }
