@@ -16,6 +16,7 @@
 
 package com.weidi.usefragments.media.encoder;
 
+import android.media.MediaCodecInfo;
 import android.media.MediaFormat;
 
 import java.util.Objects;
@@ -66,6 +67,15 @@ public class AudioEncodeConfig implements IEncodeConfig {
         format.setInteger(MediaFormat.KEY_BIT_RATE, mBitRate);
         format.setInteger(MediaFormat.KEY_AAC_PROFILE, mProfile);
         // format.setInteger(MediaFormat.KEY_MAX_INPUT_SIZE, 4096 * 4);
+
+        /*format.setString(MediaFormat.KEY_MIME, "audio/mp4a-latm");
+        format.setInteger(MediaFormat.KEY_BIT_RATE, 32000);
+        format.setInteger(MediaFormat.KEY_CHANNEL_COUNT, 2);
+        format.setInteger(MediaFormat.KEY_SAMPLE_RATE, 48000);
+        format.setInteger(MediaFormat.KEY_MAX_INPUT_SIZE, BUFFER_SIZE_IN_BYTES);
+        format.setInteger(MediaFormat.KEY_AAC_PROFILE,
+                MediaCodecInfo.CodecProfileLevel.AACObjectLC);*/
+
         return format;
     }
 
