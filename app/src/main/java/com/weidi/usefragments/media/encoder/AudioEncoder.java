@@ -16,8 +16,6 @@
 
 package com.weidi.usefragments.media.encoder;
 
-import android.media.MediaFormat;
-
 /***
 
  */
@@ -26,11 +24,8 @@ public class AudioEncoder extends BaseEncoder {
     private static final String TAG = AudioEncoder.class.getSimpleName();
     private static final boolean DEBUG = true;
 
-    private final AudioEncodeConfig mConfig;
-
     AudioEncoder(AudioEncodeConfig config) {
         super(config);
-        this.mConfig = config;
     }
 
 }

@@ -26,11 +26,13 @@ import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Looper;
 import android.os.Message;
+import android.support.annotation.NonNull;
 import android.util.Log;
 
 import com.weidi.usefragments.media.encoder.AudioEncodeConfig;
 import com.weidi.usefragments.media.encoder.BaseEncoder;
 import com.weidi.usefragments.media.encoder.VideoEncodeConfig;
+import com.weidi.usefragments.media.encoder.VideoEncoder;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -40,11 +42,12 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import static android.media.MediaFormat.MIMETYPE_AUDIO_AAC;
 import static android.media.MediaFormat.MIMETYPE_VIDEO_AVC;
 
-/**
- * @author Yrom
+/***
+
  */
 public class ScreenRecorder {
-    private static final String TAG = "ScreenRecorder";
+
+    private static final String TAG = ScreenRecorder.class.getSimpleName();
     private static final boolean VERBOSE = false;
     private static final int INVALID_INDEX = -1;
     static final String VIDEO_AVC = MIMETYPE_VIDEO_AVC; // H.264 Advanced Video Coding
@@ -65,15 +68,9 @@ public class ScreenRecorder {
     private AtomicBoolean mForceQuit = new AtomicBoolean(false);
     private AtomicBoolean mIsRunning = new AtomicBoolean(false);
     private VirtualDisplay mVirtualDisplay;
-    private MediaProjection.Callback mProjectionCallback = new MediaProjection.Callback() {
-        @Override
-        public void onStop() {
-            quit();
-        }
-    };
 
-    private HandlerThread mWorker;
-    private CallbackHandler mHandler;
+    private HandlerThread mHandlerThread;
+    private ThreadHandler mThreadHandler;
 
     private Callback mCallback;
     private LinkedList<Integer> mPendingVideoEncoderBufferIndices = new LinkedList<>();
@@ -81,20 +78,70 @@ public class ScreenRecorder {
     private LinkedList<MediaCodec.BufferInfo> mPendingAudioEncoderBufferInfos = new LinkedList<>();
     private LinkedList<MediaCodec.BufferInfo> mPendingVideoEncoderBufferInfos = new LinkedList<>();
 
-    /**
+    private MediaProjection.Callback mProjectionCallback = new MediaProjection.Callback() {
+        @Override
+        public void onStop() {
+            quit();
+        }
+    };
+
+    private static final int MSG_THREAD_START = 0;
+    private static final int MSG_THREAD_STOP = 1;
+    private static final int MSG_THREAD_ERROR = 2;
+    private static final int STOP_WITH_EOS = 1;
+
+    private class ThreadHandler extends Handler {
+        ThreadHandler(Looper looper) {
+            super(looper);
+        }
+
+        @Override
+        public void handleMessage(Message msg) {
+            switch (msg.what) {
+                case MSG_THREAD_START:
+                    try {
+                        startScreenRecord();
+                        if (mCallback != null) {
+                            mCallback.onStart();
+                        }
+                    } catch (Exception e) {
+                        msg.obj = e;
+                    }
+                    break;
+                case MSG_THREAD_STOP:
+                case MSG_THREAD_ERROR:
+                    stopEncoders();
+                    if (msg.arg1 != STOP_WITH_EOS) {
+                        signalEndOfStream();
+                    }
+                    if (mCallback != null) {
+                        mCallback.onStop((Throwable) msg.obj);
+                    }
+                    release();
+                    break;
+            }
+        }
+    }
+
+    /***
      * @param dpi for {@link VirtualDisplay}
      */
     public ScreenRecorder(VideoEncodeConfig video,
                           AudioEncodeConfig audio,
-                          int dpi, MediaProjection mp,
+                          int dpi,
+                          MediaProjection mediaProjection,
                           String dstPath) {
-        mWidth = video.width;
-        mHeight = video.height;
+        mWidth = video.mWidth;
+        mHeight = video.mHeight;
         mDpi = dpi;
-        mMediaProjection = mp;
+        mMediaProjection = mediaProjection;
         mDstPath = dstPath;
         mVideoEncoder = new VideoEncoder(video);
         mAudioEncoder = audio == null ? null : new MicRecorder(audio);
+
+        mHandlerThread = new HandlerThread(TAG);
+        mHandlerThread.start();
+        mThreadHandler = new ThreadHandler(mHandlerThread.getLooper());
     }
 
     /**
@@ -111,19 +158,23 @@ public class ScreenRecorder {
     }
 
     public void start() {
-        if (mWorker != null) throw new IllegalStateException();
-        mWorker = new HandlerThread(TAG);
-        mWorker.start();
-        mHandler = new CallbackHandler(mWorker.getLooper());
-        mHandler.sendEmptyMessage(MSG_START);
+        mThreadHandler.sendEmptyMessage(MSG_THREAD_START);
     }
 
-    public void setCallback(Callback callback) {
-        mCallback = callback;
+    public void pause() {
+
+    }
+
+    public void stop() {
+
     }
 
     public String getSavedPath() {
         return mDstPath;
+    }
+
+    public void setCallback(Callback callback) {
+        mCallback = callback;
     }
 
     interface Callback {
@@ -134,41 +185,6 @@ public class ScreenRecorder {
         void onRecording(long presentationTimeUs);
     }
 
-    private static final int MSG_START = 0;
-    private static final int MSG_STOP = 1;
-    private static final int MSG_ERROR = 2;
-    private static final int STOP_WITH_EOS = 1;
-
-    private class CallbackHandler extends Handler {
-        CallbackHandler(Looper looper) {
-            super(looper);
-        }
-
-        @Override
-        public void handleMessage(Message msg) {
-            switch (msg.what) {
-                case MSG_START:
-                    try {
-                        record();
-                        if (mCallback != null) {
-                            mCallback.onStart();
-                        }
-                        break;
-                    } catch (Exception e) {
-                        msg.obj = e;
-                    }
-                case MSG_STOP:
-                case MSG_ERROR:
-                    stopEncoders();
-                    if (msg.arg1 != STOP_WITH_EOS) signalEndOfStream();
-                    if (mCallback != null) {
-                        mCallback.onStop((Throwable) msg.obj);
-                    }
-                    release();
-                    break;
-            }
-        }
-    }
 
     private void signalEndOfStream() {
         MediaCodec.BufferInfo eos = new MediaCodec.BufferInfo();
@@ -185,7 +201,7 @@ public class ScreenRecorder {
         mAudioTrackIndex = INVALID_INDEX;
     }
 
-    private void record() {
+    private void startScreenRecord() {
         if (mIsRunning.get() || mForceQuit.get()) {
             throw new IllegalStateException();
         }
@@ -194,11 +210,13 @@ public class ScreenRecorder {
         }
         mIsRunning.set(true);
 
-        mMediaProjection.registerCallback(mProjectionCallback, mHandler);
+        mMediaProjection.registerCallback(mProjectionCallback, mThreadHandler);
+
         try {
-            // create muxer
-            mMediaMuxer = new MediaMuxer(mDstPath, MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4);
-            // create encoder and input surface
+            mMediaMuxer = new MediaMuxer(
+                    mDstPath,
+                    MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4);
+
             prepareVideoEncoder();
             prepareAudioEncoder();
         } catch (IOException e) {
@@ -211,10 +229,12 @@ public class ScreenRecorder {
                 mHeight,
                 mDpi,
                 DisplayManager.VIRTUAL_DISPLAY_FLAG_PUBLIC,
-                mVideoEncoder.getInputSurface(),
+                mVideoEncoder.getSurface(),
                 null,
                 null);
-        if (VERBOSE) Log.d(TAG, "created virtual display: " + mVirtualDisplay.getDisplay());
+
+        if (VERBOSE)
+            Log.d(TAG, "created virtual display: " + mVirtualDisplay.getDisplay());
     }
 
     private void muxVideo(int index, MediaCodec.BufferInfo buffer) {
@@ -370,35 +390,49 @@ public class ScreenRecorder {
         if (VERBOSE) Log.i(TAG, "Mux pending video output buffers done.");
     }
 
-    // @WorkerThread
     private void prepareVideoEncoder() throws IOException {
-        VideoEncoder.Callback callback = new VideoEncoder.Callback() {
+        MediaCodec.Callback callback = new MediaCodec.Callback() {
             boolean ranIntoError = false;
 
             @Override
-            public void onOutputBufferAvailable(BaseEncoder codec, int index, MediaCodec
-                    .BufferInfo info) {
+            public void onInputBufferAvailable(
+                    @NonNull MediaCodec codec,
+                    int index) {
+
+            }
+
+            @Override
+            public void onOutputBufferAvailable(
+                    @NonNull MediaCodec codec,
+                    int index,
+                    @NonNull MediaCodec.BufferInfo info) {
                 if (VERBOSE) Log.i(TAG, "VideoEncoder output buffer available: index=" + index);
                 try {
                     muxVideo(index, info);
                 } catch (Exception e) {
                     Log.e(TAG, "Muxer encountered an error! ", e);
-                    Message.obtain(mHandler, MSG_ERROR, e).sendToTarget();
+                    Message.obtain(mThreadHandler, MSG_THREAD_ERROR, e).sendToTarget();
                 }
             }
 
             @Override
-            public void onError(Encoder codec, Exception e) {
+            public void onError(
+                    @NonNull MediaCodec codec,
+                    @NonNull MediaCodec.CodecException e) {
                 ranIntoError = true;
                 Log.e(TAG, "VideoEncoder ran into an error! ", e);
-                Message.obtain(mHandler, MSG_ERROR, e).sendToTarget();
+                Message.obtain(mThreadHandler, MSG_THREAD_ERROR, e).sendToTarget();
             }
 
             @Override
-            public void onOutputFormatChanged(BaseEncoder codec, MediaFormat format) {
+            public void onOutputFormatChanged(
+                    @NonNull MediaCodec codec,
+                    @NonNull MediaFormat format) {
                 resetVideoOutputFormat(format);
                 startMuxerIfReady();
             }
+
+
         };
         mVideoEncoder.setCallback(callback);
         mVideoEncoder.prepare();
@@ -407,12 +441,20 @@ public class ScreenRecorder {
     private void prepareAudioEncoder() throws IOException {
         final MicRecorder micRecorder = mAudioEncoder;
         if (micRecorder == null) return;
-        AudioEncoder.Callback callback = new AudioEncoder.Callback() {
+        MediaCodec.Callback callback = new MediaCodec.Callback() {
             boolean ranIntoError = false;
+            @Override
+            public void onInputBufferAvailable(
+                    @NonNull MediaCodec codec,
+                    int index) {
+
+            }
 
             @Override
-            public void onOutputBufferAvailable(BaseEncoder codec, int index, MediaCodec
-                    .BufferInfo info) {
+            public void onOutputBufferAvailable(
+                    @NonNull MediaCodec codec,
+                    int index,
+                    @NonNull MediaCodec.BufferInfo info) {
                 if (VERBOSE)
                     Log.i(TAG, "[" + Thread.currentThread().getId() + "] AudioEncoder output " +
                             "buffer available: index=" + index);
@@ -420,35 +462,38 @@ public class ScreenRecorder {
                     muxAudio(index, info);
                 } catch (Exception e) {
                     Log.e(TAG, "Muxer encountered an error! ", e);
-                    Message.obtain(mHandler, MSG_ERROR, e).sendToTarget();
+                    Message.obtain(mThreadHandler, MSG_THREAD_ERROR, e).sendToTarget();
                 }
             }
 
             @Override
-            public void onOutputFormatChanged(BaseEncoder codec, MediaFormat format) {
+            public void onError(
+                    @NonNull MediaCodec codec,
+                    @NonNull MediaCodec.CodecException e) {
+                ranIntoError = true;
+                Log.e(TAG, "MicRecorder ran into an error! ", e);
+                Message.obtain(mThreadHandler, MSG_THREAD_ERROR, e).sendToTarget();
+            }
+
+            @Override
+            public void onOutputFormatChanged(
+                    @NonNull MediaCodec codec,
+                    @NonNull MediaFormat format) {
                 if (VERBOSE)
                     Log.d(TAG, "[" + Thread.currentThread().getId() + "] AudioEncoder returned " +
                             "new format " + format);
                 resetAudioOutputFormat(format);
                 startMuxerIfReady();
             }
-
-            @Override
-            public void onError(Encoder codec, Exception e) {
-                ranIntoError = true;
-                Log.e(TAG, "MicRecorder ran into an error! ", e);
-                Message.obtain(mHandler, MSG_ERROR, e).sendToTarget();
-            }
-
-
         };
         micRecorder.setCallback(callback);
         micRecorder.prepare();
     }
 
     private void signalStop(boolean stopWithEOS) {
-        Message msg = Message.obtain(mHandler, MSG_STOP, stopWithEOS ? STOP_WITH_EOS : 0, 0);
-        mHandler.sendMessageAtFrontOfQueue(msg);
+        Message msg = Message.obtain(mThreadHandler, MSG_THREAD_STOP, stopWithEOS ? STOP_WITH_EOS
+                : 0, 0);
+        mThreadHandler.sendMessageAtFrontOfQueue(msg);
     }
 
     private void stopEncoders() {
@@ -484,9 +529,9 @@ public class ScreenRecorder {
         mVideoTrackIndex = mAudioTrackIndex = INVALID_INDEX;
         mMuxerStarted = false;
 
-        if (mWorker != null) {
-            mWorker.quitSafely();
-            mWorker = null;
+        if (mHandlerThread != null) {
+            mHandlerThread.quitSafely();
+            mHandlerThread = null;
         }
         if (mVideoEncoder != null) {
             mVideoEncoder.release();
@@ -510,7 +555,7 @@ public class ScreenRecorder {
             }
             mMediaMuxer = null;
         }
-        mHandler = null;
+        mThreadHandler = null;
     }
 
     @Override

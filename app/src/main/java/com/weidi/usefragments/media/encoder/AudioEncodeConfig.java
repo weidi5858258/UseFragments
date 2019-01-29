@@ -65,7 +65,7 @@ public class AudioEncodeConfig implements IEncodeConfig {
         MediaFormat format = MediaFormat.createAudioFormat(mMimeType, mSampleRate, mChannelCount);
         format.setInteger(MediaFormat.KEY_BIT_RATE, mBitRate);
         format.setInteger(MediaFormat.KEY_AAC_PROFILE, mProfile);
-        //format.setInteger(MediaFormat.KEY_MAX_INPUT_SIZE, 4096 * 4);
+        // format.setInteger(MediaFormat.KEY_MAX_INPUT_SIZE, 4096 * 4);
         return format;
     }
 

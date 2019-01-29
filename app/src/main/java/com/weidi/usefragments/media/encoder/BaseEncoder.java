@@ -35,8 +35,8 @@ public abstract class BaseEncoder implements IEncoder {
     private static final String TAG = BaseEncoder.class.getSimpleName();
     private static final boolean DEBUG = true;
 
-    private IEncodeConfig mIEncodeConfig;
-    private MediaCodec mMediaEncoder;
+    protected IEncodeConfig mIEncodeConfig;
+    protected MediaCodec mMediaEncoder;
     // MediaCodec对象调用configure()方法时使用
     protected MediaFormat mMediaFormat;
     protected Surface mSurface;
@@ -47,6 +47,7 @@ public abstract class BaseEncoder implements IEncoder {
 
     public BaseEncoder(IEncodeConfig encodeConfig) {
         this.mIEncodeConfig = encodeConfig;
+
         if (mIEncodeConfig == null) {
             throw new NullPointerException("BaseEncoder() mIEncodeConfig is null");
         }
@@ -60,6 +61,7 @@ public abstract class BaseEncoder implements IEncoder {
         this.mMediaFormat = mediaFormat;
         this.mSurface = surface;
         this.mMediaCrypto = mediaCrypto;
+
         if (mIEncodeConfig == null) {
             throw new NullPointerException("BaseEncoder() mIEncodeConfig is null");
         }
@@ -75,16 +77,23 @@ public abstract class BaseEncoder implements IEncoder {
         this.mSurface = surface;
         this.mMediaCrypto = mediaCrypto;
         this.mConfigureFlag = configureFlag;
+
         if (mIEncodeConfig == null) {
             throw new NullPointerException("BaseEncoder() mIEncodeConfig is null");
         }
     }
 
-    protected void setCallback(MediaCodec.Callback callback) {
+    /***
+     * 调用prepare()方法之前进行设置
+     *
+     * @param callback
+     */
+    public void setCallback(MediaCodec.Callback callback) {
         mCallback = callback;
     }
 
     /***
+     * 调用configure()方法后需要子类再干些什么事(还没有调用start()方法之前)
      *
      * @param encoder
      */
@@ -177,6 +186,7 @@ public abstract class BaseEncoder implements IEncoder {
             Log.w(TAG, "createEncoder() create '" +
                     this.mIEncodeConfig.getCodecName() + "' failure!", e);
         }
+
         return MediaCodec.createEncoderByType(type);
     }
 

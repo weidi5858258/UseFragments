@@ -17,7 +17,6 @@
 package com.weidi.usefragments.media.encoder;
 
 import android.media.MediaCodec;
-import android.media.MediaFormat;
 import android.util.Log;
 import android.view.Surface;
 
@@ -31,13 +30,8 @@ public class VideoEncoder extends BaseEncoder {
     private static final String TAG = VideoEncoder.class.getSimpleName();
     private static final boolean DEBUG = true;
 
-    private VideoEncodeConfig mVideoEncodeConfig;
-    private Surface mSurface;
-
-
     public VideoEncoder(VideoEncodeConfig config) {
         super(config);
-        this.mVideoEncodeConfig = config;
     }
 
     @Override
