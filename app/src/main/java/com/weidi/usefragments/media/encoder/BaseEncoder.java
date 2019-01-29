@@ -17,9 +17,11 @@
 package com.weidi.usefragments.media.encoder;
 
 import android.media.MediaCodec;
+import android.media.MediaCrypto;
 import android.media.MediaFormat;
 import android.os.Looper;
 import android.util.Log;
+import android.view.Surface;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -33,14 +35,60 @@ public abstract class BaseEncoder implements IEncoder {
     private static final String TAG = BaseEncoder.class.getSimpleName();
     private static final boolean DEBUG = true;
 
-    private String mCodecName;
+    private IEncodeConfig mIEncodeConfig;
     private MediaCodec mMediaEncoder;
+    // MediaCodec对象调用configure()方法时使用
+    protected MediaFormat mMediaFormat;
+    protected Surface mSurface;
+    protected MediaCrypto mMediaCrypto;
+    protected int mConfigureFlag = MediaCodec.CONFIGURE_FLAG_ENCODE;
 
-    public BaseEncoder() {
+    private MediaCodec.Callback mCallback;
+
+    public BaseEncoder(IEncodeConfig encodeConfig) {
+        this.mIEncodeConfig = encodeConfig;
+        if (mIEncodeConfig == null) {
+            throw new NullPointerException("BaseEncoder() mIEncodeConfig is null");
+        }
     }
 
-    public BaseEncoder(String codecName) {
-        this.mCodecName = codecName;
+    public BaseEncoder(IEncodeConfig encodeConfig,
+                       MediaFormat mediaFormat,
+                       Surface surface,
+                       MediaCrypto mediaCrypto) {
+        this.mIEncodeConfig = encodeConfig;
+        this.mMediaFormat = mediaFormat;
+        this.mSurface = surface;
+        this.mMediaCrypto = mediaCrypto;
+        if (mIEncodeConfig == null) {
+            throw new NullPointerException("BaseEncoder() mIEncodeConfig is null");
+        }
+    }
+
+    public BaseEncoder(IEncodeConfig encodeConfig,
+                       MediaFormat mediaFormat,
+                       Surface surface,
+                       MediaCrypto mediaCrypto,
+                       int configureFlag) {
+        this.mIEncodeConfig = encodeConfig;
+        this.mMediaFormat = mediaFormat;
+        this.mSurface = surface;
+        this.mMediaCrypto = mediaCrypto;
+        this.mConfigureFlag = configureFlag;
+        if (mIEncodeConfig == null) {
+            throw new NullPointerException("BaseEncoder() mIEncodeConfig is null");
+        }
+    }
+
+    protected void setCallback(MediaCodec.Callback callback) {
+        mCallback = callback;
+    }
+
+    /***
+     *
+     * @param encoder
+     */
+    protected void onConfigured(MediaCodec encoder) {
     }
 
     /***
@@ -56,25 +104,33 @@ public abstract class BaseEncoder implements IEncoder {
             throw new IllegalStateException("prepared!");
         }
 
-        MediaFormat format = createMediaFormat();
-        Log.d("Encoder", "Create media format: " + format);
+        if (mMediaFormat == null) {
+            mMediaFormat = mIEncodeConfig.createMediaFormat();
+        }
+        if (DEBUG)
+            Log.d(TAG, "prepare() mMediaFormat: " + mMediaFormat);
 
-        String mimeType = format.getString(MediaFormat.KEY_MIME);
-        final MediaCodec encoder = createEncoder(mimeType);
+        mMediaEncoder = createEncoder(mIEncodeConfig.getMimeType());
+        if (mMediaEncoder == null) {
+            if (DEBUG)
+                Log.e(TAG, "prepare() mMediaEncoder is null");
+            return;
+        }
+
         try {
-            /*if (this.mCallback != null) {
+            if (this.mCallback != null) {
                 // NOTE: MediaCodec maybe crash on some devices due to null callback
-                encoder.setCallback(mCodecCallback);
-            }*/
-            encoder.configure(format, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE);
-            onConfigured(encoder);
+                mMediaEncoder.setCallback(mCallback);
+            }
+
+            mMediaEncoder.configure(mMediaFormat, mSurface, mMediaCrypto, mConfigureFlag);
             // encoder.start();
         } catch (MediaCodec.CodecException e) {
-            Log.e("Encoder", "Configure codec failure!\n  with format" + format, e);
+            Log.e(TAG, "Configure codec failure!\n  with format" + mMediaFormat, e);
             throw e;
         }
 
-        mMediaEncoder = encoder;
+        onConfigured(mMediaEncoder);
     }
 
     /**
@@ -109,33 +165,21 @@ public abstract class BaseEncoder implements IEncoder {
     }
 
     /**
-     * call immediately after {@link #getEncoder() MediaCodec}
-     * configure with {@link #createMediaFormat() MediaFormat} success
-     *
-     * @param encoder
-     */
-    protected void onConfigured(MediaCodec encoder) {
-    }
-
-    /**
      * create a new instance of MediaCodec
      */
     private MediaCodec createEncoder(String type) throws IOException {
         try {
             // use codec name first
-            if (this.mCodecName != null) {
-                return MediaCodec.createByCodecName(mCodecName);
+            if (this.mIEncodeConfig.getCodecName() != null) {
+                return MediaCodec.createByCodecName(this.mIEncodeConfig.getCodecName());
             }
         } catch (IOException e) {
-            Log.w("@@", "Create MediaCodec by name '" + mCodecName + "' failure!", e);
+            Log.w(TAG, "createEncoder() create '" +
+                    this.mIEncodeConfig.getCodecName() + "' failure!", e);
         }
         return MediaCodec.createEncoderByType(type);
     }
 
-    /**
-     * create {@link MediaFormat} for {@link MediaCodec}
-     */
-    protected abstract MediaFormat createMediaFormat();
 
     protected final MediaCodec getEncoder() {
         return Objects.requireNonNull(mMediaEncoder, "doesn't prepare()");
@@ -173,6 +217,5 @@ public abstract class BaseEncoder implements IEncoder {
     public final void releaseOutputBuffer(int index) {
         getEncoder().releaseOutputBuffer(index, false);
     }
-
 
 }

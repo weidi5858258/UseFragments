@@ -29,13 +29,8 @@ public class AudioEncoder extends BaseEncoder {
     private final AudioEncodeConfig mConfig;
 
     AudioEncoder(AudioEncodeConfig config) {
-        super(config.codecName);
+        super(config);
         this.mConfig = config;
-    }
-
-    @Override
-    protected MediaFormat createMediaFormat() {
-        return mConfig.toFormat();
     }
 
 }

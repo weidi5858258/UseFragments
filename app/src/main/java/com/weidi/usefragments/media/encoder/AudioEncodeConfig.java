@@ -23,7 +23,7 @@ import java.util.Objects;
 /***
 
  */
-public class AudioEncodeConfig {
+public class AudioEncodeConfig implements IEncodeConfig {
 
     public final String mCodecName;
     public final String mMimeType;
@@ -49,6 +49,16 @@ public class AudioEncodeConfig {
         this.mSampleRate = sampleRate;
         this.mChannelCount = channelCount;
         this.mProfile = profile;
+    }
+
+    @Override
+    public String getCodecName() {
+        return mCodecName;
+    }
+
+    @Override
+    public String getMimeType() {
+        return mMimeType;
     }
 
     public MediaFormat createMediaFormat() {

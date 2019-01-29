@@ -24,7 +24,7 @@ import java.util.Objects;
 /***
 
  */
-public class VideoEncodeConfig {
+public class VideoEncodeConfig implements IEncodeConfig {
 
     public final String mCodecName;
     public final String mMimeType;
@@ -34,6 +34,8 @@ public class VideoEncodeConfig {
     public final int mFrameRate;
     public final int mIFrameInterval;
     public final MediaCodecInfo.CodecProfileLevel mCodecProfileLevel;
+
+    private static final int SCREEN_RECORD_MODE = 1;
 
     /**
      * @param codecName         selected codec name, maybe null
@@ -64,6 +66,16 @@ public class VideoEncodeConfig {
         this.mFrameRate = frameRate;
         this.mIFrameInterval = iFrameInterval;
         this.mCodecProfileLevel = codecProfileLevel;
+    }
+
+    @Override
+    public String getCodecName() {
+        return mCodecName;
+    }
+
+    @Override
+    public String getMimeType() {
+        return mMimeType;
     }
 
     public MediaFormat createMediaFormat() {
