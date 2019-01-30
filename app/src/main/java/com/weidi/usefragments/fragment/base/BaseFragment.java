@@ -607,6 +607,11 @@ public abstract class BaseFragment extends Fragment {
     }
 
     /***
+     // 相当于按下了"Home"键
+     getAttachedActivity().moveTaskToBack(true);
+     */
+
+    /***
      代码备份:
      这个方法是在MainActivity中的.
      */

@@ -18,13 +18,25 @@
 ANDROID_ABI:UNINITIALIZED=armeabi-v7a
 
 //No help, variable specified on the command line.
+ANDROID_ARM_MODE:UNINITIALIZED=arm
+
+//No help, variable specified on the command line.
+ANDROID_ARM_NEON:UNINITIALIZED=TRUE
+
+//No help, variable specified on the command line.
+ANDROID_CPP_FEATURES:UNINITIALIZED=rtti exceptions
+
+//No help, variable specified on the command line.
 ANDROID_NDK:UNINITIALIZED=/root/mydev/tools/android_sdk/ndk-bundle-16
 
 //No help, variable specified on the command line.
 ANDROID_PLATFORM:UNINITIALIZED=android-23
 
+//No help, variable specified on the command line.
+ANDROID_TOOLCHAIN:UNINITIALIZED=gcc
+
 //Archiver
-CMAKE_AR:FILEPATH=/root/mydev/tools/android_sdk/ndk-bundle-16/toolchains/arm-linux-androideabi-4.9/prebuilt/linux-x86_64/bin/arm-linux-androideabi-ar
+CMAKE_AR:FILEPATH=/root/mydev/tools/android_sdk/ndk-bundle-16/toolchains/arm-linux-androideabi-4.9/prebuilt/linux-x86_64/bin/arm-linux-androideabi-gcc-ar
 
 //Flags used by the compiler during all build types.
 CMAKE_ASM_FLAGS:STRING=
@@ -135,7 +147,7 @@ CMAKE_OBJDUMP:FILEPATH=/root/mydev/tools/android_sdk/ndk-bundle-16/toolchains/ar
 CMAKE_PROJECT_NAME:STATIC=Project
 
 //Ranlib
-CMAKE_RANLIB:FILEPATH=/root/mydev/tools/android_sdk/ndk-bundle-16/toolchains/arm-linux-androideabi-4.9/prebuilt/linux-x86_64/bin/arm-linux-androideabi-ranlib
+CMAKE_RANLIB:FILEPATH=/root/mydev/tools/android_sdk/ndk-bundle-16/toolchains/arm-linux-androideabi-4.9/prebuilt/linux-x86_64/bin/arm-linux-androideabi-gcc-ranlib
 
 //Flags used by the linker during the creation of dll's.
 CMAKE_SHARED_LINKER_FLAGS:STRING=
@@ -243,6 +255,8 @@ CMAKE_C_FLAGS_RELEASE-ADVANCED:INTERNAL=1
 CMAKE_C_FLAGS_RELWITHDEBINFO-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: CMAKE_C_STANDARD_LIBRARIES
 CMAKE_C_STANDARD_LIBRARIES-ADVANCED:INTERNAL=1
+//Executable file format
+CMAKE_EXECUTABLE_FORMAT:INTERNAL=ELF
 //ADVANCED property for variable: CMAKE_EXE_LINKER_FLAGS
 CMAKE_EXE_LINKER_FLAGS-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: CMAKE_EXE_LINKER_FLAGS_DEBUG

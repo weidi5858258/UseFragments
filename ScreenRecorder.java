@@ -390,6 +390,15 @@ public class ScreenRecorder {
         if (VERBOSE) Log.i(TAG, "Mux pending video output buffers done.");
     }
 
+    /***
+     * 获取sps pps的ByteBuffer，注意此处的sps pps都是read-only只读状态
+     * @param newFormat
+     */
+    private void getSpsPpsByteBuffer(MediaFormat newFormat) {
+        ByteBuffer rawSps = newFormat.getByteBuffer("csd-0");
+        ByteBuffer rawPps = newFormat.getByteBuffer("csd-1");
+    }
+
     private void prepareVideoEncoder() throws IOException {
         MediaCodec.Callback callback = new MediaCodec.Callback() {
             boolean ranIntoError = false;

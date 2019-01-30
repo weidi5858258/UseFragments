@@ -8,10 +8,16 @@ android {
         targetSdkVersion 26
         versionCode 1
         versionName "1.0"
-//        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
         externalNativeBuild {
             cmake {
                 cppFlags "-frtti -fexceptions"
+                arguments "-DANDROID_ARM_NEON=TRUE",
+                        "-DANDROID_CPP_FEATURES=rtti exceptions",
+                        "-DANDROID_TOOLCHAIN=gcc",
+                        "-DANDROID_ARM_MODE=arm"
+            }
+            ndk {
+                abiFilters 'armeabi-v7a'
             }
         }
     }
@@ -19,6 +25,9 @@ android {
         cmake {
             path "CMakeLists.txt"
         }
+    }
+    lintOptions {
+        abortOnError false
     }
     buildTypes {
         release {
@@ -33,7 +42,4 @@ dependencies {
     implementation 'com.android.support:appcompat-v7:26.1.0'
     implementation 'com.android.support.constraint:constraint-layout:1.1.3'
     implementation 'com.android.support:support-v13:26.1.0'
-//    testImplementation 'junit:junit:4.12'
-//    androidTestImplementation 'com.android.support.test:runner:1.0.2'
-//    androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.2'
 }

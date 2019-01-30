@@ -11,5 +11,9 @@ arguments :
 -DCMAKE_TOOLCHAIN_FILE=/root/mydev/tools/android_sdk/ndk-bundle-16/build/cmake/android.toolchain.cmake
 -DCMAKE_MAKE_PROGRAM=/root/mydev/tools/android_sdk/cmake/3.6.4111459/bin/ninja
 -GAndroid Gradle - Ninja
+-DANDROID_ARM_NEON=TRUE
+-DANDROID_CPP_FEATURES=rtti exceptions
+-DANDROID_TOOLCHAIN=gcc
+-DANDROID_ARM_MODE=arm
 jvmArgs : 
 

@@ -46,8 +46,8 @@ public class MainActivity1 extends BaseActivity
 
     private static final String TAG =
             MainActivity1.class.getSimpleName();
-
     private static final boolean DEBUG = true;
+
     private BaseFragment mBaseFragment;
     private Fragment mCurShowMainFragment;
     private Fragment mPreShowMainFragment;
@@ -58,6 +58,11 @@ public class MainActivity1 extends BaseActivity
     private Fragment main4Fragment;
 
     private View mRootView;
+
+    // Used to load the 'native-lib' library on application startup.
+    static {
+        System.loadLibrary("native-lib");
+    }
 
     private static HashMap<String, Integer> sFragmentBackTypeSMap;
 
@@ -96,11 +101,6 @@ public class MainActivity1 extends BaseActivity
         sFragmentBackTypeSMap.put(
                 RecordScreenFragment.class.getSimpleName(),
                 FragOperManager.POP_BACK_STACK);
-    }
-
-    // Used to load the 'native-lib' library on application startup.
-    static {
-        System.loadLibrary("native-lib");
     }
 
     @Override

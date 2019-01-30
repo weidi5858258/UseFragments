@@ -378,7 +378,7 @@ public class RecordScreenFragment extends BaseFragment {
         }
 
         mMediaProjection.registerCallback(mMediaProjectionCallback, null);
-//        mMediaProjection.createVirtualDisplay();
+        //        mMediaProjection.createVirtualDisplay();
 
         mIsRecording = !mIsRecording;
     }
