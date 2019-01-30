@@ -1,3 +1,0 @@
-/root/mydev/workspace_android/UseFragments/app/.externalNativeBuild/cmake/debug/armeabi-v7a/CMakeFiles/rebuild_cache.dir
-/root/mydev/workspace_android/UseFragments/app/.externalNativeBuild/cmake/debug/armeabi-v7a/CMakeFiles/edit_cache.dir
-/root/mydev/workspace_android/UseFragments/app/.externalNativeBuild/cmake/debug/armeabi-v7a/CMakeFiles/native-lib.dir

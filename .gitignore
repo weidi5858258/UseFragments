@@ -2,6 +2,7 @@
 .gradle
 .idea
 UseFragments.iml
+app/.externalNativeBuild
 app/iml
 app/build
 build
