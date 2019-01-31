@@ -194,38 +194,38 @@ public abstract class BaseEncoder implements IEncoder {
      * @throws NullPointerException if prepare() not call
      * @see MediaCodec#getInputBuffer(int)
      */
-    public final ByteBuffer getInputBuffer(int index) {
+    /*public final ByteBuffer getInputBuffer(int index) {
         return getEncoder().getInputBuffer(index);
-    }
+    }*/
 
     /**
      * @throws NullPointerException if prepare() not call
      * @see MediaCodec#getOutputBuffer(int)
      */
-    public final ByteBuffer getOutputBuffer(int index) {
+    /*public final ByteBuffer getOutputBuffer(int index) {
         return getEncoder().getOutputBuffer(index);
-    }
+    }*/
 
     /**
      * @throws NullPointerException if prepare() not call
      * @see MediaCodec#getInputBuffer(int)
      * @see MediaCodec#queueInputBuffer(int, int, int, long, int)
      */
-    public final void queueInputBuffer(
+    /*public final void queueInputBuffer(
             int index,
             int offset,
             int size,
             long presentationTimeUs,
             int flags) {
         getEncoder().queueInputBuffer(index, offset, size, presentationTimeUs, flags);
-    }
+    }*/
 
     /**
      * @throws NullPointerException if prepare() not call
      * @see MediaCodec#releaseOutputBuffer(int, boolean)
      */
-    public final void releaseOutputBuffer(int index) {
+    /*public final void releaseOutputBuffer(int index) {
         getEncoder().releaseOutputBuffer(index, false);
-    }
+    }*/
 
 }

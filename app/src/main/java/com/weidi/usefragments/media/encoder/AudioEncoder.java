@@ -29,6 +29,7 @@ import android.util.Log;
 import android.util.SparseLongArray;
 
 import com.weidi.usefragments.media.MediaUtils;
+import com.weidi.usefragments.tool.MLog;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -85,6 +86,7 @@ public class AudioEncoder extends BaseEncoder {
         if (mRecordHandler != null) {
             mRecordHandler.removeMessages(MSG_THREAD_START);
             mRecordHandler.sendEmptyMessage(MSG_THREAD_START);
+            mRecordHandler.sendEmptyMessage(MSG_THREAD_FEED_INPUT);
         }
     }
 
@@ -128,6 +130,8 @@ public class AudioEncoder extends BaseEncoder {
 
         RecordHandler(Looper looper) {
             super(looper);
+            if (DEBUG)
+                MLog.d(TAG, "RecordHandler() mPollRate: " + mPollRate);
         }
 
         @Override
@@ -147,31 +151,16 @@ public class AudioEncoder extends BaseEncoder {
                     }
                     break;
                 case MSG_THREAD_FEED_INPUT:
-                    if (!mForceStopFlag.get()) {
-                        int index = getEncoder().dequeueInputBuffer(0);
-                        if (DEBUG)
-                            Log.d(TAG, "audio encoder returned input buffer index=" + index);
-
-                        if (index >= 0) {
-                            feedAudioEncoder(index);
-                            // tell encoder to eat the fresh meat!
-                            if (!mForceStopFlag.get()) {
-                                sendEmptyMessage(MSG_THREAD_DRAIN_OUTPUT);
-                            }
-                        } else {
-                            // try later...
-                            if (DEBUG) Log.i(TAG, "try later to poll input buffer");
-                            sendEmptyMessageDelayed(MSG_THREAD_FEED_INPUT, mPollRate);
-                        }
-                    }
+                    putRecordDataPassToMediaCodec();
                     break;
                 case MSG_THREAD_DRAIN_OUTPUT:
                     offerOutput();
                     pollInputIfNeed();
                     break;
                 case MSG_THREAD_RELEASE_OUTPUT:
-                    //mEncoder.releaseOutputBuffer(msg.arg1);
-                    mMuxingOutputBufferIndices.poll(); // Nobody care what it exactly is.
+                    getEncoder().releaseOutputBuffer(msg.arg1);
+                    // Nobody care what it exactly is.
+                    mMuxingOutputBufferIndices.poll();
                     if (DEBUG) Log.d(TAG, "audio encoder released output buffer index="
                             + msg.arg1 + ", remaining=" + mMuxingOutputBufferIndices.size());
                     pollInputIfNeed();
@@ -198,26 +187,52 @@ public class AudioEncoder extends BaseEncoder {
             }
         }
 
+        /***
+         把录音数据传递到MediaCodec中去编码
+         */
+        private void putRecordDataPassToMediaCodec() {
+            if (!mForceStopFlag.get()) {
+                int index = getEncoder().dequeueInputBuffer(0);
+                if (DEBUG)
+                    Log.d(TAG, "audio encoder returned input buffer index: " + index);
+
+                if (index >= 0) {
+                    feedAudioEncoder(index);
+                    // tell encoder to eat the fresh meat!
+                    if (!mForceStopFlag.get()) {
+                        sendEmptyMessage(MSG_THREAD_DRAIN_OUTPUT);
+                    }
+                } else {
+                    // try later...
+                    if (DEBUG)
+                        Log.d(TAG, "try later to poll input buffer");
+                    sendEmptyMessageDelayed(MSG_THREAD_FEED_INPUT, mPollRate);
+                }
+            }
+        }
+
         private void offerOutput() {
             while (!mForceStopFlag.get()) {
                 MediaCodec.BufferInfo info = mCachedInfos.poll();
                 if (info == null) {
                     info = new MediaCodec.BufferInfo();
                 }
-                int index = mEncoder.getEncoder().dequeueOutputBuffer(info, 1);
-                if (DEBUG) Log.d(TAG, "audio encoder returned output buffer index=" + index);
+                int index = getEncoder().dequeueOutputBuffer(info, 1);
+                if (DEBUG)
+                    Log.d(TAG, "audio encoder returned output buffer index: " + index);
                 if (index == INFO_OUTPUT_FORMAT_CHANGED) {
-                    mCallbackDelegate.onOutputFormatChanged(mEncoder, mEncoder.getEncoder()
-                            .getOutputFormat());
+                    /*mCallbackDelegate.onOutputFormatChanged(
+                            mEncoder,
+                            mEncoder.getEncoder().getOutputFormat());*/
                 }
                 if (index < 0) {
                     info.set(0, 0, 0, 0);
                     mCachedInfos.offer(info);
                     break;
                 }
-                mMuxingOutputBufferIndices.offer(index);
-                mCallbackDelegate.onOutputBufferAvailable(mEncoder, index, info);
 
+                mMuxingOutputBufferIndices.offer(index);
+                // mCallbackDelegate.onOutputBufferAvailable(mEncoder, index, info);
             }
         }
 
@@ -232,6 +247,7 @@ public class AudioEncoder extends BaseEncoder {
 
     /**
      * NOTE: Should waiting all output buffer disappear queue input buffer
+     * 把MIC中的声音数据传到MediaCodec中去编码
      */
     private void feedAudioEncoder(int index) {
         if (index < 0 || mForceStopFlag.get()) {
@@ -241,7 +257,7 @@ public class AudioEncoder extends BaseEncoder {
         final AudioRecord audioRecord = Objects.requireNonNull(
                 mAudioRecord, "maybe release");
         final boolean eos = audioRecord.getRecordingState() == AudioRecord.RECORDSTATE_STOPPED;
-        final ByteBuffer frame = getInputBuffer(index);
+        final ByteBuffer frame = getEncoder().getInputBuffer(index);
         int offset = frame.position();
         int limit = frame.limit();
         int read = 0;
