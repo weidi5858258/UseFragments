@@ -16,7 +16,6 @@
 
 package com.weidi.usefragments.media.encoder;
 
-import android.media.MediaCodecInfo;
 import android.media.MediaFormat;
 
 import java.util.Objects;
@@ -24,12 +23,13 @@ import java.util.Objects;
 /***
 
  */
-public class AudioEncodeConfig implements IEncodeConfig {
+public class AudioEncodeConfig implements IConfig {
 
     public final String mCodecName;
     public final String mMimeType;
     public final int mBitRate;
     public final int mSampleRate;
+    // 声道数
     public final int mChannelCount;
     public final int mProfile;
 

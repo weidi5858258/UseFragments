@@ -1,5 +1,9 @@
 package com.weidi.usefragments.media;
 
+import android.media.AudioAttributes;
+import android.media.AudioFormat;
+import android.media.AudioRecord;
+import android.media.AudioTrack;
 import android.media.MediaCodec;
 import android.media.MediaCodecInfo;
 import android.media.MediaCodecList;
@@ -9,6 +13,8 @@ import android.text.TextUtils;
 import android.util.Log;
 import android.util.SparseArray;
 
+import com.weidi.usefragments.tool.MLog;
+
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
@@ -16,6 +22,7 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * Created by root on 19-1-28.
@@ -250,6 +257,108 @@ public class MediaUtils {
         }
 
         return mediaCodecInfos.toArray(new MediaCodecInfo[mediaCodecInfos.size()]);
+    }
+
+    /***
+     *
+     * @return
+     */
+
+    /***
+     *
+     * @param audioSource MediaRecorder.AudioSource.MIC
+     * @param sampleRateInHz 44100
+     * @param channelCount 声道数
+     * @param audioFormat AudioFormat.ENCODING_PCM_16BIT
+     * @return
+     */
+    public static AudioRecord createAudioRecord(
+            int audioSource, int sampleRateInHz,
+            int channelCount, int audioFormat) {
+        int channelConfig = channelCount == 2
+                ?
+                AudioFormat.CHANNEL_IN_STEREO
+                :
+                AudioFormat.CHANNEL_IN_MONO;
+        int minBufferSize = AudioRecord.getMinBufferSize(
+                sampleRateInHz, channelConfig, audioFormat) * 2;
+        if (minBufferSize <= 0) {
+            if (DEBUG)
+                Log.e(TAG, String.format(Locale.US,
+                        "Bad arguments: getMinBufferSize(%d, %d, %d)",
+                        sampleRateInHz, channelConfig, audioFormat));
+            return null;
+        }
+
+        if (DEBUG)
+            MLog.d(TAG, "createAudioRecord() minBufferSize: " + (minBufferSize / 2));
+        AudioRecord audioRecord = new AudioRecord(
+                audioSource, sampleRateInHz, channelConfig,
+                audioFormat, minBufferSize);
+        if (audioRecord.getState() == AudioRecord.STATE_UNINITIALIZED) {
+            if (DEBUG)
+                Log.e(TAG, String.format(Locale.US,
+                        "Bad arguments to new AudioRecord(%d, %d, %d)",
+                        sampleRateInHz, channelConfig, audioFormat));
+            return null;
+        }
+
+        return audioRecord;
+    }
+
+    /***
+     *
+     * @param sampleRateInHz 44100
+     * @param channelCount 声道数
+     * @param audioFormat AudioFormat.ENCODING_PCM_16BIT
+     * @param mode AudioTrack.MODE_STREAM
+     * @param sessionId AudioManager.AUDIO_SESSION_ID_GENERATE
+     * @return
+     */
+    public static AudioTrack createAudioTrack(
+            int sampleRateInHz, int channelCount,
+            int audioFormat, int mode, int sessionId) {
+        int channelConfig = channelCount == 2
+                ?
+                AudioFormat.CHANNEL_IN_STEREO
+                :
+                AudioFormat.CHANNEL_IN_MONO;
+        int minBufferSize = AudioRecord.getMinBufferSize(
+                sampleRateInHz, channelConfig, audioFormat) * 2;
+        if (minBufferSize <= 0) {
+            if (DEBUG)
+                Log.e(TAG, String.format(Locale.US,
+                        "Bad arguments: getMinBufferSize(%d, %d, %d)",
+                        sampleRateInHz, channelConfig, audioFormat));
+            return null;
+        }
+
+        if (DEBUG)
+            MLog.d(TAG, "createAudioTrack() minBufferSize: " + (minBufferSize / 2));
+        AudioAttributes attributes = new AudioAttributes.Builder()
+                .setUsage(AudioAttributes.USAGE_MEDIA)
+                .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+                .build();
+        AudioFormat format = new AudioFormat.Builder()
+                .setSampleRate(sampleRateInHz)
+                .setChannelMask(channelConfig)
+                .setEncoding(audioFormat)
+                .build();
+        AudioTrack audioTrack = new AudioTrack(
+                attributes,
+                format,
+                minBufferSize,
+                mode,
+                sessionId);
+        if (audioTrack.getState() == AudioTrack.STATE_UNINITIALIZED) {
+            if (DEBUG)
+                Log.e(TAG, String.format(Locale.US,
+                        "Bad arguments to new AudioTrack(%d, %d, %d, %d, %d)",
+                        sampleRateInHz, channelConfig, audioFormat, mode, sessionId));
+            return null;
+        }
+
+        return audioTrack;
     }
 
     public static void printMediaCodecInfos(MediaCodecInfo[] mediaCodecInfos, String mimeType) {

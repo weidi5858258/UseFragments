@@ -24,7 +24,7 @@ import java.util.Objects;
 /***
 
  */
-public interface IEncodeConfig {
+public interface IConfig {
 
     String getCodecName();
 

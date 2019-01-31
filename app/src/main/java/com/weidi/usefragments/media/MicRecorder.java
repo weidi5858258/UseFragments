@@ -14,12 +14,14 @@
  * limitations under the License.
  */
 
-package com.weidi.usefragments.media.encoder;
+package com.weidi.usefragments.media;
 
 import android.media.AudioFormat;
 import android.media.AudioRecord;
 import android.media.MediaCodec;
+import android.media.MediaFormat;
 import android.media.MediaRecorder;
+import android.os.Build;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Looper;
@@ -28,32 +30,49 @@ import android.os.SystemClock;
 import android.util.Log;
 import android.util.SparseLongArray;
 
-import com.weidi.usefragments.media.MediaUtils;
+import com.weidi.usefragments.media.encoder.AudioEncodeConfig;
+import com.weidi.usefragments.media.encoder.BaseEncoder;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.LinkedList;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static android.media.MediaCodec.BUFFER_FLAG_END_OF_STREAM;
 import static android.media.MediaCodec.BUFFER_FLAG_KEY_FRAME;
 import static android.media.MediaCodec.INFO_OUTPUT_FORMAT_CHANGED;
+import static android.os.Build.VERSION_CODES.N;
 
 /***
 
  */
-public class AudioEncoder extends BaseEncoder {
+class MicRecorder {
 
-    private static final String TAG = AudioEncoder.class.getSimpleName();
-    private static final boolean DEBUG = true;
+    private static final String TAG = "MicRecorder";
+    private static final boolean VERBOSE = false;
 
-    AudioEncoder(AudioEncodeConfig config) {
-        super(config);
+    private final HandlerThread mRecordThread;
+    private RecordHandler mRecordHandler;
+    private AudioRecord mAudioRecord; // access in mRecordThread only!
+    private int mSampleRate;
+    private int mChannelConfig;
+    private int mFormat = AudioFormat.ENCODING_PCM_16BIT;
 
+    private AtomicBoolean mForceStop = new AtomicBoolean(false);
+    //    private CallbackDelegate mCallbackDelegate;
+    private int mChannelsSampleRate;
+
+    MicRecorder(AudioEncodeConfig config) {
         mSampleRate = config.mSampleRate;
         mChannelsSampleRate = mSampleRate * config.mChannelCount;
-        if (DEBUG) Log.i(TAG, "in bitrate " + mChannelsSampleRate * 16 /* PCM_16BIT*/);
+        if (VERBOSE) Log.i(TAG, "in bitrate " + mChannelsSampleRate * 16 /* PCM_16BIT*/);
+        mChannelConfig = config.mChannelCount == 2
+                ?
+                AudioFormat.CHANNEL_IN_STEREO
+                :
+                AudioFormat.CHANNEL_IN_MONO;
         //        mCallbackDelegate = new CallbackDelegate(myLooper, mCallback);
 
         mRecordThread = new HandlerThread(TAG);
@@ -61,64 +80,79 @@ public class AudioEncoder extends BaseEncoder {
         mRecordHandler = new RecordHandler(mRecordThread.getLooper());
     }
 
-    private HandlerThread mRecordThread;
-    private RecordHandler mRecordHandler;
-    private AudioRecord mAudioRecord;
-    private int mSampleRate;
-    private int mFormat = AudioFormat.ENCODING_PCM_16BIT;
 
-    private AtomicBoolean mForceStopFlag = new AtomicBoolean(false);
-    //    private CallbackDelegate mCallbackDelegate;
-    private int mChannelsSampleRate;
-
-    @Override
     public void prepare() throws IOException {
-        if (mRecordHandler != null) {
-            mRecordHandler.removeMessages(MSG_THREAD_PREPARE);
-            mRecordHandler.sendEmptyMessage(MSG_THREAD_PREPARE);
-        }
+        Looper myLooper = Objects.requireNonNull(Looper.myLooper(), "Should prepare in " +
+                "HandlerThread");
+        // run callback in caller thread
+
+        mRecordHandler.sendEmptyMessage(MSG_PREPARE);
     }
 
-    @Override
-    public void start() {
-        mForceStopFlag.set(false);
-        if (mRecordHandler != null) {
-            mRecordHandler.removeMessages(MSG_THREAD_START);
-            mRecordHandler.sendEmptyMessage(MSG_THREAD_START);
-        }
-    }
-
-    @Override
     public void stop() {
-        mForceStopFlag.set(true);
-        if (mRecordHandler != null) {
-            mRecordHandler.removeMessages(MSG_THREAD_STOP);
-            mRecordHandler.sendEmptyMessage(MSG_THREAD_STOP);
-        }
+        // clear callback queue
+        mCallbackDelegate.removeCallbacksAndMessages(null);
+        mForceStop.set(true);
+        if (mRecordHandler != null) mRecordHandler.sendEmptyMessage(MSG_STOP);
     }
 
-    @Override
     public void release() {
-        if (mRecordHandler != null) {
-            mRecordHandler.removeMessages(MSG_THREAD_RELEASE);
-            mRecordHandler.sendEmptyMessage(MSG_THREAD_RELEASE);
-            mRecordThread.quitSafely();
-            mRecordHandler = null;
-        }
+        if (mRecordHandler != null) mRecordHandler.sendEmptyMessage(MSG_RELEASE);
+        mRecordThread.quitSafely();
     }
 
     void releaseOutputBuffer(int index) {
-        if (DEBUG) Log.d(TAG, "audio encoder released output buffer index=" + index);
-        Message.obtain(mRecordHandler, MSG_THREAD_RELEASE_OUTPUT, index, 0).sendToTarget();
+        if (VERBOSE) Log.d(TAG, "audio encoder released output buffer index=" + index);
+        Message.obtain(mRecordHandler, MSG_RELEASE_OUTPUT, index, 0).sendToTarget();
     }
 
-    private static final int MSG_THREAD_PREPARE = 0;
-    private static final int MSG_THREAD_FEED_INPUT = 1;
-    private static final int MSG_THREAD_DRAIN_OUTPUT = 2;
-    private static final int MSG_THREAD_RELEASE_OUTPUT = 3;
-    private static final int MSG_THREAD_START = 4;
-    private static final int MSG_THREAD_STOP = 5;
-    private static final int MSG_THREAD_RELEASE = 6;
+
+    ByteBuffer getOutputBuffer(int index) {
+        return mEncoder.getOutputBuffer(index);
+    }
+
+
+    private static class CallbackDelegate extends Handler {
+        private BaseEncoder.Callback mCallback;
+
+        CallbackDelegate(Looper l, BaseEncoder.Callback callback) {
+            super(l);
+            this.mCallback = callback;
+        }
+
+
+        void onError(Encoder encoder, Exception exception) {
+            Message.obtain(this, () -> {
+                if (mCallback != null) {
+                    mCallback.onError(encoder, exception);
+                }
+            }).sendToTarget();
+        }
+
+        void onOutputFormatChanged(BaseEncoder encoder, MediaFormat format) {
+            Message.obtain(this, () -> {
+                if (mCallback != null) {
+                    mCallback.onOutputFormatChanged(encoder, format);
+                }
+            }).sendToTarget();
+        }
+
+        void onOutputBufferAvailable(BaseEncoder encoder, int index, MediaCodec.BufferInfo info) {
+            Message.obtain(this, () -> {
+                if (mCallback != null) {
+                    mCallback.onOutputBufferAvailable(encoder, index, info);
+                }
+            }).sendToTarget();
+        }
+
+    }
+
+    private static final int MSG_PREPARE = 0;
+    private static final int MSG_FEED_INPUT = 1;
+    private static final int MSG_DRAIN_OUTPUT = 2;
+    private static final int MSG_RELEASE_OUTPUT = 3;
+    private static final int MSG_STOP = 4;
+    private static final int MSG_RELEASE = 5;
 
     private class RecordHandler extends Handler {
 
@@ -126,86 +160,81 @@ public class AudioEncoder extends BaseEncoder {
         private LinkedList<Integer> mMuxingOutputBufferIndices = new LinkedList<>();
         private int mPollRate = 2048_000 / mSampleRate; // poll per 2048 samples
 
-        RecordHandler(Looper looper) {
-            super(looper);
+        RecordHandler(Looper l) {
+            super(l);
         }
 
         @Override
         public void handleMessage(Message msg) {
             switch (msg.what) {
-                case MSG_THREAD_PREPARE:
+                case MSG_PREPARE:
                     mAudioRecord = MediaUtils.createAudioRecord(
                             MediaRecorder.AudioSource.MIC, mSampleRate, 2, mFormat);
                     if (mAudioRecord == null) {
+                        Log.e(TAG, "create audio record failure");
+                        //mCallbackDelegate.onError(MicRecorder.this, new
+                        // IllegalArgumentException());
                         break;
                     }
 
+                    mAudioRecord.startRecording();
                     try {
-                        AudioEncoder.super.prepare();
-                    } catch (IOException e) {
-                        e.printStackTrace();
+                        //mEncoder.prepare();
+                    } catch (Exception e) {
+                        //mCallbackDelegate.onError(MicRecorder.this, e);
                     }
                     break;
-                case MSG_THREAD_FEED_INPUT:
-                    if (!mForceStopFlag.get()) {
-                        int index = getEncoder().dequeueInputBuffer(0);
-                        if (DEBUG)
+                case MSG_FEED_INPUT:
+                    if (!mForceStop.get()) {
+                        int index = pollInput();
+                        if (VERBOSE)
                             Log.d(TAG, "audio encoder returned input buffer index=" + index);
-
                         if (index >= 0) {
                             feedAudioEncoder(index);
                             // tell encoder to eat the fresh meat!
-                            if (!mForceStopFlag.get()) {
-                                sendEmptyMessage(MSG_THREAD_DRAIN_OUTPUT);
-                            }
+                            if (!mForceStop.get()) sendEmptyMessage(MSG_DRAIN_OUTPUT);
                         } else {
                             // try later...
-                            if (DEBUG) Log.i(TAG, "try later to poll input buffer");
-                            sendEmptyMessageDelayed(MSG_THREAD_FEED_INPUT, mPollRate);
+                            if (VERBOSE) Log.i(TAG, "try later to poll input buffer");
+                            sendEmptyMessageDelayed(MSG_FEED_INPUT, mPollRate);
                         }
                     }
                     break;
-                case MSG_THREAD_DRAIN_OUTPUT:
+                case MSG_DRAIN_OUTPUT:
                     offerOutput();
                     pollInputIfNeed();
                     break;
-                case MSG_THREAD_RELEASE_OUTPUT:
+                case MSG_RELEASE_OUTPUT:
                     //mEncoder.releaseOutputBuffer(msg.arg1);
                     mMuxingOutputBufferIndices.poll(); // Nobody care what it exactly is.
-                    if (DEBUG) Log.d(TAG, "audio encoder released output buffer index="
+                    if (VERBOSE) Log.d(TAG, "audio encoder released output buffer index="
                             + msg.arg1 + ", remaining=" + mMuxingOutputBufferIndices.size());
                     pollInputIfNeed();
                     break;
-                case MSG_THREAD_START:
-                    if (AudioEncoder.this.mAudioRecord != null) {
-                        mAudioRecord.startRecording();
+                case MSG_STOP:
+                    if (MicRecorder.this.mAudioRecord != null) {
+                        MicRecorder.this.mAudioRecord.stop();
                     }
-                    AudioEncoder.super.start();
+                    //mEncoder.stop();
                     break;
-                case MSG_THREAD_STOP:
-                    if (AudioEncoder.this.mAudioRecord != null) {
-                        AudioEncoder.this.mAudioRecord.stop();
+                case MSG_RELEASE:
+                    if (MicRecorder.this.mAudioRecord != null) {
+                        MicRecorder.this.mAudioRecord.release();
+                        MicRecorder.this.mAudioRecord = null;
                     }
-                    AudioEncoder.super.stop();
-                    break;
-                case MSG_THREAD_RELEASE:
-                    if (AudioEncoder.this.mAudioRecord != null) {
-                        AudioEncoder.this.mAudioRecord.release();
-                        AudioEncoder.this.mAudioRecord = null;
-                    }
-                    AudioEncoder.super.release();
+                    //mEncoder.release();
                     break;
             }
         }
 
         private void offerOutput() {
-            while (!mForceStopFlag.get()) {
+            while (!mForceStop.get()) {
                 MediaCodec.BufferInfo info = mCachedInfos.poll();
                 if (info == null) {
                     info = new MediaCodec.BufferInfo();
                 }
                 int index = mEncoder.getEncoder().dequeueOutputBuffer(info, 1);
-                if (DEBUG) Log.d(TAG, "audio encoder returned output buffer index=" + index);
+                if (VERBOSE) Log.d(TAG, "audio encoder returned output buffer index=" + index);
                 if (index == INFO_OUTPUT_FORMAT_CHANGED) {
                     mCallbackDelegate.onOutputFormatChanged(mEncoder, mEncoder.getEncoder()
                             .getOutputFormat());
@@ -221,11 +250,15 @@ public class AudioEncoder extends BaseEncoder {
             }
         }
 
+        private int pollInput() {
+            return mEncoder.getEncoder().dequeueInputBuffer(0);
+        }
+
         private void pollInputIfNeed() {
-            if (mMuxingOutputBufferIndices.size() <= 1 && !mForceStopFlag.get()) {
+            if (mMuxingOutputBufferIndices.size() <= 1 && !mForceStop.get()) {
                 // need fresh data, right now!
-                removeMessages(MSG_THREAD_FEED_INPUT);
-                sendEmptyMessageDelayed(MSG_THREAD_FEED_INPUT, 0);
+                removeMessages(MSG_FEED_INPUT);
+                sendEmptyMessageDelayed(MSG_FEED_INPUT, 0);
             }
         }
     }
@@ -234,20 +267,16 @@ public class AudioEncoder extends BaseEncoder {
      * NOTE: Should waiting all output buffer disappear queue input buffer
      */
     private void feedAudioEncoder(int index) {
-        if (index < 0 || mForceStopFlag.get()) {
-            return;
-        }
-
-        final AudioRecord audioRecord = Objects.requireNonNull(
-                mAudioRecord, "maybe release");
-        final boolean eos = audioRecord.getRecordingState() == AudioRecord.RECORDSTATE_STOPPED;
-        final ByteBuffer frame = getInputBuffer(index);
+        if (index < 0 || mForceStop.get()) return;
+        final AudioRecord r = Objects.requireNonNull(mAudioRecord, "maybe release");
+        final boolean eos = r.getRecordingState() == AudioRecord.RECORDSTATE_STOPPED;
+        final ByteBuffer frame = mEncoder.getInputBuffer(index);
         int offset = frame.position();
         int limit = frame.limit();
         int read = 0;
         if (!eos) {
-            read = audioRecord.read(frame, limit);
-            if (DEBUG) Log.d(TAG, "Read frame data size " + read + " for index "
+            read = r.read(frame, limit);
+            if (VERBOSE) Log.d(TAG, "Read frame data size " + read + " for index "
                     + index + " buffer : " + offset + ", " + limit);
             if (read < 0) {
                 read = 0;
@@ -261,9 +290,9 @@ public class AudioEncoder extends BaseEncoder {
             flags = BUFFER_FLAG_END_OF_STREAM;
         }
         // feed frame to encoder
-        if (DEBUG) Log.d(TAG, "Feed codec index=" + index + ", presentationTimeUs="
+        if (VERBOSE) Log.d(TAG, "Feed codec index=" + index + ", presentationTimeUs="
                 + pstTs + ", flags=" + flags);
-        getEncoder().queueInputBuffer(index, offset, read, pstTs, flags);
+        mEncoder.queueInputBuffer(index, offset, read, pstTs, flags);
     }
 
 
@@ -291,7 +320,7 @@ public class AudioEncoder extends BaseEncoder {
         } else {
             currentUs = lastFrameUs;
         }
-        if (DEBUG)
+        if (VERBOSE)
             Log.i(TAG, "count samples pts: " + currentUs + ", time pts: " + timeUs + ", samples: " +
                     "" + samples);
         // maybe too late to acquire sample data

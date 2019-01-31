@@ -24,7 +24,7 @@ import java.util.Objects;
 /***
 
  */
-public class VideoEncodeConfig implements IEncodeConfig {
+public class VideoEncodeConfig implements IConfig {
 
     public final String mCodecName;
     public final String mMimeType;

@@ -16,6 +16,8 @@
 
 package com.weidi.usefragments.media.encoder;
 
+import android.media.MediaCodec;
+
 import java.io.IOException;
 
 /***
@@ -30,5 +32,7 @@ public interface IEncoder {
     void stop();
 
     void release();
+
+    MediaCodec getEncoder();
 
 }
