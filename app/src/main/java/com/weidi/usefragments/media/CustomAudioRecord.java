@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.weidi.usefragments.media.encoder;
+package com.weidi.usefragments.media;
 
 import android.media.AudioFormat;
 import android.media.AudioRecord;
@@ -28,7 +28,8 @@ import android.os.SystemClock;
 import android.util.Log;
 import android.util.SparseLongArray;
 
-import com.weidi.usefragments.media.MediaUtils;
+import com.weidi.usefragments.media.encoder.AudioEncodeConfig;
+import com.weidi.usefragments.media.encoder.BaseEncoder;
 import com.weidi.usefragments.tool.MLog;
 
 import java.io.IOException;
@@ -44,14 +45,15 @@ import static android.media.MediaCodec.INFO_OUTPUT_FORMAT_CHANGED;
 /***
 
  */
-public class AudioEncoder extends BaseEncoder {
+public class CustomAudioRecord {
 
-    private static final String TAG = AudioEncoder.class.getSimpleName();
+    private static final String TAG =
+            CustomAudioRecord.class.getSimpleName();
     private static final boolean DEBUG = true;
 
-    AudioEncoder(AudioEncodeConfig config) {
-        super(config);
+    private MediaCodec mAudioEncoder;
 
+    CustomAudioRecord(AudioEncodeConfig config) {
         mSampleRate = config.mSampleRate;
         mChannelsSampleRate = mSampleRate * config.mChannelCount;
         if (DEBUG) Log.i(TAG, "in bitrate " + mChannelsSampleRate * 16 /* PCM_16BIT*/);
@@ -72,7 +74,6 @@ public class AudioEncoder extends BaseEncoder {
     //    private CallbackDelegate mCallbackDelegate;
     private int mChannelsSampleRate;
 
-    @Override
     public void prepare() throws IOException {
         if (mRecordHandler != null) {
             mRecordHandler.removeMessages(MSG_THREAD_PREPARE);
@@ -80,7 +81,6 @@ public class AudioEncoder extends BaseEncoder {
         }
     }
 
-    @Override
     public void start() {
         mForceStopFlag.set(false);
         if (mRecordHandler != null) {
@@ -90,7 +90,6 @@ public class AudioEncoder extends BaseEncoder {
         }
     }
 
-    @Override
     public void stop() {
         mForceStopFlag.set(true);
         if (mRecordHandler != null) {
@@ -99,7 +98,6 @@ public class AudioEncoder extends BaseEncoder {
         }
     }
 
-    @Override
     public void release() {
         if (mRecordHandler != null) {
             mRecordHandler.removeMessages(MSG_THREAD_RELEASE);
@@ -140,15 +138,6 @@ public class AudioEncoder extends BaseEncoder {
                 case MSG_THREAD_PREPARE:
                     mAudioRecord = MediaUtils.createAudioRecord(
                             MediaRecorder.AudioSource.MIC, mSampleRate, 2, mFormat);
-                    if (mAudioRecord == null) {
-                        break;
-                    }
-
-                    try {
-                        AudioEncoder.super.prepare();
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
                     break;
                 case MSG_THREAD_FEED_INPUT:
                     putRecordDataPassToMediaCodec();
@@ -158,7 +147,7 @@ public class AudioEncoder extends BaseEncoder {
                     pollInputIfNeed();
                     break;
                 case MSG_THREAD_RELEASE_OUTPUT:
-                    //getEncoder().releaseOutputBuffer(msg.arg1);
+                    //mAudioEncoder.releaseOutputBuffer(msg.arg1);
                     // Nobody care what it exactly is.
                     mMuxingOutputBufferIndices.poll();
                     if (DEBUG) Log.d(TAG, "audio encoder released output buffer index="
@@ -166,23 +155,20 @@ public class AudioEncoder extends BaseEncoder {
                     pollInputIfNeed();
                     break;
                 case MSG_THREAD_START:
-                    if (AudioEncoder.this.mAudioRecord != null) {
+                    if (CustomAudioRecord.this.mAudioRecord != null) {
                         mAudioRecord.startRecording();
                     }
-                    AudioEncoder.super.start();
                     break;
                 case MSG_THREAD_STOP:
-                    if (AudioEncoder.this.mAudioRecord != null) {
-                        AudioEncoder.this.mAudioRecord.stop();
+                    if (CustomAudioRecord.this.mAudioRecord != null) {
+                        CustomAudioRecord.this.mAudioRecord.stop();
                     }
-                    AudioEncoder.super.stop();
                     break;
                 case MSG_THREAD_RELEASE:
-                    if (AudioEncoder.this.mAudioRecord != null) {
-                        AudioEncoder.this.mAudioRecord.release();
-                        AudioEncoder.this.mAudioRecord = null;
+                    if (CustomAudioRecord.this.mAudioRecord != null) {
+                        CustomAudioRecord.this.mAudioRecord.release();
+                        CustomAudioRecord.this.mAudioRecord = null;
                     }
-                    AudioEncoder.super.release();
                     break;
             }
         }
@@ -192,7 +178,7 @@ public class AudioEncoder extends BaseEncoder {
          */
         private void putRecordDataPassToMediaCodec() {
             if (!mForceStopFlag.get()) {
-                int index = getEncoder().dequeueInputBuffer(0);
+                int index = mAudioEncoder.dequeueInputBuffer(0);
                 if (DEBUG)
                     Log.d(TAG, "audio encoder returned input buffer index: " + index);
 
@@ -217,13 +203,13 @@ public class AudioEncoder extends BaseEncoder {
                 if (info == null) {
                     info = new MediaCodec.BufferInfo();
                 }
-                int index = getEncoder().dequeueOutputBuffer(info, 1);
+                int index = mAudioEncoder.dequeueOutputBuffer(info, 1);
                 if (DEBUG)
                     Log.d(TAG, "audio encoder returned output buffer index: " + index);
                 if (index == INFO_OUTPUT_FORMAT_CHANGED) {
                     /*mCallbackDelegate.onOutputFormatChanged(
                             mEncoder,
-                            mEncoder.getEncoder().getOutputFormat());*/
+                            mEncoder.mAudioEncoder.getOutputFormat());*/
                 }
                 if (index < 0) {
                     info.set(0, 0, 0, 0);
@@ -250,19 +236,19 @@ public class AudioEncoder extends BaseEncoder {
      * 把MIC中的声音数据传到MediaCodec中去编码
      */
     private void feedAudioEncoder(int index) {
-        if (index < 0 || mForceStopFlag.get()) {
+        if (index < 0
+                || mForceStopFlag.get()
+                || mAudioRecord == null) {
             return;
         }
 
-        final AudioRecord audioRecord = Objects.requireNonNull(
-                mAudioRecord, "maybe release");
-        final boolean eos = audioRecord.getRecordingState() == AudioRecord.RECORDSTATE_STOPPED;
-        final ByteBuffer frame = getEncoder().getInputBuffer(index);
+        boolean eos = mAudioRecord.getRecordingState() == AudioRecord.RECORDSTATE_STOPPED;
+        ByteBuffer frame = mAudioEncoder.getInputBuffer(index);
         int offset = frame.position();
         int limit = frame.limit();
         int read = 0;
         if (!eos) {
-            read = audioRecord.read(frame, limit);
+            read = mAudioRecord.read(frame, limit);
             if (DEBUG) Log.d(TAG, "Read frame data size " + read + " for index "
                     + index + " buffer : " + offset + ", " + limit);
             if (read < 0) {
@@ -271,15 +257,16 @@ public class AudioEncoder extends BaseEncoder {
         }
 
         long pstTs = calculateFrameTimestamp(read << 3);
-        int flags = BUFFER_FLAG_KEY_FRAME;
 
+        int flags = BUFFER_FLAG_KEY_FRAME;
         if (eos) {
             flags = BUFFER_FLAG_END_OF_STREAM;
         }
+
         // feed frame to encoder
         if (DEBUG) Log.d(TAG, "Feed codec index=" + index + ", presentationTimeUs="
                 + pstTs + ", flags=" + flags);
-        getEncoder().queueInputBuffer(index, offset, read, pstTs, flags);
+        mAudioEncoder.queueInputBuffer(index, offset, read, pstTs, flags);
     }
 
 

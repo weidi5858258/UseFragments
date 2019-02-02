@@ -22,7 +22,11 @@ import com.weidi.usefragments.tool.PermissionsUtils;
 import java.util.List;
 import java.util.Map;
 
-
+/***
+ 写代码的人需要考虑到某些关键性代码怎么调试.
+ 一般看日志.
+ 需要说明一下,哪些代码输入什么输出什么是正常的,不正常的.
+ */
 public abstract class BaseActivity extends Activity {
 
     private static final String TAG =
