@@ -10,6 +10,7 @@ import android.text.TextUtils;
 
 import com.weidi.usefragments.BaseActivity;
 import com.weidi.usefragments.R;
+import com.weidi.usefragments.fragment.base.BaseFragment;
 import com.weidi.usefragments.tool.MLog;
 
 import java.io.Serializable;
@@ -900,7 +901,7 @@ public class FragOperManager implements Serializable {
         return 0;
     }
 
-    public int changeFragment() {
+    public int changeTab() {
         if (mCurUsedActivity == null
                 || mCurUsedMainFragment == null
                 || mActivityContainersMap == null
@@ -944,7 +945,7 @@ public class FragOperManager implements Serializable {
                             }
                             if (shouldHideMainChildChildFragment.getId() <= 0) {
                                 if (DEBUG)
-                                    MLog.d(TAG, "changeFragment() hide" +
+                                    MLog.d(TAG, "changeTab() hide" +
                                             " mCurUsedActivity: " +
                                             mCurUsedActivity.getClass().getSimpleName() +
                                             " shouldHideMainFragment: " +
@@ -958,7 +959,7 @@ public class FragOperManager implements Serializable {
                                 fragmentTransaction.hide(shouldHideMainChildChildFragment);
                             } else {
                                 if (DEBUG)
-                                    MLog.d(TAG, "changeFragment() pop" +
+                                    MLog.d(TAG, "changeTab() pop" +
                                             " mCurUsedActivity: " +
                                             mCurUsedActivity.getClass().getSimpleName() +
                                             " shouldHideMainFragment: " +
@@ -976,7 +977,7 @@ public class FragOperManager implements Serializable {
                         fragmentTransaction.commit();
                     }
                     if (DEBUG)
-                        MLog.d(TAG, "changeFragment() hide" +
+                        MLog.d(TAG, "changeTab() hide" +
                                 " mCurUsedActivity: " +
                                 mCurUsedActivity.getClass().getSimpleName() +
                                 " shouldHideMainFragment: " +
@@ -992,7 +993,7 @@ public class FragOperManager implements Serializable {
             }
             if (!shouldHideMainFragment.isHidden()) {
                 if (DEBUG)
-                    MLog.d(TAG, "changeFragment() hide" +
+                    MLog.d(TAG, "changeTab() hide" +
                             " mCurUsedActivity: " +
                             mCurUsedActivity.getClass().getSimpleName() +
                             " shouldHideMainFragment: " +
@@ -1012,7 +1013,7 @@ public class FragOperManager implements Serializable {
             Fragment shouldShowMainChildFragment = mainChildFragmentsList.get(count - 1);
             if (shouldShowMainChildFragment.isHidden()) {
                 if (DEBUG)
-                    MLog.d(TAG, "changeFragment() show" +
+                    MLog.d(TAG, "changeTab() show" +
                             " mCurUsedActivity: " +
                             mCurUsedActivity.getClass().getSimpleName() +
                             " mCurUsedMainFragment: " +
@@ -1040,7 +1041,7 @@ public class FragOperManager implements Serializable {
                     }
                     if (shouldShowMainChildChildFragment.getId() <= 0) {
                         if (DEBUG)
-                            MLog.d(TAG, "changeFragment() show" +
+                            MLog.d(TAG, "changeTab() show" +
                                     " mCurUsedActivity: " +
                                     mCurUsedActivity.getClass().getSimpleName() +
                                     " mCurUsedMainFragment: " +
@@ -1058,7 +1059,209 @@ public class FragOperManager implements Serializable {
         } else {
             if (mCurUsedMainFragment.isHidden()) {
                 if (DEBUG)
-                    MLog.d(TAG, "changeFragment() show" +
+                    MLog.d(TAG, "changeTab() show" +
+                            " mCurUsedActivity: " +
+                            mCurUsedActivity.getClass().getSimpleName() +
+                            " mCurUsedMainFragment: " +
+                            mCurUsedMainFragment.getClass().getSimpleName());
+
+                fManager = mCurUsedActivity.getFragmentManager();
+                fTransaction = fManager.beginTransaction();
+                //addFragmentUseAnimations(fTransaction);
+                fTransaction.show(mCurUsedMainFragment);
+                fTransaction.commit();
+            }
+        }
+
+        return 0;
+    }
+
+    public int changeFragment(BaseFragment curUsedFragment,
+                              BaseFragment needToShowFragment) {
+        if (curUsedFragment == null
+                || needToShowFragment == null
+                || mCurUsedActivity == null
+                || mCurUsedMainFragment == null
+                || mActivityContainersMap == null
+                || mActivityContainersMap.isEmpty()
+                || !mActivityContainersMap.containsKey(mCurUsedActivity)
+                || mMoreMainFragmentsMap == null
+                || mMoreMainFragmentsMap.isEmpty()
+                || !mMoreMainFragmentsMap.containsKey(mCurUsedMainFragment)) {
+            return -1;
+        }
+
+        // 如果是同一个Fragment
+        if (curUsedFragment.getClass().getName().equals(
+                needToShowFragment.getClass().getName())) {
+            return -1;
+        }
+
+        List<Fragment> mainChildFragmentsList = null;
+        mainChildFragmentsList = mMoreMainFragmentsMap.get(mCurUsedMainFragment);
+        mainChildFragmentsList.remove(needToShowFragment);
+        mainChildFragmentsList.add(needToShowFragment);
+
+        FragmentManager fManager = null;
+        FragmentTransaction fTransaction = null;
+        fManager = mCurUsedActivity.getFragmentManager();
+
+        // 先隐藏curUsedFragment
+        fTransaction = fManager.beginTransaction();
+        fTransaction.hide(curUsedFragment);
+        fTransaction.commit();
+
+        // 再显示needToShowFragment
+        fTransaction = fManager.beginTransaction();
+        fTransaction.show(needToShowFragment);
+        fTransaction.commit();
+
+        ///////////////////////////////////////////////////////
+
+        for (Fragment shouldHideMainFragment : mMoreMainFragmentsMap.keySet()) {
+            if (shouldHideMainFragment == null) {
+                continue;
+            }
+            mainChildFragmentsList = mMoreMainFragmentsMap.get(shouldHideMainFragment);
+            if (mainChildFragmentsList != null
+                    && !mainChildFragmentsList.isEmpty()) {
+                for (Fragment shouldHideMainChildFragment : mainChildFragmentsList) {
+                    if (shouldHideMainChildFragment == null
+                            || shouldHideMainChildFragment.isHidden()) {
+                        continue;
+                    }
+                    List<Fragment> mainChildChildFragmentsList =
+                            mDirectNestedFragmentsMap.get(shouldHideMainChildFragment);
+                    if (mainChildChildFragmentsList != null
+                            && !mainChildChildFragmentsList.isEmpty()) {
+                        FragmentManager fragmentManager =
+                                shouldHideMainChildFragment.getChildFragmentManager();
+                        FragmentTransaction fragmentTransaction =
+                                fragmentManager.beginTransaction();
+                        Iterator<Fragment> iterator = mainChildChildFragmentsList.iterator();
+                        while (iterator.hasNext()) {
+                            Fragment shouldHideMainChildChildFragment = iterator.next();
+                            if (shouldHideMainChildChildFragment == null
+                                    || shouldHideMainChildChildFragment.isHidden()) {
+                                continue;
+                            }
+                            if (shouldHideMainChildChildFragment.getId() <= 0) {
+                                if (DEBUG)
+                                    MLog.d(TAG, "changeTab() hide" +
+                                            " mCurUsedActivity: " +
+                                            mCurUsedActivity.getClass().getSimpleName() +
+                                            " shouldHideMainFragment: " +
+                                            shouldHideMainFragment.getClass().getSimpleName() +
+                                            " shouldHideMainChildFragment: " +
+                                            shouldHideMainChildFragment.getClass().getSimpleName() +
+                                            " shouldHideMainChildChildFragment: " +
+                                            shouldHideMainChildChildFragment
+                                                    .getClass().getSimpleName());
+
+                                fragmentTransaction.hide(shouldHideMainChildChildFragment);
+                            } else {
+                                if (DEBUG)
+                                    MLog.d(TAG, "changeTab() pop" +
+                                            " mCurUsedActivity: " +
+                                            mCurUsedActivity.getClass().getSimpleName() +
+                                            " shouldHideMainFragment: " +
+                                            shouldHideMainFragment.getClass().getSimpleName() +
+                                            " shouldHideMainChildFragment: " +
+                                            shouldHideMainChildFragment.getClass().getSimpleName() +
+                                            " shouldHideMainChildChildFragment: " +
+                                            shouldHideMainChildChildFragment
+                                                    .getClass().getSimpleName());
+
+                                fragmentManager.popBackStack();
+                                iterator.remove();
+                            }
+                        }
+                        fragmentTransaction.commit();
+                    }
+                    if (DEBUG)
+                        MLog.d(TAG, "changeTab() hide" +
+                                " mCurUsedActivity: " +
+                                mCurUsedActivity.getClass().getSimpleName() +
+                                " shouldHideMainFragment: " +
+                                shouldHideMainFragment.getClass().getSimpleName() +
+                                " shouldHideMainChildFragment: " +
+                                shouldHideMainChildFragment.getClass().getSimpleName());
+
+                    fManager = mCurUsedActivity.getFragmentManager();
+                    fTransaction = fManager.beginTransaction();
+                    fTransaction.hide(shouldHideMainChildFragment);
+                    fTransaction.commit();
+                }
+            }
+            if (!shouldHideMainFragment.isHidden()) {
+                if (DEBUG)
+                    MLog.d(TAG, "changeTab() hide" +
+                            " mCurUsedActivity: " +
+                            mCurUsedActivity.getClass().getSimpleName() +
+                            " shouldHideMainFragment: " +
+                            shouldHideMainFragment.getClass().getSimpleName());
+
+                fManager = mCurUsedActivity.getFragmentManager();
+                fTransaction = fManager.beginTransaction();
+                fTransaction.hide(shouldHideMainFragment);
+                fTransaction.commit();
+            }
+        }
+
+        mainChildFragmentsList = mMoreMainFragmentsMap.get(mCurUsedMainFragment);
+        if (mainChildFragmentsList != null
+                && !mainChildFragmentsList.isEmpty()) {
+            int count = mainChildFragmentsList.size();
+            Fragment shouldShowMainChildFragment = mainChildFragmentsList.get(count - 1);
+            if (shouldShowMainChildFragment.isHidden()) {
+                if (DEBUG)
+                    MLog.d(TAG, "changeTab() show" +
+                            " mCurUsedActivity: " +
+                            mCurUsedActivity.getClass().getSimpleName() +
+                            " mCurUsedMainFragment: " +
+                            mCurUsedMainFragment.getClass().getSimpleName() +
+                            " shouldShowMainChildFragment: " +
+                            shouldShowMainChildFragment.getClass().getSimpleName());
+
+                fManager = mCurUsedActivity.getFragmentManager();
+                fTransaction = fManager.beginTransaction();
+                fTransaction.show(shouldShowMainChildFragment);
+                fTransaction.commit();
+            }
+            List<Fragment> mainChildChildFragmentsList =
+                    mDirectNestedFragmentsMap.get(shouldShowMainChildFragment);
+            if (mainChildChildFragmentsList != null
+                    && !mainChildChildFragmentsList.isEmpty()) {
+                FragmentManager fragmentManager =
+                        shouldShowMainChildFragment.getChildFragmentManager();
+                FragmentTransaction fragmentTransaction =
+                        fragmentManager.beginTransaction();
+                for (Fragment shouldShowMainChildChildFragment : mainChildChildFragmentsList) {
+                    if (shouldShowMainChildChildFragment == null
+                            || !shouldShowMainChildChildFragment.isHidden()) {
+                        continue;
+                    }
+                    if (shouldShowMainChildChildFragment.getId() <= 0) {
+                        if (DEBUG)
+                            MLog.d(TAG, "changeTab() show" +
+                                    " mCurUsedActivity: " +
+                                    mCurUsedActivity.getClass().getSimpleName() +
+                                    " mCurUsedMainFragment: " +
+                                    mCurUsedMainFragment.getClass().getSimpleName() +
+                                    " shouldShowMainChildFragment: " +
+                                    shouldShowMainChildFragment.getClass().getSimpleName() +
+                                    " shouldShowMainChildChildFragment: " +
+                                    shouldShowMainChildChildFragment.getClass().getSimpleName());
+
+                        fragmentTransaction.show(shouldShowMainChildChildFragment);
+                    }
+                }
+                fragmentTransaction.commit();
+            }
+        } else {
+            if (mCurUsedMainFragment.isHidden()) {
+                if (DEBUG)
+                    MLog.d(TAG, "changeTab() show" +
                             " mCurUsedActivity: " +
                             mCurUsedActivity.getClass().getSimpleName() +
                             " mCurUsedMainFragment: " +

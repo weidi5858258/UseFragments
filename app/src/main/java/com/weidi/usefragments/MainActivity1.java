@@ -1,6 +1,5 @@
 package com.weidi.usefragments;
 
-import android.app.Activity;
 import android.app.Fragment;
 import android.content.Intent;
 import android.content.res.Configuration;
@@ -27,7 +26,6 @@ import com.weidi.usefragments.test_fragment.scene2.Main3Fragment;
 import com.weidi.usefragments.test_fragment.scene2.Main4Fragment;
 import com.weidi.usefragments.test_fragment.scene2.RecordScreenFragment;
 import com.weidi.usefragments.tool.MLog;
-import com.weidi.usefragments.tool.PermissionsUtils;
 
 import java.util.HashMap;
 import java.util.List;
@@ -142,6 +140,7 @@ public class MainActivity1 extends BaseActivity
         findViewById(R.id.main2_btn).setOnClickListener(mViewOnClickListener);
         findViewById(R.id.main3_btn).setOnClickListener(mViewOnClickListener);
         findViewById(R.id.main4_btn).setOnClickListener(mViewOnClickListener);
+        findViewById(R.id.debug_test_btn).setOnClickListener(mViewOnClickListener);
         findViewById(R.id.back_btn).setOnClickListener(mViewOnClickListener);
 
         findViewById(R.id.main1_btn).setBackgroundColor(
@@ -346,6 +345,7 @@ public class MainActivity1 extends BaseActivity
             findViewById(R.id.main2_btn).setOnClickListener(mViewOnClickListener);
             findViewById(R.id.main3_btn).setOnClickListener(mViewOnClickListener);
             findViewById(R.id.main4_btn).setOnClickListener(mViewOnClickListener);
+            findViewById(R.id.debug_test_btn).setOnClickListener(mViewOnClickListener);
             findViewById(R.id.back_btn).setOnClickListener(mViewOnClickListener);
 
             if (mCurShowMainFragment == null) {
@@ -358,7 +358,7 @@ public class MainActivity1 extends BaseActivity
                         getResources().getColor(android.R.color.holo_green_light));
                 mPreShowMainFragment = mCurShowMainFragment;
                 FragOperManager.getInstance().setCurUsedFragment(mCurShowMainFragment);
-                FragOperManager.getInstance().changeFragment();
+                FragOperManager.getInstance().changeTab();
                 return;
             }
             if (mainFragmentName.equals(Main1Fragment.class.getSimpleName())) {
@@ -391,6 +391,10 @@ public class MainActivity1 extends BaseActivity
                 getResources().getColor(android.R.color.holo_orange_light));
     }
 
+    private void testChangeFragment() {
+
+    }
+
     private View.OnClickListener mViewOnClickListener =
             new View.OnClickListener() {
                 @Override
@@ -409,6 +413,12 @@ public class MainActivity1 extends BaseActivity
                         fragmentLayoutTest.invalidate();*/
                         return;
                     }
+
+                    if (v.getId() == R.id.debug_test_btn) {
+                        testChangeFragment();
+                        return;
+                    }
+
                     restoreBackgroundColor();
                     switch (v.getId()) {
                         case R.id.main1_btn:
@@ -444,7 +454,7 @@ public class MainActivity1 extends BaseActivity
                     }
                     mPreShowMainFragment = mCurShowMainFragment;
                     FragOperManager.getInstance().setCurUsedFragment(mCurShowMainFragment);
-                    FragOperManager.getInstance().changeFragment();
+                    FragOperManager.getInstance().changeTab();
                 }
             };
 

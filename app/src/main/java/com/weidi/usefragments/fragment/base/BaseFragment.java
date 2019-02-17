@@ -36,11 +36,12 @@ public abstract class BaseFragment extends Fragment {
 
     private static final String TAG =
             BaseFragment.class.getSimpleName();
-
     private static final boolean DEBUG = false;
+
     private Activity mActivity;
     private Context mContext;
     private BackHandlerInterface mBackHandlerInterface;
+    private BaseFragment mCurUsedFragment;
 
     // 当前配置
     private Configuration mCurConfiguration;
@@ -444,6 +445,7 @@ public abstract class BaseFragment extends Fragment {
         mBackHandlerInterface.setSelectedFragment(
                 this,
                 this.getClass().getName());
+        mCurUsedFragment = this;
     }
 
     private void onHide() {
@@ -489,6 +491,10 @@ public abstract class BaseFragment extends Fragment {
 
     public BackHandlerInterface getBackHandlerInterface() {
         return mBackHandlerInterface;
+    }
+
+    public BaseFragment getCurUsedFragment() {
+        return mCurUsedFragment;
     }
 
     protected abstract int provideLayout();

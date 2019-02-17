@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.app.DialogFragment;
 import android.content.Context;
 import android.os.Bundle;
+import android.support.annotation.Nullable;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -11,7 +12,7 @@ import android.view.ViewGroup;
 import com.weidi.usefragments.inject.InjectUtils;
 import com.weidi.usefragments.tool.MLog;
 
-/**
+/***
  * 在子类中只需要覆写这样一个周期方法就行了，其他周期方法没什么必要了：
  *
  * @Override public View onCreateView(LayoutInflater inflater,
@@ -22,7 +23,10 @@ import com.weidi.usefragments.tool.MLog;
  */
 public abstract class BaseDialogFragment extends DialogFragment {
 
-    private static final String TAG = "BaseDialogFragment";
+    private static final String TAG =
+            BaseDialogFragment.class.getSimpleName();
+    private static final boolean DEBUG = false;
+
     public static final String REQUESTCODE = "requtestCode";
     private Activity mActivity;
     private Context mContext;
@@ -34,17 +38,32 @@ public abstract class BaseDialogFragment extends DialogFragment {
      *********************************/
 
     @Override
+    public void onAttach(Context context) {
+        super.onAttach(context);
+        if (context == null) {
+            throw new NullPointerException("BaseDialogFragment onAttach() context is null.");
+        }
+
+        mContext = context;
+    }
+
+    @Override
     public void onAttach(Activity activity) {
         super.onAttach(activity);
+        if (activity == null) {
+            throw new NullPointerException("BaseDialogFragment onAttach() activity is null.");
+        }
+
         mActivity = activity;
-        mContext = activity.getApplicationContext();
-        MLog.d(TAG, "onAttach(): activity = " + activity);
+        if (DEBUG)
+            MLog.d(TAG, "onAttach(): activity = " + activity);
     }
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        MLog.d(TAG, "onCreate(): savedInstanceState = " + savedInstanceState);
+        if (DEBUG)
+            MLog.d(TAG, "onCreate(): savedInstanceState = " + savedInstanceState);
         setRetainInstance(true);
         setCancelable(false);
         if (provideStyle() < 0 || provideStyle() > 3) {
@@ -69,18 +88,21 @@ public abstract class BaseDialogFragment extends DialogFragment {
                              ViewGroup container,
                              Bundle savedInstanceState) {
         super.onCreateView(inflater, container, savedInstanceState);
-        MLog.d(TAG, "onCreateView(): savedInstanceState = " + savedInstanceState);
+        if (DEBUG)
+            MLog.d(TAG, "onCreateView(): savedInstanceState = " + savedInstanceState);
         View view = inflater.inflate(provideLayout(), container);
         view.setMinimumWidth(600);
         InjectUtils.inject(this, view);
-        //        view.findViewById(R.id.cancel_btn).setOnClickListener(new View.OnClickListener() {
-        //            @Override
-        //            public void onClick(View v) {
-        //                MLog.d(TAG, "dismiss()");
-        //                dismiss();
-        //            }
-        //        });
-        afterInitView(inflater, container, savedInstanceState);
+
+        /*view.findViewById(R.id.cancel_btn).setOnClickListener(
+          new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                MLog.d(TAG, "dismiss()");
+                dismiss();
+            }
+        });*/
+
         return view;
     }
 
@@ -95,9 +117,29 @@ public abstract class BaseDialogFragment extends DialogFragment {
     }*/
 
     @Override
+    public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+        if (DEBUG)
+            MLog.d(TAG, "onViewCreated(): " + printThis()
+                    + " savedInstanceState: " + savedInstanceState);
+
+        // 在子类中给某些View设置监听事件
+        // View的内容显示在onShow()方法中进行
+    }
+
+    @Override
+    public void onViewStateRestored(Bundle savedInstanceState) {
+        super.onViewStateRestored(savedInstanceState);
+        if (DEBUG)
+            MLog.d(TAG, "onViewStateRestored(): " + printThis()
+                    + " savedInstanceState: " + savedInstanceState);
+    }
+
+    @Override
     public void onActivityCreated(Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
-        MLog.d(TAG, "onActivityCreated(): savedInstanceState = " + savedInstanceState);
+        if (DEBUG)
+            MLog.d(TAG, "onActivityCreated(): savedInstanceState = " + savedInstanceState);
     }
 
     /*********************************
@@ -107,7 +149,8 @@ public abstract class BaseDialogFragment extends DialogFragment {
     @Override
     public void onStart() {
         super.onStart();
-        MLog.d(TAG, "onStart()");
+        if (DEBUG)
+            MLog.d(TAG, "onStart()");
     }
 
     /*********************************
@@ -117,7 +160,8 @@ public abstract class BaseDialogFragment extends DialogFragment {
     @Override
     public void onResume() {
         super.onResume();
-        MLog.d(TAG, "onResume()");
+        if (DEBUG)
+            MLog.d(TAG, "onResume()");
     }
 
     /*********************************
@@ -127,7 +171,8 @@ public abstract class BaseDialogFragment extends DialogFragment {
     @Override
     public void onPause() {
         super.onPause();
-        MLog.d(TAG, "onPause()");
+        if (DEBUG)
+            MLog.d(TAG, "onPause()");
     }
 
     /*********************************
@@ -137,7 +182,8 @@ public abstract class BaseDialogFragment extends DialogFragment {
     @Override
     public void onStop() {
         super.onStop();
-        MLog.d(TAG, "onStop()");
+        if (DEBUG)
+            MLog.d(TAG, "onStop()");
     }
 
     /*********************************
@@ -147,32 +193,39 @@ public abstract class BaseDialogFragment extends DialogFragment {
     @Override
     public void onDestroyView() {
         super.onDestroyView();
-        MLog.d(TAG, "onDestroyView()");
+        if (DEBUG)
+            MLog.d(TAG, "onDestroyView()");
     }
 
     @Override
     public void onDestroy() {
         super.onDestroy();
-        MLog.d(TAG, "onDestroy()");
+        if (DEBUG)
+            MLog.d(TAG, "onDestroy()");
     }
 
     @Override
     public void onDetach() {
         super.onDetach();
-        MLog.d(TAG, "onDetach()");
+        if (DEBUG)
+            MLog.d(TAG, "onDetach()");
     }
 
     public Activity getAttachedActivity() {
         return mActivity;
     }
 
-    public Context getMyContext() {
+    public Context getContext() {
         if (mContext == null) {
             if (getAttachedActivity() != null) {
                 mContext = getAttachedActivity().getApplicationContext();
             } else if (getActivity() != null) {
                 mContext = getActivity().getApplicationContext();
             }
+        }
+        if (mContext == null) {
+            throw new NullPointerException(
+                    "BaseDialogFragment getContext() mContext is null.");
         }
         return mContext;
     }
@@ -189,6 +242,14 @@ public abstract class BaseDialogFragment extends DialogFragment {
         return mOnResultListener;
     }
 
+    protected String printThis() {
+        // com.weidi.usefragments.MainActivity2@416c7b
+        String temp = this.toString();
+        int lastIndex = temp.lastIndexOf(".");
+        temp = temp.substring(lastIndex + 1, temp.length());
+        return temp;
+    }
+
     /**
      * 样式选这么几种就行了
      * DialogFragment:
@@ -201,10 +262,5 @@ public abstract class BaseDialogFragment extends DialogFragment {
     protected abstract int provideStyle();
 
     protected abstract int provideLayout();
-
-    protected abstract void afterInitView(
-            LayoutInflater inflater,
-            ViewGroup container,
-            Bundle savedInstanceState);
 
 }

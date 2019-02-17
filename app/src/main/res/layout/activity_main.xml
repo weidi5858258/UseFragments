@@ -40,6 +40,17 @@
             android:text="返回" />
 
         <TextView
+            android:id="@+id/debug_test_btn"
+            android:layout_weight="1"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:clickable="true"
+            android:focusable="true"
+            android:textSize="30px"
+            android:text="调试" />
+
+        <TextView
             android:id="@+id/main1_btn"
             android:layout_weight="1"
             android:layout_width="0dp"
