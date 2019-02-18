@@ -74,7 +74,7 @@ public class Main4Fragment extends BaseFragment {
         mJumpBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                FragOperManager.getInstance().enter3(new DecodePlayFragment());
+                FragOperManager.getInstance().enter3(new FolderStructureFragment());
             }
         });
     }
