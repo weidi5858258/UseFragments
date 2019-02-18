@@ -275,8 +275,6 @@ public class TreeNode {
             return containerStyle;
         }
 
-        public abstract View createNodeView(TreeNode node, E value);
-
         public void toggle(boolean active) {
             // empty
         }
@@ -284,6 +282,8 @@ public class TreeNode {
         public void toggleSelectionMode(boolean editModeEnabled) {
             // empty
         }
+
+        public abstract View createNodeView(TreeNode node, E value);
     }
 
 }

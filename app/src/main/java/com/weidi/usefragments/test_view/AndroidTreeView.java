@@ -19,14 +19,23 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-/**
- * Created by Bogdan Melnychuk on 2/10/15.
+/***
+ * 这样一个类相当于一棵树,
+ * 树中有一个根节点(mRootNode)
  */
 public class AndroidTreeView {
 
+    private static final String TAG = AndroidTreeView.class.getSimpleName();
+
     private static final String NODES_PATH_SEPARATOR = ";";
 
-    private TreeNode mRoot;
+    /***
+     mRootNode是看不到的.
+     比如现在第一个能看到的节点是"My Computer",
+     那么这个父节点就是mRootNode.
+     也就是说mRootNode的第一个孩子是"My Computer"这个节点.
+     */
+    private TreeNode mRootNode;
     private Context mContext;
     private boolean applyForRoot;
     private int containerStyle = 0;
@@ -39,17 +48,9 @@ public class AndroidTreeView {
     private boolean use2dScroll = false;
     private boolean enableAutoToggle = true;
 
-    public AndroidTreeView(Context context) {
-        mContext = context;
-    }
-
-    public void setRoot(TreeNode mRoot) {
-        this.mRoot = mRoot;
-    }
-
     public AndroidTreeView(Context context, TreeNode root) {
-        mRoot = root;
         mContext = context;
+        mRootNode = root;
     }
 
     public void setDefaultAnimation(boolean defaultAnimation) {
@@ -93,59 +94,73 @@ public class AndroidTreeView {
         nodeLongClickListener = listener;
     }
 
-    public void expandAll() {
-        expandNode(mRoot, true);
+    public View getView() {
+        return getView(-1);
     }
-
-    public void collapseAll() {
-        for (TreeNode n : mRoot.getChildren()) {
-            collapseNode(n, true);
-        }
-    }
-
 
     public View getView(int style) {
         final ViewGroup view;
-        if (style > 0) {
+        /*if (style > 0) {
             ContextThemeWrapper newContext = new ContextThemeWrapper(mContext, style);
             view = use2dScroll ? new TwoDScrollView(newContext) : new ScrollView(newContext);
         } else {
             view = use2dScroll ? new TwoDScrollView(mContext) : new ScrollView(mContext);
+        }*/
+        if (style > 0) {
+            ContextThemeWrapper newContext = new ContextThemeWrapper(mContext, style);
+            view = new ScrollView(newContext);
+        } else {
+            view = new ScrollView(mContext);
         }
 
         Context containerContext = mContext;
         if (containerStyle != 0 && applyForRoot) {
             containerContext = new ContextThemeWrapper(mContext, containerStyle);
         }
-        final LinearLayout viewTreeItems = new LinearLayout(containerContext, null, containerStyle);
+        final LinearLayout viewTreeItems = new LinearLayout(
+                containerContext, null, containerStyle);
 
         viewTreeItems.setId(R.id.tree_items);
         viewTreeItems.setOrientation(LinearLayout.VERTICAL);
         view.addView(viewTreeItems);
 
-        mRoot.setViewHolder(new TreeNode.BaseNodeViewHolder(mContext) {
-            @Override
-            public View createNodeView(TreeNode node, Object value) {
-                return null;
-            }
+        mRootNode.setViewHolder(
+                new TreeNode.BaseNodeViewHolder(mContext) {
+                    @Override
+                    public View createNodeView(TreeNode node, Object value) {
+                        return null;
+                    }
 
-            @Override
-            public ViewGroup getNodeItemsView() {
-                return viewTreeItems;
-            }
-        });
+                    @Override
+                    public ViewGroup getNodeItemsView() {
+                        return viewTreeItems;
+                    }
+                });
 
-        expandNode(mRoot, false);
+        expandNode(mRootNode, false);
         return view;
     }
 
-    public View getView() {
-        return getView(-1);
+    public void expandAll() {
+        expandNode(mRootNode, true);
     }
 
+    public void collapseAll() {
+        for (TreeNode n : mRootNode.getChildren()) {
+            collapseNode(n, true);
+        }
+    }
+
+    public void expandNode(TreeNode node) {
+        expandNode(node, false);
+    }
+
+    public void collapseNode(TreeNode node) {
+        collapseNode(node, false);
+    }
 
     public void expandLevel(int level) {
-        for (TreeNode n : mRoot.getChildren()) {
+        for (TreeNode n : mRootNode.getChildren()) {
             expandLevel(n, level);
         }
     }
@@ -159,17 +174,9 @@ public class AndroidTreeView {
         }
     }
 
-    public void expandNode(TreeNode node) {
-        expandNode(node, false);
-    }
-
-    public void collapseNode(TreeNode node) {
-        collapseNode(node, false);
-    }
-
     public String getSaveState() {
         final StringBuilder builder = new StringBuilder();
-        getSaveState(mRoot, builder);
+        getSaveState(mRootNode, builder);
         if (builder.length() > 0) {
             builder.setLength(builder.length() - 1);
         }
@@ -181,7 +188,7 @@ public class AndroidTreeView {
             collapseAll();
             final String[] openNodesArray = saveState.split(NODES_PATH_SEPARATOR);
             final Set<String> openNodes = new HashSet<>(Arrays.asList(openNodesArray));
-            restoreNodeState(mRoot, openNodes);
+            restoreNodeState(mRootNode, openNodes);
         }
     }
 
@@ -213,6 +220,44 @@ public class AndroidTreeView {
 
     }
 
+    private void expandNode(final TreeNode node, boolean includeSubnodes) {
+        Object object = node.getValue();
+        if (object != null && object instanceof TreeItemHolder.IconTreeItem) {
+            TreeItemHolder.IconTreeItem iconTreeItem =
+                    (TreeItemHolder.IconTreeItem) object;
+            Log.i(TAG, "iconTreeItem.text: " + iconTreeItem.text);
+        }
+
+        if (object == null) {
+            Log.i(TAG, "This node is rootNode.");
+        }
+
+        node.setExpanded(true);
+        final TreeNode.BaseNodeViewHolder parentViewHolder = getViewHolderForNode(node);
+        parentViewHolder.getNodeItemsView().removeAllViews();
+        parentViewHolder.toggle(true);
+
+        for (final TreeNode n : node.getChildren()) {
+            object = n.getValue();
+            if (object != null && object instanceof TreeItemHolder.IconTreeItem) {
+                TreeItemHolder.IconTreeItem iconTreeItem =
+                        (TreeItemHolder.IconTreeItem) object;
+                Log.i(TAG, "iconTreeItem.text 2: " + iconTreeItem.text);
+            }
+            addNode(parentViewHolder.getNodeItemsView(), n);
+
+            if (n.isExpanded() || includeSubnodes) {
+                expandNode(n, includeSubnodes);
+            }
+        }
+
+        if (mUseDefaultAnimation) {
+            expand(parentViewHolder.getNodeItemsView());
+        } else {
+            parentViewHolder.getNodeItemsView().setVisibility(View.VISIBLE);
+        }
+    }
+
     private void collapseNode(TreeNode node, final boolean includeSubnodes) {
         node.setExpanded(false);
         TreeNode.BaseNodeViewHolder nodeViewHolder = getViewHolderForNode(node);
@@ -228,29 +273,6 @@ public class AndroidTreeView {
                 collapseNode(n, includeSubnodes);
             }
         }
-    }
-
-    private void expandNode(final TreeNode node, boolean includeSubnodes) {
-        node.setExpanded(true);
-        final TreeNode.BaseNodeViewHolder parentViewHolder = getViewHolderForNode(node);
-        parentViewHolder.getNodeItemsView().removeAllViews();
-
-        parentViewHolder.toggle(true);
-
-        for (final TreeNode n : node.getChildren()) {
-            addNode(parentViewHolder.getNodeItemsView(), n);
-
-            if (n.isExpanded() || includeSubnodes) {
-                expandNode(n, includeSubnodes);
-            }
-
-        }
-        if (mUseDefaultAnimation) {
-            expand(parentViewHolder.getNodeItemsView());
-        } else {
-            parentViewHolder.getNodeItemsView().setVisibility(View.VISIBLE);
-        }
-
     }
 
     private void addNode(ViewGroup container, final TreeNode n) {
@@ -301,7 +323,7 @@ public class AndroidTreeView {
         }
         mSelectionModeEnabled = selectionModeEnabled;
 
-        for (TreeNode node : mRoot.getChildren()) {
+        for (TreeNode node : mRootNode.getChildren()) {
             toggleSelectionMode(node, selectionModeEnabled);
         }
 
@@ -334,7 +356,7 @@ public class AndroidTreeView {
 
     public List<TreeNode> getSelected() {
         if (mSelectionModeEnabled) {
-            return getSelected(mRoot);
+            return getSelected(mRootNode);
         } else {
             return new ArrayList<>();
         }
@@ -363,7 +385,7 @@ public class AndroidTreeView {
 
     private void makeAllSelection(boolean selected, boolean skipCollapsed) {
         if (mSelectionModeEnabled) {
-            for (TreeNode node : mRoot.getChildren()) {
+            for (TreeNode node : mRootNode.getChildren()) {
                 selectNode(node, selected, skipCollapsed);
             }
         }
@@ -398,12 +420,17 @@ public class AndroidTreeView {
         TreeNode.BaseNodeViewHolder viewHolder = node.getViewHolder();
         if (viewHolder == null) {
             try {
-                final Object object = defaultViewHolderClass.getConstructor(Context.class)
-                        .newInstance(mContext);
+                final Object object =
+                        defaultViewHolderClass.getConstructor(Context.class).newInstance(mContext);
                 viewHolder = (TreeNode.BaseNodeViewHolder) object;
                 node.setViewHolder(viewHolder);
             } catch (Exception e) {
                 throw new RuntimeException("Could not instantiate class " + defaultViewHolderClass);
+            }
+        } else {
+            Object object = node.getValue();
+            if (object == null) {
+                Log.i(TAG, "getViewHolderForNode() This node is rootNode.");
             }
         }
         if (viewHolder.getContainerStyle() <= 0) {

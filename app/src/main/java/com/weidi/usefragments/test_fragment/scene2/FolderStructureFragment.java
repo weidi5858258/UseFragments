@@ -16,7 +16,7 @@ import com.weidi.usefragments.fragment.FragOperManager;
 import com.weidi.usefragments.fragment.base.BaseFragment;
 import com.weidi.usefragments.inject.InjectOnClick;
 import com.weidi.usefragments.test_view.AndroidTreeView;
-import com.weidi.usefragments.test_view.IconTreeItemHolder;
+import com.weidi.usefragments.test_view.TreeItemHolder;
 import com.weidi.usefragments.test_view.TreeNode;
 import com.weidi.usefragments.tool.MLog;
 
@@ -293,35 +293,37 @@ public class FolderStructureFragment extends BaseFragment {
 
     private void initView(View view, Bundle savedInstanceState) {
         TreeNode root = TreeNode.root();
+
         TreeNode computerRoot = new TreeNode(
-                new IconTreeItemHolder.IconTreeItem(R.string.ic_laptop, "My Computer"));
+                new TreeItemHolder.IconTreeItem(R.string.ic_laptop, "My Computer"));
 
         TreeNode myDocuments = new TreeNode(
-                new IconTreeItemHolder.IconTreeItem(R.string.ic_folder, "My Documents"));
+                new TreeItemHolder.IconTreeItem(R.string.ic_folder, "My Documents"));
         TreeNode downloads = new TreeNode(
-                new IconTreeItemHolder.IconTreeItem(R.string.ic_folder, "Downloads"));
-        TreeNode file1 = new TreeNode(new IconTreeItemHolder.IconTreeItem(R.string.ic_drive_file, "Folder 1"));
-        TreeNode file2 = new TreeNode(new IconTreeItemHolder.IconTreeItem(R.string.ic_drive_file, "Folder 2"));
-        TreeNode file3 = new TreeNode(new IconTreeItemHolder.IconTreeItem(R.string.ic_drive_file, "Folder 3"));
-        TreeNode file4 = new TreeNode(new IconTreeItemHolder.IconTreeItem(R.string.ic_drive_file, "Folder 4"));
+                new TreeItemHolder.IconTreeItem(R.string.ic_folder, "Downloads"));
+        TreeNode file1 = new TreeNode(new TreeItemHolder.IconTreeItem(R.string.ic_drive_file, "Folder 1"));
+        TreeNode file2 = new TreeNode(new TreeItemHolder.IconTreeItem(R.string.ic_drive_file, "Folder 2"));
+        TreeNode file3 = new TreeNode(new TreeItemHolder.IconTreeItem(R.string.ic_drive_file, "Folder 3"));
+        TreeNode file4 = new TreeNode(new TreeItemHolder.IconTreeItem(R.string.ic_drive_file, "Folder 4"));
         fillDownloadsFolder(downloads);
         downloads.addChildren(file1, file2, file3, file4);
+        myDocuments.addChild(downloads);
 
-        TreeNode myMedia = new TreeNode(new IconTreeItemHolder.IconTreeItem(R.string.ic_photo_library, "Photos"));
-        TreeNode photo1 = new TreeNode(new IconTreeItemHolder.IconTreeItem(R.string.ic_photo, "Folder 1"));
-        TreeNode photo2 = new TreeNode(new IconTreeItemHolder.IconTreeItem(R.string.ic_photo, "Folder 2"));
-        TreeNode photo3 = new TreeNode(new IconTreeItemHolder.IconTreeItem(R.string.ic_photo, "Folder 3"));
+        TreeNode myMedia = new TreeNode(new TreeItemHolder.IconTreeItem(R.string.ic_photo_library, "Photos"));
+        TreeNode photo1 = new TreeNode(new TreeItemHolder.IconTreeItem(R.string.ic_photo, "Folder 1"));
+        TreeNode photo2 = new TreeNode(new TreeItemHolder.IconTreeItem(R.string.ic_photo, "Folder 2"));
+        TreeNode photo3 = new TreeNode(new TreeItemHolder.IconTreeItem(R.string.ic_photo, "Folder 3"));
         myMedia.addChildren(photo1, photo2, photo3);
 
-        myDocuments.addChild(downloads);
         computerRoot.addChildren(myDocuments, myMedia);
 
+        // 给看不到的根节点添加一个能够看得到的"根节点"
         root.addChildren(computerRoot);
 
         tView = new AndroidTreeView(getActivity(), root);
         tView.setDefaultAnimation(true);
         tView.setDefaultContainerStyle(R.style.TreeNodeStyleCustom);
-        tView.setDefaultViewHolder(IconTreeItemHolder.class);
+        tView.setDefaultViewHolder(TreeItemHolder.class);
 
         tView.setDefaultNodeClickListener(nodeClickListener);
         tView.setDefaultNodeLongClickListener(nodeLongClickListener);
@@ -350,7 +352,7 @@ public class FolderStructureFragment extends BaseFragment {
     private int counter = 0;
     private void fillDownloadsFolder(TreeNode node) {
         TreeNode downloads = new TreeNode(
-                new IconTreeItemHolder.IconTreeItem(R.string.ic_folder, "Downloads" + (counter++)));
+                new TreeItemHolder.IconTreeItem(R.string.ic_folder, "Downloads" + (counter++)));
         node.addChild(downloads);
         if (counter < 5) {
             fillDownloadsFolder(downloads);
@@ -361,7 +363,7 @@ public class FolderStructureFragment extends BaseFragment {
             new TreeNode.TreeNodeClickListener() {
                 @Override
                 public void onClick(TreeNode node, Object value) {
-                    IconTreeItemHolder.IconTreeItem item = (IconTreeItemHolder.IconTreeItem) value;
+                    TreeItemHolder.IconTreeItem item = (TreeItemHolder.IconTreeItem) value;
                 }
             };
 
@@ -369,7 +371,7 @@ public class FolderStructureFragment extends BaseFragment {
             new TreeNode.TreeNodeLongClickListener() {
                 @Override
                 public boolean onLongClick(TreeNode node, Object value) {
-                    IconTreeItemHolder.IconTreeItem item = (IconTreeItemHolder.IconTreeItem) value;
+                    TreeItemHolder.IconTreeItem item = (TreeItemHolder.IconTreeItem) value;
                     Toast.makeText(getActivity(), "Long click: " + item.text, Toast.LENGTH_SHORT).show();
                     return true;
                 }
