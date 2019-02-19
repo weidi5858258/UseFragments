@@ -1,6 +1,7 @@
 package com.weidi.usefragments.test_view;
 
 import android.content.Context;
+import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 
@@ -15,6 +16,8 @@ import java.util.List;
  * Created by Bogdan Melnychuk on 2/10/15.
  */
 public class TreeNode {
+
+    private static final String TAG = TreeNode.class.getSimpleName();
     public static final String NODES_ID_SEPARATOR = ":";
 
     private TreeNode mParent;
@@ -166,6 +169,7 @@ public class TreeNode {
     }
 
     public TreeNode setViewHolder(BaseNodeViewHolder viewHolder) {
+        Log.i(TAG, "setViewHolder() " + this);
         mViewHolder = viewHolder;
         if (viewHolder != null) {
             viewHolder.mNode = this;

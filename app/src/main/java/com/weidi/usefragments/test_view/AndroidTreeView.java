@@ -20,8 +20,9 @@ import java.util.List;
 import java.util.Set;
 
 /***
- * 这样一个类相当于一棵树,
- * 树中有一个根节点(mRootNode)
+ * 这个类相当于一棵树,
+ * 树中有一个根节点(mRootNode),
+ * 这个根节点是看不到的
  */
 public class AndroidTreeView {
 
@@ -99,6 +100,7 @@ public class AndroidTreeView {
     }
 
     public View getView(int style) {
+        Log.i(TAG, "getView() style: " + style);
         final ViewGroup view;
         /*if (style > 0) {
             ContextThemeWrapper newContext = new ContextThemeWrapper(mContext, style);
@@ -137,7 +139,9 @@ public class AndroidTreeView {
                     }
                 });
 
+        Log.i(TAG, "getView() mRootNode: " + mRootNode);
         expandNode(mRootNode, false);
+
         return view;
     }
 
@@ -221,6 +225,7 @@ public class AndroidTreeView {
     }
 
     private void expandNode(final TreeNode node, boolean includeSubnodes) {
+        Log.i(TAG, "expandNode() includeSubnodes: " + includeSubnodes);
         Object object = node.getValue();
         if (object != null && object instanceof TreeItemHolder.IconTreeItem) {
             TreeItemHolder.IconTreeItem iconTreeItem =
@@ -244,6 +249,7 @@ public class AndroidTreeView {
                         (TreeItemHolder.IconTreeItem) object;
                 Log.i(TAG, "iconTreeItem.text 2: " + iconTreeItem.text);
             }
+
             addNode(parentViewHolder.getNodeItemsView(), n);
 
             if (n.isExpanded() || includeSubnodes) {
@@ -483,8 +489,8 @@ public class AndroidTreeView {
                 if (interpolatedTime == 1) {
                     v.setVisibility(View.GONE);
                 } else {
-                    v.getLayoutParams().height = initialHeight - (int) (initialHeight *
-                            interpolatedTime);
+                    v.getLayoutParams().height =
+                            initialHeight - (int) (initialHeight * interpolatedTime);
                     v.requestLayout();
                 }
             }
@@ -496,8 +502,8 @@ public class AndroidTreeView {
         };
 
         // 1dp/ms
-        a.setDuration((int) (initialHeight / v.getContext().getResources().getDisplayMetrics()
-                .density));
+        a.setDuration(
+                (int) (initialHeight / v.getContext().getResources().getDisplayMetrics().density));
         v.startAnimation(a);
     }
 

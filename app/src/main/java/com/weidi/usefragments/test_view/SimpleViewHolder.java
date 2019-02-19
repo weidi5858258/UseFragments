@@ -4,9 +4,6 @@ import android.content.Context;
 import android.view.View;
 import android.widget.TextView;
 
-/**
- * Created by Bogdan Melnychuk on 2/11/15.
- */
 public class SimpleViewHolder extends TreeNode.BaseNodeViewHolder<Object> {
 
     public SimpleViewHolder(Context context) {
@@ -24,4 +21,5 @@ public class SimpleViewHolder extends TreeNode.BaseNodeViewHolder<Object> {
     public void toggle(boolean active) {
 
     }
+
 }
