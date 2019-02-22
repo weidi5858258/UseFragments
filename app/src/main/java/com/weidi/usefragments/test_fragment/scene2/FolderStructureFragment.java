@@ -377,4 +377,83 @@ public class FolderStructureFragment extends BaseFragment {
                 }
             };
 
+    /***
+     02-22 13:27:04.506 D/SmartMediaApp:HeaderMenuController: alexander parentFolderPath: /storage/37C8-3904
+     02-22 13:27:04.507 D/SmartMediaApp:HeaderMenuController: alexander    subFolderPath: /storage/37C8-3904/myfiles
+
+     02-22 13:27:04.507 D/SmartMediaApp:HeaderMenuController: alexander parentFolderPath: /storage/37C8-3904/myfiles
+     02-22 13:27:04.507 D/SmartMediaApp:HeaderMenuController: alexander    subFolderPath: /storage/37C8-3904/myfiles/APITestApp
+     02-22 13:27:04.507 D/SmartMediaApp:HeaderMenuController: alexander    subFolderPath: /storage/37C8-3904/myfiles/Artifact
+     02-22 13:27:04.507 D/SmartMediaApp:HeaderMenuController: alexander    subFolderPath: /storage/37C8-3904/myfiles/audio
+     02-22 13:27:04.507 D/SmartMediaApp:HeaderMenuController: alexander    subFolderPath: /storage/37C8-3904/myfiles/music
+     02-22 13:27:04.507 D/SmartMediaApp:HeaderMenuController: alexander    subFolderPath: /storage/37C8-3904/myfiles/picture
+     02-22 13:27:04.507 D/SmartMediaApp:HeaderMenuController: alexander    subFolderPath: /storage/37C8-3904/myfiles/ROOT
+     02-22 13:27:04.507 D/SmartMediaApp:HeaderMenuController: alexander    subFolderPath: /storage/37C8-3904/myfiles/TvCamera
+     02-22 13:27:04.507 D/SmartMediaApp:HeaderMenuController: alexander    subFolderPath: /storage/37C8-3904/myfiles/video
+
+     02-22 13:27:04.507 D/SmartMediaApp:HeaderMenuController: alexander parentFolderPath: /storage/37C8-3904/myfiles/APITestApp
+     02-22 13:27:04.507 D/SmartMediaApp:HeaderMenuController: alexander    subFolderPath: /storage/37C8-3904/myfiles/APITestApp/app
+
+     02-22 13:27:04.507 D/SmartMediaApp:HeaderMenuController: alexander parentFolderPath: /storage/37C8-3904/myfiles/Artifact
+     02-22 13:27:04.507 D/SmartMediaApp:HeaderMenuController: alexander    subFolderPath: /storage/37C8-3904/myfiles/Artifact/res
+     02-22 13:27:04.507 D/SmartMediaApp:HeaderMenuController: alexander    subFolderPath: /storage/37C8-3904/myfiles/Artifact/weidi_library
+     02-22 13:27:04.507 D/SmartMediaApp:HeaderMenuController: alexander parentFolderPath: /storage/37C8-3904/myfiles/audio
+     02-22 13:27:04.507 D/SmartMediaApp:HeaderMenuController: alexander parentFolderPath: /storage/37C8-3904/myfiles/music
+     02-22 13:27:04.507 D/SmartMediaApp:HeaderMenuController: alexander parentFolderPath: /storage/37C8-3904/myfiles/picture
+     02-22 13:27:04.507 D/SmartMediaApp:HeaderMenuController: alexander parentFolderPath: /storage/37C8-3904/myfiles/ROOT
+     02-22 13:27:04.507 D/SmartMediaApp:HeaderMenuController: alexander    subFolderPath: /storage/37C8-3904/myfiles/ROOT/download
+     02-22 13:27:04.507 D/SmartMediaApp:HeaderMenuController: alexander    subFolderPath: /storage/37C8-3904/myfiles/ROOT/picture
+     02-22 13:27:04.507 D/SmartMediaApp:HeaderMenuController: alexander parentFolderPath: /storage/37C8-3904/myfiles/TvCamera
+     02-22 13:27:04.507 D/SmartMediaApp:HeaderMenuController: alexander    subFolderPath: /storage/37C8-3904/myfiles/TvCamera/res
+     02-22 13:27:04.508 D/SmartMediaApp:HeaderMenuController: alexander parentFolderPath: /storage/37C8-3904/myfiles/video
+     02-22 13:27:04.508 D/SmartMediaApp:HeaderMenuController: alexander parentFolderPath: /storage/37C8-3904/myfiles/APITestApp/app
+     02-22 13:27:04.508 D/SmartMediaApp:HeaderMenuController: alexander    subFolderPath: /storage/37C8-3904/myfiles/APITestApp/app/build
+     02-22 13:27:04.508 D/SmartMediaApp:HeaderMenuController: alexander    subFolderPath: /storage/37C8-3904/myfiles/APITestApp/app/src
+     02-22 13:27:04.508 D/SmartMediaApp:HeaderMenuController: alexander parentFolderPath: /storage/37C8-3904/myfiles/Artifact/res
+     02-22 13:27:04.508 D/SmartMediaApp:HeaderMenuController: alexander    subFolderPath: /storage/37C8-3904/myfiles/Artifact/res/drawable
+     02-22 13:27:04.508 D/SmartMediaApp:HeaderMenuController: alexander    subFolderPath: /storage/37C8-3904/myfiles/Artifact/res/drawable-hdpi
+     02-22 13:27:04.508 D/SmartMediaApp:HeaderMenuController: alexander    subFolderPath: /storage/37C8-3904/myfiles/Artifact/res/drawable-xxhdpi
+     02-22 13:27:04.508 D/SmartMediaApp:HeaderMenuController: alexander    subFolderPath: /storage/37C8-3904/myfiles/Artifact/res/raw
+     02-22 13:27:04.508 D/SmartMediaApp:HeaderMenuController: alexander parentFolderPath: /storage/37C8-3904/myfiles/Artifact/weidi_library
+     02-22 13:27:04.508 D/SmartMediaApp:HeaderMenuController: alexander    subFolderPath: /storage/37C8-3904/myfiles/Artifact/weidi_library/res
+     02-22 13:27:04.508 D/SmartMediaApp:HeaderMenuController: alexander parentFolderPath: /storage/37C8-3904/myfiles/ROOT/download
+     02-22 13:27:04.508 D/SmartMediaApp:HeaderMenuController: alexander    subFolderPath: /storage/37C8-3904/myfiles/ROOT/download/tv.danmaku.bili
+     02-22 13:27:04.508 D/SmartMediaApp:HeaderMenuController: alexander parentFolderPath: /storage/37C8-3904/myfiles/ROOT/picture
+     02-22 13:27:04.508 D/SmartMediaApp:HeaderMenuController: alexander parentFolderPath: /storage/37C8-3904/myfiles/TvCamera/res
+     02-22 13:27:04.508 D/SmartMediaApp:HeaderMenuController: alexander    subFolderPath: /storage/37C8-3904/myfiles/TvCamera/res/raw
+     02-22 13:27:04.508 D/SmartMediaApp:HeaderMenuController: alexander parentFolderPath: /storage/37C8-3904/myfiles/APITestApp/app/build
+     02-22 13:27:04.508 D/SmartMediaApp:HeaderMenuController: alexander    subFolderPath: /storage/37C8-3904/myfiles/APITestApp/app/build/intermediates
+     02-22 13:27:04.509 D/SmartMediaApp:HeaderMenuController: alexander parentFolderPath: /storage/37C8-3904/myfiles/APITestApp/app/src
+     02-22 13:27:04.509 D/SmartMediaApp:HeaderMenuController: alexander    subFolderPath: /storage/37C8-3904/myfiles/APITestApp/app/src/main
+     02-22 13:27:04.509 D/SmartMediaApp:HeaderMenuController: alexander parentFolderPath: /storage/37C8-3904/myfiles/Artifact/res/drawable
+     02-22 13:27:04.509 D/SmartMediaApp:HeaderMenuController: alexander parentFolderPath: /storage/37C8-3904/myfiles/Artifact/res/drawable-hdpi
+     02-22 13:27:04.509 D/SmartMediaApp:HeaderMenuController: alexander parentFolderPath: /storage/37C8-3904/myfiles/Artifact/res/drawable-xxhdpi
+     02-22 13:27:04.509 D/SmartMediaApp:HeaderMenuController: alexander parentFolderPath: /storage/37C8-3904/myfiles/Artifact/res/raw
+     02-22 13:27:04.509 D/SmartMediaApp:HeaderMenuController: alexander parentFolderPath: /storage/37C8-3904/myfiles/Artifact/weidi_library/res
+     02-22 13:27:04.509 D/SmartMediaApp:HeaderMenuController: alexander    subFolderPath: /storage/37C8-3904/myfiles/Artifact/weidi_library/res/raw
+     02-22 13:27:04.509 D/SmartMediaApp:HeaderMenuController: alexander parentFolderPath: /storage/37C8-3904/myfiles/ROOT/download/tv.danmaku.bili
+     02-22 13:27:04.509 D/SmartMediaApp:HeaderMenuController: alexander parentFolderPath: /storage/37C8-3904/myfiles/TvCamera/res/raw
+     02-22 13:27:04.509 D/SmartMediaApp:HeaderMenuController: alexander parentFolderPath: /storage/37C8-3904/myfiles/APITestApp/app/build/intermediates
+     02-22 13:27:04.509 D/SmartMediaApp:HeaderMenuController: alexander    subFolderPath: /storage/37C8-3904/myfiles/APITestApp/app/build/intermediates/assets
+     02-22 13:27:04.509 D/SmartMediaApp:HeaderMenuController: alexander    subFolderPath: /storage/37C8-3904/myfiles/APITestApp/app/build/intermediates/res
+     02-22 13:27:04.509 D/SmartMediaApp:HeaderMenuController: alexander parentFolderPath: /storage/37C8-3904/myfiles/APITestApp/app/src/main
+     02-22 13:27:04.509 D/SmartMediaApp:HeaderMenuController: alexander    subFolderPath: /storage/37C8-3904/myfiles/APITestApp/app/src/main/assets
+     02-22 13:27:04.509 D/SmartMediaApp:HeaderMenuController: alexander    subFolderPath: /storage/37C8-3904/myfiles/APITestApp/app/src/main/res
+     02-22 13:27:04.509 D/SmartMediaApp:HeaderMenuController: alexander parentFolderPath: /storage/37C8-3904/myfiles/Artifact/weidi_library/res/raw
+     02-22 13:27:04.509 D/SmartMediaApp:HeaderMenuController: alexander parentFolderPath: /storage/37C8-3904/myfiles/APITestApp/app/build/intermediates/assets
+     02-22 13:27:04.510 D/SmartMediaApp:HeaderMenuController: alexander    subFolderPath: /storage/37C8-3904/myfiles/APITestApp/app/build/intermediates/assets/debug
+     02-22 13:27:04.510 D/SmartMediaApp:HeaderMenuController: alexander parentFolderPath: /storage/37C8-3904/myfiles/APITestApp/app/build/intermediates/res
+     02-22 13:27:04.510 D/SmartMediaApp:HeaderMenuController: alexander    subFolderPath: /storage/37C8-3904/myfiles/APITestApp/app/build/intermediates/res/merged
+     02-22 13:27:04.510 D/SmartMediaApp:HeaderMenuController: alexander parentFolderPath: /storage/37C8-3904/myfiles/APITestApp/app/src/main/assets
+     02-22 13:27:04.510 D/SmartMediaApp:HeaderMenuController: alexander parentFolderPath: /storage/37C8-3904/myfiles/APITestApp/app/src/main/res
+     02-22 13:27:04.510 D/SmartMediaApp:HeaderMenuController: alexander    subFolderPath: /storage/37C8-3904/myfiles/APITestApp/app/src/main/res/raw
+     02-22 13:27:04.510 D/SmartMediaApp:HeaderMenuController: alexander parentFolderPath: /storage/37C8-3904/myfiles/APITestApp/app/build/intermediates/assets/debug
+     02-22 13:27:04.510 D/SmartMediaApp:HeaderMenuController: alexander parentFolderPath: /storage/37C8-3904/myfiles/APITestApp/app/build/intermediates/res/merged
+     02-22 13:27:04.510 D/SmartMediaApp:HeaderMenuController: alexander    subFolderPath: /storage/37C8-3904/myfiles/APITestApp/app/build/intermediates/res/merged/debug
+     02-22 13:27:04.510 D/SmartMediaApp:HeaderMenuController: alexander parentFolderPath: /storage/37C8-3904/myfiles/APITestApp/app/src/main/res/raw
+     02-22 13:27:04.510 D/SmartMediaApp:HeaderMenuController: alexander parentFolderPath: /storage/37C8-3904/myfiles/APITestApp/app/build/intermediates/res/merged/debug
+     02-22 13:27:04.510 D/SmartMediaApp:HeaderMenuController: alexander    subFolderPath: /storage/37C8-3904/myfiles/APITestApp/app/build/intermediates/res/merged/debug/raw
+     02-22 13:27:04.510 D/SmartMediaApp:HeaderMenuController: alexander parentFolderPath: /storage/37C8-3904/myfiles/APITestApp/app/build/intermediates/res/merged/debug/raw
+     */
+
 }
