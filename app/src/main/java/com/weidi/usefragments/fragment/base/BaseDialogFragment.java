@@ -41,7 +41,7 @@ public abstract class BaseDialogFragment extends DialogFragment {
     public void onAttach(Context context) {
         super.onAttach(context);
         if (context == null) {
-            throw new NullPointerException("BaseDialogFragment onAttach() context is null.");
+            throw new NullPointerException("BaseDialogFragment onAttach() mContext is null.");
         }
 
         mContext = context;

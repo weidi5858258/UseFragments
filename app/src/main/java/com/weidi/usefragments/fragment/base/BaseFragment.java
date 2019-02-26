@@ -71,10 +71,10 @@ public abstract class BaseFragment extends Fragment {
     public void onAttach(Context context) {
         super.onAttach(context);
         if (context == null) {
-            throw new NullPointerException("BaseFragment onAttach() context is null.");
+            throw new NullPointerException("BaseFragment onAttach() mContext is null.");
         }
         if (DEBUG)
-            MLog.d(TAG, "onAttach(): " + printThis() + " context: " + context);
+            MLog.d(TAG, "onAttach(): " + printThis() + " mContext: " + context);
         mContext = context;
     }
 

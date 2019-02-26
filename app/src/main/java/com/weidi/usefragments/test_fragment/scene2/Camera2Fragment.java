@@ -86,7 +86,7 @@ public class Camera2Fragment extends BaseFragment
         super.onAttach(context);
         if (DEBUG)
             MLog.d(TAG, "onAttach(): " + printThis() +
-                    " context: " + context);
+                    " mContext: " + context);
     }
 
     @Override

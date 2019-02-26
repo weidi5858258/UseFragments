@@ -13,6 +13,7 @@ import com.weidi.usefragments.R;
  * Created by Bogdan Melnychuk on 2/10/15.
  */
 public class TreeNodeWrapperView extends LinearLayout {
+
     private LinearLayout nodeItemsContainer;
     private ViewGroup nodeContainer;
     private final int containerStyle;
@@ -49,4 +50,5 @@ public class TreeNodeWrapperView extends LinearLayout {
     public ViewGroup getNodeContainer() {
         return nodeContainer;
     }
+
 }

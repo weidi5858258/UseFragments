@@ -4,7 +4,7 @@ import android.content.Context;
 import android.view.View;
 import android.widget.TextView;
 
-public class SimpleViewHolder extends TreeNode.BaseNodeViewHolder<Object> {
+public class SimpleViewHolder extends BaseNodeViewHolder<Object> {
 
     public SimpleViewHolder(Context context) {
         super(context);
@@ -12,7 +12,7 @@ public class SimpleViewHolder extends TreeNode.BaseNodeViewHolder<Object> {
 
     @Override
     public View createNodeView(TreeNode node, Object value) {
-        final TextView tv = new TextView(context);
+        final TextView tv = new TextView(mContext);
         tv.setText(String.valueOf(value));
         return tv;
     }

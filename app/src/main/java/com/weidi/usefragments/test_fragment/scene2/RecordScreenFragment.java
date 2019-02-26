@@ -46,7 +46,7 @@ public class RecordScreenFragment extends BaseFragment {
         super.onAttach(context);
         if (DEBUG)
             MLog.d(TAG, "onAttach() " + printThis() +
-                    " context: " + context);
+                    " mContext: " + context);
     }
 
     @Override

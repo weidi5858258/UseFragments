@@ -12,6 +12,7 @@ import android.widget.LinearLayout;
 import android.widget.ScrollView;
 
 import com.weidi.usefragments.R;
+import com.weidi.usefragments.tool.MLog;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -40,7 +41,7 @@ public class AndroidTreeView {
     private Context mContext;
     private boolean applyForRoot;
     private int containerStyle = 0;
-    private Class<? extends TreeNode.BaseNodeViewHolder> defaultViewHolderClass =
+    private Class<? extends BaseNodeViewHolder> defaultViewHolderClass =
             SimpleViewHolder.class;
     private TreeNode.TreeNodeClickListener nodeClickListener;
     private TreeNode.TreeNodeLongClickListener nodeLongClickListener;
@@ -83,7 +84,7 @@ public class AndroidTreeView {
         return enableAutoToggle;
     }
 
-    public void setDefaultViewHolder(Class<? extends TreeNode.BaseNodeViewHolder> viewHolder) {
+    public void setDefaultViewHolder(Class<? extends BaseNodeViewHolder> viewHolder) {
         defaultViewHolderClass = viewHolder;
     }
 
@@ -96,24 +97,28 @@ public class AndroidTreeView {
     }
 
     public View getView() {
-        return getView(-1);
+        View view = getView(-1);
+        return view;// android.widget.ScrollView{bd6fe84 VFED.VC.. ......I. 0,0-0,0}
     }
 
     public View getView(int style) {
         Log.i(TAG, "getView() style: " + style);
         final ViewGroup view;
-        /*if (style > 0) {
+        if (style > 0) {
             ContextThemeWrapper newContext = new ContextThemeWrapper(mContext, style);
             view = use2dScroll ? new TwoDScrollView(newContext) : new ScrollView(newContext);
         } else {
             view = use2dScroll ? new TwoDScrollView(mContext) : new ScrollView(mContext);
-        }*/
-        if (style > 0) {
+        }
+        /*if (style > 0) {
             ContextThemeWrapper newContext = new ContextThemeWrapper(mContext, style);
             view = new ScrollView(newContext);
         } else {
             view = new ScrollView(mContext);
-        }
+        }*/
+
+        view.setClickable(true);
+        view.setFocusable(true);
 
         Context containerContext = mContext;
         if (containerStyle != 0 && applyForRoot) {
@@ -124,10 +129,13 @@ public class AndroidTreeView {
 
         viewTreeItems.setId(R.id.tree_items);
         viewTreeItems.setOrientation(LinearLayout.VERTICAL);
+        viewTreeItems.setClickable(true);
+        viewTreeItems.setFocusable(true);
         view.addView(viewTreeItems);
 
         mRootNode.setViewHolder(
-                new TreeNode.BaseNodeViewHolder(mContext) {
+                // 直接new了一个抽象类
+                new BaseNodeViewHolder(mContext) {
                     @Override
                     public View createNodeView(TreeNode node, Object value) {
                         return null;
@@ -227,9 +235,9 @@ public class AndroidTreeView {
     private void expandNode(final TreeNode node, boolean includeSubnodes) {
         Log.i(TAG, "expandNode() includeSubnodes: " + includeSubnodes);
         Object object = node.getValue();
-        if (object != null && object instanceof TreeItemHolder.IconTreeItem) {
-            TreeItemHolder.IconTreeItem iconTreeItem =
-                    (TreeItemHolder.IconTreeItem) object;
+        if (object != null && object instanceof IconTreeItem) {
+            IconTreeItem iconTreeItem =
+                    (IconTreeItem) object;
             Log.i(TAG, "iconTreeItem.text: " + iconTreeItem.text);
         }
 
@@ -238,15 +246,16 @@ public class AndroidTreeView {
         }
 
         node.setExpanded(true);
-        final TreeNode.BaseNodeViewHolder parentViewHolder = getViewHolderForNode(node);
+        final BaseNodeViewHolder parentViewHolder = getViewHolderForNode(node);
+        // 当node为RootNode时,parentViewHolder.getNodeItemsView()为LinearLayout
         parentViewHolder.getNodeItemsView().removeAllViews();
         parentViewHolder.toggle(true);
 
         for (final TreeNode n : node.getChildren()) {
             object = n.getValue();
-            if (object != null && object instanceof TreeItemHolder.IconTreeItem) {
-                TreeItemHolder.IconTreeItem iconTreeItem =
-                        (TreeItemHolder.IconTreeItem) object;
+            if (object != null && object instanceof IconTreeItem) {
+                IconTreeItem iconTreeItem =
+                        (IconTreeItem) object;
                 Log.i(TAG, "iconTreeItem.text 2: " + iconTreeItem.text);
             }
 
@@ -266,7 +275,7 @@ public class AndroidTreeView {
 
     private void collapseNode(TreeNode node, final boolean includeSubnodes) {
         node.setExpanded(false);
-        TreeNode.BaseNodeViewHolder nodeViewHolder = getViewHolderForNode(node);
+        BaseNodeViewHolder nodeViewHolder = getViewHolderForNode(node);
 
         if (mUseDefaultAnimation) {
             collapse(nodeViewHolder.getNodeItemsView());
@@ -281,13 +290,36 @@ public class AndroidTreeView {
         }
     }
 
+    // container为LinearLayout
     private void addNode(ViewGroup container, final TreeNode n) {
-        final TreeNode.BaseNodeViewHolder viewHolder = getViewHolderForNode(n);
+        final BaseNodeViewHolder viewHolder = getViewHolderForNode(n);
         final View nodeView = viewHolder.getView();
+        nodeView.setClickable(true);
+        nodeView.setFocusable(true);
         container.addView(nodeView);
         if (mSelectionModeEnabled) {
             viewHolder.toggleSelectionMode(mSelectionModeEnabled);
         }
+
+        if("My Computer".equals(((IconTreeItem)n.getValue()).text)){
+            nodeView.requestFocus();
+        }
+
+        nodeView.setOnFocusChangeListener(new View.OnFocusChangeListener() {
+            @Override
+            public void onFocusChange(View v, boolean hasFocus) {
+                if (hasFocus) {
+                    v.setBackgroundColor(
+                            mContext.getResources().getColor(
+                                    android.R.color.holo_green_light));
+                } else {
+                    v.setBackgroundColor(
+                            mContext.getResources().getColor(
+                                    R.color.group_button_dialog_pressed_holo_light));
+                }
+                MLog.d(TAG, "onFocusChange() hasFocus: " + hasFocus);
+            }
+        });
 
         nodeView.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -416,19 +448,20 @@ public class AndroidTreeView {
     }
 
     private void toogleSelectionForNode(TreeNode node, boolean makeSelectable) {
-        TreeNode.BaseNodeViewHolder holder = getViewHolderForNode(node);
+        BaseNodeViewHolder holder = getViewHolderForNode(node);
         if (holder.isInitialized()) {
             getViewHolderForNode(node).toggleSelectionMode(makeSelectable);
         }
     }
 
-    private TreeNode.BaseNodeViewHolder getViewHolderForNode(TreeNode node) {
-        TreeNode.BaseNodeViewHolder viewHolder = node.getViewHolder();
+    private BaseNodeViewHolder getViewHolderForNode(TreeNode node) {
+        BaseNodeViewHolder viewHolder = node.getViewHolder();
         if (viewHolder == null) {
             try {
+                // 创建TreeNodeViewHolder对象
                 final Object object =
                         defaultViewHolderClass.getConstructor(Context.class).newInstance(mContext);
-                viewHolder = (TreeNode.BaseNodeViewHolder) object;
+                viewHolder = (BaseNodeViewHolder) object;
                 node.setViewHolder(viewHolder);
             } catch (Exception e) {
                 throw new RuntimeException("Could not instantiate class " + defaultViewHolderClass);
@@ -439,8 +472,8 @@ public class AndroidTreeView {
                 Log.i(TAG, "getViewHolderForNode() This node is rootNode.");
             }
         }
-        if (viewHolder.getContainerStyle() <= 0) {
-            viewHolder.setContainerStyle(containerStyle);
+        if (viewHolder.getmContainerStyle() <= 0) {
+            viewHolder.setmContainerStyle(containerStyle);
         }
         if (viewHolder.getTreeView() == null) {
             viewHolder.setTreeViev(this);
@@ -513,7 +546,7 @@ public class AndroidTreeView {
     public void addNode(TreeNode parent, final TreeNode nodeToAdd) {
         parent.addChild(nodeToAdd);
         if (parent.isExpanded()) {
-            final TreeNode.BaseNodeViewHolder parentViewHolder = getViewHolderForNode(parent);
+            final BaseNodeViewHolder parentViewHolder = getViewHolderForNode(parent);
             addNode(parentViewHolder.getNodeItemsView(), nodeToAdd);
         }
     }
@@ -523,7 +556,7 @@ public class AndroidTreeView {
             TreeNode parent = node.getParent();
             int index = parent.deleteChild(node);
             if (parent.isExpanded() && index >= 0) {
-                final TreeNode.BaseNodeViewHolder parentViewHolder = getViewHolderForNode(parent);
+                final BaseNodeViewHolder parentViewHolder = getViewHolderForNode(parent);
                 parentViewHolder.getNodeItemsView().removeViewAt(index);
             }
         }

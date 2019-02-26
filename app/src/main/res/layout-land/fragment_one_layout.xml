@@ -10,7 +10,7 @@
     android:layout_marginLeft="16dp"
     android:layout_marginRight="16dp"
     android:layout_marginTop="16dp"
-    tools:context="com.weidi.usefragments.MainActivity1">
+    tools:mContext="com.weidi.usefragments.MainActivity1">
 
     <FrameLayout
         android:id="@+id/fragment1_container_layout"

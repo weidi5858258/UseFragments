@@ -20,14 +20,16 @@ public class TreeNode {
     private static final String TAG = TreeNode.class.getSimpleName();
     public static final String NODES_ID_SEPARATOR = ":";
 
+    // mParent为null时,当前TreeNode为RootNode
     private TreeNode mParent;
-    private int mId;
-    private int mLastId;
+    private int mId = 0;
+    private int mLastId = 0;
     private boolean mSelected;
     private boolean mExpanded;
     private boolean mSelectable = true;
     private final List<TreeNode> children;
     private BaseNodeViewHolder mViewHolder;
+    // IconTreeItem
     private Object mValue;
     private TreeNodeClickListener mClickListener;
     private TreeNodeLongClickListener mLongClickListener;
@@ -227,15 +229,15 @@ public class TreeNode {
         boolean onLongClick(TreeNode node, Object value);
     }
 
-    public static abstract class BaseNodeViewHolder<E> {
-        protected Context context;
+    /*public static abstract class BaseNodeViewHolder<E> {
+        protected Context mContext;
         protected AndroidTreeView tView;
         protected TreeNode mNode;
-        protected int containerStyle;
+        protected int mContainerStyle;
         private View mView;
 
-        public BaseNodeViewHolder(Context context) {
-            this.context = context;
+        public BaseNodeViewHolder(Context mContext) {
+            this.mContext = mContext;
         }
 
         public View getView() {
@@ -244,7 +246,7 @@ public class TreeNode {
             }
             final View nodeView = getNodeView();
             final TreeNodeWrapperView nodeWrapperView =
-                    new TreeNodeWrapperView(nodeView.getContext(), getContainerStyle());
+                    new TreeNodeWrapperView(nodeView.getContext(), getmContainerStyle());
             nodeWrapperView.insertNodeView(nodeView);
             mView = nodeWrapperView;
 
@@ -259,8 +261,8 @@ public class TreeNode {
             return tView;
         }
 
-        public void setContainerStyle(int style) {
-            containerStyle = style;
+        public void setmContainerStyle(int style) {
+            mContainerStyle = style;
         }
 
         public View getNodeView() {
@@ -275,8 +277,8 @@ public class TreeNode {
             return mView != null;
         }
 
-        public int getContainerStyle() {
-            return containerStyle;
+        public int getmContainerStyle() {
+            return mContainerStyle;
         }
 
         public void toggle(boolean active) {
@@ -288,6 +290,6 @@ public class TreeNode {
         }
 
         public abstract View createNodeView(TreeNode node, E value);
-    }
+    }*/
 
 }
