@@ -1,4 +1,4 @@
-package com.weidi.usefragments.fragment.base;
+package com.weidi.usefragments.test_fragment.scene2;
 
 import android.app.Activity;
 import android.content.Context;
@@ -7,23 +7,29 @@ import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 
 import com.weidi.usefragments.R;
+import com.weidi.usefragments.fragment.base.BaseFragment;
 import com.weidi.usefragments.inject.InjectOnClick;
+import com.weidi.usefragments.inject.InjectView;
+import com.weidi.usefragments.test_view.LayoutView1;
+import com.weidi.usefragments.test_view.LayoutView2;
 import com.weidi.usefragments.tool.MLog;
 
 /***
  框架模板类
  */
-public class TemplateFragment extends BaseFragment {
+public class TestMotionEventFragment extends BaseFragment {
 
     private static final String TAG =
-            TemplateFragment.class.getSimpleName();
+            TestMotionEventFragment.class.getSimpleName();
+
     private static final boolean DEBUG = true;
 
-    public TemplateFragment() {
+    public TestMotionEventFragment() {
         super();
     }
 
@@ -247,7 +253,7 @@ public class TemplateFragment extends BaseFragment {
 
     @Override
     protected int provideLayout() {
-        return R.layout.fragment_main;
+        return R.layout.fragment_test_motionevent;
     }
 
     @Override
@@ -256,6 +262,11 @@ public class TemplateFragment extends BaseFragment {
     }
 
     /////////////////////////////////////////////////////////////////
+
+    @InjectView(R.id.layoutview1)
+    private LayoutView1 layoutView1;
+    @InjectView(R.id.layoutview2)
+    private LayoutView2 layoutView2;
 
     /***
      代码执行的内容跟onStart(),onResume()一样,
@@ -283,7 +294,18 @@ public class TemplateFragment extends BaseFragment {
     }
 
     private void initView(View view, Bundle savedInstanceState) {
-
+        /*layoutView1.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                return false;
+            }
+        });
+        layoutView2.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                return false;
+            }
+        });*/
     }
 
     private void handleBeforeOfConfigurationChangedEvent() {
@@ -294,10 +316,12 @@ public class TemplateFragment extends BaseFragment {
 
     }
 
-    @InjectOnClick({R.id.jump_btn})
+    @InjectOnClick({R.id.jump_tv})
     private void onClick(View v) {
         switch (v.getId()) {
-            case R.id.jump_btn:
+            case R.id.jump_tv:
+                if (DEBUG)
+                    MLog.d(TAG, "alexander onClick() " + printThis());
                 break;
         }
     }

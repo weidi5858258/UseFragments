@@ -26,6 +26,7 @@ import com.weidi.usefragments.test_fragment.scene2.Main2Fragment;
 import com.weidi.usefragments.test_fragment.scene2.Main3Fragment;
 import com.weidi.usefragments.test_fragment.scene2.Main4Fragment;
 import com.weidi.usefragments.test_fragment.scene2.RecordScreenFragment;
+import com.weidi.usefragments.test_fragment.scene2.TestMotionEventFragment;
 import com.weidi.usefragments.tool.MLog;
 
 import java.util.HashMap;
@@ -102,6 +103,9 @@ public class MainActivity1 extends BaseActivity
                 FragOperManager.POP_BACK_STACK);
         sFragmentBackTypeSMap.put(
                 FolderStructureFragment.class.getSimpleName(),
+                FragOperManager.POP_BACK_STACK);
+        sFragmentBackTypeSMap.put(
+                TestMotionEventFragment.class.getSimpleName(),
                 FragOperManager.POP_BACK_STACK);
     }
 
