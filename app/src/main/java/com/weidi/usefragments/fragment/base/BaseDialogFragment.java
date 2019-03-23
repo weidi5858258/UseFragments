@@ -13,19 +13,20 @@ import com.weidi.usefragments.inject.InjectUtils;
 import com.weidi.usefragments.tool.MLog;
 
 /***
- * 在子类中只需要覆写这样一个周期方法就行了，其他周期方法没什么必要了：
- *
- * @Override public View onCreateView(LayoutInflater inflater,
- * ViewGroup container,
- * Bundle savedInstanceState) {
- * return super.onCreateView(inflater, container, savedInstanceState);
- * }
+ 在子类中只需要覆写下面一个周期方法就行了，其他周期方法没什么必要了.
+
+ @Override //
+ public View onCreateView(LayoutInflater inflater,
+ ViewGroup container,
+ Bundle savedInstanceState) {
+ return super.onCreateView(inflater, container, savedInstanceState);
+ }
  */
 public abstract class BaseDialogFragment extends DialogFragment {
 
     private static final String TAG =
             BaseDialogFragment.class.getSimpleName();
-    private static final boolean DEBUG = false;
+    private static final boolean DEBUG = true;
 
     public static final String REQUESTCODE = "requtestCode";
     private Activity mActivity;
@@ -40,30 +41,36 @@ public abstract class BaseDialogFragment extends DialogFragment {
     @Override
     public void onAttach(Context context) {
         super.onAttach(context);
+        if (DEBUG)
+            MLog.d(TAG, "onAttach() " + printThis() +
+                    " mContext: " + context);
+
         if (context == null) {
             throw new NullPointerException("BaseDialogFragment onAttach() mContext is null.");
         }
-
         mContext = context;
     }
 
     @Override
     public void onAttach(Activity activity) {
         super.onAttach(activity);
+        if (DEBUG)
+            MLog.d(TAG, "onAttach() " + printThis() +
+                    " activity: " + activity);
+
         if (activity == null) {
             throw new NullPointerException("BaseDialogFragment onAttach() activity is null.");
         }
-
         mActivity = activity;
-        if (DEBUG)
-            MLog.d(TAG, "onAttach(): activity = " + activity);
     }
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         if (DEBUG)
-            MLog.d(TAG, "onCreate(): savedInstanceState = " + savedInstanceState);
+            MLog.d(TAG, "onCreate() " + printThis() +
+                    " savedInstanceState: " + savedInstanceState);
+
         setRetainInstance(true);
         setCancelable(false);
         if (provideStyle() < 0 || provideStyle() > 3) {
@@ -89,7 +96,9 @@ public abstract class BaseDialogFragment extends DialogFragment {
                              Bundle savedInstanceState) {
         super.onCreateView(inflater, container, savedInstanceState);
         if (DEBUG)
-            MLog.d(TAG, "onCreateView(): savedInstanceState = " + savedInstanceState);
+            MLog.d(TAG, "onCreateView() " + printThis() +
+                    " savedInstanceState: " + savedInstanceState);
+
         View view = inflater.inflate(provideLayout(), container);
         view.setMinimumWidth(600);
         InjectUtils.inject(this, view);
@@ -120,8 +129,8 @@ public abstract class BaseDialogFragment extends DialogFragment {
     public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
         if (DEBUG)
-            MLog.d(TAG, "onViewCreated(): " + printThis()
-                    + " savedInstanceState: " + savedInstanceState);
+            MLog.d(TAG, "onViewCreated() " + printThis() +
+                    " savedInstanceState: " + savedInstanceState);
 
         // 在子类中给某些View设置监听事件
         // View的内容显示在onShow()方法中进行
@@ -131,15 +140,16 @@ public abstract class BaseDialogFragment extends DialogFragment {
     public void onViewStateRestored(Bundle savedInstanceState) {
         super.onViewStateRestored(savedInstanceState);
         if (DEBUG)
-            MLog.d(TAG, "onViewStateRestored(): " + printThis()
-                    + " savedInstanceState: " + savedInstanceState);
+            MLog.d(TAG, "onViewStateRestored() " + printThis() +
+                    " savedInstanceState: " + savedInstanceState);
     }
 
     @Override
     public void onActivityCreated(Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
         if (DEBUG)
-            MLog.d(TAG, "onActivityCreated(): savedInstanceState = " + savedInstanceState);
+            MLog.d(TAG, "onActivityCreated() " + printThis() +
+                    " savedInstanceState: " + savedInstanceState);
     }
 
     /*********************************
@@ -150,7 +160,7 @@ public abstract class BaseDialogFragment extends DialogFragment {
     public void onStart() {
         super.onStart();
         if (DEBUG)
-            MLog.d(TAG, "onStart()");
+            MLog.d(TAG, "onStart() " + printThis());
     }
 
     /*********************************
@@ -161,7 +171,7 @@ public abstract class BaseDialogFragment extends DialogFragment {
     public void onResume() {
         super.onResume();
         if (DEBUG)
-            MLog.d(TAG, "onResume()");
+            MLog.d(TAG, "onResume() " + printThis());
     }
 
     /*********************************
@@ -172,7 +182,7 @@ public abstract class BaseDialogFragment extends DialogFragment {
     public void onPause() {
         super.onPause();
         if (DEBUG)
-            MLog.d(TAG, "onPause()");
+            MLog.d(TAG, "onPause() " + printThis());
     }
 
     /*********************************
@@ -183,7 +193,7 @@ public abstract class BaseDialogFragment extends DialogFragment {
     public void onStop() {
         super.onStop();
         if (DEBUG)
-            MLog.d(TAG, "onStop()");
+            MLog.d(TAG, "onStop() " + printThis());
     }
 
     /*********************************
@@ -194,24 +204,31 @@ public abstract class BaseDialogFragment extends DialogFragment {
     public void onDestroyView() {
         super.onDestroyView();
         if (DEBUG)
-            MLog.d(TAG, "onDestroyView()");
+            MLog.d(TAG, "onDestroyView() " + printThis());
     }
 
     @Override
     public void onDestroy() {
         super.onDestroy();
         if (DEBUG)
-            MLog.d(TAG, "onDestroy()");
+            MLog.d(TAG, "onDestroy() " + printThis());
     }
 
     @Override
     public void onDetach() {
         super.onDetach();
         if (DEBUG)
-            MLog.d(TAG, "onDetach()");
+            MLog.d(TAG, "onDetach() " + printThis());
     }
 
     public Activity getAttachedActivity() {
+        if (mActivity == null) {
+            mActivity = getActivity();
+        }
+        if (mActivity == null) {
+            throw new NullPointerException(
+                    "BaseDialogFragment getAttachedActivity() mActivity is null.");
+        }
         return mActivity;
     }
 
@@ -219,8 +236,6 @@ public abstract class BaseDialogFragment extends DialogFragment {
         if (mContext == null) {
             if (getAttachedActivity() != null) {
                 mContext = getAttachedActivity().getApplicationContext();
-            } else if (getActivity() != null) {
-                mContext = getActivity().getApplicationContext();
             }
         }
         if (mContext == null) {
@@ -250,14 +265,14 @@ public abstract class BaseDialogFragment extends DialogFragment {
         return temp;
     }
 
-    /**
-     * 样式选这么几种就行了
-     * DialogFragment:
-     * public static final int STYLE_NORMAL = 0;
-     * public static final int STYLE_NO_TITLE = 1;
-     * public static final int STYLE_NO_FRAME = 2;
-     * public static final int STYLE_NO_INPUT = 3;
-     * 使用: DialogFragment.STYLE_NO_TITLE(一般也是选择这个选项的)
+    /***
+     样式选这么几种就行了
+     DialogFragment:
+     public static final int STYLE_NORMAL = 0;
+     public static final int STYLE_NO_TITLE = 1;
+     public static final int STYLE_NO_FRAME = 2;
+     public static final int STYLE_NO_INPUT = 3;
+     使用: DialogFragment.STYLE_NO_TITLE(一般也是选择这个选项的)
      */
     protected abstract int provideStyle();
 

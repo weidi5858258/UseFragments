@@ -172,7 +172,7 @@ public class TemplateFragment extends BaseFragment {
         if (DEBUG)
             MLog.d(TAG, "onDestroy() " + printThis());
 
-
+        destroy();
     }
 
     @Override
@@ -180,8 +180,6 @@ public class TemplateFragment extends BaseFragment {
         super.onDetach();
         if (DEBUG)
             MLog.d(TAG, "onDetach() " + printThis());
-
-        destroy();
     }
 
     @Override
