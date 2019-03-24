@@ -1,30 +1,41 @@
-package com.weidi.usefragments.fragment.base;
+package com.weidi.usefragments.test_fragment.scene2;
 
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.res.Configuration;
 import android.os.Bundle;
+import android.os.Handler;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.support.v4.view.PagerAdapter;
+import android.support.v4.view.ViewPager;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.widget.TextView;
 
 import com.weidi.usefragments.R;
+import com.weidi.usefragments.fragment.FragOperManager;
+import com.weidi.usefragments.fragment.base.BaseFragment;
 import com.weidi.usefragments.inject.InjectOnClick;
+import com.weidi.usefragments.inject.InjectView;
 import com.weidi.usefragments.tool.MLog;
+
+import java.util.ArrayList;
 
 /***
  框架模板类
  */
-public class TemplateFragment extends BaseFragment {
+public class ViewPagerFragment extends BaseFragment {
 
     private static final String TAG =
-            TemplateFragment.class.getSimpleName();
+            ViewPagerFragment.class.getSimpleName();
     private static final boolean DEBUG = true;
 
-    public TemplateFragment() {
+    public ViewPagerFragment() {
         super();
     }
 
@@ -256,7 +267,7 @@ public class TemplateFragment extends BaseFragment {
 
     @Override
     protected int provideLayout() {
-        return R.layout.fragment_main;
+        return R.layout.fragment_test_viewpager;
     }
 
     @Override
@@ -265,6 +276,47 @@ public class TemplateFragment extends BaseFragment {
     }
 
     /////////////////////////////////////////////////////////////////
+
+    @InjectView(R.id.test_viewpager)
+    private ViewPager viewpager;
+//    private TextView image_desc;
+//    private LinearLayout point_group;
+    private MyViewPagerAdapter myViewPagerAdapter;
+    private int previous;//上一个页面的标记
+
+    private int[] images = new int[]{
+            R.drawable.a1, R.drawable.a2, R.drawable.a3, R.drawable.a4,
+            R.drawable.a5, R.drawable.a6, R.drawable.a7, R.drawable.a9
+    };
+
+    private String[] imagesString = new String[]{//这个不用理，只是增加一些提示信息而已
+            "巩俐不低俗，我就不能低俗",
+            "扑树又回来啦！再唱经典老歌引万人大合唱",
+            "揭秘北京电影如何升级",
+            "乐视网TV版大派送",
+            "热血屌丝的反杀",
+            "扑树又回来啦！再唱经典老歌引万人大合唱",
+            "揭秘北京电影如何升级",
+            "乐视网TV版大派送"
+    };
+    private ArrayList<ImageView> imageList = new ArrayList<ImageView>();
+
+    /*
+     * 自动循环：
+     * 1、定时器：Timer
+     * 2、开子线程 while  true 循环
+     * 3、ColckManager
+     * 4、 用handler 发送延时信息，实现循环
+     */
+    private boolean isRunning = true;
+    private Handler mUiHandler = new Handler() {
+        public void handleMessage(android.os.Message msg) {
+            viewpager.setCurrentItem(viewpager.getCurrentItem() + 1);
+            if (isRunning) {
+                mUiHandler.sendEmptyMessageDelayed(0, 2000);
+            }
+        }
+    };
 
     /***
      代码执行的内容跟onStart(),onResume()一样,
@@ -292,7 +344,65 @@ public class TemplateFragment extends BaseFragment {
     }
 
     private void initView(View view, Bundle savedInstanceState) {
+        for (int i = 0; i < images.length; i++) {
+            ImageView imageView = new ImageView(getContext());
+            imageView.setBackgroundResource(images[i]);
+            imageList.add(imageView);
+//            image_desc.setText(i != 0 ? imagesString[0] : imagesString[i]);
 
+            ImageView point = new ImageView(getContext());
+            LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT);
+            params.rightMargin = 20;
+            point.setLayoutParams(params);
+            point.setBackgroundResource(R.drawable.a9);
+            if (i == 0) {
+                point.setEnabled(true);
+            } else {
+                point.setEnabled(false);
+            }
+//            point_group.addView(point);
+        }
+
+        myViewPagerAdapter = new MyViewPagerAdapter();
+        viewpager.setAdapter(myViewPagerAdapter);
+        //下面这句代码比较关键 设置当前页面的下标为一个很大的数，
+        // 那么左右都可以滑动了 后面减去的部分是因为显示下标为0时的图片错开的数
+        viewpager.setCurrentItem(
+                Integer.MAX_VALUE / 2 - (Integer.MAX_VALUE / 2 % imageList.size()));
+        viewpager.addOnPageChangeListener(new ViewPager.OnPageChangeListener() {
+            /**
+             * 页面切换后调用
+             * arg0  新的页面位置
+             */
+            @Override
+            public void onPageScrolled(int position,
+                                       float positionOffset,
+                                       int positionOffsetPixels) {
+            }
+
+            /**
+             * 页面正在滑动的时候，回调
+             */
+            @Override
+            public void onPageSelected(int position) {
+                int recycle = position % imageList.size();
+//                image_desc.setText(imagesString[recycle]);
+//                point_group.getChildAt(previous).setEnabled(false);
+//                point_group.getChildAt(recycle).setEnabled(true);
+                previous = recycle;
+            }
+
+            /**
+             * 当页面状态发生变化的时候，回调
+             */
+            @Override
+            public void onPageScrollStateChanged(int state) {
+
+            }
+        });
+//        mUiHandler.sendEmptyMessageDelayed(0, 2000);
     }
 
     private void handleBeforeOfConfigurationChangedEvent() {
@@ -307,8 +417,49 @@ public class TemplateFragment extends BaseFragment {
     private void onClick(View v) {
         switch (v.getId()) {
             case R.id.jump_btn:
+                FragOperManager.getInstance().enter3(new CameraPreviewFragment());
                 break;
         }
+    }
+
+    private class MyViewPagerAdapter extends PagerAdapter {
+        /**
+         * 获得页面的总数
+         */
+        @Override
+        public int getCount() {//得到的数量并不一定要是集合中元素的个数
+            return Integer.MAX_VALUE;
+        }
+
+        /**
+         * 获得相应位置上的view
+         * container  view的容器，其实就是viewpager自身
+         * position   相应的位置
+         */
+        @Override
+        public Object instantiateItem(ViewGroup container, int position) {
+            int recycle = position % imageList.size();
+            container.addView(imageList.get(recycle));
+            return imageList.get(recycle);
+        }
+
+        /**
+         * 判断 view和object的对应关系
+         */
+        @Override
+        public boolean isViewFromObject(View view, Object object) {
+            return view == object;
+        }
+
+        /**
+         * 销毁对应位置上的object
+         */
+        @Override
+        public void destroyItem(ViewGroup container, int position, Object object) {
+            container.removeView((View) object);
+            object = null;
+        }
+
     }
 
 }

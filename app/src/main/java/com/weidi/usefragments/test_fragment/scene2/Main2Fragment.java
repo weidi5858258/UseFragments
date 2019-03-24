@@ -74,7 +74,7 @@ public class Main2Fragment extends BaseFragment {
         mJumpBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                FragOperManager.getInstance().enter3(new CameraPreviewFragment());
+                FragOperManager.getInstance().enter3(new ViewPagerFragment2());
             }
         });
     }

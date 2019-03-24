@@ -35,18 +35,15 @@ import java.util.List;
  PermissionsUtils.checkAndRequestPermission(
  new PermissionsUtils.IRequestPermissionsResult() {
 
- @Override
- public Object getRequiredObject() {
+ @Override public Object getRequiredObject() {
  return Main1Fragment.this;
  }
 
- @Override
- public String[] getRequiredPermissions() {
+ @Override public String[] getRequiredPermissions() {
  return PermissionsUtils.REQUIRED_PERMISSIONS;
  }
 
- @Override
- public void onRequestPermissionsResult(
+ @Override public void onRequestPermissionsResult(
  String[] permissions,
  int[] grantResults) {
  if (permissions == null || grantResults == null) {
@@ -367,7 +364,7 @@ public class PermissionsUtils {
                 final String[] permissions,
                 final int[] grantResults) {
             final Activity activity = fragment.getActivity();
-            if (activity == null) {
+            if (activity == null || activity.isDestroyed()) {
                 return;
             }
 

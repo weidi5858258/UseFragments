@@ -4,6 +4,7 @@ import android.animation.Animator;
 import android.app.Activity;
 import android.app.Fragment;
 import android.content.Context;
+import android.content.Intent;
 import android.content.res.Configuration;
 import android.graphics.Color;
 import android.os.Build;
@@ -283,6 +284,16 @@ public abstract class BaseFragment extends Fragment {
     }
 
     @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (DEBUG)
+            MLog.d(TAG, "onActivityResult(): " + printThis() +
+                    " requestCode: " + requestCode +
+                    " resultCode: " + resultCode +
+                    " data: " + data.toString());
+    }
+
+    @Override
     public void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
         if (DEBUG)
@@ -292,7 +303,7 @@ public abstract class BaseFragment extends Fragment {
     /***
      横竖屏切换改变布局,参照C2Fragment
 
-     只能改变当前显示的Fragment的布局,
+     只改变当前显示的Fragment的布局,
      没有显示的不会改变
      */
     @Override
