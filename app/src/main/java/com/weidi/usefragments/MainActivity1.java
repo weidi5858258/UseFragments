@@ -1,7 +1,10 @@
 package com.weidi.usefragments;
 
 import android.app.Fragment;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.res.Configuration;
 import android.os.Bundle;
 import android.text.TextUtils;
@@ -154,6 +157,14 @@ public class MainActivity1 extends BaseActivity
         findViewById(R.id.main1_btn).setBackgroundColor(
                 getResources().getColor(android.R.color.holo_green_light));
 
+        if (mHomeWatcherReceiver == null) {
+            mHomeWatcherReceiver = new HomeWatcherReceiver();
+            IntentFilter intentFilter = new IntentFilter();
+            intentFilter.setPriority(2147483647);
+            intentFilter.addAction(Intent.ACTION_CLOSE_SYSTEM_DIALOGS);
+            getContext().registerReceiver(mHomeWatcherReceiver, intentFilter);
+        }
+
         // test
         if (DEBUG)
             Log.d(TAG, "onCreate() stringFromJNI(): " + stringFromJNI());
@@ -200,6 +211,10 @@ public class MainActivity1 extends BaseActivity
         if (DEBUG)
             Log.d(TAG, "onDestroy()");
         FragOperManager.getInstance().removeActivity(this);
+        if (mHomeWatcherReceiver != null) {
+            getContext().unregisterReceiver(mHomeWatcherReceiver);
+            mHomeWatcherReceiver = null;
+        }
     }
 
     @Override
@@ -465,6 +480,62 @@ public class MainActivity1 extends BaseActivity
                     FragOperManager.getInstance().changeTab();
                 }
             };
+
+    private HomeWatcherReceiver mHomeWatcherReceiver;
+
+    private static class HomeWatcherReceiver extends BroadcastReceiver {
+
+        private static final String SYSTEM_DIALOG_REASON_KEY = "reason";
+        private static final String SYSTEM_DIALOG_REASON_RECENT_APPS = "recentapps";
+        private static final String SYSTEM_DIALOG_REASON_HOME_KEY = "homekey";
+        private static final String SYSTEM_DIALOG_REASON_LOCK = "lock";
+        private static final String SYSTEM_DIALOG_REASON_ASSIST = "assist";
+
+        //        IntentFilter mIntentFilter = new IntentFilter();
+        //        mIntentFilter.setPriority(2147483647);
+        //        mIntentFilter.addAction(Intent.ACTION_CLOSE_SYSTEM_DIALOGS);
+        //        mAppsLockActivity.registerReceiver(mHomeWatcherReceiver, intentFilter);
+
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            if (intent == null) {
+                return;
+            }
+
+            if (DEBUG)
+                Log.d(TAG, "onReceive() intent: " + intent);
+            String action = intent.getAction();
+            if (Intent.ACTION_CLOSE_SYSTEM_DIALOGS.equals(action)) {
+                // android.intent.action.CLOSE_SYSTEM_DIALOGS
+                String reason = intent.getStringExtra(SYSTEM_DIALOG_REASON_KEY);
+                if (TextUtils.isEmpty(reason)) {
+                    return;
+                }
+
+                if (SYSTEM_DIALOG_REASON_HOME_KEY.equals(reason)) {
+                    // 短按Home键
+                    if (DEBUG)
+                        Log.d(TAG, "onReceive() Home");
+                } else if (SYSTEM_DIALOG_REASON_RECENT_APPS.equals(reason)) {
+                    // startSelf();
+                    // 长按Menu键 或者 activity切换键
+                    if (DEBUG)
+                        Log.d(TAG, "onReceive() long press Menu key or switch Activity");
+                }
+                // 下面两个接收不到
+                else if (SYSTEM_DIALOG_REASON_LOCK.equals(reason)) {
+                    // 锁屏
+                    if (DEBUG)
+                        Log.d(TAG, "onReceive() lock");
+                } else if (SYSTEM_DIALOG_REASON_ASSIST.equals(reason)) {
+                    // samsung 长按Home键
+                    if (DEBUG)
+                        Log.d(TAG, "onReceive() assist");
+                }
+            }
+        }
+
+    }
 
     /**
      * A native method that is implemented by the 'native-lib' native library,
