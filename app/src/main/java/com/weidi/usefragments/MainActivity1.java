@@ -1,5 +1,6 @@
 package com.weidi.usefragments;
 
+import android.app.Activity;
 import android.app.Fragment;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -483,7 +484,7 @@ public class MainActivity1 extends BaseActivity
 
     private HomeWatcherReceiver mHomeWatcherReceiver;
 
-    private static class HomeWatcherReceiver extends BroadcastReceiver {
+    private class HomeWatcherReceiver extends BroadcastReceiver {
 
         private static final String SYSTEM_DIALOG_REASON_KEY = "reason";
         private static final String SYSTEM_DIALOG_REASON_RECENT_APPS = "recentapps";
@@ -516,6 +517,10 @@ public class MainActivity1 extends BaseActivity
                     // 短按Home键
                     if (DEBUG)
                         Log.d(TAG, "onReceive() Home");
+                    Intent intent1 = new Intent();
+                    intent1.putExtra("TEST", "alexander");
+                    MainActivity1.this.setResult(Activity.RESULT_OK, intent1);
+                    MainActivity1.this.finish();
                 } else if (SYSTEM_DIALOG_REASON_RECENT_APPS.equals(reason)) {
                     // startSelf();
                     // 长按Menu键 或者 activity切换键

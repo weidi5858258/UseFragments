@@ -30,6 +30,7 @@
         <!--android:screenOrientation="portrait" 强制竖屏-->
         <activity
             android:name=".MainActivity1"
+            android:launchMode="singleTop"
             android:configChanges="keyboardHidden|screenLayout|screenSize|smallestScreenSize|orientation">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
