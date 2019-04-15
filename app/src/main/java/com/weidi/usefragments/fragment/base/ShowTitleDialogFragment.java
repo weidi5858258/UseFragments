@@ -9,30 +9,17 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
-import com.weidi.usefragments.inject.InjectUtils;
+import com.weidi.usefragments.R;
 import com.weidi.usefragments.tool.MLog;
 
 /***
- 在子类中只需要覆写下面一个周期方法就行了，其他周期方法没什么必要了.
-
- @Override //
- public View onCreateView(LayoutInflater inflater,
- ViewGroup container,
- Bundle savedInstanceState) {
- return super.onCreateView(inflater, container, savedInstanceState);
- }
  */
-public abstract class BaseDialogFragment extends DialogFragment {
+public abstract class ShowTitleDialogFragment extends BaseDialogFragment {
 
     private static final String TAG =
-            BaseDialogFragment.class.getSimpleName();
+            ShowTitleDialogFragment.class.getSimpleName();
     private static final boolean DEBUG = true;
 
-    public static final String REQUESTCODE = "requestCode";
-    private Activity mActivity;
-    private Context mContext;
-    private int requestCode;
-    private OnResultListener mOnResultListener;
 
     /*********************************
      * Created
@@ -44,11 +31,6 @@ public abstract class BaseDialogFragment extends DialogFragment {
         if (DEBUG)
             MLog.d(TAG, "onAttach() " + printThis() +
                     " mContext: " + context);
-
-        if (context == null) {
-            throw new NullPointerException("BaseDialogFragment onAttach() mContext is null.");
-        }
-        mContext = context;
     }
 
     @Override
@@ -57,11 +39,6 @@ public abstract class BaseDialogFragment extends DialogFragment {
         if (DEBUG)
             MLog.d(TAG, "onAttach() " + printThis() +
                     " activity: " + activity);
-
-        if (activity == null) {
-            throw new NullPointerException("BaseDialogFragment onAttach() activity is null.");
-        }
-        mActivity = activity;
     }
 
     @Override
@@ -70,16 +47,6 @@ public abstract class BaseDialogFragment extends DialogFragment {
         if (DEBUG)
             MLog.d(TAG, "onCreate() " + printThis() +
                     " savedInstanceState: " + savedInstanceState);
-
-        setRetainInstance(true);
-        setCancelable(false);
-        if (provideStyle() < 0 || provideStyle() > 3) {
-            setStyle(DialogFragment.STYLE_NO_TITLE, 0);
-        } else {
-            setStyle(provideStyle(), 0);
-        }
-        requestCode =
-                getArguments() != null ? getArguments().getInt(REQUESTCODE) : -1;
     }
 
     /**
@@ -94,36 +61,11 @@ public abstract class BaseDialogFragment extends DialogFragment {
     public View onCreateView(LayoutInflater inflater,
                              ViewGroup container,
                              Bundle savedInstanceState) {
-        super.onCreateView(inflater, container, savedInstanceState);
         if (DEBUG)
             MLog.d(TAG, "onCreateView() " + printThis() +
                     " savedInstanceState: " + savedInstanceState);
-
-        View view = inflater.inflate(provideLayout(), container);
-        view.setMinimumWidth(600);
-        InjectUtils.inject(this, view);
-
-        /*view.findViewById(R.id.cancel_btn).setOnClickListener(
-          new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                MLog.d(TAG, "dismiss()");
-                dismiss();
-            }
-        });*/
-
-        return view;
+        return super.onCreateView(inflater, container, savedInstanceState);
     }
-
-    /*public Dialog onCreateDialog(Bundle savedInstanceState) {
-        super.onCreateDialog(savedInstanceState);
-        AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
-        // Get the layout inflater
-        LayoutInflater inflater = getActivity().getLayoutInflater();
-        View view = inflater.inflate(provideLayout(), null);
-        builder.setView(view);
-        return builder.create();
-    }*/
 
     @Override
     public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
@@ -221,61 +163,12 @@ public abstract class BaseDialogFragment extends DialogFragment {
             MLog.d(TAG, "onDetach() " + printThis());
     }
 
-    public Activity getAttachedActivity() {
-        if (mActivity == null) {
-            mActivity = getActivity();
-        }
-        if (mActivity == null) {
-            throw new NullPointerException(
-                    "BaseDialogFragment getAttachedActivity() mActivity is null.");
-        }
-        return mActivity;
+    protected int provideStyle() {
+        return DialogFragment.STYLE_NO_TITLE;
     }
 
-    public Context getContext() {
-        if (mContext == null) {
-            if (getAttachedActivity() != null) {
-                mContext = getAttachedActivity().getApplicationContext();
-            }
-        }
-        if (mContext == null) {
-            throw new NullPointerException(
-                    "BaseDialogFragment getContext() mContext is null.");
-        }
-        return mContext;
+    protected int provideLayout() {
+        return R.layout.fragment_test_dialog_recycleview;
     }
-
-    public int getRequestCode() {
-        return requestCode;
-    }
-
-    public void setOnResultListener(OnResultListener listener) {
-        mOnResultListener = listener;
-    }
-
-    public OnResultListener getOnResultListener() {
-        return mOnResultListener;
-    }
-
-    protected String printThis() {
-        // com.weidi.usefragments.MainActivity2@416c7b
-        String temp = this.toString();
-        int lastIndex = temp.lastIndexOf(".");
-        temp = temp.substring(lastIndex + 1, temp.length());
-        return temp;
-    }
-
-    /***
-     样式选这么几种就行了
-     DialogFragment:
-     public static final int STYLE_NORMAL = 0;
-     public static final int STYLE_NO_TITLE = 1;
-     public static final int STYLE_NO_FRAME = 2;
-     public static final int STYLE_NO_INPUT = 3;
-     使用: DialogFragment.STYLE_NO_TITLE(一般也是选择这个选项的)
-     */
-    protected abstract int provideStyle();
-
-    protected abstract int provideLayout();
 
 }
