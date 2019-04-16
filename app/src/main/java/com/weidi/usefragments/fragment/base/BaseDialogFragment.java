@@ -5,9 +5,12 @@ import android.app.DialogFragment;
 import android.content.Context;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
+import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.Window;
+import android.view.WindowManager;
 
 import com.weidi.usefragments.inject.InjectUtils;
 import com.weidi.usefragments.tool.MLog;
@@ -111,6 +114,14 @@ public abstract class BaseDialogFragment extends DialogFragment {
                 dismiss();
             }
         });*/
+
+        /*//去除标题栏
+        getDialog().requestWindowFeature(Window.FEATURE_NO_TITLE);
+        Window window = getDialog().getWindow();
+        WindowManager.LayoutParams lp = window.getAttributes();
+        lp.gravity = Gravity.BOTTOM; //底部
+        lp.width = WindowManager.LayoutParams.MATCH_PARENT;
+        window.setAttributes(lp);*/
 
         return view;
     }

@@ -1,20 +1,33 @@
-package com.weidi.usefragments.fragment.base;
+package com.weidi.usefragments.test_fragment.dialog;
 
 import android.app.Activity;
 import android.app.DialogFragment;
+import android.app.Fragment;
 import android.content.Context;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
+import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 
 import com.weidi.usefragments.R;
+import com.weidi.usefragments.adapter.FragmentTitleAdapter;
+import com.weidi.usefragments.fragment.FragOperManager;
+import com.weidi.usefragments.fragment.base.BaseDialogFragment;
+import com.weidi.usefragments.fragment.base.BaseFragment;
 import com.weidi.usefragments.tool.MLog;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 /***
  */
-public abstract class ShowTitleDialogFragment extends BaseDialogFragment {
+public class ShowTitleDialogFragment extends BaseDialogFragment {
 
     private static final String TAG =
             ShowTitleDialogFragment.class.getSimpleName();
@@ -76,6 +89,14 @@ public abstract class ShowTitleDialogFragment extends BaseDialogFragment {
 
         // 在子类中给某些View设置监听事件
         // View的内容显示在onShow()方法中进行
+        mRecyclerView = view.findViewById(R.id.title_rv);
+        mCancelBtn = view.findViewById(R.id.cancel_btn);
+        mCancelBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                dismiss();
+            }
+        });
     }
 
     @Override
@@ -114,6 +135,54 @@ public abstract class ShowTitleDialogFragment extends BaseDialogFragment {
         super.onResume();
         if (DEBUG)
             MLog.d(TAG, "onResume() " + printThis());
+
+        List<Fragment> fragments = new ArrayList<>();
+        Fragment fragment = FragOperManager.getInstance().getCurUsedFragment();
+        if (fragment != null) {
+            fragments.add(fragment);
+        }
+        Map<Fragment, List<Fragment>> map = FragOperManager.getInstance().getMainFragmentsMap();
+        List<Fragment> list = map.get(fragment);
+        if (list != null) {
+            for (Fragment fragment1 : list) {
+                if (fragment1 == null) {
+                    continue;
+                }
+                fragments.add(fragment1);
+            }
+        }
+
+        FragmentTitleAdapter adapter = new FragmentTitleAdapter(getContext());
+        adapter.setData(fragments);
+        adapter.setOnItemClickListener(
+                new FragmentTitleAdapter.OnItemClickListener() {
+                    @Override
+                    public void onItemClick(Fragment fragment, int position) {
+                        if (fragment == null) {
+                            return;
+                        }
+                        for (Fragment fragment1 : fragments) {
+                            if (!fragment1.isHidden()) {
+                                FragOperManager
+                                        .getInstance()
+                                        .changeFragment(
+                                                (BaseFragment) fragment1,
+                                                (BaseFragment) fragment);
+                                dismiss();
+                                return;
+                            }
+                        }
+                    }
+                });
+        LinearLayoutManager linearLayoutManager =
+                new LinearLayoutManager(getContext()) {
+                    @Override
+                    public void onLayoutCompleted(RecyclerView.State state) {
+                        super.onLayoutCompleted(state);
+                    }
+                };
+        mRecyclerView.setLayoutManager(linearLayoutManager);
+        mRecyclerView.setAdapter(adapter);
     }
 
     /*********************************
@@ -170,5 +239,8 @@ public abstract class ShowTitleDialogFragment extends BaseDialogFragment {
     protected int provideLayout() {
         return R.layout.fragment_test_dialog_recycleview;
     }
+
+    private RecyclerView mRecyclerView;
+    private Button mCancelBtn;
 
 }

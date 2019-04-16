@@ -87,7 +87,8 @@ public class Main1Fragment extends BaseFragment {
         mJumpBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                FragOperManager.getInstance().enter3(new TestMotionEventFragment());
+                //FragOperManager.getInstance().enter3(new TestMotionEventFragment());
+                FragOperManager.getInstance().enter3(new A2Fragment());
             }
         });
     }

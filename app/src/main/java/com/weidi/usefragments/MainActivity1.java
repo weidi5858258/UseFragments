@@ -10,11 +10,13 @@ import android.content.res.Configuration;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.util.Log;
+import android.view.MotionEvent;
 import android.view.View;
 import android.widget.FrameLayout;
 
 import com.weidi.usefragments.fragment.FragOperManager;
 import com.weidi.usefragments.fragment.base.BaseFragment;
+import com.weidi.usefragments.test_fragment.dialog.ShowTitleDialogFragment;
 import com.weidi.usefragments.test_fragment.scene2.A2Fragment;
 import com.weidi.usefragments.test_fragment.scene2.AudioFragment;
 import com.weidi.usefragments.test_fragment.scene2.B2Fragment;
@@ -243,6 +245,7 @@ public class MainActivity1 extends BaseActivity
     public void onBackPressed() {
         if (DEBUG)
             Log.d(TAG, "onBackPressed()");
+
         if (mBaseFragment == null
                 || mBaseFragment.onBackPressed()) {
             this.finish();
@@ -415,8 +418,12 @@ public class MainActivity1 extends BaseActivity
                 getResources().getColor(android.R.color.holo_orange_light));
     }
 
-    private void testChangeFragment() {
+    private ShowTitleDialogFragment mShowTitleDialogFragment;
 
+    private void testChangeFragment() {
+        mShowTitleDialogFragment = new ShowTitleDialogFragment();
+        mShowTitleDialogFragment.show(getFragmentManager(),
+                ShowTitleDialogFragment.class.getSimpleName());
     }
 
     private View.OnClickListener mViewOnClickListener =

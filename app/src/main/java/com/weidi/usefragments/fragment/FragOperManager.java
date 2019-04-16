@@ -184,6 +184,14 @@ public class FragOperManager implements Serializable {
         mCurUsedMainFragment = fragment;
     }
 
+    public Fragment getCurUsedFragment() {
+        return mCurUsedMainFragment;
+    }
+
+    public Map<Fragment, List<Fragment>> getMoreMainFragmentsMap() {
+        return mMoreMainFragmentsMap;
+    }
+
     /***
      * 1.
      * 在要使用Fragment的Activity的
@@ -1092,15 +1100,16 @@ public class FragOperManager implements Serializable {
         }
 
         // 如果是同一个Fragment
-        if (curUsedFragment.getClass().getName().equals(
-                needToShowFragment.getClass().getName())) {
+        if (curUsedFragment == needToShowFragment) {
             return -1;
         }
 
         List<Fragment> mainChildFragmentsList = null;
         mainChildFragmentsList = mMoreMainFragmentsMap.get(mCurUsedMainFragment);
-        mainChildFragmentsList.remove(needToShowFragment);
-        mainChildFragmentsList.add(needToShowFragment);
+        if (needToShowFragment != mCurUsedMainFragment) {
+            mainChildFragmentsList.remove(needToShowFragment);
+            mainChildFragmentsList.add(needToShowFragment);
+        }
 
         FragmentManager fManager = null;
         FragmentTransaction fTransaction = null;
