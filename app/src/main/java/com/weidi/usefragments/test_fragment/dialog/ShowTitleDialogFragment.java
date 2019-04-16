@@ -136,24 +136,12 @@ public class ShowTitleDialogFragment extends BaseDialogFragment {
         if (DEBUG)
             MLog.d(TAG, "onResume() " + printThis());
 
-        List<Fragment> fragments = new ArrayList<>();
         Fragment fragment = FragOperManager.getInstance().getCurUsedFragment();
-        if (fragment != null) {
-            fragments.add(fragment);
-        }
         Map<Fragment, List<Fragment>> map = FragOperManager.getInstance().getMainFragmentsMap();
         List<Fragment> list = map.get(fragment);
-        if (list != null) {
-            for (Fragment fragment1 : list) {
-                if (fragment1 == null) {
-                    continue;
-                }
-                fragments.add(fragment1);
-            }
-        }
 
         FragmentTitleAdapter adapter = new FragmentTitleAdapter(getContext());
-        adapter.setData(fragments);
+        adapter.setData(list);
         adapter.setOnItemClickListener(
                 new FragmentTitleAdapter.OnItemClickListener() {
                     @Override
@@ -161,7 +149,7 @@ public class ShowTitleDialogFragment extends BaseDialogFragment {
                         if (fragment == null) {
                             return;
                         }
-                        for (Fragment fragment1 : fragments) {
+                        for (Fragment fragment1 : list) {
                             if (!fragment1.isHidden()) {
                                 FragOperManager
                                         .getInstance()

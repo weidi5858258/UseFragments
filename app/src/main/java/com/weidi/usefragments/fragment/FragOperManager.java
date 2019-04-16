@@ -747,7 +747,10 @@ public class FragOperManager implements Serializable {
                         " shouldShowMainFragment: " +
                         shouldShowMainFragment.getClass().getSimpleName());
 
-            mMoreMainFragmentsMap.put(shouldShowMainFragment, null);
+            List<Fragment> mainChildFragmentsList = new ArrayList<Fragment>();
+            mainChildFragmentsList.add(shouldShowMainFragment);
+            mMoreMainFragmentsMap.put(shouldShowMainFragment, mainChildFragmentsList);
+            //mMoreMainFragmentsMap.put(shouldShowMainFragment, null);
 
             Integer[] container_scene = mActivityContainersMap.get(mCurUsedActivity);
             fragmentTransaction = mCurUsedActivity.getFragmentManager().beginTransaction();
@@ -788,10 +791,10 @@ public class FragOperManager implements Serializable {
 
         Integer[] container_scene = mActivityContainersMap.get(mCurUsedActivity);
         List<Fragment> mainChildFragmentsList = mMoreMainFragmentsMap.get(mCurUsedMainFragment);
-        if (mainChildFragmentsList == null) {
+        /*if (mainChildFragmentsList == null) {
             mainChildFragmentsList = new ArrayList<Fragment>();
             mMoreMainFragmentsMap.put(mCurUsedMainFragment, mainChildFragmentsList);
-        }
+        }*/
 
         FragmentTransaction fTransaction =
                 mCurUsedActivity.getFragmentManager().beginTransaction();
@@ -1106,24 +1109,12 @@ public class FragOperManager implements Serializable {
 
         List<Fragment> mainChildFragmentsList = null;
         mainChildFragmentsList = mMoreMainFragmentsMap.get(mCurUsedMainFragment);
-        if (needToShowFragment != mCurUsedMainFragment) {
-            mainChildFragmentsList.remove(needToShowFragment);
-            mainChildFragmentsList.add(needToShowFragment);
-        }
+        mainChildFragmentsList.remove(needToShowFragment);
+        mainChildFragmentsList.add(needToShowFragment);
 
         FragmentManager fManager = null;
         FragmentTransaction fTransaction = null;
         fManager = mCurUsedActivity.getFragmentManager();
-
-        // 先隐藏curUsedFragment
-        fTransaction = fManager.beginTransaction();
-        fTransaction.hide(curUsedFragment);
-        fTransaction.commit();
-
-        // 再显示needToShowFragment
-        fTransaction = fManager.beginTransaction();
-        fTransaction.show(needToShowFragment);
-        fTransaction.commit();
 
         ///////////////////////////////////////////////////////
 
@@ -1198,6 +1189,7 @@ public class FragOperManager implements Serializable {
 
                     fManager = mCurUsedActivity.getFragmentManager();
                     fTransaction = fManager.beginTransaction();
+                    //hide(fTransaction);
                     fTransaction.hide(shouldHideMainChildFragment);
                     fTransaction.commit();
                 }
@@ -1227,13 +1219,15 @@ public class FragOperManager implements Serializable {
                     MLog.d(TAG, "changeTab() show" +
                             " mCurUsedActivity: " +
                             mCurUsedActivity.getClass().getSimpleName() +
-                            " mCurUsedMainFragment: " +
+                            "   mCurUsedMainFragment: " +
                             mCurUsedMainFragment.getClass().getSimpleName() +
                             " shouldShowMainChildFragment: " +
                             shouldShowMainChildFragment.getClass().getSimpleName());
 
                 fManager = mCurUsedActivity.getFragmentManager();
                 fTransaction = fManager.beginTransaction();
+                //show(fTransaction);
+                popCurAndShowPreFragmentUseAnimations(fTransaction);
                 fTransaction.show(shouldShowMainChildFragment);
                 fTransaction.commit();
             }
@@ -1255,7 +1249,7 @@ public class FragOperManager implements Serializable {
                             MLog.d(TAG, "changeTab() show" +
                                     " mCurUsedActivity: " +
                                     mCurUsedActivity.getClass().getSimpleName() +
-                                    " mCurUsedMainFragment: " +
+                                    "   mCurUsedMainFragment: " +
                                     mCurUsedMainFragment.getClass().getSimpleName() +
                                     " shouldShowMainChildFragment: " +
                                     shouldShowMainChildFragment.getClass().getSimpleName() +
@@ -1283,6 +1277,20 @@ public class FragOperManager implements Serializable {
                 fTransaction.commit();
             }
         }
+
+        /*if (!curUsedFragment.isHidden()) {
+            // 先隐藏curUsedFragment
+            fTransaction = fManager.beginTransaction();
+            fTransaction.hide(curUsedFragment);
+            fTransaction.commit();
+        }
+
+        if (needToShowFragment.isHidden()) {
+            // 再显示needToShowFragment
+            fTransaction = fManager.beginTransaction();
+            fTransaction.show(needToShowFragment);
+            fTransaction.commit();
+        }*/
 
         return 0;
     }
@@ -2013,9 +2021,6 @@ public class FragOperManager implements Serializable {
         fTransaction.setCustomAnimations(
                 R.animator.enter_right_in,
                 R.animator.exit_left_out);
-        /*fTransaction.setCustomAnimations(
-                R.animator.push_left_in,
-                R.animator.enter);*/
     }
 
     private void popCurAndShowPreFragmentUseAnimations(FragmentTransaction fTransaction) {
@@ -2028,22 +2033,24 @@ public class FragOperManager implements Serializable {
         fTransaction.setCustomAnimations(
                 R.animator.enter,
                 R.animator.exit_right_out);
-        /*fTransaction.setCustomAnimations(
-                R.animator.card_flip_right_in,
-                R.animator.card_flip_left_out,
-                R.animator.card_flip_left_in,
-                R.animator.card_flip_right_out);*/
     }
 
     private void showPreFragmentUseAnimations(FragmentTransaction fTransaction) {
         fTransaction.setCustomAnimations(
                 R.animator.enter_left_in,
                 R.animator.exit);
-        /*fTransaction.setCustomAnimations(
-                R.animator.card_flip_right_in,
-                R.animator.card_flip_left_out,
-                R.animator.card_flip_left_in,
-                R.animator.card_flip_right_out);*/
+    }
+
+    private void show(FragmentTransaction fTransaction) {
+        fTransaction.setCustomAnimations(
+                R.animator.enter_left_in,
+                R.animator.exit);
+    }
+
+    private void hide(FragmentTransaction fTransaction) {
+        fTransaction.setCustomAnimations(
+                R.animator.exit_left_out,
+                R.animator.exit);
     }
 
     /***
