@@ -337,7 +337,9 @@ public class MainActivity1 extends BaseActivity
                     continue;
                 }
                 for (Fragment mainChildFragment : mainChildFragmentsList) {
-                    if (mainChildFragment == null) {
+                    if (mainChildFragment == null
+                            || fragmentName.equals(
+                            mainChildFragment.getClass().getSimpleName())) {
                         continue;
                     }
                     fragmentContentLayout.removeView(mainChildFragment.getView());
@@ -360,7 +362,9 @@ public class MainActivity1 extends BaseActivity
                     continue;
                 }
                 for (Fragment mainChildFragment : mainChildFragmentsList) {
-                    if (mainChildFragment == null) {
+                    if (mainChildFragment == null
+                            || fragmentName.equals(
+                            mainChildFragment.getClass().getSimpleName())) {
                         continue;
                     }
                     fragmentContentLayout.addView(mainChildFragment.getView());
