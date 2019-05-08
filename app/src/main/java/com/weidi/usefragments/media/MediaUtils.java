@@ -8,6 +8,7 @@ import android.media.MediaCodec;
 import android.media.MediaCodecInfo;
 import android.media.MediaCodecList;
 import android.media.MediaFormat;
+import android.media.MediaRecorder;
 import android.support.annotation.NonNull;
 import android.text.TextUtils;
 import android.util.Log;
@@ -265,36 +266,90 @@ public class MediaUtils {
      */
 
     /***
-     *
-     * @param audioSource MediaRecorder.AudioSource.MIC
-     * @param sampleRateInHz 44100
-     * @param channelCount 声道数
-     * @param audioFormat AudioFormat.ENCODING_PCM_16BIT
-     * @return
+     @param audioSource
+     MediaRecorder.AudioSource.DEFAULT = 0
+     MediaRecorder.AudioSource.MIC(比较常用)
+     MediaRecorder.AudioSource.VOICE_UPLINK
+     MediaRecorder.AudioSource.VOICE_DOWNLINK
+     MediaRecorder.AudioSource.VOICE_CALL
+     MediaRecorder.AudioSource.CAMCORDER
+     MediaRecorder.AudioSource.VOICE_RECOGNITION
+     MediaRecorder.AudioSource.VOICE_COMMUNICATION
+     MediaRecorder.AudioSource.REMOTE_SUBMIX
+     MediaRecorder.AudioSource.UNPROCESSED = 9
+     @param sampleRateInHz
+     44100Hz(在所有设备上都能正常工作)
+     @param channelCount
+     声道数
+     @param audioFormat
+     AudioFormat.ENCODING_PCM_16BIT(比较常用)
+     AudioFormat.ENCODING_PCM_8BIT
+     AudioFormat.ENCODING_PCM_FLOAT
+     @return
      */
     public static AudioRecord createAudioRecord(
             int audioSource, int sampleRateInHz,
             int channelCount, int audioFormat) {
+        /***
+         channelConfig
+         AudioFormat.CHANNEL_IN_STEREO
+         AudioFormat.CHANNEL_IN_MONO(在所有设备上都能正常工作)
+         */
         int channelConfig = channelCount == 2
                 ?
                 AudioFormat.CHANNEL_IN_STEREO
                 :
                 AudioFormat.CHANNEL_IN_MONO;
-        int minBufferSize = AudioRecord.getMinBufferSize(
+        int bufferSizeInBytes = AudioRecord.getMinBufferSize(
                 sampleRateInHz, channelConfig, audioFormat) * 2;
-        if (minBufferSize <= 0) {
+        if (bufferSizeInBytes <= 0) {
             if (DEBUG)
                 Log.e(TAG, String.format(Locale.US,
                         "Bad arguments: getMinBufferSize(%d, %d, %d)",
                         sampleRateInHz, channelConfig, audioFormat));
             return null;
         }
-
         if (DEBUG)
-            MLog.d(TAG, "createAudioRecord() minBufferSize: " + (minBufferSize / 2));
+            MLog.d(TAG, "createAudioRecord() bufferSizeInBytes: " + (bufferSizeInBytes / 2));
+
         AudioRecord audioRecord = new AudioRecord(
-                audioSource, sampleRateInHz, channelConfig,
-                audioFormat, minBufferSize);
+                audioSource,
+                sampleRateInHz,
+                channelConfig,
+                audioFormat,
+                bufferSizeInBytes);
+        if (audioRecord.getState() == AudioRecord.STATE_UNINITIALIZED) {
+            if (DEBUG)
+                Log.e(TAG, String.format(Locale.US,
+                        "Bad arguments to new AudioRecord(%d, %d, %d)",
+                        sampleRateInHz, channelConfig, audioFormat));
+            return null;
+        }
+
+        return audioRecord;
+    }
+
+    public static AudioRecord createAudioRecord() {
+        int audioSource = MediaRecorder.AudioSource.MIC;
+        int sampleRateInHz = 44100;
+        int channelConfig = AudioFormat.CHANNEL_IN_MONO;
+        int audioFormat = AudioFormat.ENCODING_PCM_16BIT;
+        int bufferSizeInBytes = AudioRecord.getMinBufferSize(
+                sampleRateInHz, channelConfig, audioFormat) * 2;
+        if (bufferSizeInBytes <= 0) {
+            if (DEBUG)
+                Log.e(TAG, String.format(Locale.US,
+                        "Bad arguments: getMinBufferSize(%d, %d, %d)",
+                        sampleRateInHz, channelConfig, audioFormat));
+            return null;
+        }
+        if (DEBUG)
+            MLog.d(TAG, "createAudioRecord() bufferSizeInBytes: " + (bufferSizeInBytes / 2));
+
+        AudioRecord audioRecord = new AudioRecord(
+                audioSource, sampleRateInHz,
+                channelConfig, audioFormat,
+                bufferSizeInBytes);
         if (audioRecord.getState() == AudioRecord.STATE_UNINITIALIZED) {
             if (DEBUG)
                 Log.e(TAG, String.format(Locale.US,
