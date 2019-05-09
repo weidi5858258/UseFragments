@@ -39,6 +39,15 @@ android {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
     }
+    signingConfigs {
+        debug {
+            keyAlias 'weidi'
+            keyPassword 'android'
+            storePassword 'android'
+            //storeFile file('D:\\Tools\\weidi_keystore\\debug.keystore')
+            storeFile file('/root/mydev/tools/sign_tools/weidi_keystore/debug.keystore')
+        }
+    }
 }
 
 dependencies {

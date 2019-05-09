@@ -21,6 +21,7 @@ import com.weidi.usefragments.R;
 import com.weidi.usefragments.fragment.FragOperManager;
 import com.weidi.usefragments.fragment.base.BaseFragment;
 import com.weidi.usefragments.inject.InjectView;
+import com.weidi.usefragments.media.MediaUtils;
 import com.weidi.usefragments.tool.MLog;
 import com.weidi.usefragments.tool.PermissionsUtils;
 
@@ -84,11 +85,18 @@ public class Main1Fragment extends BaseFragment {
             MLog.d(TAG, "onViewCreated(): " + this
                     + " savedInstanceState: " + savedInstanceState);
 
+        mJumpBtn.setClickable(true);
+        mJumpBtn.setFocusable(true);
+        mJumpBtn.requestFocus();
         mJumpBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 //FragOperManager.getInstance().enter3(new TestMotionEventFragment());
-                FragOperManager.getInstance().enter3(new A2Fragment());
+                //FragOperManager.getInstance().enter3(new A2Fragment());
+
+
+                // Test
+                MediaUtils.createAudioRecord();
             }
         });
     }
