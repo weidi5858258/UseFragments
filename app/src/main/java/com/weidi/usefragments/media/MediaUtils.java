@@ -330,6 +330,8 @@ public class MediaUtils {
     }
 
     public static AudioRecord createAudioRecord() {
+        if (DEBUG)
+            Log.d(TAG, "createAudioRecord() start");
         int audioSource = MediaRecorder.AudioSource.MIC;
         int sampleRateInHz = 44100;
         int channelConfig = AudioFormat.CHANNEL_IN_MONO;
@@ -358,6 +360,8 @@ public class MediaUtils {
             return null;
         }
 
+        if (DEBUG)
+            Log.d(TAG, "createAudioRecord() end");
         return audioRecord;
     }
 
