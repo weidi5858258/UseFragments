@@ -354,7 +354,8 @@ public class MediaUtils {
         int audioSource = MediaRecorder.AudioSource.MIC;
         // 兼容所有Android设备
         int sampleRateInHz = 44100;
-        int channelConfig = AudioFormat.CHANNEL_IN_MONO;
+        // 双声道
+        int channelConfig = AudioFormat.CHANNEL_IN_STEREO;
         // 兼容所有Android设备
         int audioFormat = AudioFormat.ENCODING_PCM_16BIT;
         int bufferSizeInBytes = AudioRecord.getMinBufferSize(
@@ -461,7 +462,8 @@ public class MediaUtils {
             Log.d(TAG, "createAudioTrack() start");
         // 兼容所有Android设备
         int sampleRateInHz = 44100;
-        int channelConfig = AudioFormat.CHANNEL_IN_MONO;
+        // 双声道
+        int channelConfig = AudioFormat.CHANNEL_IN_STEREO;
         // 兼容所有Android设备
         int audioFormat = AudioFormat.ENCODING_PCM_16BIT;
         int bufferSizeInBytes = AudioRecord.getMinBufferSize(
