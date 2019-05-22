@@ -279,7 +279,11 @@ public class MediaUtils {
      MediaRecorder.AudioSource.REMOTE_SUBMIX
      MediaRecorder.AudioSource.UNPROCESSED = 9
      @param sampleRateInHz
+     8KHz,16KHz,22.05KHz,44.1KHz,48KHz
      44100Hz(在所有设备上都能正常工作)
+     一般蓝牙耳机无法达到44100Hz的采样率,
+     所有在使用蓝牙耳机录音的时候,
+     设置为8000Hz或者16000Hz.
      @param channelCount
      声道数
      @param audioFormat
@@ -354,8 +358,8 @@ public class MediaUtils {
         int audioSource = MediaRecorder.AudioSource.MIC;
         // 兼容所有Android设备
         int sampleRateInHz = 44100;
-        // 双声道
-        int channelConfig = AudioFormat.CHANNEL_IN_STEREO;
+        // 兼容所有Android设备
+        int channelConfig = AudioFormat.CHANNEL_IN_MONO;
         // 兼容所有Android设备
         int audioFormat = AudioFormat.ENCODING_PCM_16BIT;
         int bufferSizeInBytes = AudioRecord.getMinBufferSize(
@@ -462,8 +466,8 @@ public class MediaUtils {
             Log.d(TAG, "createAudioTrack() start");
         // 兼容所有Android设备
         int sampleRateInHz = 44100;
-        // 双声道
-        int channelConfig = AudioFormat.CHANNEL_IN_STEREO;
+        // 兼容所有Android设备
+        int channelConfig = AudioFormat.CHANNEL_IN_MONO;
         // 兼容所有Android设备
         int audioFormat = AudioFormat.ENCODING_PCM_16BIT;
         int bufferSizeInBytes = AudioRecord.getMinBufferSize(
