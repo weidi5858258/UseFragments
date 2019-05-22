@@ -330,7 +330,22 @@ public class MediaUtils {
     }
 
     /***
-     一般使用这个就可以了(调用这个方法前必须先动态取得相应权限)
+     一般使用这个就可以了(调用这个方法前必须先动态取得相应权限).
+     <uses-permission android:name="android.permission.RECORD_AUDIO" />
+
+     // 使用时需要开启子线程
+     byte[] buffer = new byte[bufferSizeInBytes];
+     // 录制的声音存放于buffer中
+     int ret = audioRecord.read(buffer, 0, bufferSizeInBytes);
+     if (ret == AudioRecord.ERROR_INVALID_OPERATION) {
+     if (DEBUG)
+     Log.e(TAG, "AudioRecord.ERROR_INVALID_OPERATION");
+     } else if (ret == AudioRecord.ERROR_BAD_VALUE) {
+     if (DEBUG)
+     Log.e(TAG, "AudioRecord.ERROR_BAD_VALUE");
+     } else {
+     // do something
+     }
      */
     public static AudioRecord createAudioRecord() {
         if (DEBUG)
