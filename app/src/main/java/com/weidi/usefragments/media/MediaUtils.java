@@ -329,30 +329,43 @@ public class MediaUtils {
         return audioRecord;
     }
 
+    /***
+     一般使用这个就可以了(调用这个方法前必须先动态取得相应权限)
+     */
     public static AudioRecord createAudioRecord() {
         if (DEBUG)
             Log.d(TAG, "createAudioRecord() start");
         int audioSource = MediaRecorder.AudioSource.MIC;
+        // 兼容所有Android设备
         int sampleRateInHz = 44100;
         int channelConfig = AudioFormat.CHANNEL_IN_MONO;
+        // 兼容所有Android设备
         int audioFormat = AudioFormat.ENCODING_PCM_16BIT;
         int bufferSizeInBytes = AudioRecord.getMinBufferSize(
-                sampleRateInHz, channelConfig, audioFormat) * 2;
+                sampleRateInHz,
+                channelConfig,
+                audioFormat);
+        if (DEBUG)
+            MLog.d(TAG, "createAudioRecord() bufferSizeInBytes: " + bufferSizeInBytes);
         if (bufferSizeInBytes <= 0) {
+            //if (bufferSizeInBytes <= AudioRecord.ERROR_BAD_VALUE) {
             if (DEBUG)
                 Log.e(TAG, String.format(Locale.US,
                         "Bad arguments: getMinBufferSize(%d, %d, %d)",
                         sampleRateInHz, channelConfig, audioFormat));
             return null;
         }
-        if (DEBUG)
-            MLog.d(TAG, "createAudioRecord() bufferSizeInBytes: " + (bufferSizeInBytes / 2));
 
+        bufferSizeInBytes *= 2;
         AudioRecord audioRecord = new AudioRecord(
-                audioSource, sampleRateInHz,
-                channelConfig, audioFormat,
+                audioSource,
+                sampleRateInHz,
+                channelConfig,
+                audioFormat,
                 bufferSizeInBytes);
+        // 此判断很关键
         if (audioRecord.getState() == AudioRecord.STATE_UNINITIALIZED) {
+            audioRecord.release();
             if (DEBUG)
                 Log.e(TAG, String.format(Locale.US,
                         "Bad arguments to new AudioRecord(%d, %d, %d)",
