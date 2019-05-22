@@ -381,7 +381,12 @@ public class MediaUtils {
                 bufferSizeInBytes);
         // 此判断很关键
         if (audioRecord.getState() == AudioRecord.STATE_UNINITIALIZED) {
-            audioRecord.release();
+            try {
+                audioRecord.release();
+            } catch (Exception e) {
+            } finally {
+                audioRecord = null;
+            }
             if (DEBUG)
                 Log.e(TAG, String.format(Locale.US,
                         "Bad arguments to new AudioRecord(%d, %d, %d)",
@@ -477,6 +482,7 @@ public class MediaUtils {
         AudioAttributes attributes = new AudioAttributes.Builder()
                 .setUsage(AudioAttributes.USAGE_MEDIA)
                 .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+                .setFlags(AudioAttributes.FLAG_HW_AV_SYNC)
                 .build();
         AudioFormat format = new AudioFormat.Builder()
                 .setSampleRate(sampleRateInHz)
@@ -492,7 +498,12 @@ public class MediaUtils {
                 mode,
                 sessionId);
         if (audioTrack.getState() == AudioTrack.STATE_UNINITIALIZED) {
-            audioTrack.release();
+            try {
+                audioTrack.release();
+            } catch (Exception e) {
+            } finally {
+                audioTrack = null;
+            }
             if (DEBUG)
                 Log.e(TAG, String.format(Locale.US,
                         "Bad arguments to new AudioTrack(%d, %d, %d, %d, %d)",
