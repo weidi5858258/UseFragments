@@ -69,9 +69,9 @@ public class MainActivity1 extends BaseActivity
     private View mRootView;
 
     // Used to load the 'native-lib' library on application startup.
-    /*static {
+    static {
         System.loadLibrary("native-lib");
-    }*/
+    }
 
     private static HashMap<String, Integer> sFragmentBackTypeSMap;
 
@@ -172,8 +172,8 @@ public class MainActivity1 extends BaseActivity
         }
 
         // test
-        /*if (DEBUG)
-            Log.d(TAG, "onCreate() stringFromJNI(): " + stringFromJNI());*/
+        if (DEBUG)
+            Log.d(TAG, "onCreate() stringFromJNI(): " + stringFromJNI());
     }
 
     @Override

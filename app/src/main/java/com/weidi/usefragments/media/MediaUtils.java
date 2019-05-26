@@ -12,8 +12,8 @@ import android.media.MediaFormat;
 import android.media.MediaRecorder;
 import android.support.annotation.NonNull;
 import android.text.TextUtils;
-import android.util.Log;
 import android.util.SparseArray;
+
 
 import com.weidi.usefragments.tool.MLog;
 
@@ -64,7 +64,7 @@ public class MediaUtils {
     private static final int streamType = AudioManager.STREAM_MUSIC;
     // private static final int mode = AudioTrack.MODE_STATIC
     private static final int mode = AudioTrack.MODE_STREAM;
-    private static final int sessionId = AudioManager.AUDIO_SESSION_ID_GENERATE;
+    public static final int sessionId = AudioManager.AUDIO_SESSION_ID_GENERATE;
 
     public static MediaCodec getMediaEncoder(int width, int height) {
         MediaCodecInfo codecInfo = selectCodec(VIDEO_MIME_TYPE);
@@ -121,7 +121,7 @@ public class MediaUtils {
                         @NonNull MediaCodec codec,
                         @NonNull MediaCodec.CodecException e) {
                     if (DEBUG)
-                        Log.e(TAG, "onError()\n" + e.getDiagnosticInfo());
+                        MLog.e(TAG, "onError()\n" + e.getDiagnosticInfo());
                 }
 
                 @Override
@@ -129,7 +129,7 @@ public class MediaUtils {
                         @NonNull MediaCodec codec,
                         @NonNull MediaFormat format) {
                     if (DEBUG)
-                        Log.d(TAG, "onOutputFormatChanged() format: " + format);
+                        MLog.d(TAG, "onOutputFormatChanged() format: " + format);
                     // getSpsPpsByteBuffer(mediaFormat);
                 }
 
@@ -228,7 +228,7 @@ public class MediaUtils {
         // 设置抽取关键帧的间隔，以s为单位，负数或者0会不抽取关键帧
         format.setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, IFRAME_INTERVAL);
         if (DEBUG)
-            Log.d(TAG, "getMediaEncoderFormat() created video format: " + format);
+            MLog.d(TAG, "getMediaEncoderFormat() created video format: " + format);
 
         return format;
     }
@@ -238,7 +238,7 @@ public class MediaUtils {
         // 设置帧率
         format.setInteger(MediaFormat.KEY_FRAME_RATE, FRAME_RATE);
         if (DEBUG)
-            Log.d(TAG, "getMediaDecoderFormat() created video format: " + format);
+            MLog.d(TAG, "getMediaDecoderFormat() created video format: " + format);
 
         return format;
     }
@@ -292,11 +292,6 @@ public class MediaUtils {
     }
 
     /***
-     *
-     * @return
-     */
-
-    /***
      @param audioSource
      MediaRecorder.AudioSource.DEFAULT = 0
      MediaRecorder.AudioSource.MIC(比较常用)
@@ -339,7 +334,7 @@ public class MediaUtils {
                 sampleRateInHz, channelConfig, audioFormat) * 2;
         if (bufferSizeInBytes <= 0) {
             if (DEBUG)
-                Log.e(TAG, String.format(Locale.US,
+                MLog.e(TAG, String.format(Locale.US,
                         "Bad arguments: getMinBufferSize(%d, %d, %d)",
                         sampleRateInHz, channelConfig, audioFormat));
             return null;
@@ -355,7 +350,7 @@ public class MediaUtils {
                 bufferSizeInBytes);
         if (audioRecord.getState() == AudioRecord.STATE_UNINITIALIZED) {
             if (DEBUG)
-                Log.e(TAG, String.format(Locale.US,
+                MLog.e(TAG, String.format(Locale.US,
                         "Bad arguments to new AudioRecord(%d, %d, %d)",
                         sampleRateInHz, channelConfig, audioFormat));
             return null;
@@ -374,40 +369,45 @@ public class MediaUtils {
      int ret = audioRecord.read(buffer, 0, bufferSizeInBytes);
      if (ret == AudioRecord.ERROR_INVALID_OPERATION) {
      if (DEBUG)
-     Log.e(TAG, "AudioRecord.ERROR_INVALID_OPERATION");
+     MLog.e(TAG, "AudioRecord.ERROR_INVALID_OPERATION");
      } else if (ret == AudioRecord.ERROR_BAD_VALUE) {
      if (DEBUG)
-     Log.e(TAG, "AudioRecord.ERROR_BAD_VALUE");
+     MLog.e(TAG, "AudioRecord.ERROR_BAD_VALUE");
      } else {
      // do something
      }
      */
     public static AudioRecord createAudioRecord() {
         if (DEBUG)
-            Log.d(TAG, "createAudioRecord() start");
+            MLog.d(TAG, "createAudioRecord() start");
         int bufferSizeInBytes = getMinBufferSize();
         if (DEBUG)
             MLog.d(TAG, "createAudioRecord() bufferSizeInBytes: " + bufferSizeInBytes);
         if (bufferSizeInBytes <= 0) {
             //if (bufferSizeInBytes <= AudioRecord.ERROR_BAD_VALUE) {
             if (DEBUG)
-                Log.e(TAG, String.format(Locale.US,
+                MLog.e(TAG, String.format(Locale.US,
                         "Bad arguments: getMinBufferSize(%d, %d, %d)",
                         sampleRateInHz, channelConfig, audioFormat));
             return null;
         }
 
         bufferSizeInBytes *= 2;
-        AudioRecord audioRecord = new AudioRecord(
-                audioSource,
-                sampleRateInHz,
-                channelConfig,
-                audioFormat,
-                bufferSizeInBytes);
+        AudioRecord audioRecord = null;
+        try {
+            audioRecord = new AudioRecord(
+                    audioSource,
+                    sampleRateInHz,
+                    channelConfig,
+                    audioFormat,
+                    bufferSizeInBytes);
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
         // 此判断很关键
         if (audioRecord.getState() == AudioRecord.STATE_UNINITIALIZED) {
             if (DEBUG)
-                Log.e(TAG, String.format(Locale.US,
+                MLog.e(TAG, String.format(Locale.US,
                         "Bad arguments to new AudioRecord(%d, %d, %d)",
                         sampleRateInHz, channelConfig, audioFormat));
             try {
@@ -419,7 +419,7 @@ public class MediaUtils {
         }
 
         if (DEBUG)
-            Log.d(TAG, "createAudioRecord() end");
+            MLog.d(TAG, "createAudioRecord() end");
         return audioRecord;
     }
 
@@ -472,7 +472,7 @@ public class MediaUtils {
                 sampleRateInHz, channelConfig, audioFormat);
         if (bufferSizeInBytes <= 0) {
             if (DEBUG)
-                Log.e(TAG, String.format(Locale.US,
+                MLog.e(TAG, String.format(Locale.US,
                         "Bad arguments: getMinBufferSize(%d, %d, %d)",
                         sampleRateInHz, channelConfig, audioFormat));
             return null;
@@ -499,7 +499,7 @@ public class MediaUtils {
         if (audioTrack.getState() == AudioTrack.STATE_UNINITIALIZED) {
             audioTrack.release();
             if (DEBUG)
-                Log.e(TAG, String.format(Locale.US,
+                MLog.e(TAG, String.format(Locale.US,
                         "Bad arguments to new AudioTrack(%d, %d, %d, %d, %d)",
                         sampleRateInHz, channelConfig, audioFormat, mode, sessionId));
             return null;
@@ -510,13 +510,13 @@ public class MediaUtils {
 
     public static AudioTrack createAudioTrack() {
         if (DEBUG)
-            Log.d(TAG, "createAudioTrack() start");
+            MLog.d(TAG, "createAudioTrack() start");
         int bufferSizeInBytes = getMinBufferSize();
         if (DEBUG)
             MLog.d(TAG, "createAudioTrack() bufferSizeInBytes: " + bufferSizeInBytes);
         if (bufferSizeInBytes <= 0) {
             if (DEBUG)
-                Log.e(TAG, String.format(Locale.US,
+                MLog.e(TAG, String.format(Locale.US,
                         "Bad arguments: getMinBufferSize(%d, %d, %d)",
                         sampleRateInHz, channelConfig, audioFormat));
             return null;
@@ -536,22 +536,26 @@ public class MediaUtils {
                 .setChannelMask(channelConfig)
                 .setEncoding(audioFormat)
                 .build();
-        audioTrack = new AudioTrack(
-                attributes,
-                format,
-                bufferSizeInBytes,
-                mode,
-                sessionId);
-        /*audioTrack = new AudioTrack(
-                streamType,
-                sampleRateInHz,
-                channelConfig_Track,
-                audioFormat,
-                bufferSizeInBytes,
-                mode);*/
+        try {
+            audioTrack = new AudioTrack(
+                    attributes,
+                    format,
+                    bufferSizeInBytes,
+                    mode,
+                    sessionId);
+            /*audioTrack = new AudioTrack(
+                    streamType,
+                    sampleRateInHz,
+                    channelConfig_Track,
+                    audioFormat,
+                    bufferSizeInBytes,
+                    mode);*/
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
         if (audioTrack.getState() == AudioTrack.STATE_UNINITIALIZED) {
             if (DEBUG)
-                Log.e(TAG, String.format(Locale.US,
+                MLog.e(TAG, String.format(Locale.US,
                         "Bad arguments to new AudioTrack(%d, %d, %d, %d, %d)",
                         sampleRateInHz, channelConfig, audioFormat, mode, sessionId));
             try {
@@ -563,7 +567,73 @@ public class MediaUtils {
         }
 
         if (DEBUG)
-            Log.d(TAG, "createAudioTrack() end");
+            MLog.d(TAG, "createAudioTrack() end");
+        return audioTrack;
+    }
+
+    public static AudioTrack createAudioTrack(int sessionId) {
+        if (sessionId < 0) {
+            return null;
+        }
+        if (DEBUG)
+            MLog.d(TAG, "createAudioTrack() start");
+        int bufferSizeInBytes = getMinBufferSize();
+        if (DEBUG)
+            MLog.d(TAG, "createAudioTrack() bufferSizeInBytes: " + bufferSizeInBytes);
+        if (bufferSizeInBytes <= 0) {
+            if (DEBUG)
+                MLog.e(TAG, String.format(Locale.US,
+                        "Bad arguments: getMinBufferSize(%d, %d, %d)",
+                        sampleRateInHz, channelConfig, audioFormat));
+            return null;
+        }
+
+        bufferSizeInBytes *= 2;
+        AudioTrack audioTrack = null;
+        AudioAttributes attributes = new AudioAttributes.Builder()
+                .setUsage(AudioAttributes.USAGE_MEDIA)
+                .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+                // 一使用这个就出错
+                // .setFlags(AudioAttributes.FLAG_HW_AV_SYNC)
+                .build();
+        AudioFormat format = new AudioFormat.Builder()
+                .setSampleRate(sampleRateInHz)
+                // 很关键的一个参数
+                .setChannelMask(channelConfig)
+                .setEncoding(audioFormat)
+                .build();
+        try {
+            audioTrack = new AudioTrack(
+                    attributes,
+                    format,
+                    bufferSizeInBytes,
+                    mode,
+                    sessionId);
+            /*audioTrack = new AudioTrack(
+                    streamType,
+                    sampleRateInHz,
+                    channelConfig_Track,
+                    audioFormat,
+                    bufferSizeInBytes,
+                    mode);*/
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
+        if (audioTrack.getState() == AudioTrack.STATE_UNINITIALIZED) {
+            if (DEBUG)
+                MLog.e(TAG, String.format(Locale.US,
+                        "Bad arguments to new AudioTrack(%d, %d, %d, %d, %d)",
+                        sampleRateInHz, channelConfig, audioFormat, mode, sessionId));
+            try {
+                audioTrack.release();
+            } finally {
+                audioTrack = null;
+            }
+            return null;
+        }
+
+        if (DEBUG)
+            MLog.d(TAG, "createAudioTrack() end");
         return audioTrack;
     }
 
@@ -669,7 +739,7 @@ public class MediaUtils {
                         .append("\n Max channels: ").append(audioCapabilities
                         .getMaxInputChannelCount());
             }
-            Log.i(TAG, builder.toString());
+            MLog.i(TAG, builder.toString());
         }
     }
 
@@ -784,7 +854,7 @@ public class MediaUtils {
                 }
                 if (type.equalsIgnoreCase(mimeType)) {
                     if (DEBUG)
-                        Log.d(TAG, "selectCodec() the selected encoder is : " + info.getName());
+                        MLog.d(TAG, "selectCodec() the selected encoder is : " + info.getName());
                     return info;
                 }
             }

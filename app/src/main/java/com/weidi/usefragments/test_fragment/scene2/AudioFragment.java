@@ -7,6 +7,8 @@ import android.content.res.Configuration;
 import android.icu.text.SimpleDateFormat;
 import android.media.AudioRecord;
 import android.media.AudioTrack;
+import android.media.audiofx.AcousticEchoCanceler;
+import android.media.audiofx.NoiseSuppressor;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
@@ -193,11 +195,11 @@ public class AudioFragment extends BaseFragment {
 
     @Override
     public void onDestroy() {
-        super.onDestroy();
         if (DEBUG)
             MLog.d(TAG, "onDestroy(): " + printThis());
 
         destroy();
+        super.onDestroy();
     }
 
     @Override
@@ -301,6 +303,10 @@ public class AudioFragment extends BaseFragment {
 
     private AudioRecord mAudioRecord;
     private AudioTrack mAudioTrack;
+    // 回声消除器
+    private AcousticEchoCanceler mAcousticEchoCanceler;
+    // 噪音抑制器
+    private NoiseSuppressor mNoiseSuppressor;
     private byte[] mAudioData;
     private boolean mRecordRunning = false;
     private boolean mTrackRunning = false;
@@ -342,7 +348,25 @@ public class AudioFragment extends BaseFragment {
 
     private void initData() {
         initAudioRecord();
-        initAudioTrack();
+        if (mAudioRecord != null) {
+            initAudioTrack(mAudioRecord.getAudioSessionId());
+        } else {
+            initAudioTrack(MediaUtils.sessionId);
+        }
+        if (AcousticEchoCanceler.isAvailable()) {
+            if (mAcousticEchoCanceler == null) {
+                if (mAudioRecord != null) {
+                    int audioSession = mAudioRecord.getAudioSessionId();
+                    mAcousticEchoCanceler = AcousticEchoCanceler.create(audioSession);
+                    if (mAcousticEchoCanceler != null) {
+                        mAcousticEchoCanceler.setEnabled(true);
+                        if (DEBUG)
+                            MLog.d(TAG, "initData(): " + printThis() +
+                                    " 此手机支持回声消除功能");
+                    }
+                }
+            }
+        }
     }
 
     private void initView(View view, Bundle savedInstanceState) {
@@ -358,6 +382,7 @@ public class AudioFragment extends BaseFragment {
         mTrackRunning = false;
         MediaUtils.releaseAudioRecord(mAudioRecord);
         MediaUtils.releaseAudioTrack(mAudioTrack);
+        releaseAcousticEchoCanceler();
     }
 
     @InjectOnClick({R.id.control_btn, R.id.play_btn, R.id.convert_btn, R.id.jump_btn})
@@ -386,11 +411,13 @@ public class AudioFragment extends BaseFragment {
         }
     }
 
-    private void initAudioTrack() {
+    private void initAudioTrack(int sessionId) {
         if (mAudioTrack == null) {
-            mAudioTrack = MediaUtils.createAudioTrack();
+            mAudioTrack = MediaUtils.createAudioTrack(sessionId);
             if (DEBUG)
-                MLog.d(TAG, "initAudioTrack() state: " + mAudioTrack.getState());
+                MLog.d(TAG, "initAudioTrack() state: " + mAudioTrack.getState() +
+                        " AudioRecordSessionId: " + sessionId +
+                        " AudioTrackSessionId: " + mAudioTrack.getAudioSessionId());
         }
     }
 
@@ -457,15 +484,6 @@ public class AudioFragment extends BaseFragment {
                     // audioRecord把数据读到data中
                     int read = mAudioRecord.read(mAudioData, 0, bufferSizeInBytes);
                     // MLog.d(TAG, "startRecording() read: " + read);
-                    // 如果读取音频数据没有出现错误，就将数据写入到文件
-                    /*if (AudioRecord.ERROR_INVALID_OPERATION != read) {
-                        try {
-                            // 把data数据写到os文件流中
-                            os.write(mAudioData);
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                        }
-                    }*/
                     if (read <= 0) {
                         continue;
                     }
@@ -534,26 +552,15 @@ public class AudioFragment extends BaseFragment {
                         e.printStackTrace();
                         break;
                     }
-
                     try {
                         readCount = fis.read(mAudioData);
                     } catch (IOException e) {
                         e.printStackTrace();
-                    }
-                    /*if (readCount == AudioTrack.ERROR_INVALID_OPERATION
-                            || readCount == AudioTrack.ERROR_BAD_VALUE) {
                         continue;
                     }
-                    if (readCount != 0
-                            && readCount != -1) {
-                        int write = mAudioTrack.write(mAudioData, 0, readCount);
-                        playLength += write;
-                        // MLog.d(TAG, "play() write: " + write);
-                    }*/
                     if (readCount <= 0) {
                         continue;
                     }
-
                     int write = mAudioTrack.write(mAudioData, 0, readCount);
                     playLength += write;
                 }
@@ -585,6 +592,15 @@ public class AudioFragment extends BaseFragment {
                 mAudioData = null;
             }
         }).start();
+    }
+
+    private void releaseAcousticEchoCanceler() {
+        if (mAcousticEchoCanceler == null) {
+            return;
+        }
+        mAcousticEchoCanceler.setEnabled(false);
+        mAcousticEchoCanceler.release();
+        mAcousticEchoCanceler = null;
     }
 
 }

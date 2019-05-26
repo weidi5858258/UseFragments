@@ -169,11 +169,11 @@ public class TemplateFragment extends BaseFragment {
 
     @Override
     public void onDestroy() {
-        super.onDestroy();
         if (DEBUG)
             MLog.d(TAG, "onDestroy(): " + printThis());
 
         destroy();
+        super.onDestroy();
     }
 
     @Override

@@ -8,7 +8,7 @@ android {
         targetSdkVersion 26
         versionCode 1
         versionName "1.0"
-        /*externalNativeBuild {
+        externalNativeBuild {
             cmake {
                 cppFlags "-frtti -fexceptions"
                 arguments "-DANDROID_ARM_NEON=TRUE",
@@ -19,13 +19,13 @@ android {
             ndk {
                 abiFilters 'armeabi-v7a'
             }
-        }*/
+        }
     }
-    /*externalNativeBuild {
+    externalNativeBuild {
         cmake {
             path "CMakeLists.txt"
         }
-    }*/
+    }
     lintOptions {
         abortOnError false
     }

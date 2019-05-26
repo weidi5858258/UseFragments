@@ -11,6 +11,7 @@ import android.view.View;
 import android.view.ViewGroup;
 
 import com.weidi.usefragments.R;
+import com.weidi.usefragments.fragment.FragOperManager;
 import com.weidi.usefragments.fragment.base.BaseFragment;
 import com.weidi.usefragments.inject.InjectOnClick;
 import com.weidi.usefragments.inject.InjectView;
@@ -324,6 +325,7 @@ public class DecodePlayFragment extends BaseFragment {
     private void onClick(View v) {
         switch (v.getId()) {
             case R.id.jump_btn:
+                FragOperManager.getInstance().enter3(new A2Fragment());
                 break;
         }
     }
