@@ -10,7 +10,6 @@ import android.content.res.Configuration;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.util.Log;
-import android.view.MotionEvent;
 import android.view.View;
 import android.widget.FrameLayout;
 
@@ -46,6 +45,10 @@ import java.util.Map;
  一直依附在MainActivity上,当MainActivity退出时
  4个Fragment跟着退出.不然一直不退出.
  从4个Fragment中可以开启其他任意的Fragment.
+ 总之一句话,只有一个Activity,其他都是Fragment.
+
+ 框架总结:
+
  */
 public class MainActivity1 extends BaseActivity
         implements BaseFragment.BackHandlerInterface {
@@ -66,9 +69,9 @@ public class MainActivity1 extends BaseActivity
     private View mRootView;
 
     // Used to load the 'native-lib' library on application startup.
-    static {
+    /*static {
         System.loadLibrary("native-lib");
-    }
+    }*/
 
     private static HashMap<String, Integer> sFragmentBackTypeSMap;
 
@@ -169,8 +172,8 @@ public class MainActivity1 extends BaseActivity
         }
 
         // test
-        if (DEBUG)
-            Log.d(TAG, "onCreate() stringFromJNI(): " + stringFromJNI());
+        /*if (DEBUG)
+            Log.d(TAG, "onCreate() stringFromJNI(): " + stringFromJNI());*/
     }
 
     @Override

@@ -43,6 +43,29 @@ public class MediaUtils {
     private static final int FRAME_RATE = 30;
     private static final int IFRAME_INTERVAL = 1;
 
+    /***
+     public static final int channelConfig = AudioFormat.CHANNEL_IN_MONO;
+     本来AudioRecord是使用AudioFormat.CHANNEL_IN_MONO的,
+     但是AudioFormat.CHANNEL_IN_MONO不能使用于AudioTrack.
+     AudioTrack可以使用AudioFormat.CHANNEL_IN_STEREO.
+     只有创建AudioRecord对象和AudioTrack对象的三个参数
+     (sampleRateInHz,channelConfig和audioFormat)一样时,
+     录制是什么声音,播放才是什么声音.
+     */
+    // 下面的参数为了得到默认的AudioRecord对象和AudioTrack对象而定义的
+    // 兼容所有Android设备
+    private static final int sampleRateInHz = 44100;
+    public static final int channelConfig = AudioFormat.CHANNEL_IN_STEREO;
+    // 兼容所有Android设备
+    private static final int audioFormat = AudioFormat.ENCODING_PCM_16BIT;
+    // AudioRecord
+    private static final int audioSource = MediaRecorder.AudioSource.MIC;
+    // AudioTrack
+    private static final int streamType = AudioManager.STREAM_MUSIC;
+    // private static final int mode = AudioTrack.MODE_STATIC
+    private static final int mode = AudioTrack.MODE_STREAM;
+    private static final int sessionId = AudioManager.AUDIO_SESSION_ID_GENERATE;
+
     public static MediaCodec getMediaEncoder(int width, int height) {
         MediaCodecInfo codecInfo = selectCodec(VIDEO_MIME_TYPE);
         if (codecInfo == null) {
@@ -261,6 +284,13 @@ public class MediaUtils {
         return mediaCodecInfos.toArray(new MediaCodecInfo[mediaCodecInfos.size()]);
     }
 
+    public static int getMinBufferSize() {
+        return AudioRecord.getMinBufferSize(
+                sampleRateInHz,
+                channelConfig,
+                audioFormat);
+    }
+
     /***
      *
      * @return
@@ -355,17 +385,7 @@ public class MediaUtils {
     public static AudioRecord createAudioRecord() {
         if (DEBUG)
             Log.d(TAG, "createAudioRecord() start");
-        int audioSource = MediaRecorder.AudioSource.MIC;
-        // 兼容所有Android设备
-        int sampleRateInHz = 44100;
-        // 兼容所有Android设备
-        int channelConfig = AudioFormat.CHANNEL_IN_MONO;
-        // 兼容所有Android设备
-        int audioFormat = AudioFormat.ENCODING_PCM_16BIT;
-        int bufferSizeInBytes = AudioRecord.getMinBufferSize(
-                sampleRateInHz,
-                channelConfig,
-                audioFormat);
+        int bufferSizeInBytes = getMinBufferSize();
         if (DEBUG)
             MLog.d(TAG, "createAudioRecord() bufferSizeInBytes: " + bufferSizeInBytes);
         if (bufferSizeInBytes <= 0) {
@@ -386,22 +406,49 @@ public class MediaUtils {
                 bufferSizeInBytes);
         // 此判断很关键
         if (audioRecord.getState() == AudioRecord.STATE_UNINITIALIZED) {
-            try {
-                audioRecord.release();
-            } catch (Exception e) {
-            } finally {
-                audioRecord = null;
-            }
             if (DEBUG)
                 Log.e(TAG, String.format(Locale.US,
                         "Bad arguments to new AudioRecord(%d, %d, %d)",
                         sampleRateInHz, channelConfig, audioFormat));
+            try {
+                audioRecord.release();
+            } finally {
+                audioRecord = null;
+            }
             return null;
         }
 
         if (DEBUG)
             Log.d(TAG, "createAudioRecord() end");
         return audioRecord;
+    }
+
+    public static void stopAudioRecord(AudioRecord audioRecord) {
+        if (audioRecord == null) {
+            return;
+        }
+        int recordingState = audioRecord.getRecordingState();
+        if (recordingState == AudioRecord.RECORDSTATE_RECORDING) {
+            try {
+                audioRecord.stop();
+            } catch (Exception e) {
+                audioRecord.release();
+                audioRecord = null;
+            }
+        }
+    }
+
+    public static void releaseAudioRecord(AudioRecord audioRecord) {
+        stopAudioRecord(audioRecord);
+        if (audioRecord == null) {
+            return;
+        }
+        try {
+            audioRecord.release();
+            audioRecord = null;
+        } catch (Exception e) {
+            audioRecord = null;
+        }
     }
 
     /***
@@ -464,16 +511,7 @@ public class MediaUtils {
     public static AudioTrack createAudioTrack() {
         if (DEBUG)
             Log.d(TAG, "createAudioTrack() start");
-        // 兼容所有Android设备
-        int sampleRateInHz = 44100;
-        // 兼容所有Android设备
-        int channelConfig = AudioFormat.CHANNEL_IN_MONO;
-        // 兼容所有Android设备
-        int audioFormat = AudioFormat.ENCODING_PCM_16BIT;
-        int bufferSizeInBytes = AudioRecord.getMinBufferSize(
-                sampleRateInHz,
-                channelConfig,
-                audioFormat);
+        int bufferSizeInBytes = getMinBufferSize();
         if (DEBUG)
             MLog.d(TAG, "createAudioTrack() bufferSizeInBytes: " + bufferSizeInBytes);
         if (bufferSizeInBytes <= 0) {
@@ -485,41 +523,92 @@ public class MediaUtils {
         }
 
         bufferSizeInBytes *= 2;
+        AudioTrack audioTrack = null;
         AudioAttributes attributes = new AudioAttributes.Builder()
                 .setUsage(AudioAttributes.USAGE_MEDIA)
                 .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
-                .setFlags(AudioAttributes.FLAG_HW_AV_SYNC)
+                // 一使用这个就出错
+                // .setFlags(AudioAttributes.FLAG_HW_AV_SYNC)
                 .build();
         AudioFormat format = new AudioFormat.Builder()
                 .setSampleRate(sampleRateInHz)
+                // 很关键的一个参数
                 .setChannelMask(channelConfig)
                 .setEncoding(audioFormat)
                 .build();
-        int mode = AudioTrack.MODE_STREAM;
-        int sessionId = AudioManager.AUDIO_SESSION_ID_GENERATE;
-        AudioTrack audioTrack = new AudioTrack(
+        audioTrack = new AudioTrack(
                 attributes,
                 format,
                 bufferSizeInBytes,
                 mode,
                 sessionId);
+        /*audioTrack = new AudioTrack(
+                streamType,
+                sampleRateInHz,
+                channelConfig_Track,
+                audioFormat,
+                bufferSizeInBytes,
+                mode);*/
         if (audioTrack.getState() == AudioTrack.STATE_UNINITIALIZED) {
-            try {
-                audioTrack.release();
-            } catch (Exception e) {
-            } finally {
-                audioTrack = null;
-            }
             if (DEBUG)
                 Log.e(TAG, String.format(Locale.US,
                         "Bad arguments to new AudioTrack(%d, %d, %d, %d, %d)",
                         sampleRateInHz, channelConfig, audioFormat, mode, sessionId));
+            try {
+                audioTrack.release();
+            } finally {
+                audioTrack = null;
+            }
             return null;
         }
 
         if (DEBUG)
             Log.d(TAG, "createAudioTrack() end");
         return audioTrack;
+    }
+
+    public static void pauseAudioTrack(AudioTrack audioTrack) {
+        if (audioTrack == null) {
+            return;
+        }
+        int playState = audioTrack.getPlayState();
+        if (playState == AudioTrack.PLAYSTATE_PLAYING) {
+            try {
+                audioTrack.pause();
+            } catch (Exception e) {
+                audioTrack.release();
+                audioTrack = null;
+            }
+        }
+    }
+
+    public static void stopAudioTrack(AudioTrack audioTrack) {
+        pauseAudioTrack(audioTrack);
+        if (audioTrack == null) {
+            return;
+        }
+        int playState = audioTrack.getPlayState();
+        if (playState == AudioTrack.PLAYSTATE_PAUSED) {
+            try {
+                audioTrack.stop();
+            } catch (Exception e) {
+                audioTrack.release();
+                audioTrack = null;
+            }
+        }
+    }
+
+    public static void releaseAudioTrack(AudioTrack audioTrack) {
+        stopAudioTrack(audioTrack);
+        if (audioTrack == null) {
+            return;
+        }
+        try {
+            audioTrack.release();
+            audioTrack = null;
+        } catch (Exception e) {
+            audioTrack = null;
+        }
     }
 
     public static void printMediaCodecInfos(MediaCodecInfo[] mediaCodecInfos, String mimeType) {

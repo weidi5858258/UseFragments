@@ -2,16 +2,15 @@ package com.weidi.usefragments.test_fragment.scene2;
 
 import android.app.Activity;
 import android.content.Context;
+import android.content.Intent;
 import android.content.res.Configuration;
 import android.icu.text.SimpleDateFormat;
-import android.media.AudioAttributes;
-import android.media.AudioFormat;
-import android.media.AudioManager;
 import android.media.AudioRecord;
 import android.media.AudioTrack;
-import android.media.MediaRecorder;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.annotation.RequiresApi;
@@ -25,6 +24,7 @@ import com.weidi.usefragments.fragment.FragOperManager;
 import com.weidi.usefragments.fragment.base.BaseFragment;
 import com.weidi.usefragments.inject.InjectOnClick;
 import com.weidi.usefragments.inject.InjectView;
+import com.weidi.usefragments.media.MediaUtils;
 import com.weidi.usefragments.tool.MLog;
 
 import java.io.File;
@@ -33,13 +33,19 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 
-
+/***
+ 只要当前Fragment没有调用onDestroy()方法,
+ 那么就不要调用
+ MediaUtils.releaseAudioRecord(mAudioRecord);
+ MediaUtils.releaseAudioTrack(mAudioTrack);
+ 只要调用相应的stop方法就行了,这样再次使用时
+ 不需要创建对象,也不容易出错.
+ */
 @RequiresApi(api = Build.VERSION_CODES.N)
 public class AudioFragment extends BaseFragment {
 
     private static final String TAG =
             AudioFragment.class.getSimpleName();
-
     private static final boolean DEBUG = true;
 
     public AudioFragment() {
@@ -54,7 +60,7 @@ public class AudioFragment extends BaseFragment {
     public void onAttach(Context context) {
         super.onAttach(context);
         if (DEBUG)
-            MLog.d(TAG, "onAttach() " + printThis() +
+            MLog.d(TAG, "onAttach(): " + printThis() +
                     " mContext: " + context);
     }
 
@@ -62,7 +68,7 @@ public class AudioFragment extends BaseFragment {
     public void onAttach(Activity activity) {
         super.onAttach(activity);
         if (DEBUG)
-            MLog.d(TAG, "onAttach() " + printThis() +
+            MLog.d(TAG, "onAttach(): " + printThis() +
                     " activity: " + activity);
     }
 
@@ -70,10 +76,10 @@ public class AudioFragment extends BaseFragment {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         if (DEBUG)
-            MLog.d(TAG, "onCreate() " + printThis() +
+            MLog.d(TAG, "onCreate(): " + printThis() +
                     " savedInstanceState: " + savedInstanceState);
 
-        init();
+        initData();
     }
 
     @Override
@@ -82,7 +88,7 @@ public class AudioFragment extends BaseFragment {
             ViewGroup container,
             Bundle savedInstanceState) {
         if (DEBUG)
-            MLog.d(TAG, "onCreateView() " + printThis() +
+            MLog.d(TAG, "onCreateView(): " + printThis() +
                     " savedInstanceState: " + savedInstanceState);
 
         return super.onCreateView(inflater, container, savedInstanceState);
@@ -92,15 +98,17 @@ public class AudioFragment extends BaseFragment {
     public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
         if (DEBUG)
-            MLog.d(TAG, "onViewCreated() " + printThis() +
+            MLog.d(TAG, "onViewCreated(): " + printThis() +
                     " savedInstanceState: " + savedInstanceState);
+
+        initView(view, savedInstanceState);
     }
 
     @Override
     public void onViewStateRestored(Bundle savedInstanceState) {
         super.onViewStateRestored(savedInstanceState);
         if (DEBUG)
-            MLog.d(TAG, "onViewStateRestored() " + printThis() +
+            MLog.d(TAG, "onViewStateRestored(): " + printThis() +
                     " savedInstanceState: " + savedInstanceState);
     }
 
@@ -108,7 +116,7 @@ public class AudioFragment extends BaseFragment {
     public void onActivityCreated(Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
         if (DEBUG)
-            MLog.d(TAG, "onActivityCreated() " + printThis() +
+            MLog.d(TAG, "onActivityCreated(): " + printThis() +
                     " savedInstanceState: " + savedInstanceState);
     }
 
@@ -123,7 +131,7 @@ public class AudioFragment extends BaseFragment {
             return;
         }
         if (DEBUG)
-            MLog.d(TAG, "onStart() " + printThis());
+            MLog.d(TAG, "onStart(): " + printThis());
     }
 
     /*********************************
@@ -137,7 +145,7 @@ public class AudioFragment extends BaseFragment {
             return;
         }
         if (DEBUG)
-            MLog.d(TAG, "onResume() " + printThis());
+            MLog.d(TAG, "onResume(): " + printThis());
 
         onShow();
     }
@@ -153,7 +161,7 @@ public class AudioFragment extends BaseFragment {
             return;
         }
         if (DEBUG)
-            MLog.d(TAG, "onPause() " + printThis());
+            MLog.d(TAG, "onPause(): " + printThis());
     }
 
     /*********************************
@@ -167,7 +175,9 @@ public class AudioFragment extends BaseFragment {
             return;
         }
         if (DEBUG)
-            MLog.d(TAG, "onStop() " + printThis());
+            MLog.d(TAG, "onStop(): " + printThis());
+
+        onHide();
     }
 
     /*********************************
@@ -178,36 +188,49 @@ public class AudioFragment extends BaseFragment {
     public void onDestroyView() {
         super.onDestroyView();
         if (DEBUG)
-            MLog.d(TAG, "onDestroyView() " + printThis());
+            MLog.d(TAG, "onDestroyView(): " + printThis());
     }
 
     @Override
     public void onDestroy() {
         super.onDestroy();
         if (DEBUG)
-            MLog.d(TAG, "onDestroy() " + printThis());
+            MLog.d(TAG, "onDestroy(): " + printThis());
 
-        onHide();
+        destroy();
     }
 
     @Override
     public void onDetach() {
         super.onDetach();
         if (DEBUG)
-            MLog.d(TAG, "onDetach() " + printThis());
+            MLog.d(TAG, "onDetach(): " + printThis());
+    }
+
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (DEBUG)
+            MLog.d(TAG, "onActivityResult(): " + printThis() +
+                    " requestCode: " + requestCode +
+                    " resultCode: " + resultCode +
+                    " data: " + data.toString());
     }
 
     @Override
     public void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
         if (DEBUG)
-            MLog.d(TAG, "onSaveInstanceState() " + printThis());
+            MLog.d(TAG, "onSaveInstanceState(): " + printThis());
     }
 
+    @Override
     public void handleConfigurationChangedEvent(
             Configuration newConfig,
             boolean needToDo,
             boolean override) {
+        handleBeforeOfConfigurationChangedEvent();
+
         super.handleConfigurationChangedEvent(newConfig, needToDo, true);
 
         if (needToDo) {
@@ -219,14 +242,14 @@ public class AudioFragment extends BaseFragment {
     public void onLowMemory() {
         super.onLowMemory();
         if (DEBUG)
-            MLog.d(TAG, "onLowMemory() " + printThis());
+            MLog.d(TAG, "onLowMemory(): " + printThis());
     }
 
     @Override
     public void onTrimMemory(int level) {
         super.onTrimMemory(level);
         if (DEBUG)
-            MLog.d(TAG, "onTrimMemory() " + printThis() +
+            MLog.d(TAG, "onTrimMemory(): " + printThis() +
                     " level: " + level);
     }
 
@@ -237,7 +260,7 @@ public class AudioFragment extends BaseFragment {
             @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         if (DEBUG)
-            MLog.d(TAG, "onRequestPermissionsResult() " + printThis() +
+            MLog.d(TAG, "onRequestPermissionsResult(): " + printThis() +
                     " requestCode: " + requestCode);
     }
 
@@ -245,7 +268,7 @@ public class AudioFragment extends BaseFragment {
     public void onHiddenChanged(boolean hidden) {
         super.onHiddenChanged(hidden);
         if (DEBUG)
-            MLog.d(TAG, "onHiddenChanged() " + printThis() +
+            MLog.d(TAG, "onHiddenChanged(): " + printThis() +
                     " hidden: " + hidden);
 
         if (hidden) {
@@ -267,36 +290,6 @@ public class AudioFragment extends BaseFragment {
 
     /////////////////////////////////////////////////////////////////
 
-
-    private static final int audioSource = MediaRecorder.AudioSource.MIC;
-    /***
-     * 采样率
-     * 现在能够保证在所有设备上使用的采样率是44100Hz,
-     * 但是其他的采样率（22050, 16000, 11025）在一些设备上也可以使用
-     */
-    private static final int sampleRateInHz = 44100;
-    // private static final int sampleRateInHz = 11025;
-    /***
-     * 声道数
-     * CHANNEL_IN_MONO
-     * CHANNEL_IN_STEREO
-     * 其中CHANNEL_IN_MONO是可以保证在所有设备能够使用的
-     */
-    // private static final int channelConfig_record = AudioFormat.CHANNEL_CONFIGURATION_MONO;
-    // private static final int channelConfig_track = AudioFormat.CHANNEL_CONFIGURATION_MONO;
-    private static final int channelConfig_record = AudioFormat.CHANNEL_IN_MONO;
-    // 在我的手机上不能使用,一使用就出错
-    private static final int channelConfig_track = AudioFormat.CHANNEL_OUT_MONO;
-    /***
-     * 返回的音频数据的格式。
-     * ENCODING_PCM_8BIT
-     * ENCODING_PCM_16BIT
-     * ENCODING_PCM_FLOAT
-     */
-    private static final int audioFormat = AudioFormat.ENCODING_PCM_16BIT;
-    private static final int mode = AudioTrack.MODE_STREAM;
-    private static final int sessionId = AudioManager.AUDIO_SESSION_ID_GENERATE;
-
     @InjectView(R.id.control_btn)
     private Button mControlBtn;
     @InjectView(R.id.play_btn)
@@ -312,59 +305,16 @@ public class AudioFragment extends BaseFragment {
     private boolean mRecordRunning = false;
     private boolean mTrackRunning = false;
     private SimpleDateFormat mSimpleDateFormat = new SimpleDateFormat("yyyyMMddHHmmssSSS");
+    private Handler mUiHandler = new Handler(Looper.getMainLooper());
 
-    private void init() {
-        initAudioRecord();
-        initAudioTrack();
-    }
-
-    private void initAudioRecord() {
-        if (mAudioRecord == null) {
-            int bufferSizeInBytes = AudioRecord.getMinBufferSize(
-                    sampleRateInHz,
-                    channelConfig_record,
-                    audioFormat) * 2;
-            if (DEBUG)
-                MLog.d(TAG, "init() bufferSizeInBytes: " + bufferSizeInBytes);
-            mAudioRecord = new AudioRecord(
-                    audioSource,
-                    sampleRateInHz,
-                    channelConfig_record,
-                    audioFormat,
-                    bufferSizeInBytes);
-        }
-    }
-
-    private void initAudioTrack() {
-        if (mAudioTrack == null) {
-            int bufferSizeInBytes = AudioRecord.getMinBufferSize(
-                    sampleRateInHz,
-                    channelConfig_record,
-                    audioFormat) * 2;
-            if (DEBUG)
-                MLog.d(TAG, "init() bufferSizeInBytes: " + bufferSizeInBytes);
-            AudioAttributes attributes = new AudioAttributes.Builder()
-                    .setUsage(AudioAttributes.USAGE_MEDIA)
-                    .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
-                    .build();
-            AudioFormat format = new AudioFormat.Builder()
-                    .setSampleRate(sampleRateInHz)
-                    .setChannelMask(channelConfig_track)
-                    .setEncoding(audioFormat)
-                    .build();
-
-            mAudioTrack = new AudioTrack(
-                    attributes,
-                    format,
-                    bufferSizeInBytes,
-                    mode,
-                    sessionId);
-        }
-    }
-
+    /***
+     代码执行的内容跟onStart(),onResume()一样,
+     因此在某些情况下要么执行onStart(),onResume()方法,要么执行onShow()方法.
+     一般做的事是设置View的内容
+     */
     private void onShow() {
         if (DEBUG)
-            MLog.d(TAG, "onShow() " + printThis());
+            MLog.d(TAG, "onShow(): " + printThis());
 
         if (mRecordRunning) {
             mControlBtn.setText("停止录音");
@@ -380,23 +330,34 @@ public class AudioFragment extends BaseFragment {
         mJumpBtn.setText("跳转到");
     }
 
+    /***
+     代码执行的内容跟onPause(),onStop()一样,
+     因此在某些情况下要么执行onPause(),onStop()方法,要么执行onHide()方法.
+     一般做的事是视频的暂停,摄像头的关闭
+     */
     private void onHide() {
         if (DEBUG)
-            MLog.d(TAG, "onHide() " + printThis());
+            MLog.d(TAG, "onHide(): " + printThis());
+    }
 
-        if (mAudioRecord != null
-                && mAudioRecord.getState() == AudioRecord.STATE_INITIALIZED) {
-            mAudioRecord.stop();
-            mAudioRecord.release();
-            mAudioRecord = null;
-        }
+    private void initData() {
+        initAudioRecord();
+        initAudioTrack();
+    }
 
-        if (mAudioTrack != null
-                && mAudioTrack.getState() == AudioRecord.STATE_INITIALIZED) {
-            mAudioTrack.stop();
-            mAudioTrack.release();
-            mAudioTrack = null;
-        }
+    private void initView(View view, Bundle savedInstanceState) {
+
+    }
+
+    private void handleBeforeOfConfigurationChangedEvent() {
+
+    }
+
+    private void destroy() {
+        mRecordRunning = false;
+        mTrackRunning = false;
+        MediaUtils.releaseAudioRecord(mAudioRecord);
+        MediaUtils.releaseAudioTrack(mAudioTrack);
     }
 
     @InjectOnClick({R.id.control_btn, R.id.play_btn, R.id.convert_btn, R.id.jump_btn})
@@ -417,27 +378,33 @@ public class AudioFragment extends BaseFragment {
         }
     }
 
+    private void initAudioRecord() {
+        if (mAudioRecord == null) {
+            mAudioRecord = MediaUtils.createAudioRecord();
+            if (DEBUG)
+                MLog.d(TAG, "initAudioRecord() state: " + mAudioRecord.getState());
+        }
+    }
+
+    private void initAudioTrack() {
+        if (mAudioTrack == null) {
+            mAudioTrack = MediaUtils.createAudioTrack();
+            if (DEBUG)
+                MLog.d(TAG, "initAudioTrack() state: " + mAudioTrack.getState());
+        }
+    }
+
     private void startRecordOrStopRecord() {
         mRecordRunning = !mRecordRunning;
 
         if (mRecordRunning) {
-            mControlBtn.setText("停止录音");
-            initAudioRecord();
-            // start record
-            if (mAudioRecord != null
-                    && mAudioRecord.getState() == AudioRecord.STATE_INITIALIZED) {
+            if (mAudioRecord != null) {
+                mControlBtn.setText("停止录音");
                 mAudioRecord.startRecording();
                 startRecording();
             }
         } else {
             mControlBtn.setText("录音");
-            // stop record
-            if (mAudioRecord != null
-                    && mAudioRecord.getState() == AudioRecord.STATE_INITIALIZED) {
-                mAudioRecord.stop();
-                mAudioRecord.release();
-                mAudioRecord = null;
-            }
         }
     }
 
@@ -445,23 +412,13 @@ public class AudioFragment extends BaseFragment {
         mTrackRunning = !mTrackRunning;
 
         if (mTrackRunning) {
-            mPlayBtn.setText("停止播放");
-            initAudioTrack();
-            // start track
-            if (mAudioTrack != null
-                    && mAudioTrack.getState() == AudioRecord.STATE_INITIALIZED) {
+            if (mAudioTrack != null) {
+                mPlayBtn.setText("停止播放");
                 mAudioTrack.play();
                 play();
             }
         } else {
             mPlayBtn.setText("播放");
-            // stop track
-            if (mAudioTrack != null
-                    && mAudioTrack.getState() == AudioRecord.STATE_INITIALIZED) {
-                mAudioTrack.stop();
-                mAudioTrack.release();
-                mAudioTrack = null;
-            }
         }
     }
 
@@ -478,6 +435,9 @@ public class AudioFragment extends BaseFragment {
                     MLog.e(TAG, "Directory not created");
                     return;
                 }*/
+                if (!file.canWrite()) {
+                    return;
+                }
                 FileOutputStream os = null;
                 try {
                     os = new FileOutputStream(file);
@@ -486,10 +446,8 @@ public class AudioFragment extends BaseFragment {
                     return;
                 }
 
-                int bufferSizeInBytes = AudioRecord.getMinBufferSize(
-                        sampleRateInHz,
-                        channelConfig_record,
-                        audioFormat) * 2;
+                int bufferSizeInBytes =
+                        MediaUtils.getMinBufferSize() * 2;
                 mAudioData = new byte[bufferSizeInBytes];
 
                 if (DEBUG)
@@ -498,26 +456,39 @@ public class AudioFragment extends BaseFragment {
                 while (mRecordRunning) {
                     // audioRecord把数据读到data中
                     int read = mAudioRecord.read(mAudioData, 0, bufferSizeInBytes);
+                    // MLog.d(TAG, "startRecording() read: " + read);
                     // 如果读取音频数据没有出现错误，就将数据写入到文件
-                    if (AudioRecord.ERROR_INVALID_OPERATION != read) {
+                    /*if (AudioRecord.ERROR_INVALID_OPERATION != read) {
                         try {
                             // 把data数据写到os文件流中
                             os.write(mAudioData);
                         } catch (IOException e) {
                             e.printStackTrace();
                         }
+                    }*/
+                    if (read <= 0) {
+                        continue;
+                    }
+                    try {
+                        // 把data数据写到os文件流中
+                        os.write(mAudioData);
+                    } catch (IOException e) {
+                        e.printStackTrace();
                     }
                 }
 
                 try {
                     os.close();
-                    os = null;
                 } catch (IOException e) {
                     e.printStackTrace();
+                } finally {
+                    os = null;
                 }
 
                 if (DEBUG)
                     MLog.d(TAG, "startRecording() end");
+
+                MediaUtils.stopAudioRecord(mAudioRecord);
 
                 mAudioData = null;
             }
@@ -531,9 +502,13 @@ public class AudioFragment extends BaseFragment {
                 File file = new File(
                         "/storage/2430-1702/Android/data/com.weidi.usefragments/files/Music",
                         "test.pcm");
-                if (!file.exists()) {
+                if (!file.exists()
+                        || !file.canRead()) {
                     return;
                 }
+
+                long length = file.length();
+                long playLength = 0;
                 FileInputStream fis = null;
                 try {
                     fis = new FileInputStream(file);
@@ -542,39 +517,70 @@ public class AudioFragment extends BaseFragment {
                     return;
                 }
 
-                int bufferSizeInBytes = AudioRecord.getMinBufferSize(
-                        sampleRateInHz,
-                        channelConfig_record,
-                        audioFormat) * 2;
-                // int bufferSizeInBytes = 4096;
+                int bufferSizeInBytes =
+                        MediaUtils.getMinBufferSize() * 2;
                 mAudioData = new byte[bufferSizeInBytes];
 
                 if (DEBUG)
                     MLog.d(TAG, "play() start");
 
-                try {
-                    while (mTrackRunning && fis.available() > 0) {
-                        int readCount = fis.read(mAudioData);
-                        if (readCount == AudioTrack.ERROR_INVALID_OPERATION
-                                || readCount == AudioTrack.ERROR_BAD_VALUE) {
-                            continue;
+                int readCount = 0;
+                while (mTrackRunning) {
+                    try {
+                        if (fis.available() <= 0) {
+                            break;
                         }
-                        if (readCount != 0 && readCount != -1) {
-                            mAudioTrack.write(mAudioData, 0, readCount);
-                        }
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                        break;
                     }
-                } catch (IOException e) {
-                    e.printStackTrace();
+
+                    try {
+                        readCount = fis.read(mAudioData);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                    /*if (readCount == AudioTrack.ERROR_INVALID_OPERATION
+                            || readCount == AudioTrack.ERROR_BAD_VALUE) {
+                        continue;
+                    }
+                    if (readCount != 0
+                            && readCount != -1) {
+                        int write = mAudioTrack.write(mAudioData, 0, readCount);
+                        playLength += write;
+                        // MLog.d(TAG, "play() write: " + write);
+                    }*/
+                    if (readCount <= 0) {
+                        continue;
+                    }
+
+                    int write = mAudioTrack.write(mAudioData, 0, readCount);
+                    playLength += write;
                 }
+
                 try {
                     fis.close();
-                    fis = null;
                 } catch (IOException e) {
                     e.printStackTrace();
+                } finally {
+                    fis = null;
                 }
 
                 if (DEBUG)
                     MLog.d(TAG, "play() end");
+
+                MediaUtils.stopAudioTrack(mAudioTrack);
+                // 内容播放完毕
+                if (length == playLength) {
+                    MLog.d(TAG, "play() playLength: " + playLength);
+                    mTrackRunning = false;
+                }
+                mUiHandler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        mPlayBtn.setText("播放");
+                    }
+                });
 
                 mAudioData = null;
             }

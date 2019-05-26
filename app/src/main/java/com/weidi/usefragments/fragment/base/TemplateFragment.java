@@ -36,7 +36,7 @@ public class TemplateFragment extends BaseFragment {
     public void onAttach(Context context) {
         super.onAttach(context);
         if (DEBUG)
-            MLog.d(TAG, "onAttach() " + printThis() +
+            MLog.d(TAG, "onAttach(): " + printThis() +
                     " mContext: " + context);
     }
 
@@ -44,7 +44,7 @@ public class TemplateFragment extends BaseFragment {
     public void onAttach(Activity activity) {
         super.onAttach(activity);
         if (DEBUG)
-            MLog.d(TAG, "onAttach() " + printThis() +
+            MLog.d(TAG, "onAttach(): " + printThis() +
                     " activity: " + activity);
     }
 
@@ -52,7 +52,7 @@ public class TemplateFragment extends BaseFragment {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         if (DEBUG)
-            MLog.d(TAG, "onCreate() " + printThis() +
+            MLog.d(TAG, "onCreate(): " + printThis() +
                     " savedInstanceState: " + savedInstanceState);
 
         initData();
@@ -64,7 +64,7 @@ public class TemplateFragment extends BaseFragment {
             ViewGroup container,
             Bundle savedInstanceState) {
         if (DEBUG)
-            MLog.d(TAG, "onCreateView() " + printThis() +
+            MLog.d(TAG, "onCreateView(): " + printThis() +
                     " savedInstanceState: " + savedInstanceState);
 
         return super.onCreateView(inflater, container, savedInstanceState);
@@ -74,7 +74,7 @@ public class TemplateFragment extends BaseFragment {
     public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
         if (DEBUG)
-            MLog.d(TAG, "onViewCreated() " + printThis() +
+            MLog.d(TAG, "onViewCreated(): " + printThis() +
                     " savedInstanceState: " + savedInstanceState);
 
         initView(view, savedInstanceState);
@@ -84,7 +84,7 @@ public class TemplateFragment extends BaseFragment {
     public void onViewStateRestored(Bundle savedInstanceState) {
         super.onViewStateRestored(savedInstanceState);
         if (DEBUG)
-            MLog.d(TAG, "onViewStateRestored() " + printThis() +
+            MLog.d(TAG, "onViewStateRestored(): " + printThis() +
                     " savedInstanceState: " + savedInstanceState);
     }
 
@@ -92,7 +92,7 @@ public class TemplateFragment extends BaseFragment {
     public void onActivityCreated(Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
         if (DEBUG)
-            MLog.d(TAG, "onActivityCreated() " + printThis() +
+            MLog.d(TAG, "onActivityCreated(): " + printThis() +
                     " savedInstanceState: " + savedInstanceState);
     }
 
@@ -107,7 +107,7 @@ public class TemplateFragment extends BaseFragment {
             return;
         }
         if (DEBUG)
-            MLog.d(TAG, "onStart() " + printThis());
+            MLog.d(TAG, "onStart(): " + printThis());
     }
 
     /*********************************
@@ -121,7 +121,7 @@ public class TemplateFragment extends BaseFragment {
             return;
         }
         if (DEBUG)
-            MLog.d(TAG, "onResume() " + printThis());
+            MLog.d(TAG, "onResume(): " + printThis());
 
         onShow();
     }
@@ -137,7 +137,7 @@ public class TemplateFragment extends BaseFragment {
             return;
         }
         if (DEBUG)
-            MLog.d(TAG, "onPause() " + printThis());
+            MLog.d(TAG, "onPause(): " + printThis());
     }
 
     /*********************************
@@ -151,7 +151,7 @@ public class TemplateFragment extends BaseFragment {
             return;
         }
         if (DEBUG)
-            MLog.d(TAG, "onStop() " + printThis());
+            MLog.d(TAG, "onStop(): " + printThis());
 
         onHide();
     }
@@ -164,14 +164,14 @@ public class TemplateFragment extends BaseFragment {
     public void onDestroyView() {
         super.onDestroyView();
         if (DEBUG)
-            MLog.d(TAG, "onDestroyView() " + printThis());
+            MLog.d(TAG, "onDestroyView(): " + printThis());
     }
 
     @Override
     public void onDestroy() {
         super.onDestroy();
         if (DEBUG)
-            MLog.d(TAG, "onDestroy() " + printThis());
+            MLog.d(TAG, "onDestroy(): " + printThis());
 
         destroy();
     }
@@ -180,7 +180,7 @@ public class TemplateFragment extends BaseFragment {
     public void onDetach() {
         super.onDetach();
         if (DEBUG)
-            MLog.d(TAG, "onDetach() " + printThis());
+            MLog.d(TAG, "onDetach(): " + printThis());
     }
 
     @Override
@@ -197,7 +197,7 @@ public class TemplateFragment extends BaseFragment {
     public void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
         if (DEBUG)
-            MLog.d(TAG, "onSaveInstanceState() " + printThis());
+            MLog.d(TAG, "onSaveInstanceState(): " + printThis());
     }
 
     @Override
@@ -218,14 +218,14 @@ public class TemplateFragment extends BaseFragment {
     public void onLowMemory() {
         super.onLowMemory();
         if (DEBUG)
-            MLog.d(TAG, "onLowMemory() " + printThis());
+            MLog.d(TAG, "onLowMemory(): " + printThis());
     }
 
     @Override
     public void onTrimMemory(int level) {
         super.onTrimMemory(level);
         if (DEBUG)
-            MLog.d(TAG, "onTrimMemory() " + printThis() +
+            MLog.d(TAG, "onTrimMemory(): " + printThis() +
                     " level: " + level);
     }
 
@@ -236,7 +236,7 @@ public class TemplateFragment extends BaseFragment {
             @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         if (DEBUG)
-            MLog.d(TAG, "onRequestPermissionsResult() " + printThis() +
+            MLog.d(TAG, "onRequestPermissionsResult(): " + printThis() +
                     " requestCode: " + requestCode);
     }
 
@@ -244,7 +244,7 @@ public class TemplateFragment extends BaseFragment {
     public void onHiddenChanged(boolean hidden) {
         super.onHiddenChanged(hidden);
         if (DEBUG)
-            MLog.d(TAG, "onHiddenChanged() " + printThis() +
+            MLog.d(TAG, "onHiddenChanged(): " + printThis() +
                     " hidden: " + hidden);
 
         if (hidden) {
@@ -273,7 +273,7 @@ public class TemplateFragment extends BaseFragment {
      */
     private void onShow() {
         if (DEBUG)
-            MLog.d(TAG, "onShow() " + printThis());
+            MLog.d(TAG, "onShow(): " + printThis());
 
     }
 
@@ -284,7 +284,7 @@ public class TemplateFragment extends BaseFragment {
      */
     private void onHide() {
         if (DEBUG)
-            MLog.d(TAG, "onHide() " + printThis());
+            MLog.d(TAG, "onHide(): " + printThis());
     }
 
     private void initData() {
