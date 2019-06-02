@@ -334,6 +334,19 @@ public class AudioFragment extends BaseFragment {
         }
         mConvertBtn.setText("pcm To wav");
         mJumpBtn.setText("跳转到");
+
+        mUiHandler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                playTrackOrStopTrack();
+            }
+        }, 5000);
+        mUiHandler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                playTrackOrStopTrack();
+            }
+        }, 15000);
     }
 
     /***

@@ -92,11 +92,7 @@ public class Main1Fragment extends BaseFragment {
             @Override
             public void onClick(View v) {
                 //FragOperManager.getInstance().enter3(new TestMotionEventFragment());
-                //FragOperManager.getInstance().enter3(new A2Fragment());
-
-
-                // Test
-                MediaUtils.createAudioRecord();
+                FragOperManager.getInstance().enter3(new AudioFragment());
             }
         });
     }
@@ -253,6 +249,7 @@ public class Main1Fragment extends BaseFragment {
         mTitleView.setText(Main1Fragment.class.getSimpleName());
         mJumpBtn.setText("跳转到");
         setStatusBar(getAttachedActivity(), true);
+        FragOperManager.getInstance().enter3(new AudioFragment());
     }
 
     private void onHide() {
