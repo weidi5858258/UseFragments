@@ -14,7 +14,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.weidi.usefragments.R;
 import com.weidi.usefragments.fragment.FragOperManager;
@@ -30,7 +29,6 @@ public class RecordScreenFragment extends BaseFragment {
 
     private static final String TAG =
             RecordScreenFragment.class.getSimpleName();
-
     private static final boolean DEBUG = true;
 
     public RecordScreenFragment() {
@@ -45,7 +43,7 @@ public class RecordScreenFragment extends BaseFragment {
     public void onAttach(Context context) {
         super.onAttach(context);
         if (DEBUG)
-            MLog.d(TAG, "onAttach() " + printThis() +
+            MLog.d(TAG, "onAttach(): " + printThis() +
                     " mContext: " + context);
     }
 
@@ -53,7 +51,7 @@ public class RecordScreenFragment extends BaseFragment {
     public void onAttach(Activity activity) {
         super.onAttach(activity);
         if (DEBUG)
-            MLog.d(TAG, "onAttach() " + printThis() +
+            MLog.d(TAG, "onAttach(): " + printThis() +
                     " activity: " + activity);
     }
 
@@ -61,7 +59,7 @@ public class RecordScreenFragment extends BaseFragment {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         if (DEBUG)
-            MLog.d(TAG, "onCreate() " + printThis() +
+            MLog.d(TAG, "onCreate(): " + printThis() +
                     " savedInstanceState: " + savedInstanceState);
 
         initData();
@@ -73,7 +71,7 @@ public class RecordScreenFragment extends BaseFragment {
             ViewGroup container,
             Bundle savedInstanceState) {
         if (DEBUG)
-            MLog.d(TAG, "onCreateView() " + printThis() +
+            MLog.d(TAG, "onCreateView(): " + printThis() +
                     " savedInstanceState: " + savedInstanceState);
 
         return super.onCreateView(inflater, container, savedInstanceState);
@@ -83,7 +81,7 @@ public class RecordScreenFragment extends BaseFragment {
     public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
         if (DEBUG)
-            MLog.d(TAG, "onViewCreated() " + printThis() +
+            MLog.d(TAG, "onViewCreated(): " + printThis() +
                     " savedInstanceState: " + savedInstanceState);
 
         initView(view, savedInstanceState);
@@ -93,7 +91,7 @@ public class RecordScreenFragment extends BaseFragment {
     public void onViewStateRestored(Bundle savedInstanceState) {
         super.onViewStateRestored(savedInstanceState);
         if (DEBUG)
-            MLog.d(TAG, "onViewStateRestored() " + printThis() +
+            MLog.d(TAG, "onViewStateRestored(): " + printThis() +
                     " savedInstanceState: " + savedInstanceState);
     }
 
@@ -101,7 +99,7 @@ public class RecordScreenFragment extends BaseFragment {
     public void onActivityCreated(Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
         if (DEBUG)
-            MLog.d(TAG, "onActivityCreated() " + printThis() +
+            MLog.d(TAG, "onActivityCreated(): " + printThis() +
                     " savedInstanceState: " + savedInstanceState);
     }
 
@@ -116,7 +114,7 @@ public class RecordScreenFragment extends BaseFragment {
             return;
         }
         if (DEBUG)
-            MLog.d(TAG, "onStart() " + printThis());
+            MLog.d(TAG, "onStart(): " + printThis());
     }
 
     /*********************************
@@ -130,7 +128,7 @@ public class RecordScreenFragment extends BaseFragment {
             return;
         }
         if (DEBUG)
-            MLog.d(TAG, "onResume() " + printThis());
+            MLog.d(TAG, "onResume(): " + printThis());
 
         onShow();
     }
@@ -146,7 +144,7 @@ public class RecordScreenFragment extends BaseFragment {
             return;
         }
         if (DEBUG)
-            MLog.d(TAG, "onPause() " + printThis());
+            MLog.d(TAG, "onPause(): " + printThis());
     }
 
     /*********************************
@@ -160,7 +158,7 @@ public class RecordScreenFragment extends BaseFragment {
             return;
         }
         if (DEBUG)
-            MLog.d(TAG, "onStop() " + printThis());
+            MLog.d(TAG, "onStop(): " + printThis());
 
         onHide();
     }
@@ -173,32 +171,40 @@ public class RecordScreenFragment extends BaseFragment {
     public void onDestroyView() {
         super.onDestroyView();
         if (DEBUG)
-            MLog.d(TAG, "onDestroyView() " + printThis());
+            MLog.d(TAG, "onDestroyView(): " + printThis());
     }
 
     @Override
     public void onDestroy() {
-        super.onDestroy();
         if (DEBUG)
-            MLog.d(TAG, "onDestroy() " + printThis());
+            MLog.d(TAG, "onDestroy(): " + printThis());
 
-
+        destroy();
+        super.onDestroy();
     }
 
     @Override
     public void onDetach() {
         super.onDetach();
         if (DEBUG)
-            MLog.d(TAG, "onDetach() " + printThis());
+            MLog.d(TAG, "onDetach(): " + printThis());
+    }
 
-        destroy();
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (DEBUG)
+            MLog.d(TAG, "onActivityResult(): " + printThis() +
+                    " requestCode: " + requestCode +
+                    " resultCode: " + resultCode +
+                    " data: " + data.toString());
     }
 
     @Override
     public void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
         if (DEBUG)
-            MLog.d(TAG, "onSaveInstanceState() " + printThis());
+            MLog.d(TAG, "onSaveInstanceState(): " + printThis());
     }
 
     @Override
@@ -219,14 +225,14 @@ public class RecordScreenFragment extends BaseFragment {
     public void onLowMemory() {
         super.onLowMemory();
         if (DEBUG)
-            MLog.d(TAG, "onLowMemory() " + printThis());
+            MLog.d(TAG, "onLowMemory(): " + printThis());
     }
 
     @Override
     public void onTrimMemory(int level) {
         super.onTrimMemory(level);
         if (DEBUG)
-            MLog.d(TAG, "onTrimMemory() " + printThis() +
+            MLog.d(TAG, "onTrimMemory(): " + printThis() +
                     " level: " + level);
     }
 
@@ -237,32 +243,15 @@ public class RecordScreenFragment extends BaseFragment {
             @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         if (DEBUG)
-            MLog.d(TAG, "onRequestPermissionsResult() " + printThis() +
+            MLog.d(TAG, "onRequestPermissionsResult(): " + printThis() +
                     " requestCode: " + requestCode);
-    }
-
-    @Override
-    public void onActivityResult(int requestCode, int resultCode, Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-        if (DEBUG)
-            MLog.d(TAG, "onActivityResult() " + printThis() +
-                    " requestCode: " + requestCode +
-                    " resultCode: " + resultCode);
-
-        if (requestCode != REQUEST_CODE
-                && resultCode != Activity.RESULT_OK) {
-            return;
-        }
-
-        mMediaProjection = mMediaProjectionManager.getMediaProjection(resultCode, data);
-        // 其他代码
     }
 
     @Override
     public void onHiddenChanged(boolean hidden) {
         super.onHiddenChanged(hidden);
         if (DEBUG)
-            MLog.d(TAG, "onHiddenChanged() " + printThis() +
+            MLog.d(TAG, "onHiddenChanged(): " + printThis() +
                     " hidden: " + hidden);
 
         if (hidden) {
@@ -274,7 +263,7 @@ public class RecordScreenFragment extends BaseFragment {
 
     @Override
     protected int provideLayout() {
-        return R.layout.fragment_record_screen;
+        return R.layout.fragment_main;
     }
 
     @Override
@@ -308,7 +297,8 @@ public class RecordScreenFragment extends BaseFragment {
         if (DEBUG)
             MLog.d(TAG, "onShow() " + printThis());
 
-        mTitleView.setText(RecordScreenFragment.class.getSimpleName());
+        mTitleView.setText(com.weidi.usefragments.test_fragment.scene2.RecordScreenFragment.class
+                .getSimpleName());
         if (mIsRecording) {
             mStartBtn.setText("正在录屏");
             mStopBtn.setText("停止录屏");
