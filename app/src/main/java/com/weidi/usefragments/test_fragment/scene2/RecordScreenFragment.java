@@ -194,10 +194,12 @@ public class RecordScreenFragment extends BaseFragment {
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         if (DEBUG)
-            MLog.d(TAG, "onActivityResult(): " + printThis() +
-                    " requestCode: " + requestCode +
-                    " resultCode: " + resultCode +
-                    " data: " + data.toString());
+            if (data != null) {
+                MLog.d(TAG, "onActivityResult(): " + printThis() +
+                        " requestCode: " + requestCode +
+                        " resultCode: " + resultCode +
+                        " data: " + data.toString());
+            }
     }
 
     @Override
@@ -263,7 +265,7 @@ public class RecordScreenFragment extends BaseFragment {
 
     @Override
     protected int provideLayout() {
-        return R.layout.fragment_main;
+        return R.layout.fragment_record_screen;
     }
 
     @Override
@@ -297,8 +299,7 @@ public class RecordScreenFragment extends BaseFragment {
         if (DEBUG)
             MLog.d(TAG, "onShow() " + printThis());
 
-        mTitleView.setText(com.weidi.usefragments.test_fragment.scene2.RecordScreenFragment.class
-                .getSimpleName());
+        mTitleView.setText(RecordScreenFragment.class.getSimpleName());
         if (mIsRecording) {
             mStartBtn.setText("正在录屏");
             mStopBtn.setText("停止录屏");
@@ -387,6 +388,8 @@ public class RecordScreenFragment extends BaseFragment {
             new MediaProjection.Callback() {
                 @Override
                 public void onStop() {
+                    if (DEBUG)
+                        MLog.d(TAG, "MediaProjection.Callback onStop() " + printThis());
                 }
             };
 

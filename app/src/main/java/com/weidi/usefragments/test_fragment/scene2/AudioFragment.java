@@ -334,19 +334,6 @@ public class AudioFragment extends BaseFragment {
         }
         mConvertBtn.setText("pcm To wav");
         mJumpBtn.setText("跳转到");
-
-        mUiHandler.postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                playTrackOrStopTrack();
-            }
-        }, 5000);
-        mUiHandler.postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                playTrackOrStopTrack();
-            }
-        }, 15000);
     }
 
     /***
@@ -410,7 +397,7 @@ public class AudioFragment extends BaseFragment {
             case R.id.convert_btn:
                 break;
             case R.id.jump_btn:
-                FragOperManager.getInstance().enter3(new RecordScreenFragment());
+                FragOperManager.getInstance().enter3(new A2Fragment());
                 break;
             default:
         }

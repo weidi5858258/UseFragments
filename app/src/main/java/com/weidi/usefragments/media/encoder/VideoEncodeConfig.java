@@ -78,12 +78,14 @@ public class VideoEncodeConfig implements IConfig {
         return mMimeType;
     }
 
+    @Override
     public MediaFormat createMediaFormat() {
         MediaFormat format = MediaFormat.createVideoFormat(mMimeType, mWidth, mHeight);
         // 必须设置为COLOR_FormatSurface，因为是用Surface作为输入源
         format.setInteger(
                 MediaFormat.KEY_COLOR_FORMAT,
                 MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface);
+        // 设置比特率
         format.setInteger(
                 MediaFormat.KEY_BIT_RATE,
                 mBitRate);
