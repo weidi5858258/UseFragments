@@ -92,7 +92,7 @@
             android:clickable="true"
             android:focusable="true"
             android:textSize="30px"
-            android:text="动态" />
+            android:text="摄像" />
 
     </LinearLayout>
 

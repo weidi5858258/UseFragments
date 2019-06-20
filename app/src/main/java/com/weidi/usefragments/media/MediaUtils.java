@@ -37,34 +37,11 @@ public class MediaUtils {
     private static final boolean DEBUG = true;
 
     // 想要的编码格式
-    private static final String VIDEO_MIME_TYPE = MediaFormat.MIMETYPE_VIDEO_AVC;
-    private static final String AUDIO_MIME_TYPE = MediaFormat.MIMETYPE_AUDIO_AAC;
+    private static final String VIDEO_MIME_TYPE = MediaFormat.MIMETYPE_VIDEO_AVC;// video/avc
+    private static final String AUDIO_MIME_TYPE = MediaFormat.MIMETYPE_AUDIO_AAC;// audio/mp4a-latm
     private static final int BIT_RATE = 1200000;
     private static final int FRAME_RATE = 30;
     private static final int IFRAME_INTERVAL = 1;
-
-    /***
-     public static final int channelConfig = AudioFormat.CHANNEL_IN_MONO;
-     本来AudioRecord是使用AudioFormat.CHANNEL_IN_MONO的,
-     但是AudioFormat.CHANNEL_IN_MONO不能使用于AudioTrack.
-     AudioTrack可以使用AudioFormat.CHANNEL_IN_STEREO.
-     只有创建AudioRecord对象和AudioTrack对象的三个参数
-     (sampleRateInHz,channelConfig和audioFormat)一样时,
-     录制是什么声音,播放才是什么声音.
-     */
-    // 下面的参数为了得到默认的AudioRecord对象和AudioTrack对象而定义的
-    // 兼容所有Android设备
-    private static final int sampleRateInHz = 44100;
-    public static final int channelConfig = AudioFormat.CHANNEL_IN_STEREO;
-    // 兼容所有Android设备
-    private static final int audioFormat = AudioFormat.ENCODING_PCM_16BIT;
-    // AudioRecord
-    private static final int audioSource = MediaRecorder.AudioSource.MIC;
-    // AudioTrack
-    private static final int streamType = AudioManager.STREAM_MUSIC;
-    // private static final int mode = AudioTrack.MODE_STATIC
-    private static final int mode = AudioTrack.MODE_STREAM;
-    public static final int sessionId = AudioManager.AUDIO_SESSION_ID_GENERATE;
 
     public static MediaCodec getMediaEncoder(int width, int height) {
         MediaCodecInfo codecInfo = selectCodec(VIDEO_MIME_TYPE);
@@ -284,6 +261,32 @@ public class MediaUtils {
         return mediaCodecInfos.toArray(new MediaCodecInfo[mediaCodecInfos.size()]);
     }
 
+    /***
+     public static final int channelConfig = AudioFormat.CHANNEL_IN_MONO;
+     本来AudioRecord是使用AudioFormat.CHANNEL_IN_MONO的,
+     但是AudioFormat.CHANNEL_IN_MONO不能使用于AudioTrack.
+     AudioTrack可以使用AudioFormat.CHANNEL_IN_STEREO.
+     只有创建AudioRecord对象和AudioTrack对象的三个参数
+     (sampleRateInHz,channelConfig和audioFormat)一样时,
+     录制是什么声音,播放才是什么声音.
+     */
+    // 下面的参数为了得到默认的AudioRecord对象和AudioTrack对象而定义的
+    // 兼容所有Android设备
+    private static final int sampleRateInHz = 44100;
+    private static final int channelConfig = AudioFormat.CHANNEL_IN_STEREO;
+    // 兼容所有Android设备
+    private static final int audioFormat = AudioFormat.ENCODING_PCM_16BIT;
+    // AudioRecord(录音)
+    private static final int audioSource = MediaRecorder.AudioSource.MIC;
+    // AudioTrack(播放)
+    private static final int streamType = AudioManager.STREAM_MUSIC;
+    // private static final int mode = AudioTrack.MODE_STATIC
+    private static final int mode = AudioTrack.MODE_STREAM;
+    public static final int sessionId = AudioManager.AUDIO_SESSION_ID_GENERATE;
+
+    /***
+     使用了默认值
+     */
     public static int getMinBufferSize() {
         return AudioRecord.getMinBufferSize(
                 sampleRateInHz,
@@ -681,7 +684,8 @@ public class MediaUtils {
         }
     }
 
-    public static void printMediaCodecInfos(MediaCodecInfo[] mediaCodecInfos, String mimeType) {
+    public static void printMediaCodecInfos(MediaCodecInfo[] mediaCodecInfos,
+                                            String mimeType) {
         for (MediaCodecInfo mediaCodecInfo : mediaCodecInfos) {
             MediaCodecInfo.CodecCapabilities codecCapabilities =
                     mediaCodecInfo.getCapabilitiesForType(mimeType);
@@ -854,7 +858,8 @@ public class MediaUtils {
                 }
                 if (type.equalsIgnoreCase(mimeType)) {
                     if (DEBUG)
-                        MLog.d(TAG, "selectCodec() the selected encoder is : " + info.getName());
+                        MLog.d(TAG,
+                                "selectCodec() the selected encoder is : " + info.getName());
                     return info;
                 }
             }

@@ -8,6 +8,7 @@ import android.app.DialogFragment;
 import android.app.Fragment;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.graphics.ImageFormat;
@@ -47,6 +48,7 @@ import android.widget.Toast;
 
 import com.weidi.usefragments.R;
 import com.weidi.usefragments.fragment.base.BaseFragment;
+import com.weidi.usefragments.inject.InjectOnClick;
 import com.weidi.usefragments.tool.AutoFitTextureView;
 import com.weidi.usefragments.tool.MLog;
 
@@ -62,15 +64,13 @@ import java.util.List;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
+/***
 
-public class Camera2Fragment extends BaseFragment
-        implements
-        View.OnClickListener,
-        FragmentCompat.OnRequestPermissionsResultCallback {
+ */
+public class Camera2Fragment extends BaseFragment {
 
     private static final String TAG =
             Camera2Fragment.class.getSimpleName();
-
     private static final boolean DEBUG = true;
 
     public Camera2Fragment() {
@@ -103,6 +103,8 @@ public class Camera2Fragment extends BaseFragment
         if (DEBUG)
             MLog.d(TAG, "onCreate(): " + printThis() +
                     " savedInstanceState: " + savedInstanceState);
+
+        initData();
     }
 
     @Override
@@ -113,6 +115,7 @@ public class Camera2Fragment extends BaseFragment
         if (DEBUG)
             MLog.d(TAG, "onCreateView(): " + printThis() +
                     " savedInstanceState: " + savedInstanceState);
+
         return super.onCreateView(inflater, container, savedInstanceState);
     }
 
@@ -123,9 +126,7 @@ public class Camera2Fragment extends BaseFragment
             MLog.d(TAG, "onViewCreated(): " + printThis() +
                     " savedInstanceState: " + savedInstanceState);
 
-        view.findViewById(R.id.picture).setOnClickListener(this);
-        view.findViewById(R.id.info).setOnClickListener(this);
-        mTextureView = (AutoFitTextureView) view.findViewById(R.id.texture);
+        initView(view, savedInstanceState);
     }
 
     @Override
@@ -142,8 +143,6 @@ public class Camera2Fragment extends BaseFragment
         if (DEBUG)
             MLog.d(TAG, "onActivityCreated(): " + printThis() +
                     " savedInstanceState: " + savedInstanceState);
-
-        mFile = new File(getActivity().getExternalFilesDir(null), "pic.jpg");
     }
 
     /*********************************
@@ -188,9 +187,6 @@ public class Camera2Fragment extends BaseFragment
         }
         if (DEBUG)
             MLog.d(TAG, "onPause(): " + printThis());
-
-        closeCamera();
-        stopBackgroundThread();
     }
 
     /*********************************
@@ -205,6 +201,8 @@ public class Camera2Fragment extends BaseFragment
         }
         if (DEBUG)
             MLog.d(TAG, "onStop(): " + printThis());
+
+        onHide();
     }
 
     /*********************************
@@ -220,9 +218,11 @@ public class Camera2Fragment extends BaseFragment
 
     @Override
     public void onDestroy() {
-        super.onDestroy();
         if (DEBUG)
             MLog.d(TAG, "onDestroy(): " + printThis());
+
+        destroy();
+        super.onDestroy();
     }
 
     @Override
@@ -233,6 +233,16 @@ public class Camera2Fragment extends BaseFragment
     }
 
     @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (DEBUG)
+            MLog.d(TAG, "onActivityResult(): " + printThis() +
+                    " requestCode: " + requestCode +
+                    " resultCode: " + resultCode +
+                    " data: " + data.toString());
+    }
+
+    @Override
     public void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
         if (DEBUG)
@@ -240,10 +250,17 @@ public class Camera2Fragment extends BaseFragment
     }
 
     @Override
-    public void onConfigurationChanged(Configuration newConfig) {
-        super.onConfigurationChanged(newConfig);
-        if (DEBUG)
-            MLog.d(TAG, "onConfigurationChanged(): " + printThis());
+    public void handleConfigurationChangedEvent(
+            Configuration newConfig,
+            boolean needToDo,
+            boolean override) {
+        handleBeforeOfConfigurationChangedEvent();
+
+        super.handleConfigurationChangedEvent(newConfig, needToDo, true);
+
+        if (needToDo) {
+            onShow();
+        }
     }
 
     @Override
@@ -270,41 +287,15 @@ public class Camera2Fragment extends BaseFragment
         if (DEBUG)
             MLog.d(TAG, "onRequestPermissionsResult(): " + printThis() +
                     " requestCode: " + requestCode);
-        if (requestCode == REQUEST_CAMERA_PERMISSION) {
-            if (grantResults.length != 1 || grantResults[0] != PackageManager.PERMISSION_GRANTED) {
-                ErrorDialog.newInstance(getString(R.string.request_permission))
-                        .show(getChildFragmentManager(), FRAGMENT_DIALOG);
-            }
-        } else {
-            super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        }
     }
 
-    /**
-     * Very important
-     * 子类必须重写这个方法,并调用
-     * super.onHiddenChanged(hidden);
-     * <p>
-     * true表示被隐藏了,false表示被显示了
-     * Fragment:
-     * 被show()或者hide()时才会回调这个方法,
-     * 被add()或者popBackStack()时不会回调这个方法
-     * 弹窗时不会被回调(是由当前的Fragment弹出的一个DialogFragment)
-     * 如果是弹出一个DialogActivity窗口,则应该会被回调,
-     * 因为当前Fragment所在的Activity的生命周期发生了变化,
-     * 则当前Fragment的生命周期也会发生变化.
-     * <p>
-     * 从BFragment返回到AFragment时,
-     * AFragment的这个方法比onPause()要早执行.
-     *
-     * @param hidden if true that mean hidden
-     */
     @Override
     public void onHiddenChanged(boolean hidden) {
         super.onHiddenChanged(hidden);
         if (DEBUG)
-            MLog.d(TAG, "onHiddenChanged(): " +
-                    printThis() + " hidden: " + hidden);
+            MLog.d(TAG, "onHiddenChanged(): " + printThis() +
+                    " hidden: " + hidden);
+
         if (hidden) {
             onHide();
         } else {
@@ -323,31 +314,6 @@ public class Camera2Fragment extends BaseFragment
     }
 
     /////////////////////////////////////////////////////////////////
-
-    private void onShow() {
-        if (DEBUG)
-            MLog.d(TAG, "onShow(): " + printThis());
-
-        startBackgroundThread();
-
-        // When the screen is turned off and turned back on, the SurfaceTexture is already
-        // available, and "onSurfaceTextureAvailable" will not be called. In that case, we can open
-        // a camera and start preview from here (otherwise, we wait until the surface is ready in
-        // the SurfaceTextureListener).
-        if (mTextureView.isAvailable()) {
-            openCamera(mTextureView.getWidth(), mTextureView.getHeight());
-        } else {
-            mTextureView.setSurfaceTextureListener(mSurfaceTextureListener);
-        }
-    }
-
-    private void onHide() {
-        if (DEBUG)
-            MLog.d(TAG, "onHide(): " + printThis());
-
-        closeCamera();
-        stopBackgroundThread();
-    }
 
     /**
      * Conversion from screen rotation to JPEG orientation.
@@ -438,6 +404,69 @@ public class Camera2Fragment extends BaseFragment
      * Max preview height that is guaranteed by Camera2 API
      */
     private static final int MAX_PREVIEW_HEIGHT = 1080;
+
+    private void onShow() {
+        if (DEBUG)
+            MLog.d(TAG, "onShow(): " + printThis());
+
+        startBackgroundThread();
+
+        // When the screen is turned off and turned back on, the SurfaceTexture is already
+        // available, and "onSurfaceTextureAvailable" will not be called. In that case, we can open
+        // a camera and start preview from here (otherwise, we wait until the surface is ready in
+        // the SurfaceTextureListener).
+        if (mTextureView.isAvailable()) {
+            openCamera(mTextureView.getWidth(), mTextureView.getHeight());
+        } else {
+            mTextureView.setSurfaceTextureListener(mSurfaceTextureListener);
+        }
+    }
+
+    private void onHide() {
+        if (DEBUG)
+            MLog.d(TAG, "onHide(): " + printThis());
+
+        closeCamera();
+        stopBackgroundThread();
+    }
+
+    private void initData() {
+        mFile = new File(getActivity().getExternalFilesDir(null), "pic.jpg");
+    }
+
+    private void initView(View view, Bundle savedInstanceState) {
+        mTextureView = (AutoFitTextureView) view.findViewById(R.id.texture);
+    }
+
+    private void handleBeforeOfConfigurationChangedEvent() {
+
+    }
+
+    private void destroy() {
+
+    }
+
+    @InjectOnClick({R.id.picture, R.id.info, R.id.jump_btn})
+    private void onClick(View v) {
+        switch (v.getId()) {
+            case R.id.picture: {
+                takePicture();
+                break;
+            }
+            case R.id.info: {
+                Activity activity = getActivity();
+                if (null != activity) {
+                    new AlertDialog.Builder(activity)
+                            .setMessage(R.string.intro_message)
+                            .setPositiveButton(android.R.string.ok, null)
+                            .show();
+                }
+                break;
+            }
+            case R.id.jump_btn:
+                break;
+        }
+    }
 
     /**
      * {@link TextureView.SurfaceTextureListener} handles several lifecycle events on a
@@ -559,7 +588,7 @@ public class Camera2Fragment extends BaseFragment
         @Override
         public void onImageAvailable(ImageReader reader) {
             // 当图片可得到的时候获取图片并保存
-            mBackgroundHandler.post(new ImageSaver(reader.acquireNextImage(), mFile));
+            mBackgroundHandler.post(new com.weidi.usefragments.test_fragment.scene2.Camera2Fragment.ImageSaver(reader.acquireNextImage(), mFile));
         }
 
     };
@@ -757,9 +786,9 @@ public class Camera2Fragment extends BaseFragment
         // Pick the smallest of those big enough. If there is no one big enough, pick the
         // largest of those not big enough.
         if (bigEnough.size() > 0) {
-            return Collections.min(bigEnough, new CompareSizesByArea());
+            return Collections.min(bigEnough, new com.weidi.usefragments.test_fragment.scene2.Camera2Fragment.CompareSizesByArea());
         } else if (notBigEnough.size() > 0) {
-            return Collections.max(notBigEnough, new CompareSizesByArea());
+            return Collections.max(notBigEnough, new com.weidi.usefragments.test_fragment.scene2.Camera2Fragment.CompareSizesByArea());
         } else {
             Log.e(TAG, "Couldn't find any suitable preview size");
             return choices[0];
@@ -769,7 +798,7 @@ public class Camera2Fragment extends BaseFragment
 
     private void requestCameraPermission() {
         if (FragmentCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.CAMERA)) {
-            new ConfirmationDialog().show(getChildFragmentManager(), FRAGMENT_DIALOG);
+            new com.weidi.usefragments.test_fragment.scene2.Camera2Fragment.ConfirmationDialog().show(getChildFragmentManager(), FRAGMENT_DIALOG);
         } else {
             FragmentCompat.requestPermissions(this, new String[]{Manifest.permission.CAMERA},
                     REQUEST_CAMERA_PERMISSION);
@@ -815,7 +844,7 @@ public class Camera2Fragment extends BaseFragment
                 // For still image captures, we use the largest available size.
                 Size largest = Collections.max(
                         Arrays.asList(map.getOutputSizes(ImageFormat.JPEG)),
-                        new CompareSizesByArea());
+                        new com.weidi.usefragments.test_fragment.scene2.Camera2Fragment.CompareSizesByArea());
                 if (DEBUG)
                     // largest.getWidth(): 3264 largest.getHeight(): 2448
                     MLog.d(TAG, "setupCameraOutputs() " + printThis() +
@@ -927,7 +956,7 @@ public class Camera2Fragment extends BaseFragment
         } catch (NullPointerException e) {
             // Currently an NPE is thrown when the Camera2API is used but not supported on the
             // device this code runs.
-            ErrorDialog.newInstance(getString(R.string.camera_error))
+            com.weidi.usefragments.test_fragment.scene2.Camera2Fragment.ErrorDialog.newInstance(getString(R.string.camera_error))
                     .show(getChildFragmentManager(), FRAGMENT_DIALOG);
         }
     }
@@ -1324,26 +1353,6 @@ public class Camera2Fragment extends BaseFragment
         }
     }
 
-    @Override
-    public void onClick(View view) {
-        switch (view.getId()) {
-            case R.id.picture: {
-                takePicture();
-                break;
-            }
-            case R.id.info: {
-                Activity activity = getActivity();
-                if (null != activity) {
-                    new AlertDialog.Builder(activity)
-                            .setMessage(R.string.intro_message)
-                            .setPositiveButton(android.R.string.ok, null)
-                            .show();
-                }
-                break;
-            }
-        }
-    }
-
     /***
      开始预览时
      开始拍照时
@@ -1423,8 +1432,8 @@ public class Camera2Fragment extends BaseFragment
 
         private static final String ARG_MESSAGE = "message";
 
-        public static ErrorDialog newInstance(String message) {
-            ErrorDialog dialog = new ErrorDialog();
+        public static com.weidi.usefragments.test_fragment.scene2.Camera2Fragment.ErrorDialog newInstance(String message) {
+            com.weidi.usefragments.test_fragment.scene2.Camera2Fragment.ErrorDialog dialog = new com.weidi.usefragments.test_fragment.scene2.Camera2Fragment.ErrorDialog();
             Bundle args = new Bundle();
             args.putString(ARG_MESSAGE, message);
             dialog.setArguments(args);

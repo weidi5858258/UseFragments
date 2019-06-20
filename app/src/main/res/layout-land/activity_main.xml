@@ -58,7 +58,7 @@
             android:clickable="true"
             android:focusable="true"
             android:textSize="25px"
-            android:text="动态" />
+            android:text="摄像" />
 
         <TextView
             android:id="@+id/debug_test_btn"
