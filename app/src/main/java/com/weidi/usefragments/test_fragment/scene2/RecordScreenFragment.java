@@ -4,9 +4,15 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.res.Configuration;
+import android.media.AudioRecord;
+import android.media.MediaCodec;
+import android.media.MediaCodecInfo;
 import android.media.projection.MediaProjection;
 import android.media.projection.MediaProjectionManager;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.HandlerThread;
+import android.os.Message;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.view.LayoutInflater;
@@ -20,6 +26,7 @@ import com.weidi.usefragments.fragment.FragOperManager;
 import com.weidi.usefragments.fragment.base.BaseFragment;
 import com.weidi.usefragments.inject.InjectOnClick;
 import com.weidi.usefragments.inject.InjectView;
+import com.weidi.usefragments.media.MediaUtils;
 import com.weidi.usefragments.tool.MLog;
 
 /***
@@ -200,6 +207,8 @@ public class RecordScreenFragment extends BaseFragment {
                         " resultCode: " + resultCode +
                         " data: " + data.toString());
             }
+
+        activityResult(requestCode, resultCode, data);
     }
 
     @Override
@@ -289,6 +298,12 @@ public class RecordScreenFragment extends BaseFragment {
     private boolean mIsRecording = false;
     private MediaProjectionManager mMediaProjectionManager;
     private MediaProjection mMediaProjection;
+    private HandlerThread mHandlerThread;
+    private Handler mThreadHandler;
+
+    private MediaCodec mVideoEncoderMediaCodec;
+    private MediaCodec mAudioEncoderMediaCodec;
+    private AudioRecord mAudioRecord;
 
     /***
      代码执行的内容跟onStart(),onResume()一样,
@@ -327,10 +342,43 @@ public class RecordScreenFragment extends BaseFragment {
         mMediaProjectionManager =
                 (MediaProjectionManager) getContext().getSystemService(
                         Context.MEDIA_PROJECTION_SERVICE);
+        mHandlerThread = new HandlerThread(TAG);
+        mHandlerThread.start();
+        mThreadHandler = new Handler(mHandlerThread.getLooper()) {
+            @Override
+            public void handleMessage(Message msg) {
+                //super.handleMessage(msg);
+                RecordScreenFragment.this.handleMessage(msg);
+            }
+        };
 
-        startActivityForResult(
-                mMediaProjectionManager.createScreenCaptureIntent(),
-                REQUEST_CODE);
+        mVideoEncoderMediaCodec = MediaUtils.getVideoEncoderMediaCodec();
+        mAudioEncoderMediaCodec = MediaUtils.getAudioEncoderMediaCodec();
+        if (mVideoEncoderMediaCodec == null
+                || mAudioEncoderMediaCodec == null) {
+
+        }
+        mAudioRecord = MediaUtils.createAudioRecord();
+        if (mAudioRecord == null) {
+
+        }
+
+        // test
+        MediaCodecInfo[] mediaCodecInfos =
+                MediaUtils.findEncodersByMimeType(MediaUtils.VIDEO_MIME_TYPE);
+        for (MediaCodecInfo info : mediaCodecInfos) {
+            MLog.d(TAG, "initData() " + printThis() +
+                    " " + info.getName());
+        }
+
+        MLog.d(TAG, "---------------------------------------------------");
+
+        mediaCodecInfos =
+                MediaUtils.findEncodersByMimeType(MediaUtils.AUDIO_MIME_TYPE);
+        for (MediaCodecInfo info : mediaCodecInfos) {
+            MLog.d(TAG, "initData() " + printThis() +
+                    " " + info.getName());
+        }
     }
 
     private void initView(View view, Bundle savedInstanceState) {
@@ -351,7 +399,7 @@ public class RecordScreenFragment extends BaseFragment {
     private void onClick(View v) {
         switch (v.getId()) {
             case R.id.start_btn:
-                startRecordScreen();
+                requestPermission();
                 break;
             case R.id.stop_btn:
                 stopRecordScreen();
@@ -359,7 +407,36 @@ public class RecordScreenFragment extends BaseFragment {
             case R.id.jump_btn:
                 FragOperManager.getInstance().enter3(new A2Fragment());
                 break;
+        }
+    }
 
+    /***
+     mSurface=Surface(name=Sys2003:com.android.systemui/com.android.systemui.media
+     .MediaProjectionPermissionActivity)
+     mSurface=Surface(name=com.android.systemui/com.android.systemui.media
+     .MediaProjectionPermissionActivity)
+     mSurface=Surface(name=com.weidi.usefragments/com.weidi.usefragments.MainActivity1)
+     调用下面代码后的现象:
+     弹出一个框,有两个按钮("取消"和"立即开始"),还有一个选择框("不再提示")
+     1.只点击"立即开始"按钮
+     那么会回调onActivityResult()方法.
+     由于没有选择"不再提示",因此下次调用下面代码时还会弹出框让用户进行确认
+     2.选择"不再提示",并点击"立即开始"按钮
+     那么会回调onActivityResult()方法.
+     由于选择过"不再提示",因此下次调用下面代码时不会再弹出框让用户进行确认
+     只会回调onActivityResult()方法.
+     3.只点击"取消"按钮
+     不会回调onActivityResult()方法.
+     下次调用下面代码时还会弹出框让用户进行确认
+     4.选择"不再提示",并点击"取消"按钮
+     不会回调onActivityResult()方法.
+     下次调用下面代码时还会弹出框让用户进行确认
+     */
+    private void requestPermission() {
+        if (mMediaProjectionManager != null) {
+            startActivityForResult(
+                    mMediaProjectionManager.createScreenCaptureIntent(),
+                    REQUEST_CODE);
         }
     }
 
@@ -368,10 +445,11 @@ public class RecordScreenFragment extends BaseFragment {
             return;
         }
 
-        mMediaProjection.registerCallback(mMediaProjectionCallback, null);
+        mIsRecording = !mIsRecording;
+
+        mMediaProjection.registerCallback(mMediaProjectionCallback, mThreadHandler);
         //        mMediaProjection.createVirtualDisplay();
 
-        mIsRecording = !mIsRecording;
     }
 
     private void stopRecordScreen() {
@@ -379,9 +457,10 @@ public class RecordScreenFragment extends BaseFragment {
             return;
         }
 
-        mMediaProjection.stop();
-
         mIsRecording = !mIsRecording;
+
+        mMediaProjection.stop();
+        mMediaProjection.unregisterCallback(mMediaProjectionCallback);
     }
 
     private MediaProjection.Callback mMediaProjectionCallback =
@@ -392,5 +471,22 @@ public class RecordScreenFragment extends BaseFragment {
                         MLog.d(TAG, "MediaProjection.Callback onStop() " + printThis());
                 }
             };
+
+    private void activityResult(int requestCode, int resultCode, Intent data) {
+        // requestCode: 1000 resultCode: -1 data: Intent { (has extras) }
+        if (requestCode != REQUEST_CODE) {
+            return;
+        }
+
+        // MediaProjection对象是这样来的,所以要得到MediaProjection对象,必须同意权限
+        mMediaProjection =
+                mMediaProjectionManager.getMediaProjection(resultCode, data);
+
+        startRecordScreen();
+    }
+
+    private void handleMessage(Message msg) {
+
+    }
 
 }

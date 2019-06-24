@@ -26,8 +26,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 
-/**
- * Created by root on 19-1-28.
+/***
+ mimeType是已知的,都是通过mimeType去得到各种对象
  */
 
 public class MediaUtils {
@@ -37,188 +37,12 @@ public class MediaUtils {
     private static final boolean DEBUG = true;
 
     // 想要的编码格式
-    private static final String VIDEO_MIME_TYPE = MediaFormat.MIMETYPE_VIDEO_AVC;// video/avc
-    private static final String AUDIO_MIME_TYPE = MediaFormat.MIMETYPE_AUDIO_AAC;// audio/mp4a-latm
-    private static final int BIT_RATE = 1200000;
+    public static final String VIDEO_MIME_TYPE = MediaFormat.MIMETYPE_VIDEO_AVC;// video/avc
+    public static final String AUDIO_MIME_TYPE = MediaFormat.MIMETYPE_AUDIO_AAC;// audio/mp4a-latm
+    private static final int VIDEO_BIT_RATE = 8000000;// 1200000
+    private static final int AUDIO_BIT_RATE = 64000;
     private static final int FRAME_RATE = 30;
     private static final int IFRAME_INTERVAL = 1;
-
-    public static MediaCodec getMediaEncoder(int width, int height) {
-        MediaCodecInfo codecInfo = selectCodec(VIDEO_MIME_TYPE);
-        if (codecInfo == null) {
-            throw new RuntimeException("不支持的编码格式");
-        }
-
-        MediaCodec encoder = null;
-        try {
-            encoder = MediaCodec.createByCodecName(codecInfo.getName());
-            /***
-             注意:
-             编码器使用了surface作为输入源，则会选择surface模式，
-             不会回调onInputBufferAvailable，
-             我们同样不能手动输入数据给编码器，否则会发生错误。
-
-             系统会首先回调onOutputFormatChanged方法，
-             这个方法就是关于h264的sps和pps信息，
-             这两个数据在解析h264的时候非常重要，不能丢失。
-             sps和pps会存放在MediaForamt中，可以通过getByteBuffer来获取，
-             他们的key分别是”csd-0”和”csd-1”，注意顺序不能取反。
-
-             h264流屏幕在变化很小的时候产生的数据很小，
-             变化很大的时候产生的数据较大，
-             这些数据都是通过onOutputBufferAvailable函数回调回来。
-
-             所有的数据都存入一个线程安全的阻塞队列(LinkedBlockingQueue)中，
-             启动另一个线程不断的从这个队列中取出数据传递给jni包装的jrtplib，
-             发送包装好的rtp数据给接收端。
-             */
-            encoder.setCallback(new MediaCodec.Callback() {
-
-                @Override
-                public void onInputBufferAvailable(
-                        @NonNull MediaCodec codec,
-                        int index) {
-                    // 这个方法在使用surface模式的时候不会回调
-                }
-
-                @Override
-                public void onOutputBufferAvailable(
-                        @NonNull MediaCodec codec,
-                        int index,
-                        @NonNull MediaCodec.BufferInfo info) {
-                    ByteBuffer outputBuffer = codec.getOutputBuffer(index);
-                    // 处理数据
-
-                    // 释放空间
-                    codec.releaseOutputBuffer(index, false);
-                }
-
-                @Override
-                public void onError(
-                        @NonNull MediaCodec codec,
-                        @NonNull MediaCodec.CodecException e) {
-                    if (DEBUG)
-                        MLog.e(TAG, "onError()\n" + e.getDiagnosticInfo());
-                }
-
-                @Override
-                public void onOutputFormatChanged(
-                        @NonNull MediaCodec codec,
-                        @NonNull MediaFormat format) {
-                    if (DEBUG)
-                        MLog.d(TAG, "onOutputFormatChanged() format: " + format);
-                    // getSpsPpsByteBuffer(mediaFormat);
-                }
-
-            });
-
-            /*encoder.configure(
-                    getMediaEncoderFormat(width, height),
-                    null,
-                    null,
-                    MediaCodec.CONFIGURE_FLAG_ENCODE);
-            encoder.start();*/
-        } catch (IOException e) {
-            e.printStackTrace();
-            encoder = null;
-        }
-
-        return encoder;
-    }
-
-    public static MediaCodec getMediaDecoder(int width, int height) {
-        MediaCodecInfo codecInfo = selectCodec(VIDEO_MIME_TYPE);
-        if (codecInfo == null) {
-            throw new RuntimeException("不支持的编码格式");
-        }
-
-        MediaCodec decoder = null;
-        try {
-            decoder = MediaCodec.createByCodecName(codecInfo.getName());
-            /***
-             onInputBufferAvailable会一直回调来让我们不断的从队列中取出数据提交给解码器。
-             此处一定要注意，假如用户通过dequeuinputbuffer方法获取了缓冲的索引，
-             必须调用queueinputbuffer方法来释放缓冲区，
-             将缓冲区的所有权交给mediacodec，
-             否则后续将不会回调onInputBufferAvailable方法。
-
-             队列中没有数据的时候可以提交空数据给解码器
-
-             mc.queueInputBuffer(inputBufferId, 0,0, 0, 0);
-             队列中有数据的时候首先要区分一下是不是sps或者pps，
-             是的话就必须当做配置信息提交给解码器，
-             不是的话就直接提交一帧完整的数据给解码器。
-             */
-            decoder.setCallback(new MediaCodec.Callback() {
-
-                @Override
-                public void onInputBufferAvailable(
-                        @NonNull MediaCodec codec, int index) {
-                    // 处理数据
-                }
-
-                @Override
-                public void onOutputBufferAvailable(
-                        @NonNull MediaCodec codec,
-                        int index,
-                        @NonNull MediaCodec.BufferInfo info) {
-                    // 直接释放即可
-                    codec.releaseOutputBuffer(index, true);
-                }
-
-                @Override
-                public void onError(
-                        @NonNull MediaCodec codec,
-                        @NonNull MediaCodec.CodecException e) {
-
-                }
-
-                @Override
-                public void onOutputFormatChanged(
-                        @NonNull MediaCodec codec,
-                        @NonNull MediaFormat format) {
-
-                }
-            });
-
-            // 最后一个参数是flag,用来标记是否是编码,传入0表示作为解码.
-            /*decoder.configure(
-                    getMediaDecoderFormat(width, height),
-                    surface,
-                    null,
-                    0);
-            decoder.start();*/
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return decoder;
-    }
-
-    public static MediaFormat getMediaEncoderFormat(int width, int height) {
-        MediaFormat format = MediaFormat.createVideoFormat(VIDEO_MIME_TYPE, width, height);
-        // 必须设置为COLOR_FormatSurface，因为是用surface作为输入源
-        int colorFormat = MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface;
-        format.setInteger(MediaFormat.KEY_COLOR_FORMAT, colorFormat);
-        format.setInteger(MediaFormat.KEY_BIT_RATE, BIT_RATE);
-        // 设置帧率
-        format.setInteger(MediaFormat.KEY_FRAME_RATE, FRAME_RATE);
-        // 设置抽取关键帧的间隔，以s为单位，负数或者0会不抽取关键帧
-        format.setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, IFRAME_INTERVAL);
-        if (DEBUG)
-            MLog.d(TAG, "getMediaEncoderFormat() created video format: " + format);
-
-        return format;
-    }
-
-    public static MediaFormat getMediaDecoderFormat(int width, int height) {
-        MediaFormat format = MediaFormat.createVideoFormat(VIDEO_MIME_TYPE, width, height);
-        // 设置帧率
-        format.setInteger(MediaFormat.KEY_FRAME_RATE, FRAME_RATE);
-        if (DEBUG)
-            MLog.d(TAG, "getMediaDecoderFormat() created video format: " + format);
-
-        return format;
-    }
 
     /***
      * Find an encoder supported specified MIME type
@@ -231,14 +55,14 @@ public class MediaUtils {
      *
      * 在我的手机上找到
      * Video的CodecName(根据"video/avc"):
-     * "OMX.MTK.VIDEO.ENCODER.AVC"
      * "OMX.google.h264.encoder"
+     * "OMX.SEC.AVC.Encoder"
      *
      * Audio的CodecName(根据"audio/mp4a-latm"):
      * "OMX.google.aac.encoder"
      *
      */
-    public static MediaCodecInfo[] findEncodersByType(String mimeType) {
+    public static MediaCodecInfo[] findEncodersByMimeType(String mimeType) {
         MediaCodecList codecList = new MediaCodecList(MediaCodecList.ALL_CODECS);
         List<MediaCodecInfo> mediaCodecInfos = new ArrayList<MediaCodecInfo>();
         for (MediaCodecInfo mediaCodecInfo : codecList.getCodecInfos()) {
@@ -262,17 +86,355 @@ public class MediaUtils {
     }
 
     /***
+     *
+     * @param mimeType "video/avc" "audio/mp4a-latm"
+     * @return
+     */
+    public static MediaCodecInfo getMediaCodecInfo(String mimeType) {
+        if (TextUtils.isEmpty(mimeType)) {
+            return null;
+        }
+        MediaCodecInfo[] infos = null;
+        /*MediaCodecList list = new MediaCodecList(MediaCodecList.REGULAR_CODECS);
+        infos = list.getCodecInfos();*/
+        infos = findEncodersByMimeType(mimeType);
+        if (infos == null) {
+            return null;
+        }
+        for (MediaCodecInfo info : infos) {
+            if (info == null
+                    || !info.isEncoder()) {
+                continue;
+            }
+            for (String type : info.getSupportedTypes()) {
+                if (TextUtils.isEmpty(type)) {
+                    continue;
+                }
+                if (type.equalsIgnoreCase(mimeType)) {
+                    if (DEBUG)
+                        MLog.d(TAG,
+                                "getMediaCodecInfo() the selected encoder is : " + info.getName());
+                    return info;
+                }
+            }
+        }
+        return null;
+    }
+
+    public static String getCodecName(String mimeType) {
+        if (TextUtils.isEmpty(mimeType)) {
+            return null;
+        }
+        MediaCodecInfo mediaCodecInfo = getMediaCodecInfo(mimeType);
+        if (mediaCodecInfo == null) {
+            return null;
+        }
+        return mediaCodecInfo.getName();
+    }
+
+    public static MediaCodecInfo.CodecCapabilities getCodecCapabilities(String mimeType) {
+        if (TextUtils.isEmpty(mimeType)) {
+            return null;
+        }
+        MediaCodecInfo mediaCodecInfo = getMediaCodecInfo(mimeType);
+        if (mediaCodecInfo == null) {
+            return null;
+        }
+        MediaCodecInfo.CodecCapabilities codecCapabilities =
+                mediaCodecInfo.getCapabilitiesForType(mimeType);
+        return codecCapabilities;
+    }
+
+    public static MediaCodecInfo.CodecProfileLevel[] getCodecProfileLevels(String mimeType) {
+        if (TextUtils.isEmpty(mimeType)) {
+            return null;
+        }
+        MediaCodecInfo.CodecCapabilities codecCapabilities = getCodecCapabilities(mimeType);
+        if (codecCapabilities == null) {
+            return null;
+        }
+        MediaCodecInfo.CodecProfileLevel[] codecProfileLevels = codecCapabilities.profileLevels;
+        return codecProfileLevels;
+    }
+
+    /***
+     得到用于编码的MediaCodec对象的步骤:
+     1.视频部分想要编码到什么,比如这里是想要编码成“video/avc”(mime)
+     然后根据这个mime去找MediaCodecInfo对象,
+     如果找到的话,说明当前手机支持此mime.
+     2.然后从MediaCodecInfo对象中得到name,
+     再根据MediaCodec.createByCodecName(name)
+     方法就能得到用于编码的MediaCodec对象.
+     * @return
+     */
+    public static MediaCodec getVideoEncoderMediaCodec() {
+        /***
+         使用findEncodersByMimeType(VIDEO_MIME_TYPE)方法可以找到当前手机支持的所有
+         MediaCodecInfo对象,然后只要使用其中一个MediaCodecInfo对象就可以得到
+         MediaCodec对象了.
+         */
+        MediaCodecInfo codecInfo = getMediaCodecInfo(VIDEO_MIME_TYPE);
+        if (codecInfo == null) {
+            throw new RuntimeException(
+                    "根据 \"" + VIDEO_MIME_TYPE + "\" 这个mime找不到对应的MediaCodecInfo对象");
+        }
+
+        MediaCodec encoder = null;
+        try {
+            encoder = MediaCodec.createByCodecName(codecInfo.getName());
+            if (DEBUG)
+                MLog.d(TAG, "getVideoEncoderMediaCodec() create success");
+            // MediaCodec.CONFIGURE_FLAG_ENCODE表示编码flag
+            /*encoder.configure(
+                    getVideoEncoderMediaFormat(width, height),
+                    null,
+                    null,
+                    MediaCodec.CONFIGURE_FLAG_ENCODE);
+            encoder.start();*/
+        } catch (IOException e) {
+            e.printStackTrace();
+            return null;
+        }
+        /***
+         注意:
+         编码器使用了surface作为输入源，则会选择surface模式，
+         不会回调onInputBufferAvailable，
+         我们同样不能手动输入数据给编码器，否则会发生错误。
+
+         系统会首先回调onOutputFormatChanged方法，
+         这个方法就是关于h264的sps和pps信息，
+         这两个数据在解析h264的时候非常重要，不能丢失。
+         sps和pps会存放在MediaForamt中，可以通过getByteBuffer来获取，
+         他们的key分别是”csd-0”和”csd-1”，注意顺序不能取反。
+
+         h264流屏幕在变化很小的时候产生的数据很小，
+         变化很大的时候产生的数据较大，
+         这些数据都是通过onOutputBufferAvailable函数回调回来。
+
+         所有的数据都存入一个线程安全的阻塞队列(LinkedBlockingQueue)中，
+         启动另一个线程不断的从这个队列中取出数据传递给jni包装的jrtplib，
+         发送包装好的rtp数据给接收端。
+         */
+        encoder.setCallback(new MediaCodec.Callback() {
+
+            @Override
+            public void onInputBufferAvailable(
+                    @NonNull MediaCodec codec,
+                    int index) {
+                // 这个方法在使用surface模式的时候不会回调
+            }
+
+            @Override
+            public void onOutputBufferAvailable(
+                    @NonNull MediaCodec codec,
+                    int index,
+                    @NonNull MediaCodec.BufferInfo info) {
+                ByteBuffer outputBuffer = codec.getOutputBuffer(index);
+                // 处理数据
+
+                // 释放空间
+                codec.releaseOutputBuffer(index, false);
+            }
+
+            @Override
+            public void onError(
+                    @NonNull MediaCodec codec,
+                    @NonNull MediaCodec.CodecException e) {
+                if (DEBUG)
+                    MLog.e(TAG, "onError()\n" + e.getDiagnosticInfo());
+            }
+
+            @Override
+            public void onOutputFormatChanged(
+                    @NonNull MediaCodec codec,
+                    @NonNull MediaFormat format) {
+                if (DEBUG)
+                    MLog.d(TAG, "onOutputFormatChanged() format: " + format);
+                // getSpsPpsByteBuffer(mediaFormat);
+            }
+        });
+
+        return encoder;
+    }
+
+    public static MediaCodec getAudioEncoderMediaCodec() {
+        MediaCodecInfo codecInfo = getMediaCodecInfo(AUDIO_MIME_TYPE);
+        if (codecInfo == null) {
+            throw new RuntimeException(
+                    "根据 \"" + AUDIO_MIME_TYPE + "\" 这个mime找不到对应的MediaCodecInfo对象");
+        }
+
+        MediaCodec encoder = null;
+        try {
+            // encoder = MediaCodec.createEncoderByType(AUDIO_MIME_TYPE);
+            encoder = MediaCodec.createByCodecName(codecInfo.getName());
+            if (DEBUG)
+                MLog.d(TAG, "getAudioEncoderMediaCodec() create success");
+            // MediaCodec.CONFIGURE_FLAG_ENCODE表示编码flag
+            /*encoder.configure(
+                    getMediaEncoderFormat(width, height),
+                    null,
+                    null,
+                    MediaCodec.CONFIGURE_FLAG_ENCODE);
+            encoder.start();*/
+        } catch (IOException e) {
+            e.printStackTrace();
+            return null;
+        }
+
+        return encoder;
+    }
+
+    /***
+     根据实际视频使用，因为mime不一定是“video/avc”
+     * @param width
+     * @param height
+     * @return
+     */
+    public static MediaCodec getVideoDecoderMediaCodec(int width, int height) {
+        MediaCodecInfo codecInfo = getMediaCodecInfo(VIDEO_MIME_TYPE);
+        if (codecInfo == null) {
+            throw new RuntimeException("不支持的编码格式");
+        }
+
+        MediaCodec decoder = null;
+        try {
+            decoder = MediaCodec.createByCodecName(codecInfo.getName());
+            // 最后一个参数是flag,用来标记是否是编码,传入0表示作为解码.
+            /*decoder.configure(
+                    getMediaDecoderFormat(width, height),
+                    surface,
+                    null,
+                    0);
+            decoder.start();*/
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        /***
+         onInputBufferAvailable会一直回调来让我们不断的从队列中取出数据提交给解码器。
+         此处一定要注意，假如用户通过dequeuinputbuffer方法获取了缓冲的索引，
+         必须调用queueinputbuffer方法来释放缓冲区，
+         将缓冲区的所有权交给mediacodec，
+         否则后续将不会回调onInputBufferAvailable方法。
+
+         队列中没有数据的时候可以提交空数据给解码器
+
+         mc.queueInputBuffer(inputBufferId, 0,0, 0, 0);
+         队列中有数据的时候首先要区分一下是不是sps或者pps，
+         是的话就必须当做配置信息提交给解码器，
+         不是的话就直接提交一帧完整的数据给解码器。
+         */
+        decoder.setCallback(new MediaCodec.Callback() {
+
+            @Override
+            public void onInputBufferAvailable(
+                    @NonNull MediaCodec codec, int index) {
+                // 处理数据
+            }
+
+            @Override
+            public void onOutputBufferAvailable(
+                    @NonNull MediaCodec codec,
+                    int index,
+                    @NonNull MediaCodec.BufferInfo info) {
+                // 直接释放即可
+                codec.releaseOutputBuffer(index, true);
+            }
+
+            @Override
+            public void onError(
+                    @NonNull MediaCodec codec,
+                    @NonNull MediaCodec.CodecException e) {
+
+            }
+
+            @Override
+            public void onOutputFormatChanged(
+                    @NonNull MediaCodec codec,
+                    @NonNull MediaFormat format) {
+
+            }
+        });
+
+        return decoder;
+    }
+
+    /***
+     Encoder时可以自己作主指定mime得到MediaFormat对象
+     这个方法是给录屏设置的参数
+     * @param width
+     * @param height
+     * @return
+     */
+    public static MediaFormat getVideoEncoderMediaFormat(int width, int height) {
+        MediaFormat format = MediaFormat.createVideoFormat(VIDEO_MIME_TYPE, width, height);
+        // 必须设置为COLOR_FormatSurface，因为是用surface作为输入源
+        int colorFormat = MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface;
+        format.setInteger(MediaFormat.KEY_COLOR_FORMAT, colorFormat);
+        // 设置比特率
+        format.setInteger(MediaFormat.KEY_BIT_RATE, VIDEO_BIT_RATE);
+        // 设置帧率
+        format.setInteger(MediaFormat.KEY_FRAME_RATE, FRAME_RATE);
+        // 设置抽取关键帧的间隔，以s为单位，负数或者0表示不抽取关键帧
+        // i-frame iinterval
+        format.setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, IFRAME_INTERVAL);
+        if (DEBUG)
+            MLog.d(TAG, "getEncoderMediaFormat() created video format: " + format);
+
+        return format;
+    }
+
+    /***
+     channelCount为2,表示双声道,也就是
+     channelConfig = AudioFormat.CHANNEL_IN_STEREO.
+     * @return
+     */
+    public static MediaFormat getAudioEncoderMediaFormat() {
+        MediaFormat format = MediaFormat.createAudioFormat(
+                AUDIO_MIME_TYPE, sampleRateInHz, channelCount);
+        // AAC-HE // 64kbps
+        format.setInteger(MediaFormat.KEY_BIT_RATE,
+                AUDIO_BIT_RATE);
+        // AACObjectLC
+        format.setInteger(MediaFormat.KEY_AAC_PROFILE,
+                MediaCodecInfo.CodecProfileLevel.AACObjectLC);
+
+        return format;
+    }
+
+    /***
+     Decoder时一般不能自己作主指定mime得到MediaFormat对象,
+     应该根据实际视频得到mime,然后得到MediaFormat对象.
+     * @param width
+     * @param height
+     * @return
+     */
+    public static MediaFormat getVideoDecoderMediaFormat(int width, int height) {
+        MediaFormat format = MediaFormat.createVideoFormat(VIDEO_MIME_TYPE, width, height);
+        // 设置帧率
+        format.setInteger(MediaFormat.KEY_FRAME_RATE, FRAME_RATE);
+        if (DEBUG)
+            MLog.d(TAG, "getDecoderMediaFormat() created video format: " + format);
+
+        return format;
+    }
+
+    /***
      public static final int channelConfig = AudioFormat.CHANNEL_IN_MONO;
      本来AudioRecord是使用AudioFormat.CHANNEL_IN_MONO的,
      但是AudioFormat.CHANNEL_IN_MONO不能使用于AudioTrack.
-     AudioTrack可以使用AudioFormat.CHANNEL_IN_STEREO.
+     我的手机AudioTrack可以使用AudioFormat.CHANNEL_IN_STEREO.
      只有创建AudioRecord对象和AudioTrack对象的三个参数
      (sampleRateInHz,channelConfig和audioFormat)一样时,
      录制是什么声音,播放才是什么声音.
+     因此选择AudioFormat.CHANNEL_IN_STEREO(双声道)作为创建
+     AudioRecord对象和AudioTrack对象的参数.
      */
     // 下面的参数为了得到默认的AudioRecord对象和AudioTrack对象而定义的
     // 兼容所有Android设备
     private static final int sampleRateInHz = 44100;
+    // 下面两个是对应关系,只是方法所需要的参数不一样而已
+    private static final int channelCount = 2;
     private static final int channelConfig = AudioFormat.CHANNEL_IN_STEREO;
     // 兼容所有Android设备
     private static final int audioFormat = AudioFormat.ENCODING_PCM_16BIT;
@@ -307,8 +469,12 @@ public class MediaUtils {
      MediaRecorder.AudioSource.REMOTE_SUBMIX
      MediaRecorder.AudioSource.UNPROCESSED = 9
      @param sampleRateInHz
-     8KHz,16KHz,22.05KHz,44.1KHz,48KHz
-     44100Hz(在所有设备上都能正常工作)
+     8000
+     11025
+     16000
+     22050
+     44100(在所有设备上都能正常工作)
+     48000
      一般蓝牙耳机无法达到44100Hz的采样率,
      所有在使用蓝牙耳机录音的时候,
      设置为8000Hz或者16000Hz.
@@ -828,43 +994,8 @@ public class MediaUtils {
             } else if (TextUtils.equals(quality, VIDEO_QUALITY_LOW)) {
                 bitRate = 150000;
             }
-        } else {
-            bitRate = 10000000;
         }
         return bitRate;
-    }
-
-    /***
-     *
-     * @param mimeType "video/avc"
-     * @return
-     */
-    private static MediaCodecInfo selectCodec(String mimeType) {
-        if (TextUtils.isEmpty(mimeType)) {
-            return null;
-        }
-        MediaCodecList list = new MediaCodecList(MediaCodecList.REGULAR_CODECS);
-        MediaCodecInfo[] infos = list.getCodecInfos();
-        if (infos == null) {
-            return null;
-        }
-        for (MediaCodecInfo info : infos) {
-            if (info == null || !info.isEncoder()) {
-                continue;
-            }
-            for (String type : info.getSupportedTypes()) {
-                if (TextUtils.isEmpty(type)) {
-                    continue;
-                }
-                if (type.equalsIgnoreCase(mimeType)) {
-                    if (DEBUG)
-                        MLog.d(TAG,
-                                "selectCodec() the selected encoder is : " + info.getName());
-                    return info;
-                }
-            }
-        }
-        return null;
     }
 
 }
