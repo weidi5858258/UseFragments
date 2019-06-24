@@ -145,6 +145,12 @@ public class MediaUtils {
         return codecCapabilities;
     }
 
+    /***
+     * 得到MediaCodecInfo.CodecProfileLevel对象的意义不大,
+     * 没必要,在有关设置中这个可以不用设置
+     * @param mimeType
+     * @return
+     */
     public static MediaCodecInfo.CodecProfileLevel[] getCodecProfileLevels(String mimeType) {
         if (TextUtils.isEmpty(mimeType)) {
             return null;
