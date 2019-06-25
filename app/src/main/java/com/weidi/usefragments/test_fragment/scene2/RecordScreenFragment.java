@@ -14,6 +14,7 @@ import android.media.projection.MediaProjectionManager;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
+import android.os.Looper;
 import android.os.Message;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -23,7 +24,6 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.TextView;
 
-import com.weidi.timepicker.utils.Utils;
 import com.weidi.usefragments.R;
 import com.weidi.usefragments.fragment.FragOperManager;
 import com.weidi.usefragments.fragment.base.BaseFragment;
@@ -294,6 +294,10 @@ public class RecordScreenFragment extends BaseFragment {
 
     private static final int REQUEST_CODE = 1000;
 
+    private static final int PREPARE = 0x0001;
+    private static final int START_RECORD_SCREEN = 0x0002;
+    private static final int STOP_RECORD_SCREEN = 0x0003;
+
     @InjectView(R.id.title_tv)
     private TextView mTitleView;
     @InjectView(R.id.start_btn)
@@ -304,10 +308,12 @@ public class RecordScreenFragment extends BaseFragment {
     private Button mJumpBtn;
 
     private boolean mIsRecording = false;
+    private boolean mIsMuxerStarted = false;
     private MediaProjectionManager mMediaProjectionManager;
     private MediaProjection mMediaProjection;
     private HandlerThread mHandlerThread;
     private Handler mThreadHandler;
+    private Handler mUiHandler;
 
     private static final int mWidth = 720;
     private static final int mHeight = 1280;
@@ -354,6 +360,63 @@ public class RecordScreenFragment extends BaseFragment {
     }
 
     private void initData() {
+        // API>=23
+        /*MediaProjectionManager mediaProjectionManager =
+                getContext().getSystemService(MediaProjectionManager.class);*/
+        mMediaProjectionManager =
+                (MediaProjectionManager) getContext().getSystemService(
+                        Context.MEDIA_PROJECTION_SERVICE);
+
+        mHandlerThread = new HandlerThread(TAG);
+        mHandlerThread.start();
+        mThreadHandler = new Handler(mHandlerThread.getLooper()) {
+            @Override
+            public void handleMessage(Message msg) {
+                //super.threadHandleMessage(msg);
+                RecordScreenFragment.this.threadHandleMessage(msg);
+            }
+        };
+        mUiHandler = new Handler(Looper.getMainLooper()) {
+            @Override
+            public void handleMessage(Message msg) {
+                //super.handleMessage(msg);
+                RecordScreenFragment.this.uiHandleMessage(msg);
+            }
+        };
+
+        mThreadHandler.sendEmptyMessage(PREPARE);
+    }
+
+    private void initView(View view, Bundle savedInstanceState) {
+
+    }
+
+    private void handleBeforeOfConfigurationChangedEvent() {
+
+    }
+
+    private void destroy() {
+        if (mMediaProjection != null) {
+            mMediaProjection.unregisterCallback(mMediaProjectionCallback);
+        }
+    }
+
+    @InjectOnClick({R.id.start_btn, R.id.stop_btn, R.id.jump_btn})
+    private void onClick(View v) {
+        switch (v.getId()) {
+            case R.id.start_btn:
+                requestPermission();
+                break;
+            case R.id.stop_btn:
+                mThreadHandler.sendEmptyMessage(STOP_RECORD_SCREEN);
+                break;
+            case R.id.jump_btn:
+                FragOperManager.getInstance().enter3(new A2Fragment());
+                break;
+        }
+    }
+
+    private void prepare() {
         File file = new File(
                 "/storage/2430-1702/Android/data/com.weidi.usefragments/files",
                 "test.mp4");
@@ -368,23 +431,6 @@ public class RecordScreenFragment extends BaseFragment {
         if (!file.canWrite()) {
             return;
         }
-
-        // API>=23
-        /*MediaProjectionManager mediaProjectionManager =
-                getContext().getSystemService(MediaProjectionManager.class);*/
-        mMediaProjectionManager =
-                (MediaProjectionManager) getContext().getSystemService(
-                        Context.MEDIA_PROJECTION_SERVICE);
-
-        mHandlerThread = new HandlerThread(TAG);
-        mHandlerThread.start();
-        mThreadHandler = new Handler(mHandlerThread.getLooper()) {
-            @Override
-            public void handleMessage(Message msg) {
-                //super.handleMessage(msg);
-                RecordScreenFragment.this.handleMessage(msg);
-            }
-        };
 
         // AudioRecord
         mAudioRecord = MediaUtils.createAudioRecord();
@@ -448,49 +494,19 @@ public class RecordScreenFragment extends BaseFragment {
         }
 
         // test
+        MLog.d(TAG, "Video Codec Name---------------------------------------------------");
         MediaCodecInfo[] mediaCodecInfos =
                 MediaUtils.findEncodersByMimeType(MediaUtils.VIDEO_MIME_TYPE);
         for (MediaCodecInfo info : mediaCodecInfos) {
-            MLog.d(TAG, "initData() " + printThis() +
+            MLog.d(TAG, "prepare() " + printThis() +
                     " " + info.getName());
         }
-
-        MLog.d(TAG, "---------------------------------------------------");
-
+        MLog.d(TAG, "Audio Codec Name---------------------------------------------------");
         mediaCodecInfos =
                 MediaUtils.findEncodersByMimeType(MediaUtils.AUDIO_MIME_TYPE);
         for (MediaCodecInfo info : mediaCodecInfos) {
-            MLog.d(TAG, "initData() " + printThis() +
+            MLog.d(TAG, "prepare() " + printThis() +
                     " " + info.getName());
-        }
-    }
-
-    private void initView(View view, Bundle savedInstanceState) {
-
-    }
-
-    private void handleBeforeOfConfigurationChangedEvent() {
-
-    }
-
-    private void destroy() {
-        if (mMediaProjection != null) {
-            mMediaProjection.unregisterCallback(mMediaProjectionCallback);
-        }
-    }
-
-    @InjectOnClick({R.id.start_btn, R.id.stop_btn, R.id.jump_btn})
-    private void onClick(View v) {
-        switch (v.getId()) {
-            case R.id.start_btn:
-                requestPermission();
-                break;
-            case R.id.stop_btn:
-                stopRecordScreen();
-                break;
-            case R.id.jump_btn:
-                FragOperManager.getInstance().enter3(new A2Fragment());
-                break;
         }
     }
 
@@ -528,6 +544,8 @@ public class RecordScreenFragment extends BaseFragment {
         if (mIsRecording || mMediaProjection == null) {
             return;
         }
+        if (DEBUG)
+            MLog.d(TAG, "startRecordScreen() " + printThis());
 
         mIsRecording = true;
 
@@ -551,6 +569,9 @@ public class RecordScreenFragment extends BaseFragment {
             new Thread(mVideoEncoderThread).start();
             mAudioEncoderThread = new AudioEncoderThread();
             new Thread(mAudioEncoderThread).start();
+
+            // 相当于按了“Home”键
+            getAttachedActivity().moveTaskToBack(true);
         }
     }
 
@@ -558,6 +579,9 @@ public class RecordScreenFragment extends BaseFragment {
         if (!mIsRecording || mMediaProjection == null) {
             return;
         }
+
+        if (DEBUG)
+            MLog.d(TAG, "stopRecordScreen() " + printThis());
 
         mIsRecording = false;
 
@@ -568,6 +592,8 @@ public class RecordScreenFragment extends BaseFragment {
             mVideoEncoderMediaCodec.release();
             mVideoEncoderMediaCodec = null;
         }
+
+        notifyAudioEndOfStream();
         if (mAudioEncoderMediaCodec != null) {
             mAudioEncoderMediaCodec.release();
             mAudioEncoderMediaCodec = null;
@@ -597,11 +623,48 @@ public class RecordScreenFragment extends BaseFragment {
         mMediaProjection =
                 mMediaProjectionManager.getMediaProjection(resultCode, data);
 
-        startRecordScreen();
+        mThreadHandler.sendEmptyMessage(START_RECORD_SCREEN);
     }
 
-    private void handleMessage(Message msg) {
+    private void threadHandleMessage(Message msg) {
+        if (msg == null) {
+            return;
+        }
+        switch (msg.what) {
+            case PREPARE:
+                prepare();
+                break;
+            case START_RECORD_SCREEN:
+                startRecordScreen();
+                break;
+            case STOP_RECORD_SCREEN:
+                stopRecordScreen();
+                break;
+            default:
+                break;
+        }
+    }
 
+    private void uiHandleMessage(Message msg) {
+
+    }
+
+    private void notifyAudioEndOfStream() {
+        if (DEBUG)
+            MLog.d(TAG, "notifyAudioEndOfStream() " + printThis());
+        //audio end notify
+        int inputAudioBufferIndex = mAudioEncoderMediaCodec.dequeueInputBuffer(0);
+        while (inputAudioBufferIndex < 0) {
+            inputAudioBufferIndex = mAudioEncoderMediaCodec.dequeueInputBuffer(0);
+        }
+
+        long presentationTime = System.nanoTime() / 1000;
+        mAudioEncoderMediaCodec.queueInputBuffer(
+                inputAudioBufferIndex,
+                0,
+                0,
+                presentationTime,
+                MediaCodec.BUFFER_FLAG_END_OF_STREAM);
     }
 
     private class VideoEncoderThread implements Runnable {
@@ -621,6 +684,7 @@ public class RecordScreenFragment extends BaseFragment {
                 Arrays.fill(buffer, (byte) 0);
                 int result = mAudioRecord.read(buffer, 0, buffer.length);
                 if (result < 0) {
+                    MLog.d(TAG, "AudioEncoderThread result: " + result);
                     mIsRecording = false;
                     break;
                 }
@@ -629,18 +693,56 @@ public class RecordScreenFragment extends BaseFragment {
                     int inputBufferIndex = mAudioEncoderMediaCodec.dequeueInputBuffer(-1);
                     if (inputBufferIndex != MediaCodec.INFO_TRY_AGAIN_LATER) {
                         ByteBuffer byteBuffer = inputBuffers[inputBufferIndex];
-                        byteBuffer.clear();
-                        byteBuffer.put(buffer);
-                        long presentationTimeUs = System.nanoTime() / 1000;
-                        mAudioEncoderMediaCodec.queueInputBuffer(
-                                inputBufferIndex,
-                                0,
-                                buffer.length,
-                                presentationTimeUs,
-                                0);
+                        int byteBufferLength = byteBuffer.limit();
+                        if (byteBufferLength >= buffer.length) {
+                            byteBuffer.clear();
+                            // 这里还要考虑byteBuffer能不能装的下buffer
+                            byteBuffer.put(buffer);
+                            long presentationTimeUs = System.nanoTime() / 1000;
+                            mAudioEncoderMediaCodec.queueInputBuffer(
+                                    inputBufferIndex,
+                                    0,
+                                    buffer.length,
+                                    presentationTimeUs,
+                                    0);
+                        } else {
+                            int putBufferLength = 0;
+                            while (true) {
+                                byteBuffer.clear();
+                                long presentationTimeUs = System.nanoTime() / 1000;
+                                // 这里还要考虑byteBuffer能不能装的下buffer
+                                if ((buffer.length - putBufferLength) >= byteBufferLength) {
+                                    byteBuffer.put(buffer,
+                                            putBufferLength,
+                                            byteBufferLength);
+                                    mAudioEncoderMediaCodec.queueInputBuffer(
+                                            inputBufferIndex,
+                                            putBufferLength,
+                                            byteBufferLength,
+                                            presentationTimeUs,
+                                            0);
+                                } else {
+                                    byteBuffer.put(buffer,
+                                            putBufferLength,
+                                            buffer.length - putBufferLength);
+                                    mAudioEncoderMediaCodec.queueInputBuffer(
+                                            inputBufferIndex,
+                                            putBufferLength,
+                                            buffer.length - putBufferLength,
+                                            presentationTimeUs,
+                                            0);
+                                }
+                                putBufferLength += byteBufferLength;
+                                if (buffer.length - putBufferLength <= 0) {
+                                    MLog.d(TAG, "AudioEncoderThread Input break");
+                                    break;
+                                }
+                            }
+                        }
                     }
                 } catch (MediaCodec.CryptoException
                         | IllegalStateException e) {
+                    MLog.e(TAG, "AudioEncoderThread Input occur exception: " + e);
                     mIsRecording = false;
                     break;
                 }
@@ -651,15 +753,21 @@ public class RecordScreenFragment extends BaseFragment {
                             bufferInfo, 10000);
                     switch (outputBufferIndex) {
                         case MediaCodec.INFO_TRY_AGAIN_LATER:
+                            MLog.d(TAG, "AudioEncoderThread " +
+                                    "Output MediaCodec.INFO_TRY_AGAIN_LATER");
                             mIsRecording = false;
                             return;
                         case MediaCodec.INFO_OUTPUT_FORMAT_CHANGED:
+                            MLog.d(TAG, "AudioEncoderThread " +
+                                    "Output MediaCodec.INFO_OUTPUT_FORMAT_CHANGED");
                             mAudioEncoderMediaFormat = mAudioEncoderMediaCodec.getOutputFormat();
                             if (mAudioEncoderMediaFormat != null) {
                                 mOutputAudioTrack = mMediaMuxer.addTrack(mAudioEncoderMediaFormat);
                             }
                             break;
                         case MediaCodec.INFO_OUTPUT_BUFFERS_CHANGED:
+                            MLog.d(TAG, "AudioEncoderThread " +
+                                    "Output MediaCodec.INFO_OUTPUT_BUFFERS_CHANGED");
                             outputBuffers = mAudioEncoderMediaCodec.getOutputBuffers();
                             break;
                         default:
@@ -667,16 +775,26 @@ public class RecordScreenFragment extends BaseFragment {
                     }
                     ByteBuffer byteBuffer = outputBuffers[outputBufferIndex];
                     if ((bufferInfo.flags & MediaCodec.BUFFER_FLAG_CODEC_CONFIG) != 0) {
+                        MLog.d(TAG, "AudioEncoderThread " +
+                                "Output MediaCodec.BUFFER_FLAG_CODEC_CONFIG");
                         mAudioEncoderMediaCodec.releaseOutputBuffer(outputBufferIndex, false);
                         continue;
                     }
                     if ((bufferInfo.flags & MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0) {
+                        MLog.d(TAG, "AudioEncoderThread " +
+                                "Output MediaCodec.BUFFER_FLAG_END_OF_STREAM");
                         mIsRecording = false;
                         break;
                     }
-                    
+                    if (/*mIsMuxerStarted
+                            && */mOutputAudioTrack >= 0
+                            && bufferInfo.size != 0) {
+                        mMediaMuxer.writeSampleData(mOutputAudioTrack, byteBuffer, bufferInfo);
+                    }
+                    mAudioEncoderMediaCodec.releaseOutputBuffer(mOutputAudioTrack, false);
                 } catch (MediaCodec.CryptoException
                         | IllegalStateException e) {
+                    MLog.e(TAG, "AudioEncoderThread Output occur exception: " + e);
                     mIsRecording = false;
                     break;
                 }
