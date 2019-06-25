@@ -552,9 +552,9 @@ public class RecordScreenFragment extends BaseFragment {
         mMediaProjection.registerCallback(mMediaProjectionCallback, mThreadHandler);
         //        mMediaProjection.createVirtualDisplay();
 
-        if (mVideoEncoderMediaCodec != null) {
+        /*if (mVideoEncoderMediaCodec != null) {
             mVideoEncoderMediaCodec.start();
-        }
+        }*/
         if (mAudioEncoderMediaCodec != null) {
             mAudioEncoderMediaCodec.start();
         }
@@ -565,8 +565,8 @@ public class RecordScreenFragment extends BaseFragment {
         if (mVideoEncoderMediaCodec != null
                 && mAudioEncoderMediaCodec != null
                 && mAudioRecord != null) {
-            mVideoEncoderThread = new VideoEncoderThread();
-            new Thread(mVideoEncoderThread).start();
+            /*mVideoEncoderThread = new VideoEncoderThread();
+            new Thread(mVideoEncoderThread).start();*/
             mAudioEncoderThread = new AudioEncoderThread();
             new Thread(mAudioEncoderThread).start();
 
@@ -677,78 +677,78 @@ public class RecordScreenFragment extends BaseFragment {
     private class AudioEncoderThread implements Runnable {
         @Override
         public void run() {
-            boolean onlyOne = true;
-            byte[] buffer = null;
-            //byte[] buffer = new byte[MediaUtils.getMinBufferSize() * 2];
+            byte[] buffer = new byte[MediaUtils.getMinBufferSize() * 2];
             ByteBuffer[] inputBuffers = mAudioEncoderMediaCodec.getInputBuffers();
             ByteBuffer[] outputBuffers = mAudioEncoderMediaCodec.getOutputBuffers();
+            MLog.d(TAG, "AudioEncoderThread start");
             while (mIsRecording) {
-                if (buffer != null) {
-                    //Arrays.fill(buffer, (byte) 0);
-                    int result = mAudioRecord.read(buffer, 0, buffer.length);
-                    if (result < 0) {
-                        MLog.d(TAG, "AudioEncoderThread result: " + result);
-                        mIsRecording = false;
-                        break;
-                    }
+                //Arrays.fill(buffer, (byte) 0);
+                int result = mAudioRecord.read(buffer, 0, buffer.length);
+                if (result < 0) {
+                    MLog.d(TAG, "AudioEncoderThread result: " + result);
+                    mIsRecording = false;
+                    break;
                 }
                 // Input过程
                 try {
-                    int inputBufferIndex = mAudioEncoderMediaCodec.dequeueInputBuffer(-1);
-                    if (inputBufferIndex != MediaCodec.INFO_TRY_AGAIN_LATER) {
-                        ByteBuffer byteBuffer = inputBuffers[inputBufferIndex];
-                        int byteBufferLength = byteBuffer.limit();
-                        if (onlyOne) {
-                            onlyOne = false;
-                            buffer = new byte[byteBufferLength];
-                            int result = mAudioRecord.read(buffer, 0, buffer.length);
-                            if (result < 0) {
-                                MLog.d(TAG, "AudioEncoderThread result: " + result);
-                                mIsRecording = false;
-                                break;
-                            }
-                        }
-                        if (byteBufferLength >= buffer.length) {
-                            byteBuffer.clear();
+                    int roomIndex = mAudioEncoderMediaCodec.dequeueInputBuffer(-1);
+                    MLog.d(TAG, "AudioEncoderThread Input roomIndex: " + roomIndex);
+                    if (roomIndex != MediaCodec.INFO_TRY_AGAIN_LATER) {
+                        ByteBuffer room = inputBuffers[roomIndex];
+                        int roomSize = room.limit();
+                        // ByteBuffer空间够
+                        if (roomSize >= buffer.length) {
+                            room.clear();
                             // 这里还要考虑byteBuffer能不能装的下buffer
-                            byteBuffer.put(buffer);
+                            room.put(buffer);
                             long presentationTimeUs = System.nanoTime() / 1000;
                             mAudioEncoderMediaCodec.queueInputBuffer(
-                                    inputBufferIndex,
+                                    roomIndex,
                                     0,
                                     buffer.length,
                                     presentationTimeUs,
                                     0);
+                            break;
                         } else {
                             int putBufferLength = 0;
-                            while (true) {
-                                byteBuffer.clear();
-                                long presentationTimeUs = System.nanoTime() / 1000;
-                                // 这里还要考虑byteBuffer能不能装的下buffer
-                                if ((buffer.length - putBufferLength) >= byteBufferLength) {
-                                    byteBuffer.put(buffer,
-                                            putBufferLength,
-                                            byteBufferLength);
-                                    mAudioEncoderMediaCodec.queueInputBuffer(
-                                            inputBufferIndex,
-                                            putBufferLength,
-                                            byteBufferLength,
-                                            presentationTimeUs,
-                                            0);
+                            while (mIsRecording) {
+                                if (roomIndex != MediaCodec.INFO_TRY_AGAIN_LATER) {
+                                    room = inputBuffers[roomIndex];
+                                    // ByteBuffer空间不够
+                                    room.clear();
+                                    long presentationTimeUs = System.nanoTime() / 1000;
+                                    // 这里还要考虑byteBuffer能不能装的下buffer
+                                    if ((buffer.length - putBufferLength) >= roomSize) {
+                                        room.put(buffer,
+                                                putBufferLength,
+                                                roomSize);
+                                        mAudioEncoderMediaCodec.queueInputBuffer(
+                                                roomIndex,
+                                                0,
+                                                roomSize,
+                                                presentationTimeUs,
+                                                0);
+                                    } else {
+                                        room.put(buffer,
+                                                putBufferLength,
+                                                buffer.length - putBufferLength);
+                                        mAudioEncoderMediaCodec.queueInputBuffer(
+                                                roomIndex,
+                                                0,
+                                                buffer.length - putBufferLength,
+                                                presentationTimeUs,
+                                                0);
+                                    }
+                                    putBufferLength += roomSize;
+                                    if (buffer.length - putBufferLength <= 0) {
+                                        MLog.d(TAG, "AudioEncoderThread Input break");
+                                        break;
+                                    }
+                                    MLog.d(TAG, "AudioEncoderThread Input @ start roomIndex: " + roomIndex);
+                                    roomIndex = mAudioEncoderMediaCodec.dequeueInputBuffer(-1);
+                                    MLog.d(TAG, "AudioEncoderThread Input @ end   roomIndex: " + roomIndex);
                                 } else {
-                                    byteBuffer.put(buffer,
-                                            putBufferLength,
-                                            buffer.length - putBufferLength);
-                                    mAudioEncoderMediaCodec.queueInputBuffer(
-                                            inputBufferIndex,
-                                            putBufferLength,
-                                            buffer.length - putBufferLength,
-                                            presentationTimeUs,
-                                            0);
-                                }
-                                putBufferLength += byteBufferLength;
-                                if (buffer.length - putBufferLength <= 0) {
-                                    MLog.d(TAG, "AudioEncoderThread Input break");
+                                    MLog.d(TAG, "AudioEncoderThread Input else break");
                                     break;
                                 }
                             }
@@ -763,10 +763,11 @@ public class RecordScreenFragment extends BaseFragment {
                 // Output过程
                 try {
                     MediaCodec.BufferInfo bufferInfo = new MediaCodec.BufferInfo();
-                    int outputBufferIndex = mAudioEncoderMediaCodec.dequeueOutputBuffer(
+                    int roomIndex = mAudioEncoderMediaCodec.dequeueOutputBuffer(
                             bufferInfo, 10000);
+                    MLog.d(TAG, "AudioEncoderThread Output roomIndex: " + roomIndex);
                     // 先处理负值
-                    switch (outputBufferIndex) {
+                    switch (roomIndex) {
                         case MediaCodec.INFO_TRY_AGAIN_LATER:
                             MLog.d(TAG, "AudioEncoderThread " +
                                     "Output MediaCodec.INFO_TRY_AGAIN_LATER");
@@ -790,11 +791,11 @@ public class RecordScreenFragment extends BaseFragment {
                         default:
                             break;
                     }
-                    ByteBuffer byteBuffer = outputBuffers[outputBufferIndex];
+                    ByteBuffer byteBuffer = outputBuffers[roomIndex];
                     if ((bufferInfo.flags & MediaCodec.BUFFER_FLAG_CODEC_CONFIG) != 0) {
                         MLog.d(TAG, "AudioEncoderThread " +
                                 "Output MediaCodec.BUFFER_FLAG_CODEC_CONFIG");
-                        mAudioEncoderMediaCodec.releaseOutputBuffer(outputBufferIndex, false);
+                        mAudioEncoderMediaCodec.releaseOutputBuffer(roomIndex, false);
                         continue;
                     }
                     if ((bufferInfo.flags & MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0) {
@@ -808,7 +809,7 @@ public class RecordScreenFragment extends BaseFragment {
                             && bufferInfo.size != 0) {
                         mMediaMuxer.writeSampleData(mOutputAudioTrack, byteBuffer, bufferInfo);
                     }
-                    mAudioEncoderMediaCodec.releaseOutputBuffer(outputBufferIndex, false);
+                    mAudioEncoderMediaCodec.releaseOutputBuffer(roomIndex, false);
                 } catch (MediaCodec.CryptoException
                         | IllegalStateException e) {
                     MLog.e(TAG, "AudioEncoderThread Output occur exception: " + e);
@@ -816,6 +817,7 @@ public class RecordScreenFragment extends BaseFragment {
                     break;
                 }
             }
+            MLog.d(TAG, "AudioEncoderThread end");
         }
     }
 
