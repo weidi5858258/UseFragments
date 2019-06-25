@@ -677,9 +677,8 @@ public class RecordScreenFragment extends BaseFragment {
     private class AudioEncoderThread implements Runnable {
         @Override
         public void run() {
+            ByteBuffer room = null;
             byte[] buffer = new byte[MediaUtils.getMinBufferSize() * 2];
-            ByteBuffer[] inputBuffers = mAudioEncoderMediaCodec.getInputBuffers();
-            ByteBuffer[] outputBuffers = mAudioEncoderMediaCodec.getOutputBuffers();
             MLog.d(TAG, "AudioEncoderThread start");
             while (mIsRecording) {
                 //Arrays.fill(buffer, (byte) 0);
@@ -694,9 +693,23 @@ public class RecordScreenFragment extends BaseFragment {
                     int roomIndex = mAudioEncoderMediaCodec.dequeueInputBuffer(-1);
                     MLog.d(TAG, "AudioEncoderThread Input roomIndex: " + roomIndex);
                     if (roomIndex != MediaCodec.INFO_TRY_AGAIN_LATER) {
-                        ByteBuffer room = inputBuffers[roomIndex];
+                        room = mAudioEncoderMediaCodec.getInputBuffer(roomIndex);
                         int roomSize = room.limit();
-                        // ByteBuffer空间够
+                        if (roomSize < buffer.length) {
+                            room.limit(buffer.length);
+                        }
+                        room.clear();
+                        // 这里还要考虑byteBuffer能不能装的下buffer
+                        room.put(buffer);
+                        long presentationTimeUs = System.nanoTime() / 1000;
+                        mAudioEncoderMediaCodec.queueInputBuffer(
+                                roomIndex,
+                                0,
+                                buffer.length,
+                                presentationTimeUs,
+                                0);
+
+                        /*// ByteBuffer空间够
                         if (roomSize >= buffer.length) {
                             room.clear();
                             // 这里还要考虑byteBuffer能不能装的下buffer
@@ -752,7 +765,7 @@ public class RecordScreenFragment extends BaseFragment {
                                     break;
                                 }
                             }
-                        }
+                        }*/
                     }
                 } catch (MediaCodec.CryptoException
                         | IllegalStateException e) {
@@ -786,12 +799,12 @@ public class RecordScreenFragment extends BaseFragment {
                         case MediaCodec.INFO_OUTPUT_BUFFERS_CHANGED:
                             MLog.d(TAG, "AudioEncoderThread " +
                                     "Output MediaCodec.INFO_OUTPUT_BUFFERS_CHANGED");
-                            outputBuffers = mAudioEncoderMediaCodec.getOutputBuffers();
+                            //outputBuffers = mAudioEncoderMediaCodec.getOutputBuffers();
                             continue;
                         default:
                             break;
                     }
-                    ByteBuffer byteBuffer = outputBuffers[roomIndex];
+                    room = mAudioEncoderMediaCodec.getOutputBuffer(roomIndex);
                     if ((bufferInfo.flags & MediaCodec.BUFFER_FLAG_CODEC_CONFIG) != 0) {
                         MLog.d(TAG, "AudioEncoderThread " +
                                 "Output MediaCodec.BUFFER_FLAG_CODEC_CONFIG");
@@ -807,7 +820,7 @@ public class RecordScreenFragment extends BaseFragment {
                     if (/*mIsMuxerStarted
                             && */mOutputAudioTrack >= 0
                             && bufferInfo.size != 0) {
-                        mMediaMuxer.writeSampleData(mOutputAudioTrack, byteBuffer, bufferInfo);
+                        mMediaMuxer.writeSampleData(mOutputAudioTrack, room, bufferInfo);
                     }
                     mAudioEncoderMediaCodec.releaseOutputBuffer(roomIndex, false);
                 } catch (MediaCodec.CryptoException
