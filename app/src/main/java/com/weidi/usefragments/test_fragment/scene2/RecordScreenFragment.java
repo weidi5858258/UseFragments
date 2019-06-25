@@ -677,16 +677,20 @@ public class RecordScreenFragment extends BaseFragment {
     private class AudioEncoderThread implements Runnable {
         @Override
         public void run() {
-            byte[] buffer = new byte[MediaUtils.getMinBufferSize() * 2];
+            boolean onlyOne = true;
+            byte[] buffer = null;
+            //byte[] buffer = new byte[MediaUtils.getMinBufferSize() * 2];
             ByteBuffer[] inputBuffers = mAudioEncoderMediaCodec.getInputBuffers();
             ByteBuffer[] outputBuffers = mAudioEncoderMediaCodec.getOutputBuffers();
             while (mIsRecording) {
-                Arrays.fill(buffer, (byte) 0);
-                int result = mAudioRecord.read(buffer, 0, buffer.length);
-                if (result < 0) {
-                    MLog.d(TAG, "AudioEncoderThread result: " + result);
-                    mIsRecording = false;
-                    break;
+                if (buffer != null) {
+                    //Arrays.fill(buffer, (byte) 0);
+                    int result = mAudioRecord.read(buffer, 0, buffer.length);
+                    if (result < 0) {
+                        MLog.d(TAG, "AudioEncoderThread result: " + result);
+                        mIsRecording = false;
+                        break;
+                    }
                 }
                 // Input过程
                 try {
@@ -694,6 +698,16 @@ public class RecordScreenFragment extends BaseFragment {
                     if (inputBufferIndex != MediaCodec.INFO_TRY_AGAIN_LATER) {
                         ByteBuffer byteBuffer = inputBuffers[inputBufferIndex];
                         int byteBufferLength = byteBuffer.limit();
+                        if (onlyOne) {
+                            onlyOne = false;
+                            buffer = new byte[byteBufferLength];
+                            int result = mAudioRecord.read(buffer, 0, buffer.length);
+                            if (result < 0) {
+                                MLog.d(TAG, "AudioEncoderThread result: " + result);
+                                mIsRecording = false;
+                                break;
+                            }
+                        }
                         if (byteBufferLength >= buffer.length) {
                             byteBuffer.clear();
                             // 这里还要考虑byteBuffer能不能装的下buffer
@@ -751,6 +765,7 @@ public class RecordScreenFragment extends BaseFragment {
                     MediaCodec.BufferInfo bufferInfo = new MediaCodec.BufferInfo();
                     int outputBufferIndex = mAudioEncoderMediaCodec.dequeueOutputBuffer(
                             bufferInfo, 10000);
+                    // 先处理负值
                     switch (outputBufferIndex) {
                         case MediaCodec.INFO_TRY_AGAIN_LATER:
                             MLog.d(TAG, "AudioEncoderThread " +
@@ -763,13 +778,15 @@ public class RecordScreenFragment extends BaseFragment {
                             mAudioEncoderMediaFormat = mAudioEncoderMediaCodec.getOutputFormat();
                             if (mAudioEncoderMediaFormat != null) {
                                 mOutputAudioTrack = mMediaMuxer.addTrack(mAudioEncoderMediaFormat);
+                                // test
+                                mMediaMuxer.start();
                             }
-                            break;
+                            continue;
                         case MediaCodec.INFO_OUTPUT_BUFFERS_CHANGED:
                             MLog.d(TAG, "AudioEncoderThread " +
                                     "Output MediaCodec.INFO_OUTPUT_BUFFERS_CHANGED");
                             outputBuffers = mAudioEncoderMediaCodec.getOutputBuffers();
-                            break;
+                            continue;
                         default:
                             break;
                     }
@@ -791,7 +808,7 @@ public class RecordScreenFragment extends BaseFragment {
                             && bufferInfo.size != 0) {
                         mMediaMuxer.writeSampleData(mOutputAudioTrack, byteBuffer, bufferInfo);
                     }
-                    mAudioEncoderMediaCodec.releaseOutputBuffer(mOutputAudioTrack, false);
+                    mAudioEncoderMediaCodec.releaseOutputBuffer(outputBufferIndex, false);
                 } catch (MediaCodec.CryptoException
                         | IllegalStateException e) {
                     MLog.e(TAG, "AudioEncoderThread Output occur exception: " + e);
