@@ -683,37 +683,56 @@ public class RecordScreenFragment extends BaseFragment {
     private class AudioEncoderThread implements Runnable {
         @Override
         public void run() {
-            boolean onlyOne = true;
-            ByteBuffer room = null;
-            byte[] buffer = null;
-            //byte[] buffer = new byte[MediaUtils.getMinBufferSize() * 2];
             MLog.d(TAG, "AudioEncoderThread start");
+            int readSize = -1;
+            int roomIndex = -1;
+            ByteBuffer room = null;
+            boolean onlyOne = true;
+            byte[] buffer = new byte[MediaUtils.getMinBufferSize() * 2];
+            MLog.d(TAG, "AudioEncoderThread first  buffer.length: " + buffer.length);
+            ByteBuffer[] inputBuffers = mAudioEncoderMediaCodec.getInputBuffers();
+            if (inputBuffers != null
+                    && inputBuffers.length > 0
+                    && inputBuffers[0] != null) {
+                // 目的:得到的房间能够一次性装下buffer里的数据
+                buffer = new byte[inputBuffers[0].limit()];
+                MLog.d(TAG, "AudioEncoderThread second buffer.length: " + buffer.length);
+            }
+
             while (mIsRecording) {
                 if (buffer != null) {
                     //Arrays.fill(buffer, (byte) 0);
-                    int result = mAudioRecord.read(buffer, 0, buffer.length);
-                    if (result < 0) {
-                        MLog.d(TAG, "AudioEncoderThread result: " + result);
+                    readSize = mAudioRecord.read(buffer, 0, buffer.length);
+                    if (readSize < 0) {
+                        MLog.d(TAG, "AudioEncoderThread readSize: " + readSize);
                         mIsRecording = false;
                         break;
                     }
                 }
+
                 // Input过程
                 try {
-                    int roomIndex = mAudioEncoderMediaCodec.dequeueInputBuffer(-1);
+                    roomIndex = mAudioEncoderMediaCodec.dequeueInputBuffer(-1);
                     if (roomIndex != MediaCodec.INFO_TRY_AGAIN_LATER) {
                         room = mAudioEncoderMediaCodec.getInputBuffer(roomIndex);
-                        int roomSize = room.limit();
+
+                        // 只做一次,目的还是为了得到合适大小的buffer
                         if (onlyOne) {
                             onlyOne = false;
-                            buffer = new byte[roomSize];
-                            int result = mAudioRecord.read(buffer, 0, buffer.length);
-                            if (result < 0) {
-                                MLog.d(TAG, "AudioEncoderThread result: " + result);
-                                mIsRecording = false;
-                                break;
+                            int roomSize = room.limit();
+                            if (roomSize < buffer.length) {
+                                buffer = new byte[roomSize];
+                                MLog.d(TAG, "AudioEncoderThread three  buffer.length: " +
+                                        buffer.length);
+                                readSize = mAudioRecord.read(buffer, 0, buffer.length);
+                                if (readSize < 0) {
+                                    MLog.d(TAG, "AudioEncoderThread readSize: " + readSize);
+                                    mIsRecording = false;
+                                    break;
+                                }
                             }
                         }
+
                         room.clear();
                         // 这里还要考虑byteBuffer能不能装的下buffer
                         room.put(buffer);
@@ -731,10 +750,11 @@ public class RecordScreenFragment extends BaseFragment {
                     mIsRecording = false;
                     break;
                 }
+
                 // Output过程
                 try {
                     MediaCodec.BufferInfo bufferInfo = new MediaCodec.BufferInfo();
-                    int roomIndex = mAudioEncoderMediaCodec.dequeueOutputBuffer(
+                    roomIndex = mAudioEncoderMediaCodec.dequeueOutputBuffer(
                             bufferInfo, 10000);
                     // 先处理负值
                     switch (roomIndex) {
