@@ -332,9 +332,6 @@ public class RecordScreenFragment extends BaseFragment {
     private int mOutputVideoTrack = -1;
     private int mOutputAudioTrack = -1;
 
-    private VideoEncoderThread mVideoEncoderThread;
-    private AudioEncoderThread mAudioEncoderThread;
-
     private Object mMediaMuxerLock = new Object();
 
     /***
@@ -560,25 +557,12 @@ public class RecordScreenFragment extends BaseFragment {
 
         mMediaProjection.registerCallback(mMediaProjectionCallback, mThreadHandler);
 
-        mVirtualDisplay = mMediaProjection.createVirtualDisplay(
-                TAG + "-Display",
-                mWidth,
-                mHeight,
-                1,
-                DisplayManager.VIRTUAL_DISPLAY_FLAG_PUBLIC,
-                mSurface,
-                null,
-                null);
-        if (DEBUG)
-            MLog.d(TAG, "startRecordScreen() " + printThis() +
-                    " created virtual display: " + mVirtualDisplay.getDisplay());
-
-        /*if (mAudioRecord != null) {
+        if (mAudioRecord != null) {
             mAudioRecord.startRecording();
         }
         if (mAudioEncoderMediaCodec != null) {
             mAudioEncoderMediaCodec.start();
-        }*/
+        }
         if (mVideoEncoderMediaCodec != null) {
             mVideoEncoderMediaCodec.start();
         }
@@ -587,10 +571,21 @@ public class RecordScreenFragment extends BaseFragment {
                 && mAudioEncoderMediaCodec != null
                 && mAudioRecord != null
                 && mSurface != null) {
-            /*mAudioEncoderThread = new AudioEncoderThread();
-            new Thread(mAudioEncoderThread).start();*/
-            mVideoEncoderThread = new VideoEncoderThread();
-            new Thread(mVideoEncoderThread).start();
+            new Thread(new AudioEncoderThread()).start();
+            new Thread(new VideoEncoderThread()).start();
+
+            mVirtualDisplay = mMediaProjection.createVirtualDisplay(
+                    TAG + "-Display",
+                    mWidth,
+                    mHeight,
+                    1,
+                    DisplayManager.VIRTUAL_DISPLAY_FLAG_PUBLIC,
+                    mSurface,
+                    null,
+                    null);
+            if (DEBUG)
+                MLog.d(TAG, "startRecordScreen() " + printThis() +
+                        " created virtual display: " + mVirtualDisplay.getDisplay());
 
             // 相当于按了“Home”键
             getAttachedActivity().moveTaskToBack(true);
@@ -726,26 +721,29 @@ public class RecordScreenFragment extends BaseFragment {
             int roomIndex = MediaCodec.INFO_TRY_AGAIN_LATER;
             ByteBuffer room = null;
             while (mIsRecording) {
-                /*if (mOutputAudioTrack < 0) {
+                // 等到音频的mOutputAudioTrack >= 0时,才往下走
+                // 先把音频的准备工作做好了,再准备视频的准备工作
+                if (mOutputAudioTrack < 0) {
                     try {
                         Thread.sleep(1, 0);
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
                     continue;
-                }*/
+                }
+                // 没有Input过程
+
+                // Output过程
                 try {
                     MediaCodec.BufferInfo bufferInfo = new MediaCodec.BufferInfo();
-                    MLog.d(TAG, "VideoEncoderThread roomIndex: " + roomIndex);
                     roomIndex = mVideoEncoderMediaCodec.dequeueOutputBuffer(
-                            bufferInfo, 10000);// 33333
-                    MLog.d(TAG, "VideoEncoderThread roomIndex: " + roomIndex);
+                            bufferInfo, 33333);
                     switch (roomIndex) {
                         case MediaCodec.INFO_TRY_AGAIN_LATER:
-                            MLog.d(TAG, "VideoEncoderThread " +
-                                    "Output MediaCodec.INFO_TRY_AGAIN_LATER");
-                            mIsRecording = false;
-                            return;
+                            // 录屏时roomIndex经常得到MediaCodec.INFO_TRY_AGAIN_LATER值
+                            /*MLog.d(TAG, "VideoEncoderThread " +
+                                    "Output MediaCodec.INFO_TRY_AGAIN_LATER");*/
+                            break;
                         case MediaCodec.INFO_OUTPUT_FORMAT_CHANGED:
                             MLog.d(TAG, "VideoEncoderThread " +
                                     "Output MediaCodec.INFO_OUTPUT_FORMAT_CHANGED");
@@ -755,7 +753,7 @@ public class RecordScreenFragment extends BaseFragment {
                                 MLog.d(TAG, "VideoEncoderThread mOutputVideoTrack: " +
                                         mOutputVideoTrack);
                             }
-                            break;
+                            continue;
                         case MediaCodec.INFO_OUTPUT_BUFFERS_CHANGED:
                             MLog.d(TAG, "VideoEncoderThread " +
                                     "Output MediaCodec.INFO_OUTPUT_BUFFERS_CHANGED");
@@ -763,9 +761,7 @@ public class RecordScreenFragment extends BaseFragment {
                             continue;
                         default:
                             break;
-
                     }
-                    room = mVideoEncoderMediaCodec.getOutputBuffer(roomIndex);
                     if ((bufferInfo.flags & MediaCodec.BUFFER_FLAG_CODEC_CONFIG) != 0) {
                         MLog.d(TAG, "VideoEncoderThread " +
                                 "Output MediaCodec.BUFFER_FLAG_CODEC_CONFIG");
@@ -778,11 +774,15 @@ public class RecordScreenFragment extends BaseFragment {
                         mIsRecording = false;
                         break;
                     }
+                    if (roomIndex < 0) {
+                        continue;
+                    }
+                    room = mVideoEncoderMediaCodec.getOutputBuffer(roomIndex);
                     if (!mIsMuxerStarted
                             && mOutputVideoTrack >= 0
                             && mOutputAudioTrack >= 0) {
-                        mIsMuxerStarted = true;
                         mMediaMuxer.start();
+                        mIsMuxerStarted = true;
                         MLog.d(TAG, "VideoEncoderThread mMediaMuxer.start()");
                     }
                     if (mIsMuxerStarted
@@ -816,20 +816,27 @@ public class RecordScreenFragment extends BaseFragment {
             int readSize = -1;
             int roomIndex = MediaCodec.INFO_TRY_AGAIN_LATER;
             ByteBuffer room = null;
+            /***
+             下面所做的事(包括onlyOne代码)目的是为了让
+             buffer空间大小跟room空间大小一致,
+             这样就能一次性把buffer的数据放到room中去.
+             如果buffer的空间大小大于room的空间大小,
+             那么处理起来会很麻烦.
+             */
             boolean onlyOne = true;
             byte[] buffer = new byte[MediaUtils.getMinBufferSize() * 2];
-            MLog.d(TAG, "AudioEncoderThread first  buffer.length: " + buffer.length);
+            MLog.d(TAG, "AudioEncoderThread first  setup buffer.length: " + buffer.length);
             ByteBuffer[] inputBuffers = mAudioEncoderMediaCodec.getInputBuffers();
             if (inputBuffers != null
                     && inputBuffers.length > 0
                     && inputBuffers[0] != null
                     && buffer.length > inputBuffers[0].limit()) {
-                // 目的:得到的房间能够一次性装下buffer里的数据
                 buffer = new byte[inputBuffers[0].limit()];
-                MLog.d(TAG, "AudioEncoderThread second buffer.length: " + buffer.length);
+                MLog.d(TAG, "AudioEncoderThread second setup buffer.length: " + buffer.length);
             }
 
             while (mIsRecording) {
+                // 取数据过程
                 if (buffer != null) {
                     //Arrays.fill(buffer, (byte) 0);
                     readSize = mAudioRecord.read(buffer, 0, buffer.length);
@@ -846,7 +853,6 @@ public class RecordScreenFragment extends BaseFragment {
                     if (roomIndex != MediaCodec.INFO_TRY_AGAIN_LATER) {
                         room = mAudioEncoderMediaCodec.getInputBuffer(roomIndex);
 
-                        // 只做一次,目的还是为了得到合适大小的buffer
                         if (onlyOne) {
                             onlyOne = false;
                             int roomSize = room.limit();
@@ -864,7 +870,6 @@ public class RecordScreenFragment extends BaseFragment {
                         }
 
                         room.clear();
-                        // 这里还要考虑byteBuffer能不能装的下buffer
                         room.put(buffer);
                         long presentationTimeUs = System.nanoTime() / 1000;
                         mAudioEncoderMediaCodec.queueInputBuffer(
@@ -884,16 +889,18 @@ public class RecordScreenFragment extends BaseFragment {
                 // Output过程
                 try {
                     MediaCodec.BufferInfo bufferInfo = new MediaCodec.BufferInfo();
+                    // dequeueOutputBuffer方法不能用于async mode
                     roomIndex = mAudioEncoderMediaCodec.dequeueOutputBuffer(
                             bufferInfo, 10000);
                     // 先处理负值
                     switch (roomIndex) {
                         case MediaCodec.INFO_TRY_AGAIN_LATER:
+                            // 请重试
                             MLog.d(TAG, "AudioEncoderThread " +
                                     "Output MediaCodec.INFO_TRY_AGAIN_LATER");
-                            mIsRecording = false;
-                            return;
+                            break;
                         case MediaCodec.INFO_OUTPUT_FORMAT_CHANGED:
+                            // 格式已经更改(首先执行)
                             MLog.d(TAG, "AudioEncoderThread " +
                                     "Output MediaCodec.INFO_OUTPUT_FORMAT_CHANGED");
                             mAudioEncoderMediaFormat = mAudioEncoderMediaCodec.getOutputFormat();
@@ -904,6 +911,7 @@ public class RecordScreenFragment extends BaseFragment {
                             }
                             continue;
                         case MediaCodec.INFO_OUTPUT_BUFFERS_CHANGED:
+                            // 输出缓冲区已经改变
                             MLog.d(TAG, "AudioEncoderThread " +
                                     "Output MediaCodec.INFO_OUTPUT_BUFFERS_CHANGED");
                             //outputBuffers = mAudioEncoderMediaCodec.getOutputBuffers();
@@ -911,8 +919,8 @@ public class RecordScreenFragment extends BaseFragment {
                         default:
                             break;
                     }
-                    room = mAudioEncoderMediaCodec.getOutputBuffer(roomIndex);
                     if ((bufferInfo.flags & MediaCodec.BUFFER_FLAG_CODEC_CONFIG) != 0) {
+                        // 会执行一次
                         MLog.d(TAG, "AudioEncoderThread " +
                                 "Output MediaCodec.BUFFER_FLAG_CODEC_CONFIG");
                         mAudioEncoderMediaCodec.releaseOutputBuffer(roomIndex, false);
@@ -924,6 +932,10 @@ public class RecordScreenFragment extends BaseFragment {
                         mIsRecording = false;
                         break;
                     }
+                    if (roomIndex < 0) {
+                        continue;
+                    }
+                    room = mAudioEncoderMediaCodec.getOutputBuffer(roomIndex);
                     if (mIsMuxerStarted
                             && mOutputAudioTrack >= 0
                             && bufferInfo.size != 0) {

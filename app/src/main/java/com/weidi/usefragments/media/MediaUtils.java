@@ -39,7 +39,7 @@ public class MediaUtils {
     // 想要的编码格式
     public static final String VIDEO_MIME_TYPE = MediaFormat.MIMETYPE_VIDEO_AVC;// video/avc
     public static final String AUDIO_MIME_TYPE = MediaFormat.MIMETYPE_AUDIO_AAC;// audio/mp4a-latm
-    private static final int VIDEO_BIT_RATE = 8000000;// 1200000
+    private static final int VIDEO_BIT_RATE = 800000;// 1200000 8000000
     private static final int AUDIO_BIT_RATE = 64000;
     private static final int FRAME_RATE = 30;
     private static final int IFRAME_INTERVAL = 1;
@@ -189,7 +189,7 @@ public class MediaUtils {
         try {
             encoder = MediaCodec.createByCodecName(codecInfo.getName());
             if (DEBUG)
-                MLog.d(TAG, "getVideoEncoderMediaCodec() create success");
+                MLog.d(TAG, "getVideoEncoderMediaCodec() MediaCodec create success");
             // MediaCodec.CONFIGURE_FLAG_ENCODE表示编码flag
             /*encoder.configure(
                     getVideoEncoderMediaFormat(width, height),
@@ -221,7 +221,7 @@ public class MediaUtils {
          启动另一个线程不断的从这个队列中取出数据传递给jni包装的jrtplib，
          发送包装好的rtp数据给接收端。
          */
-        encoder.setCallback(new MediaCodec.Callback() {
+        /*encoder.setCallback(new MediaCodec.Callback() {
 
             @Override
             public void onInputBufferAvailable(
@@ -258,7 +258,7 @@ public class MediaUtils {
                     MLog.d(TAG, "onOutputFormatChanged() format: " + format);
                 // getSpsPpsByteBuffer(mediaFormat);
             }
-        });
+        });*/
 
         return encoder;
     }
@@ -275,7 +275,7 @@ public class MediaUtils {
             // encoder = MediaCodec.createEncoderByType(AUDIO_MIME_TYPE);
             encoder = MediaCodec.createByCodecName(codecInfo.getName());
             if (DEBUG)
-                MLog.d(TAG, "getAudioEncoderMediaCodec() create success");
+                MLog.d(TAG, "getAudioEncoderMediaCodec() MediaCodec create success");
             // MediaCodec.CONFIGURE_FLAG_ENCODE表示编码flag
             /*encoder.configure(
                     getMediaEncoderFormat(width, height),
@@ -385,7 +385,7 @@ public class MediaUtils {
         // i-frame iinterval
         format.setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, IFRAME_INTERVAL);
         if (DEBUG)
-            MLog.d(TAG, "getEncoderMediaFormat() created video format: " + format);
+            MLog.d(TAG, "getVideoEncoderMediaFormat() created video format: " + format);
 
         return format;
     }
@@ -404,6 +404,8 @@ public class MediaUtils {
         // AACObjectLC
         format.setInteger(MediaFormat.KEY_AAC_PROFILE,
                 MediaCodecInfo.CodecProfileLevel.AACObjectLC);
+        if (DEBUG)
+            MLog.d(TAG, "getAudioEncoderMediaFormat() created video format: " + format);
 
         return format;
     }
