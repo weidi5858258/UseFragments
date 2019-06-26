@@ -316,10 +316,12 @@ public class RecordScreenFragment extends BaseFragment {
     private MediaProjectionManager mMediaProjectionManager;
     private MediaProjection mMediaProjection;
     private VirtualDisplay mVirtualDisplay;
+
     private HandlerThread mHandlerThread;
     private Handler mThreadHandler;
     private Handler mUiHandler;
 
+    // 竖屏时的分辨率
     private static final int mWidth = 720;
     private static final int mHeight = 1280;
     private Surface mSurface;
@@ -571,6 +573,7 @@ public class RecordScreenFragment extends BaseFragment {
                 && mAudioEncoderMediaCodec != null
                 && mAudioRecord != null
                 && mSurface != null) {
+            // 音频先启动,让音频的mOutputAudioTrack先得到值
             new Thread(new AudioEncoderThread()).start();
             new Thread(new VideoEncoderThread()).start();
 
@@ -618,13 +621,15 @@ public class RecordScreenFragment extends BaseFragment {
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
-            if (mMediaMuxer != null) {
-                mMediaMuxer.stop();
-                mMediaMuxer.release();
-                mMediaMuxer = null;
-            }
         }
 
+        if (mMediaMuxer != null) {
+            mMediaMuxer.stop();
+            mMediaMuxer.release();
+            mMediaMuxer = null;
+        }
+
+        notifyVideoEndOfStream();
         if (mVideoEncoderMediaCodec != null) {
             mVideoEncoderMediaCodec.release();
             mVideoEncoderMediaCodec = null;
@@ -694,6 +699,24 @@ public class RecordScreenFragment extends BaseFragment {
 
     private void uiHandleMessage(Message msg) {
 
+    }
+
+    private void notifyVideoEndOfStream() {
+        if (DEBUG)
+            MLog.d(TAG, "notifyVideoEndOfStream() " + printThis());
+        //video end notify
+        int inputBufferIndex = mVideoEncoderMediaCodec.dequeueInputBuffer(0);
+        while (inputBufferIndex < 0) {
+            inputBufferIndex = mVideoEncoderMediaCodec.dequeueInputBuffer(0);
+        }
+
+        long presentationTime = System.nanoTime() / 1000;
+        mVideoEncoderMediaCodec.queueInputBuffer(
+                inputBufferIndex,
+                0,
+                0,
+                presentationTime,
+                MediaCodec.BUFFER_FLAG_END_OF_STREAM);
     }
 
     private void notifyAudioEndOfStream() {
@@ -872,6 +895,7 @@ public class RecordScreenFragment extends BaseFragment {
                         room.clear();
                         room.put(buffer);
                         long presentationTimeUs = System.nanoTime() / 1000;
+                        // 通知MediaCodec进行编码
                         mAudioEncoderMediaCodec.queueInputBuffer(
                                 roomIndex,
                                 0,
