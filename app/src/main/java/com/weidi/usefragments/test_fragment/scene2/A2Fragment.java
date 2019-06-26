@@ -1,6 +1,5 @@
 package com.weidi.usefragments.test_fragment.scene2;
 
-import android.animation.Animator;
 import android.app.Activity;
 import android.content.res.Resources;
 import android.os.Bundle;
@@ -8,14 +7,13 @@ import android.support.annotation.Nullable;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.animation.Animation;
-import android.view.animation.AnimationUtils;
 import android.widget.Button;
 import android.widget.TextView;
 
 import com.weidi.usefragments.R;
 import com.weidi.usefragments.fragment.FragOperManager;
 import com.weidi.usefragments.fragment.base.BaseFragment;
+import com.weidi.usefragments.inject.InjectOnClick;
 import com.weidi.usefragments.inject.InjectView;
 import com.weidi.usefragments.tool.MLog;
 
@@ -27,12 +25,7 @@ public class A2Fragment extends BaseFragment {
 
     private static final String TAG =
             A2Fragment.class.getSimpleName();
-
     private static final boolean DEBUG = true;
-    @InjectView(R.id.title_tv)
-    private TextView mTitleView;
-    @InjectView(R.id.jump_btn)
-    private Button mJumpBtn;
 
     public A2Fragment() {
         super();
@@ -56,7 +49,7 @@ public class A2Fragment extends BaseFragment {
             MLog.d(TAG, "onCreate(): " + this
                     + " savedInstanceState: " + savedInstanceState);
 
-        getStatusBarHeight();
+        initData();
     }
 
     @Override
@@ -76,12 +69,12 @@ public class A2Fragment extends BaseFragment {
         if (DEBUG)
             MLog.d(TAG, "onViewCreated(): " + this
                     + " savedInstanceState: " + savedInstanceState);
-        mJumpBtn.setOnClickListener(new View.OnClickListener() {
+        /*mJumpBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 FragOperManager.getInstance().enter3(new B2Fragment());
             }
-        });
+        });*/
     }
 
     @Override
@@ -207,6 +200,25 @@ public class A2Fragment extends BaseFragment {
         }
     }
 
+    @Override
+    protected int provideLayout() {
+        return R.layout.fragment_main;
+    }
+
+    @Override
+    public boolean onBackPressed() {
+        return false;
+    }
+
+    /////////////////////////////////////////////////////////////////
+
+    @InjectView(R.id.title_tv)
+    private TextView mTitleView;
+    @InjectView(R.id.jump_btn)
+    private Button mJumpBtn;
+
+    private Object mLock = new Object();
+
     // 写这个方法只是为了不直接调用onResume()方法
     private void onShow() {
         if (DEBUG)
@@ -221,14 +233,24 @@ public class A2Fragment extends BaseFragment {
             MLog.d(TAG, "onHide(): " + this);
     }
 
-    @Override
-    protected int provideLayout() {
-        return R.layout.fragment_main;
+    @InjectOnClick({R.id.jump_btn})
+    private void onClick(View v) {
+        switch (v.getId()) {
+            case R.id.jump_btn:
+                FragOperManager.getInstance().enter3(new B2Fragment());
+                /*synchronized (mLock) {
+                    mLock.notify();
+                }*/
+                break;
+            default:
+                break;
+        }
     }
 
-    @Override
-    public boolean onBackPressed() {
-        return false;
+    private void initData() {
+        getStatusBarHeight();
+
+        // new Thread(new TestThread()).start();
     }
 
     private int getStatusBarHeight() {
@@ -244,6 +266,36 @@ public class A2Fragment extends BaseFragment {
             MLog.d(TAG, "getStatusBarHeight() height: " + height);
 
         return height;
+    }
+
+    private class TestThread implements Runnable {
+        @Override
+        public void run() {
+            if (DEBUG)
+                MLog.d(TAG, "TestThread 1");
+
+            synchronized (mLock) {
+                try {
+                    mLock.wait();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+
+            if (DEBUG)
+                MLog.d(TAG, "TestThread 2");
+
+            synchronized (mLock) {
+                try {
+                    mLock.wait();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+
+            if (DEBUG)
+                MLog.d(TAG, "TestThread 3");
+        }
     }
 
 }

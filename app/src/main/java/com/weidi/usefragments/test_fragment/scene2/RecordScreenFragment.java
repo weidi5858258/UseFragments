@@ -27,6 +27,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.weidi.usefragments.R;
 import com.weidi.usefragments.fragment.FragOperManager;
@@ -427,6 +428,14 @@ public class RecordScreenFragment extends BaseFragment {
         File file = new File(
                 "/storage/2430-1702/Android/data/com.weidi.usefragments/files",
                 "test.mp4");
+        if (file.exists()) {
+            try {
+                file.delete();
+            } catch (SecurityException e) {
+                e.printStackTrace();
+                return;
+            }
+        }
         if (!file.exists()) {
             try {
                 file.createNewFile();
@@ -590,6 +599,8 @@ public class RecordScreenFragment extends BaseFragment {
                 MLog.d(TAG, "startRecordScreen() " + printThis() +
                         " created virtual display: " + mVirtualDisplay.getDisplay());
 
+            mThreadHandler.sendEmptyMessageDelayed(STOP_RECORD_SCREEN, 60 * 1000);
+
             // 相当于按了“Home”键
             getAttachedActivity().moveTaskToBack(true);
         }
@@ -617,7 +628,9 @@ public class RecordScreenFragment extends BaseFragment {
 
         synchronized (mMediaMuxerLock) {
             try {
+                MLog.d(TAG, "stopRecordScreen mMediaMuxerLock.wait() start");
                 mMediaMuxerLock.wait();
+                MLog.d(TAG, "stopRecordScreen mMediaMuxerLock.wait() end");
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
@@ -629,13 +642,13 @@ public class RecordScreenFragment extends BaseFragment {
             mMediaMuxer = null;
         }
 
-        notifyVideoEndOfStream();
+        //notifyVideoEndOfStream();
         if (mVideoEncoderMediaCodec != null) {
             mVideoEncoderMediaCodec.release();
             mVideoEncoderMediaCodec = null;
         }
 
-        notifyAudioEndOfStream();
+        //notifyAudioEndOfStream();
         if (mAudioEncoderMediaCodec != null) {
             mAudioEncoderMediaCodec.release();
             mAudioEncoderMediaCodec = null;
@@ -648,6 +661,7 @@ public class RecordScreenFragment extends BaseFragment {
         mUiHandler.post(new Runnable() {
             @Override
             public void run() {
+                Toast.makeText(getContext(), "成功停止", Toast.LENGTH_SHORT).show();
                 onShow();
             }
         });
@@ -817,6 +831,7 @@ public class RecordScreenFragment extends BaseFragment {
                     mVideoEncoderMediaCodec.releaseOutputBuffer(roomIndex, false);
                     if (!mIsRecording) {
                         synchronized (mMediaMuxerLock) {
+                            MLog.d(TAG, "VideoEncoderThread mMediaMuxerLock.notify()");
                             mMediaMuxerLock.notify();
                         }
                         break;
@@ -968,6 +983,7 @@ public class RecordScreenFragment extends BaseFragment {
                     mAudioEncoderMediaCodec.releaseOutputBuffer(roomIndex, false);
                     if (!mIsRecording) {
                         synchronized (mMediaMuxerLock) {
+                            MLog.d(TAG, "AudioEncoderThread mMediaMuxerLock.notify()");
                             mMediaMuxerLock.notify();
                         }
                         break;

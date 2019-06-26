@@ -39,7 +39,34 @@ public class MediaUtils {
     // 想要的编码格式
     public static final String VIDEO_MIME_TYPE = MediaFormat.MIMETYPE_VIDEO_AVC;// video/avc
     public static final String AUDIO_MIME_TYPE = MediaFormat.MIMETYPE_AUDIO_AAC;// audio/mp4a-latm
-    private static final int VIDEO_BIT_RATE = 800000;// 1200000 8000000
+    /***
+     相同条件:
+     mWidth = 720;
+     mHeight = 1280;
+
+     FRAME_RATE = 30;
+     VIDEO_BIT_RATE = 800000;
+     一分钟大概17.8MB
+     FRAME_RATE = 30;
+     VIDEO_BIT_RATE = 25000;
+     一分钟大概12.4MB
+     FRAME_RATE = 15;
+     VIDEO_BIT_RATE = 800;
+     一分钟大概20.8MB
+     FRAME_RATE = 30;
+     VIDEO_BIT_RATE = 800;
+     一分钟大概15.5MB
+     FRAME_RATE = 15;
+     VIDEO_BIT_RATE = 800;
+     一分钟大概19.1MB
+     FRAME_RATE = 30;
+     VIDEO_BIT_RATE = 30000;
+     一分钟大概13.2MB
+     FRAME_RATE = 30;
+     VIDEO_BIT_RATE = 64000;
+     一分钟大概15.9MB
+     */
+    private static final int VIDEO_BIT_RATE = 64000;// 1200000 8000000 800000
     private static final int AUDIO_BIT_RATE = 64000;
     private static final int FRAME_RATE = 30;
     private static final int IFRAME_INTERVAL = 1;
