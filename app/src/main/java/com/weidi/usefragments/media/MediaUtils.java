@@ -12,6 +12,7 @@ import android.media.MediaFormat;
 import android.media.MediaRecorder;
 import android.support.annotation.NonNull;
 import android.text.TextUtils;
+import android.util.Log;
 import android.util.SparseArray;
 
 
@@ -67,7 +68,8 @@ public class MediaUtils {
      一分钟大概15.9MB
      */
     private static final int VIDEO_BIT_RATE = 64000;// 1200000 8000000 800000
-    private static final int AUDIO_BIT_RATE = 64000;
+    // audio的有关参数定义在一起了(在下面)
+    // private static final int AUDIO_BIT_RATE = 64000;// 64kbps
     private static final int FRAME_RATE = 30;
     private static final int IFRAME_INTERVAL = 1;
 
@@ -248,6 +250,7 @@ public class MediaUtils {
          启动另一个线程不断的从这个队列中取出数据传递给jni包装的jrtplib，
          发送包装好的rtp数据给接收端。
          */
+        // 使用同步方式的话,下面的代码不能执行
         /*encoder.setCallback(new MediaCodec.Callback() {
 
             @Override
@@ -290,6 +293,10 @@ public class MediaUtils {
         return encoder;
     }
 
+    /***
+     与下面的getAudioEncoderMediaFormat()对应,因为用的mime都是AUDIO_MIME_TYPE
+     @return
+     */
     public static MediaCodec getAudioEncoderMediaCodec() {
         MediaCodecInfo codecInfo = getMediaCodecInfo(AUDIO_MIME_TYPE);
         if (codecInfo == null) {
@@ -418,19 +425,28 @@ public class MediaUtils {
     }
 
     /***
+     初始化AAC编码器
+     与上面的getAudioEncoderMediaCodec()对应,因为用的mime都是AUDIO_MIME_TYPE
      channelCount为2,表示双声道,也就是
      channelConfig = AudioFormat.CHANNEL_IN_STEREO.
-     * @return
+     @return
      */
     public static MediaFormat getAudioEncoderMediaFormat() {
         MediaFormat format = MediaFormat.createAudioFormat(
                 AUDIO_MIME_TYPE, sampleRateInHz, channelCount);
-        // AAC-HE // 64kbps
-        format.setInteger(MediaFormat.KEY_BIT_RATE,
-                AUDIO_BIT_RATE);
-        // AACObjectLC
-        format.setInteger(MediaFormat.KEY_AAC_PROFILE,
+        format.setInteger(
+                MediaFormat.KEY_AAC_PROFILE,
                 MediaCodecInfo.CodecProfileLevel.AACObjectLC);
+        // AAC-HE
+        format.setInteger(
+                MediaFormat.KEY_BIT_RATE,
+                AUDIO_BIT_RATE);
+        format.setInteger(
+                MediaFormat.KEY_CHANNEL_MASK,
+                channelConfig);
+        format.setInteger(
+                MediaFormat.KEY_MAX_INPUT_SIZE,
+                getMinBufferSize() * 2);
         if (DEBUG)
             MLog.d(TAG, "getAudioEncoderMediaFormat() created video format: " + format);
 
@@ -464,14 +480,53 @@ public class MediaUtils {
      录制是什么声音,播放才是什么声音.
      因此选择AudioFormat.CHANNEL_IN_STEREO(双声道)作为创建
      AudioRecord对象和AudioTrack对象的参数.
+
+     AAC的数据如果需要直接播放,
+     则需要添加ADT头部,
+     在每一帧AAC数据的前面添加ADTS,
+     如果要将AAC合入到MP4中则不需要添加ADT头.
+     下面的值在PCM编码成AAC,添加ADTS头时需要参照.
+     int profile = 2;  // AAC LC
+     int freqIdx = 11; // 8KHz
+     int chanCfg = 1;  // CPE
+     意思: AAC的格式对应2,8K的采样率对应参数是11,单声道是1
+     采样率freqIdx参数：
+     0: 96000 Hz
+     1: 88200 Hz
+     2: 64000 Hz
+     3: 48000 Hz
+     4: 44100 Hz
+     5: 32000 Hz
+     6: 24000 Hz
+     7: 22050 Hz
+     8: 16000 Hz
+     9: 12000 Hz
+     10: 11025 Hz
+     11: 8000 Hz
+     12: 7350 Hz
+     13: Reserved
+     14: Reserved
+     15: frequency is written explictly
+     声道数chanCfg参数： 
+     0: Defined in AOT Specifc Config
+     1: 1 channel: front-center
+     2: 2 channels: front-left, front-right
+     3: 3 channels: front-center, front-left, front-right
+     4: 4 channels: front-center, front-left, front-right, back-center
+     5: 5 channels: front-center, front-left, front-right, back-left, back-right
+     6: 6 channels: front-center, front-left, front-right, back-left, back-right, LFE-channel
+     7: 8 channels: front-center, front-left, front-right, side-left, side-right, back-left,
+     back-right, LFE-channel
+     8-15: Reserved
      */
     // 下面的参数为了得到默认的AudioRecord对象和AudioTrack对象而定义的
     // 兼容所有Android设备
     private static final int sampleRateInHz = 44100;
     // 下面两个是对应关系,只是方法所需要的参数不一样而已
     private static final int channelCount = 2;
+    // 立体声
     private static final int channelConfig = AudioFormat.CHANNEL_IN_STEREO;
-    // 兼容所有Android设备
+    // 数据位宽(兼容所有Android设备)
     private static final int audioFormat = AudioFormat.ENCODING_PCM_16BIT;
     // AudioRecord(录音)
     private static final int audioSource = MediaRecorder.AudioSource.MIC;
@@ -480,9 +535,19 @@ public class MediaUtils {
     // private static final int mode = AudioTrack.MODE_STATIC
     private static final int mode = AudioTrack.MODE_STREAM;
     public static final int sessionId = AudioManager.AUDIO_SESSION_ID_GENERATE;
+    // 比特率
+    private static final int AUDIO_BIT_RATE = sampleRateInHz * audioFormat * channelCount;
 
     /***
+     bufferSizeInBytes
      使用了默认值
+     AudioRecord内部的音频缓冲区的大小,该缓冲区的值不能低于一帧“音频帧”（Frame）的大小.
+     一帧音频帧的大小计算如下:
+     int size = 采样率 x 位宽 x 采样时间 x 通道数
+     采样时间一般取2.5ms~120ms之间,由厂商或者具体的应用决定.
+
+     在Android中,一帧的大小可以根据下面的公式得到,
+     但是音频缓冲区的大小则必须是一帧大小的2～N倍.
      */
     public static int getMinBufferSize() {
         return AudioRecord.getMinBufferSize(
@@ -508,6 +573,7 @@ public class MediaUtils {
      11025
      16000
      22050
+     32000
      44100(在所有设备上都能正常工作)
      48000
      一般蓝牙耳机无法达到44100Hz的采样率,
@@ -519,7 +585,6 @@ public class MediaUtils {
      AudioFormat.ENCODING_PCM_16BIT(比较常用)
      AudioFormat.ENCODING_PCM_8BIT
      AudioFormat.ENCODING_PCM_FLOAT
-     @return
      */
     public static AudioRecord createAudioRecord(
             int audioSource, int sampleRateInHz,
@@ -1031,6 +1096,71 @@ public class MediaUtils {
             }
         }
         return bitRate;
+    }
+
+    /***
+     添加ADTS头
+     freqIdx和chanCfg需要根据实际的采样率和声道数决定
+     @param packet
+     @param packetLength
+     */
+    public static void addADTStoPacket(byte[] packet, int packetLength) {
+        int profile = 2; // AAC LC
+        int freqIdx = 4; // 44.1KHz
+        int chanCfg = 2; // CPE
+
+        // fill in ADTS data
+        packet[0] = (byte) 0xFF;
+        // 解决ios不能播放问题
+        packet[1] = (byte) 0xF1;
+        packet[2] = (byte) (((profile - 1) << 6) + (freqIdx << 2) + (chanCfg >> 2));
+        packet[3] = (byte) (((chanCfg & 3) << 6) + (packetLength >> 11));
+        packet[4] = (byte) ((packetLength & 0x7FF) >> 3);
+        packet[5] = (byte) (((packetLength & 7) << 5) + 0x1F);
+        packet[6] = (byte) 0xFC;
+    }
+
+    /***
+     PCM数据编码成AAC
+     */
+    public static void dstAudioFormatFromPCM(
+            MediaCodec audioEncoderMediaCodec,
+            byte[] pcmData) {
+        int roomIndex = audioEncoderMediaCodec.dequeueInputBuffer(0);
+        ByteBuffer room = audioEncoderMediaCodec.getInputBuffer(roomIndex);
+        room.clear();
+        room.limit(pcmData.length);
+        // PCM数据填充给inputBuffer
+        room.put(pcmData);
+        long presentationTimeUs = System.nanoTime() / 1000;
+        audioEncoderMediaCodec.queueInputBuffer(
+                roomIndex,
+                0,
+                pcmData.length,
+                presentationTimeUs,
+                0);
+
+        MediaCodec.BufferInfo bufferInfo = new MediaCodec.BufferInfo();
+        roomIndex = audioEncoderMediaCodec.dequeueOutputBuffer(bufferInfo, 0);
+        while (roomIndex >= 0) {
+            int outBitSize = bufferInfo.size;
+            //7为ADTS头部的大小
+            int outPacketSize = outBitSize + 7;
+            room = audioEncoderMediaCodec.getOutputBuffer(roomIndex);
+            room.position(bufferInfo.offset);
+            room.limit(bufferInfo.offset + outBitSize);
+            byte[] AACAudio = new byte[outPacketSize];
+
+            // 如果需要将视频合成MP4等音视频格式，不需要添加ADT头
+            // 添加ADT头
+            addADTStoPacket(AACAudio, outPacketSize);
+
+            // 将编码得到的AAC数据 取出到byte[]中
+            room.get(AACAudio, 7, outBitSize);
+            room.position(bufferInfo.offset);
+            audioEncoderMediaCodec.releaseOutputBuffer(roomIndex, false);
+            roomIndex = audioEncoderMediaCodec.dequeueOutputBuffer(bufferInfo, 0);
+        }
     }
 
 }

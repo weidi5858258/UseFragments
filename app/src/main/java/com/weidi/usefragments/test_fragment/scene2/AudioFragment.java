@@ -5,14 +5,19 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.res.Configuration;
 import android.icu.text.SimpleDateFormat;
+import android.media.AudioManager;
 import android.media.AudioRecord;
 import android.media.AudioTrack;
+import android.media.MediaCodec;
+import android.media.MediaFormat;
 import android.media.audiofx.AcousticEchoCanceler;
 import android.media.audiofx.NoiseSuppressor;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.HandlerThread;
 import android.os.Looper;
+import android.os.Message;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.annotation.RequiresApi;
@@ -21,6 +26,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 
+import com.lidroid.xutils.util.LogUtils;
 import com.weidi.usefragments.R;
 import com.weidi.usefragments.fragment.FragOperManager;
 import com.weidi.usefragments.fragment.base.BaseFragment;
@@ -29,11 +35,13 @@ import com.weidi.usefragments.inject.InjectView;
 import com.weidi.usefragments.media.MediaUtils;
 import com.weidi.usefragments.tool.MLog;
 
+import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
 /***
  只要当前Fragment没有调用onDestroy()方法,
@@ -292,6 +300,8 @@ public class AudioFragment extends BaseFragment {
 
     /////////////////////////////////////////////////////////////////
 
+    private static final int PREPARE = 0x0001;
+
     @InjectView(R.id.control_btn)
     private Button mControlBtn;
     @InjectView(R.id.play_btn)
@@ -301,17 +311,23 @@ public class AudioFragment extends BaseFragment {
     @InjectView(R.id.jump_btn)
     private Button mJumpBtn;
 
+    private MediaCodec mAudioEncoderMediaCodec;
+    private MediaFormat mAudioEncoderMediaFormat;
     private AudioRecord mAudioRecord;
     private AudioTrack mAudioTrack;
+    private byte[] mPcmData;
+    private boolean mIsRecordRunning = false;
+    private boolean mIsTrackRunning = false;
+    private SimpleDateFormat mSimpleDateFormat = new SimpleDateFormat("yyyyMMddHHmmssSSS");
+
+    private HandlerThread mHandlerThread;
+    private Handler mThreadHandler;
+    private Handler mUiHandler;
+
     // 回声消除器
     private AcousticEchoCanceler mAcousticEchoCanceler;
     // 噪音抑制器
     private NoiseSuppressor mNoiseSuppressor;
-    private byte[] mAudioData;
-    private boolean mRecordRunning = false;
-    private boolean mTrackRunning = false;
-    private SimpleDateFormat mSimpleDateFormat = new SimpleDateFormat("yyyyMMddHHmmssSSS");
-    private Handler mUiHandler = new Handler(Looper.getMainLooper());
 
     /***
      代码执行的内容跟onStart(),onResume()一样,
@@ -322,12 +338,12 @@ public class AudioFragment extends BaseFragment {
         if (DEBUG)
             MLog.d(TAG, "onShow(): " + printThis());
 
-        if (mRecordRunning) {
+        if (mIsRecordRunning) {
             mControlBtn.setText("停止录音");
         } else {
             mControlBtn.setText("录音");
         }
-        if (mTrackRunning) {
+        if (mIsTrackRunning) {
             mPlayBtn.setText("停止播放");
         } else {
             mPlayBtn.setText("播放");
@@ -347,26 +363,24 @@ public class AudioFragment extends BaseFragment {
     }
 
     private void initData() {
-        initAudioRecord();
-        if (mAudioRecord != null) {
-            initAudioTrack(mAudioRecord.getAudioSessionId());
-        } else {
-            initAudioTrack(MediaUtils.sessionId);
-        }
-        if (AcousticEchoCanceler.isAvailable()) {
-            if (mAcousticEchoCanceler == null) {
-                if (mAudioRecord != null) {
-                    int audioSession = mAudioRecord.getAudioSessionId();
-                    mAcousticEchoCanceler = AcousticEchoCanceler.create(audioSession);
-                    if (mAcousticEchoCanceler != null) {
-                        mAcousticEchoCanceler.setEnabled(true);
-                        if (DEBUG)
-                            MLog.d(TAG, "initData(): " + printThis() +
-                                    " 此手机支持回声消除功能");
-                    }
-                }
+        mHandlerThread = new HandlerThread(TAG);
+        mHandlerThread.start();
+        mThreadHandler = new Handler(mHandlerThread.getLooper()) {
+            @Override
+            public void handleMessage(Message msg) {
+                //super.threadHandleMessage(msg);
+                AudioFragment.this.threadHandleMessage(msg);
             }
-        }
+        };
+        mUiHandler = new Handler(Looper.getMainLooper()) {
+            @Override
+            public void handleMessage(Message msg) {
+                //super.handleMessage(msg);
+                AudioFragment.this.uiHandleMessage(msg);
+            }
+        };
+
+        mThreadHandler.sendEmptyMessage(PREPARE);
     }
 
     private void initView(View view, Bundle savedInstanceState) {
@@ -378,11 +392,15 @@ public class AudioFragment extends BaseFragment {
     }
 
     private void destroy() {
-        mRecordRunning = false;
-        mTrackRunning = false;
+        mIsRecordRunning = false;
+        mIsTrackRunning = false;
         MediaUtils.releaseAudioRecord(mAudioRecord);
         MediaUtils.releaseAudioTrack(mAudioTrack);
         releaseAcousticEchoCanceler();
+
+        if (mHandlerThread != null) {
+            mHandlerThread.quit();
+        }
     }
 
     @InjectOnClick({R.id.control_btn, R.id.play_btn, R.id.convert_btn, R.id.jump_btn})
@@ -403,42 +421,120 @@ public class AudioFragment extends BaseFragment {
         }
     }
 
-    private void initAudioRecord() {
-        if (mAudioRecord == null) {
-            mAudioRecord = MediaUtils.createAudioRecord();
-            if (DEBUG)
-                MLog.d(TAG, "initAudioRecord() state: " + mAudioRecord.getState());
+    private void threadHandleMessage(Message msg) {
+        if (msg == null) {
+            return;
+        }
+        switch (msg.what) {
+            case PREPARE:
+                prepare();
+                break;
+            default:
+                break;
         }
     }
 
-    private void initAudioTrack(int sessionId) {
-        if (mAudioTrack == null) {
-            mAudioTrack = MediaUtils.createAudioTrack(sessionId);
+    private void uiHandleMessage(Message msg) {
+        if (msg == null) {
+            return;
+        }
+    }
+
+    private void prepare() {
+        mAudioEncoderMediaCodec = MediaUtils.getAudioEncoderMediaCodec();
+        mAudioEncoderMediaFormat = MediaUtils.getAudioEncoderMediaFormat();
+        try {
+            mAudioEncoderMediaCodec.configure(
+                    mAudioEncoderMediaFormat,
+                    null,
+                    null,
+                    MediaCodec.CONFIGURE_FLAG_ENCODE);
+        } catch (MediaCodec.CodecException e) {
+            e.printStackTrace();
+            if (mAudioEncoderMediaCodec != null) {
+                mAudioEncoderMediaCodec.release();
+                mAudioEncoderMediaCodec = null;
+            }
+        }
+
+        if (mAudioRecord == null) {
+            mAudioRecord = MediaUtils.createAudioRecord();
             if (DEBUG)
-                MLog.d(TAG, "initAudioTrack() state: " + mAudioTrack.getState() +
-                        " AudioRecordSessionId: " + sessionId +
-                        " AudioTrackSessionId: " + mAudioTrack.getAudioSessionId());
+                if (mAudioRecord != null) {
+                    MLog.d(TAG, "prepare() state: " + mAudioRecord.getState() +
+                            " AudioRecordSessionId: " + mAudioRecord.getAudioSessionId());
+                }
+        }
+
+        if (mAudioRecord != null) {
+            if (mAudioTrack == null) {
+                mAudioTrack = MediaUtils.createAudioTrack(mAudioRecord.getAudioSessionId());
+            }
+        } else {
+            if (mAudioTrack == null) {
+                mAudioTrack = MediaUtils.createAudioTrack(MediaUtils.sessionId);
+            }
+        }
+        if (DEBUG)
+            if (mAudioTrack != null) {
+                MLog.d(TAG, "prepare() state: " + mAudioTrack.getState() +
+                        " AudioTrackSessionId:  " + mAudioTrack.getAudioSessionId());
+            }
+
+        // 我的手机不支持
+        if (AcousticEchoCanceler.isAvailable()) {
+            if (mAcousticEchoCanceler == null) {
+                if (mAudioRecord != null) {
+                    int audioSession = mAudioRecord.getAudioSessionId();
+                    mAcousticEchoCanceler = AcousticEchoCanceler.create(audioSession);
+                    if (mAcousticEchoCanceler != null) {
+                        mAcousticEchoCanceler.setEnabled(true);
+                        if (DEBUG)
+                            MLog.d(TAG, "initData(): " + printThis() +
+                                    " 此手机支持回声消除功能");
+                    }
+                }
+            }
         }
     }
 
     private void startRecordOrStopRecord() {
-        mRecordRunning = !mRecordRunning;
+        mIsRecordRunning = !mIsRecordRunning;
 
-        if (mRecordRunning) {
-            if (mAudioRecord != null) {
-                mControlBtn.setText("停止录音");
-                mAudioRecord.startRecording();
-                startRecording();
-            }
+        if (mIsRecordRunning) {
+            startRecord();
         } else {
-            mControlBtn.setText("录音");
+            stopRecord();
         }
     }
 
-    private void playTrackOrStopTrack() {
-        mTrackRunning = !mTrackRunning;
+    private void startRecord() {
+        if (mAudioRecord == null
+                || mAudioEncoderMediaCodec == null) {
+            return;
+        }
 
-        if (mTrackRunning) {
+        mControlBtn.setText("停止录音");
+        mAudioRecord.startRecording();
+        mAudioEncoderMediaCodec.start();
+        startRecording();
+    }
+
+    private void stopRecord() {
+        if (mAudioRecord == null
+                || mAudioEncoderMediaCodec == null) {
+            return;
+        }
+
+        mControlBtn.setText("录音");
+        MediaUtils.stopAudioRecord(mAudioRecord);
+        mAudioEncoderMediaCodec.release();
+    }
+
+    private void playTrackOrStopTrack() {
+        mIsTrackRunning = !mIsTrackRunning;
+
+        if (mIsTrackRunning) {
             if (mAudioTrack != null) {
                 mPlayBtn.setText("停止播放");
                 mAudioTrack.play();
@@ -454,20 +550,45 @@ public class AudioFragment extends BaseFragment {
             @Override
             public void run() {
                 // /data/user/0/com.weidi.usefragments/files/test.pcm
-                File file = new File(
+                File pcmFile = new File(
                         "/storage/2430-1702/Android/data/com.weidi.usefragments/files/Music",
                         "test.pcm");
+                File aacFile = new File(
+                        "/storage/2430-1702/Android/data/com.weidi.usefragments/files/Music",
+                        "test.aac");
                 // mSimpleDateFormat.format(new Date()) + ".pcm");
                 /*if (!file.mkdirs()) {
                     MLog.e(TAG, "Directory not created");
                     return;
                 }*/
-                if (!file.canWrite()) {
-                    return;
+                if (pcmFile.exists()) {
+                    try {
+                        pcmFile.delete();
+                    } catch (SecurityException e) {
+                        e.printStackTrace();
+                    }
                 }
+                if (aacFile.exists()) {
+                    try {
+                        aacFile.delete();
+                    } catch (SecurityException e) {
+                        e.printStackTrace();
+                    }
+                }
+                /*if (!pcmFile.canWrite() || !aacFile.canWrite()) {
+                    return;
+                }*/
                 FileOutputStream os = null;
                 try {
-                    os = new FileOutputStream(file);
+                    os = new FileOutputStream(pcmFile);
+                } catch (FileNotFoundException e) {
+                    e.printStackTrace();
+                    return;
+                }
+                BufferedOutputStream bos = null;
+                try {
+                    bos = new BufferedOutputStream(
+                            new FileOutputStream(aacFile), 200 * 1024);
                 } catch (FileNotFoundException e) {
                     e.printStackTrace();
                     return;
@@ -475,40 +596,117 @@ public class AudioFragment extends BaseFragment {
 
                 int bufferSizeInBytes =
                         MediaUtils.getMinBufferSize() * 2;
-                mAudioData = new byte[bufferSizeInBytes];
+                mPcmData = new byte[bufferSizeInBytes];
+                int readSize = -1;
+                int roomIndex = MediaCodec.INFO_TRY_AGAIN_LATER;
+                ByteBuffer room = null;
 
                 if (DEBUG)
                     MLog.d(TAG, "startRecording() start");
 
-                while (mRecordRunning) {
+                while (mIsRecordRunning) {
                     // audioRecord把数据读到data中
-                    int read = mAudioRecord.read(mAudioData, 0, bufferSizeInBytes);
+                    readSize = mAudioRecord.read(mPcmData, 0, bufferSizeInBytes);
                     // MLog.d(TAG, "startRecording() read: " + read);
-                    if (read <= 0) {
-                        continue;
+                    if (readSize < 0) {
+                        break;
                     }
                     try {
                         // 把data数据写到os文件流中
-                        os.write(mAudioData);
+                        os.write(mPcmData);
                     } catch (IOException e) {
                         e.printStackTrace();
+                    }
+
+                    // Input
+                    try {
+                        roomIndex = mAudioEncoderMediaCodec.dequeueInputBuffer(-1);
+                        if (roomIndex >= 0) {
+                            room = mAudioEncoderMediaCodec.getInputBuffer(roomIndex);
+                            room.clear();
+                            room.put(mPcmData);
+                            long presentationTimeUs = System.nanoTime() / 1000;
+                            mAudioEncoderMediaCodec.queueInputBuffer(
+                                    roomIndex,
+                                    0,
+                                    mPcmData.length,
+                                    presentationTimeUs,
+                                    0);
+                        }
+                    } catch (MediaCodec.CryptoException
+                            | IllegalStateException e) {
+                        MLog.e(TAG, "AudioEncoderThread Input occur exception: " + e);
+                        mIsRecordRunning = false;
+                        break;
+                    }
+
+                    // Output
+                    MediaCodec.BufferInfo bufferInfo = new MediaCodec.BufferInfo();
+                    roomIndex = mAudioEncoderMediaCodec.dequeueOutputBuffer(
+                            bufferInfo, 10000);
+                    while (roomIndex >= 0) {
+                        int bufferInfoSize = bufferInfo.size;
+                        int packetSize = bufferInfoSize + 7;
+                        room = mAudioEncoderMediaCodec.getOutputBuffer(roomIndex);
+                        room.position(bufferInfo.offset);
+                        room.limit(bufferInfo.offset + bufferInfoSize);
+                        byte[] chunkAudio = new byte[packetSize];
+                        MediaUtils.addADTStoPacket(chunkAudio, packetSize);
+                        room.get(chunkAudio, 7, bufferInfoSize);
+                        room.position(bufferInfo.offset);
+                        try {
+                            // BufferOutputStream将文件保存到内存卡中
+                            bos.write(chunkAudio, 0, chunkAudio.length);
+                            // *.aac
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                        mAudioEncoderMediaCodec.releaseOutputBuffer(roomIndex, false);
+                        roomIndex = mAudioEncoderMediaCodec.dequeueOutputBuffer(
+                                bufferInfo, 10000);
                     }
                 }
 
                 try {
-                    os.close();
+                    if (os != null) {
+                        os.flush();
+                    }
                 } catch (IOException e) {
                     e.printStackTrace();
                 } finally {
-                    os = null;
+                    if (os != null) {
+                        try {
+                            os.close();
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        } finally {
+                            os = null;
+                        }
+                    }
+                }
+
+                try {
+                    if (bos != null) {
+                        bos.flush();
+                    }
+                } catch (IOException e) {
+                    e.printStackTrace();
+                } finally {
+                    if (bos != null) {
+                        try {
+                            bos.close();
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        } finally {
+                            bos = null;
+                        }
+                    }
                 }
 
                 if (DEBUG)
                     MLog.d(TAG, "startRecording() end");
 
-                MediaUtils.stopAudioRecord(mAudioRecord);
-
-                mAudioData = null;
+                mPcmData = null;
             }
         }).start();
     }
@@ -537,13 +735,13 @@ public class AudioFragment extends BaseFragment {
 
                 int bufferSizeInBytes =
                         MediaUtils.getMinBufferSize() * 2;
-                mAudioData = new byte[bufferSizeInBytes];
+                mPcmData = new byte[bufferSizeInBytes];
 
                 if (DEBUG)
                     MLog.d(TAG, "play() start");
 
                 int readCount = 0;
-                while (mTrackRunning) {
+                while (mIsTrackRunning) {
                     try {
                         if (fis.available() <= 0) {
                             break;
@@ -553,7 +751,7 @@ public class AudioFragment extends BaseFragment {
                         break;
                     }
                     try {
-                        readCount = fis.read(mAudioData);
+                        readCount = fis.read(mPcmData);
                     } catch (IOException e) {
                         e.printStackTrace();
                         continue;
@@ -561,7 +759,7 @@ public class AudioFragment extends BaseFragment {
                     if (readCount <= 0) {
                         continue;
                     }
-                    int write = mAudioTrack.write(mAudioData, 0, readCount);
+                    int write = mAudioTrack.write(mPcmData, 0, readCount);
                     playLength += write;
                 }
 
@@ -580,7 +778,7 @@ public class AudioFragment extends BaseFragment {
                 // 内容播放完毕
                 if (length == playLength) {
                     MLog.d(TAG, "play() playLength: " + playLength);
-                    mTrackRunning = false;
+                    mIsTrackRunning = false;
                 }
                 mUiHandler.post(new Runnable() {
                     @Override
@@ -589,7 +787,7 @@ public class AudioFragment extends BaseFragment {
                     }
                 });
 
-                mAudioData = null;
+                mPcmData = null;
             }
         }).start();
     }

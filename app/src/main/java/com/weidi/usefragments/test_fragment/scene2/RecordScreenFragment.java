@@ -407,6 +407,9 @@ public class RecordScreenFragment extends BaseFragment {
         if (mMediaProjection != null) {
             mMediaProjection.unregisterCallback(mMediaProjectionCallback);
         }
+        if (mHandlerThread != null) {
+            mHandlerThread.quit();
+        }
     }
 
     @InjectOnClick({R.id.start_btn, R.id.stop_btn, R.id.jump_btn})
