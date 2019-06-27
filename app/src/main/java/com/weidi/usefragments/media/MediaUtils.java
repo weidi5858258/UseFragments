@@ -692,6 +692,31 @@ public class MediaUtils {
         return audioRecord;
     }
 
+    public static void stopMediaCodec(MediaCodec mediaCodec) {
+        if (mediaCodec == null) {
+            return;
+        }
+        try {
+            mediaCodec.stop();
+        } catch (Exception e) {
+            mediaCodec.release();
+            mediaCodec = null;
+        }
+    }
+
+    public static void releaseMediaCodec(MediaCodec mediaCodec) {
+        stopMediaCodec(mediaCodec);
+        if (mediaCodec == null) {
+            return;
+        }
+        try {
+            mediaCodec.release();
+            mediaCodec = null;
+        } catch (Exception e) {
+            mediaCodec = null;
+        }
+    }
+
     public static void stopAudioRecord(AudioRecord audioRecord) {
         if (audioRecord == null) {
             return;

@@ -301,9 +301,12 @@ public class AudioFragment extends BaseFragment {
     /////////////////////////////////////////////////////////////////
 
     private static final int PREPARE = 0x0001;
+    private static final int STOP_RECORD = 0x0002;
 
     @InjectView(R.id.control_btn)
     private Button mControlBtn;
+    @InjectView(R.id.pause_record_btn)
+    private Button mPauseRecordBtn;
     @InjectView(R.id.play_btn)
     private Button mPlayBtn;
     @InjectView(R.id.convert_btn)
@@ -317,12 +320,16 @@ public class AudioFragment extends BaseFragment {
     private AudioTrack mAudioTrack;
     private byte[] mPcmData;
     private boolean mIsRecordRunning = false;
+    private boolean mIsRecordPaused = false;
     private boolean mIsTrackRunning = false;
     private SimpleDateFormat mSimpleDateFormat = new SimpleDateFormat("yyyyMMddHHmmssSSS");
 
     private HandlerThread mHandlerThread;
     private Handler mThreadHandler;
     private Handler mUiHandler;
+
+    private Object mPauseLock = new Object();
+    private Object mStopLock = new Object();
 
     // 回声消除器
     private AcousticEchoCanceler mAcousticEchoCanceler;
@@ -340,6 +347,11 @@ public class AudioFragment extends BaseFragment {
 
         if (mIsRecordRunning) {
             mControlBtn.setText("停止录音");
+            if (mIsRecordPaused) {
+                mPauseRecordBtn.setText("开始录音");
+            } else {
+                mPauseRecordBtn.setText("暂停录音");
+            }
         } else {
             mControlBtn.setText("录音");
         }
@@ -393,9 +405,16 @@ public class AudioFragment extends BaseFragment {
 
     private void destroy() {
         mIsRecordRunning = false;
+        mIsRecordPaused = false;
         mIsTrackRunning = false;
+        synchronized (mPauseLock) {
+            if (DEBUG)
+                MLog.d(TAG, "destroy() mPauseLock.notify()");
+            mPauseLock.notify();
+        }
         MediaUtils.releaseAudioRecord(mAudioRecord);
         MediaUtils.releaseAudioTrack(mAudioTrack);
+        MediaUtils.releaseMediaCodec(mAudioEncoderMediaCodec);
         releaseAcousticEchoCanceler();
 
         if (mHandlerThread != null) {
@@ -403,11 +422,18 @@ public class AudioFragment extends BaseFragment {
         }
     }
 
-    @InjectOnClick({R.id.control_btn, R.id.play_btn, R.id.convert_btn, R.id.jump_btn})
+    @InjectOnClick({R.id.control_btn,
+            R.id.pause_record_btn,
+            R.id.play_btn,
+            R.id.convert_btn,
+            R.id.jump_btn})
     private void onClick(View v) {
         switch (v.getId()) {
             case R.id.control_btn:
                 startRecordOrStopRecord();
+                break;
+            case R.id.pause_record_btn:
+                pauseRecord();
                 break;
             case R.id.play_btn:
                 playTrackOrStopTrack();
@@ -429,6 +455,9 @@ public class AudioFragment extends BaseFragment {
             case PREPARE:
                 prepare();
                 break;
+            case STOP_RECORD:
+                stopRecord();
+                break;
             default:
                 break;
         }
@@ -443,19 +472,6 @@ public class AudioFragment extends BaseFragment {
     private void prepare() {
         mAudioEncoderMediaCodec = MediaUtils.getAudioEncoderMediaCodec();
         mAudioEncoderMediaFormat = MediaUtils.getAudioEncoderMediaFormat();
-        try {
-            mAudioEncoderMediaCodec.configure(
-                    mAudioEncoderMediaFormat,
-                    null,
-                    null,
-                    MediaCodec.CONFIGURE_FLAG_ENCODE);
-        } catch (MediaCodec.CodecException e) {
-            e.printStackTrace();
-            if (mAudioEncoderMediaCodec != null) {
-                mAudioEncoderMediaCodec.release();
-                mAudioEncoderMediaCodec = null;
-            }
-        }
 
         if (mAudioRecord == null) {
             mAudioRecord = MediaUtils.createAudioRecord();
@@ -504,7 +520,8 @@ public class AudioFragment extends BaseFragment {
         if (mIsRecordRunning) {
             startRecord();
         } else {
-            stopRecord();
+            mThreadHandler.removeMessages(STOP_RECORD);
+            mThreadHandler.sendEmptyMessage(STOP_RECORD);
         }
     }
 
@@ -514,10 +531,43 @@ public class AudioFragment extends BaseFragment {
             return;
         }
 
-        mControlBtn.setText("停止录音");
+        onShow();
+        // AudioRecord
         mAudioRecord.startRecording();
-        mAudioEncoderMediaCodec.start();
+        // MediaCodec
+        try {
+            if (mAudioEncoderMediaCodec != null) {
+                mAudioEncoderMediaCodec.configure(
+                        mAudioEncoderMediaFormat,
+                        null,
+                        null,
+                        MediaCodec.CONFIGURE_FLAG_ENCODE);
+                mAudioEncoderMediaCodec.start();
+            }
+        } catch (MediaCodec.CodecException e) {
+            e.printStackTrace();
+            if (mAudioEncoderMediaCodec != null) {
+                mAudioEncoderMediaCodec.release();
+                mAudioEncoderMediaCodec = null;
+            }
+        }
         startRecording();
+    }
+
+    private void pauseRecord() {
+        if (!mIsRecordRunning) {
+            return;
+        }
+        mIsRecordPaused = !mIsRecordPaused;
+
+        onShow();
+        if (!mIsRecordPaused) {
+            synchronized (mPauseLock) {
+                if (DEBUG)
+                    MLog.d(TAG, "pauseRecord() mPauseLock.notify()");
+                mPauseLock.notify();
+            }
+        }
     }
 
     private void stopRecord() {
@@ -526,9 +576,31 @@ public class AudioFragment extends BaseFragment {
             return;
         }
 
-        mControlBtn.setText("录音");
+        mIsRecordPaused = false;
+        synchronized (mPauseLock) {
+            if (DEBUG)
+                MLog.d(TAG, "stopRecord() mPauseLock.notify()");
+            mPauseLock.notify();
+        }
+
+        synchronized (mStopLock) {
+            try {
+                MLog.d(TAG, "stopRecord mStopLock.wait() start");
+                mStopLock.wait();
+                MLog.d(TAG, "stopRecord mStopLock.wait() end");
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+
+        mUiHandler.post(new Runnable() {
+            @Override
+            public void run() {
+                onShow();
+            }
+        });
         MediaUtils.stopAudioRecord(mAudioRecord);
-        mAudioEncoderMediaCodec.release();
+        MediaUtils.stopMediaCodec(mAudioEncoderMediaCodec);
     }
 
     private void playTrackOrStopTrack() {
@@ -543,6 +615,15 @@ public class AudioFragment extends BaseFragment {
         } else {
             mPlayBtn.setText("播放");
         }
+    }
+
+    private void releaseAcousticEchoCanceler() {
+        if (mAcousticEchoCanceler == null) {
+            return;
+        }
+        mAcousticEchoCanceler.setEnabled(false);
+        mAcousticEchoCanceler.release();
+        mAcousticEchoCanceler = null;
     }
 
     private void startRecording() {
@@ -605,6 +686,19 @@ public class AudioFragment extends BaseFragment {
                     MLog.d(TAG, "startRecording() start");
 
                 while (mIsRecordRunning) {
+                    if (mIsRecordPaused) {
+                        synchronized (mPauseLock) {
+                            if (DEBUG)
+                                MLog.d(TAG, "startRecording() mPauseLock.wait() start");
+                            try {
+                                mPauseLock.wait();
+                            } catch (InterruptedException e) {
+                                e.printStackTrace();
+                            }
+                            if (DEBUG)
+                                MLog.d(TAG, "startRecording() mPauseLock.wait() end");
+                        }
+                    }
                     // audioRecord把数据读到data中
                     readSize = mAudioRecord.read(mPcmData, 0, bufferSizeInBytes);
                     // MLog.d(TAG, "startRecording() read: " + read);
@@ -635,7 +729,7 @@ public class AudioFragment extends BaseFragment {
                         }
                     } catch (MediaCodec.CryptoException
                             | IllegalStateException e) {
-                        MLog.e(TAG, "AudioEncoderThread Input occur exception: " + e);
+                        MLog.e(TAG, "startRecording Input occur exception: " + e);
                         mIsRecordRunning = false;
                         break;
                     }
@@ -661,9 +755,21 @@ public class AudioFragment extends BaseFragment {
                         } catch (IOException e) {
                             e.printStackTrace();
                         }
-                        mAudioEncoderMediaCodec.releaseOutputBuffer(roomIndex, false);
-                        roomIndex = mAudioEncoderMediaCodec.dequeueOutputBuffer(
-                                bufferInfo, 10000);
+                        try {
+                            mAudioEncoderMediaCodec.releaseOutputBuffer(roomIndex, false);
+                            roomIndex = mAudioEncoderMediaCodec.dequeueOutputBuffer(
+                                    bufferInfo, 10000);
+                        } catch (IllegalStateException e) {
+                            MLog.e(TAG, "startRecording Output occur exception: " + e);
+                            e.printStackTrace();
+                        }
+                    }
+                    if (!mIsRecordRunning) {
+                        synchronized (mStopLock) {
+                            if (DEBUG)
+                                MLog.d(TAG, "startRecording() mStopLock.notify()");
+                            mStopLock.notify();
+                        }
                     }
                 }
 
@@ -790,15 +896,6 @@ public class AudioFragment extends BaseFragment {
                 mPcmData = null;
             }
         }).start();
-    }
-
-    private void releaseAcousticEchoCanceler() {
-        if (mAcousticEchoCanceler == null) {
-            return;
-        }
-        mAcousticEchoCanceler.setEnabled(false);
-        mAcousticEchoCanceler.release();
-        mAcousticEchoCanceler = null;
     }
 
 }
