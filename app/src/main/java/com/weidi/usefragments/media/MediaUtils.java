@@ -18,6 +18,7 @@ import android.util.SparseArray;
 
 import com.weidi.usefragments.tool.MLog;
 
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
@@ -521,9 +522,9 @@ public class MediaUtils {
      */
     // 下面的参数为了得到默认的AudioRecord对象和AudioTrack对象而定义的
     // 兼容所有Android设备
-    private static final int sampleRateInHz = 44100;
+    public static final int sampleRateInHz = 44100;
     // 下面两个是对应关系,只是方法所需要的参数不一样而已
-    private static final int channelCount = 2;
+    public static final int channelCount = 2;
     // 立体声
     private static final int channelConfig = AudioFormat.CHANNEL_IN_STEREO;
     // 数据位宽(兼容所有Android设备)
@@ -535,8 +536,8 @@ public class MediaUtils {
     // private static final int mode = AudioTrack.MODE_STATIC
     private static final int mode = AudioTrack.MODE_STREAM;
     public static final int sessionId = AudioManager.AUDIO_SESSION_ID_GENERATE;
-    // 比特率
-    private static final int AUDIO_BIT_RATE = sampleRateInHz * audioFormat * channelCount;
+    // 比特率(audioFormat = 16 / 8,所以AUDIO_BIT_RATE的值不需要再除以8)
+    public static final int AUDIO_BIT_RATE = sampleRateInHz * audioFormat * channelCount;
 
     /***
      bufferSizeInBytes
@@ -1124,12 +1125,12 @@ public class MediaUtils {
     }
 
     /***
-     添加ADTS头
+     添加ADTS头到一帧的音频数据上
      freqIdx和chanCfg需要根据实际的采样率和声道数决定
      @param packet
      @param packetLength
      */
-    public static void addADTStoPacket(byte[] packet, int packetLength) {
+    public static void addADTStoFrame(byte[] packet, int packetLength) {
         int profile = 2; // AAC LC
         int freqIdx = 4; // 44.1KHz
         int chanCfg = 2; // CPE
@@ -1146,46 +1147,60 @@ public class MediaUtils {
     }
 
     /***
-     PCM数据编码成AAC
+     加入wav文件头
      */
-    public static void dstAudioFormatFromPCM(
-            MediaCodec audioEncoderMediaCodec,
-            byte[] pcmData) {
-        int roomIndex = audioEncoderMediaCodec.dequeueInputBuffer(0);
-        ByteBuffer room = audioEncoderMediaCodec.getInputBuffer(roomIndex);
-        room.clear();
-        room.limit(pcmData.length);
-        // PCM数据填充给inputBuffer
-        room.put(pcmData);
-        long presentationTimeUs = System.nanoTime() / 1000;
-        audioEncoderMediaCodec.queueInputBuffer(
-                roomIndex,
-                0,
-                pcmData.length,
-                presentationTimeUs,
-                0);
-
-        MediaCodec.BufferInfo bufferInfo = new MediaCodec.BufferInfo();
-        roomIndex = audioEncoderMediaCodec.dequeueOutputBuffer(bufferInfo, 0);
-        while (roomIndex >= 0) {
-            int outBitSize = bufferInfo.size;
-            //7为ADTS头部的大小
-            int outPacketSize = outBitSize + 7;
-            room = audioEncoderMediaCodec.getOutputBuffer(roomIndex);
-            room.position(bufferInfo.offset);
-            room.limit(bufferInfo.offset + outBitSize);
-            byte[] AACAudio = new byte[outPacketSize];
-
-            // 如果需要将视频合成MP4等音视频格式，不需要添加ADT头
-            // 添加ADT头
-            addADTStoPacket(AACAudio, outPacketSize);
-
-            // 将编码得到的AAC数据 取出到byte[]中
-            room.get(AACAudio, 7, outBitSize);
-            room.position(bufferInfo.offset);
-            audioEncoderMediaCodec.releaseOutputBuffer(roomIndex, false);
-            roomIndex = audioEncoderMediaCodec.dequeueOutputBuffer(bufferInfo, 0);
-        }
+    public static void addWaveHeaderToPcmFile(FileOutputStream wavOS,
+                                              long pcmSize,
+                                              long sampleRateInHz,
+                                              int channelCount,
+                                              long bitRate) throws IOException {
+        long wavSize = pcmSize + 36;
+        byte[] header = new byte[44];
+        header[0] = 'R';// RIFF/WAVE header
+        header[1] = 'I';
+        header[2] = 'F';
+        header[3] = 'F';
+        header[4] = (byte) (wavSize & 0xff);
+        header[5] = (byte) ((wavSize >> 8) & 0xff);
+        header[6] = (byte) ((wavSize >> 16) & 0xff);
+        header[7] = (byte) ((wavSize >> 24) & 0xff);
+        header[8] = 'W';// WAVE
+        header[9] = 'A';
+        header[10] = 'V';
+        header[11] = 'E';
+        header[12] = 'f';// 'fmt ' chunk
+        header[13] = 'm';
+        header[14] = 't';
+        header[15] = ' ';
+        header[16] = 16;// 4 bytes: size of 'fmt ' chunk
+        header[17] = 0;
+        header[18] = 0;
+        header[19] = 0;
+        header[20] = 1;// format = 1
+        header[21] = 0;
+        header[22] = (byte) channelCount;
+        header[23] = 0;
+        header[24] = (byte) (sampleRateInHz & 0xff);
+        header[25] = (byte) ((sampleRateInHz >> 8) & 0xff);
+        header[26] = (byte) ((sampleRateInHz >> 16) & 0xff);
+        header[27] = (byte) ((sampleRateInHz >> 24) & 0xff);
+        header[28] = (byte) (bitRate & 0xff);
+        header[29] = (byte) ((bitRate >> 8) & 0xff);
+        header[30] = (byte) ((bitRate >> 16) & 0xff);
+        header[31] = (byte) ((bitRate >> 24) & 0xff);
+        header[32] = (byte) (2 * 16 / 8); // block align
+        header[33] = 0;
+        header[34] = 16;// bits per sample
+        header[35] = 0;
+        header[36] = 'd';// data
+        header[37] = 'a';
+        header[38] = 't';
+        header[39] = 'a';
+        header[40] = (byte) (pcmSize & 0xff);
+        header[41] = (byte) ((pcmSize >> 8) & 0xff);
+        header[42] = (byte) ((pcmSize >> 16) & 0xff);
+        header[43] = (byte) ((pcmSize >> 24) & 0xff);
+        wavOS.write(header, 0, 44);
     }
 
 }

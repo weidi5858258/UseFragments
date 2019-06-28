@@ -981,6 +981,7 @@ public class RecordScreenFragment extends BaseFragment {
                     if (mIsMuxerStarted
                             && mOutputAudioTrack >= 0
                             && bufferInfo.size != 0) {
+                        MLog.d(TAG, "AudioEncoderThread() bufferInfo.size: " + bufferInfo.size);
                         mMediaMuxer.writeSampleData(mOutputAudioTrack, room, bufferInfo);
                     }
                     mAudioEncoderMediaCodec.releaseOutputBuffer(roomIndex, false);

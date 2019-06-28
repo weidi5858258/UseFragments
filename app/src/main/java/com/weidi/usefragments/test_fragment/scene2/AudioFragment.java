@@ -5,7 +5,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.res.Configuration;
 import android.icu.text.SimpleDateFormat;
-import android.media.AudioManager;
 import android.media.AudioRecord;
 import android.media.AudioTrack;
 import android.media.MediaCodec;
@@ -26,7 +25,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 
-import com.lidroid.xutils.util.LogUtils;
 import com.weidi.usefragments.R;
 import com.weidi.usefragments.fragment.FragOperManager;
 import com.weidi.usefragments.fragment.base.BaseFragment;
@@ -302,6 +300,9 @@ public class AudioFragment extends BaseFragment {
 
     private static final int PREPARE = 0x0001;
     private static final int STOP_RECORD = 0x0002;
+    private static final int PCM_TO_WAV = 0x0003;
+    private static final String PATH =
+            "/storage/2430-1702/Android/data/com.weidi.usefragments/files/Music";
 
     @InjectView(R.id.control_btn)
     private Button mControlBtn;
@@ -348,12 +349,13 @@ public class AudioFragment extends BaseFragment {
         if (mIsRecordRunning) {
             mControlBtn.setText("停止录音");
             if (mIsRecordPaused) {
-                mPauseRecordBtn.setText("开始录音");
+                mPauseRecordBtn.setText("继续录音");
             } else {
                 mPauseRecordBtn.setText("暂停录音");
             }
         } else {
-            mControlBtn.setText("录音");
+            mControlBtn.setText("开始录音");
+            mPauseRecordBtn.setText("");
         }
         if (mIsTrackRunning) {
             mPlayBtn.setText("停止播放");
@@ -439,6 +441,8 @@ public class AudioFragment extends BaseFragment {
                 playTrackOrStopTrack();
                 break;
             case R.id.convert_btn:
+                mThreadHandler.removeMessages(PCM_TO_WAV);
+                mThreadHandler.sendEmptyMessage(PCM_TO_WAV);
                 break;
             case R.id.jump_btn:
                 FragOperManager.getInstance().enter3(new A2Fragment());
@@ -457,6 +461,9 @@ public class AudioFragment extends BaseFragment {
                 break;
             case STOP_RECORD:
                 stopRecord();
+                break;
+            case PCM_TO_WAV:
+                pcmTOwav();
                 break;
             default:
                 break;
@@ -576,6 +583,9 @@ public class AudioFragment extends BaseFragment {
             return;
         }
 
+        if (DEBUG)
+            MLog.w(TAG, "stopRecord() start");
+
         mIsRecordPaused = false;
         synchronized (mPauseLock) {
             if (DEBUG)
@@ -601,6 +611,9 @@ public class AudioFragment extends BaseFragment {
         });
         MediaUtils.stopAudioRecord(mAudioRecord);
         MediaUtils.stopMediaCodec(mAudioEncoderMediaCodec);
+
+        if (DEBUG)
+            MLog.w(TAG, "stopRecord() end");
     }
 
     private void playTrackOrStopTrack() {
@@ -626,22 +639,76 @@ public class AudioFragment extends BaseFragment {
         mAcousticEchoCanceler = null;
     }
 
+    private void pcmTOwav() {
+        File pcmFile = new File(PATH, "test.pcm");
+        File wavFile = new File(PATH, "test.wav");
+        if (!pcmFile.exists()
+                || pcmFile.length() <= 0) {
+            return;
+        }
+        FileInputStream pcmIS = null;
+        FileOutputStream wavOS = null;
+        try {
+            pcmIS = new FileInputStream(wavFile);
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+            return;
+        }
+        try {
+            wavOS = new FileOutputStream(wavFile);
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+            return;
+        }
+
+        // do something
+        try {
+            long pcmSize = pcmIS.getChannel().size();
+            MediaUtils.addWaveHeaderToPcmFile(
+                    wavOS,
+                    pcmSize,
+                    MediaUtils.sampleRateInHz,
+                    MediaUtils.channelCount,
+                    MediaUtils.AUDIO_BIT_RATE);
+            byte[] data = new byte[MediaUtils.getMinBufferSize()];
+            while (pcmIS.read(data) != -1) {
+                wavOS.write(data);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        try {
+            if (pcmIS != null) {
+                pcmIS.close();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        try {
+            if (wavOS != null) {
+                wavOS.flush();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            if (wavOS != null) {
+                try {
+                    wavOS.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
+
     private void startRecording() {
         new Thread(new Runnable() {
             @Override
             public void run() {
                 // /data/user/0/com.weidi.usefragments/files/test.pcm
-                File pcmFile = new File(
-                        "/storage/2430-1702/Android/data/com.weidi.usefragments/files/Music",
-                        "test.pcm");
-                File aacFile = new File(
-                        "/storage/2430-1702/Android/data/com.weidi.usefragments/files/Music",
-                        "test.aac");
-                // mSimpleDateFormat.format(new Date()) + ".pcm");
-                /*if (!file.mkdirs()) {
-                    MLog.e(TAG, "Directory not created");
-                    return;
-                }*/
+                File pcmFile = new File(PATH, "test.pcm");
+                File aacFile = new File(PATH, "test.aac");
                 if (pcmFile.exists()) {
                     try {
                         pcmFile.delete();
@@ -656,58 +723,70 @@ public class AudioFragment extends BaseFragment {
                         e.printStackTrace();
                     }
                 }
-                /*if (!pcmFile.canWrite() || !aacFile.canWrite()) {
-                    return;
-                }*/
-                FileOutputStream os = null;
                 try {
-                    os = new FileOutputStream(pcmFile);
+                    pcmFile.createNewFile();
+                    aacFile.createNewFile();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    return;
+                }
+                FileOutputStream pcmOS = null;
+                try {
+                    pcmOS = new FileOutputStream(pcmFile);
                 } catch (FileNotFoundException e) {
                     e.printStackTrace();
                     return;
                 }
-                BufferedOutputStream bos = null;
+                BufferedOutputStream aacOS = null;
                 try {
-                    bos = new BufferedOutputStream(
+                    aacOS = new BufferedOutputStream(
                             new FileOutputStream(aacFile), 200 * 1024);
                 } catch (FileNotFoundException e) {
                     e.printStackTrace();
                     return;
                 }
 
+                // 16384
                 int bufferSizeInBytes =
                         MediaUtils.getMinBufferSize() * 2;
+                if (DEBUG)
+                    MLog.d(TAG, "startRecording() bufferSizeInBytes: " + bufferSizeInBytes);
                 mPcmData = new byte[bufferSizeInBytes];
                 int readSize = -1;
+                // 房间编号
                 int roomIndex = MediaCodec.INFO_TRY_AGAIN_LATER;
+                // 房间
                 ByteBuffer room = null;
+                // 用于保存房间信息
+                MediaCodec.BufferInfo roomInfo = new MediaCodec.BufferInfo();
 
                 if (DEBUG)
-                    MLog.d(TAG, "startRecording() start");
+                    MLog.w(TAG, "startRecording() start");
 
                 while (mIsRecordRunning) {
+                    // 录音暂停装置
                     if (mIsRecordPaused) {
                         synchronized (mPauseLock) {
                             if (DEBUG)
-                                MLog.d(TAG, "startRecording() mPauseLock.wait() start");
+                                MLog.i(TAG, "startRecording() mPauseLock.wait() start");
                             try {
                                 mPauseLock.wait();
                             } catch (InterruptedException e) {
                                 e.printStackTrace();
                             }
                             if (DEBUG)
-                                MLog.d(TAG, "startRecording() mPauseLock.wait() end");
+                                MLog.i(TAG, "startRecording() mPauseLock.wait() end");
                         }
                     }
                     // audioRecord把数据读到data中
                     readSize = mAudioRecord.read(mPcmData, 0, bufferSizeInBytes);
-                    // MLog.d(TAG, "startRecording() read: " + read);
                     if (readSize < 0) {
+                        mIsRecordRunning = false;
                         break;
                     }
                     try {
                         // 把data数据写到os文件流中
-                        os.write(mPcmData);
+                        pcmOS.write(mPcmData);
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
@@ -735,35 +814,53 @@ public class AudioFragment extends BaseFragment {
                     }
 
                     // Output
-                    MediaCodec.BufferInfo bufferInfo = new MediaCodec.BufferInfo();
                     roomIndex = mAudioEncoderMediaCodec.dequeueOutputBuffer(
-                            bufferInfo, 10000);
+                            roomInfo, 10000);
+                    // 会执行多次
                     while (roomIndex >= 0) {
-                        int bufferInfoSize = bufferInfo.size;
-                        int packetSize = bufferInfoSize + 7;
                         room = mAudioEncoderMediaCodec.getOutputBuffer(roomIndex);
-                        room.position(bufferInfo.offset);
-                        room.limit(bufferInfo.offset + bufferInfoSize);
-                        byte[] chunkAudio = new byte[packetSize];
-                        MediaUtils.addADTStoPacket(chunkAudio, packetSize);
-                        room.get(chunkAudio, 7, bufferInfoSize);
-                        room.position(bufferInfo.offset);
+
+                        // room.limit()与bufferInfo.size的大小是相同的
+                        // 一帧AAC数据,大小大概为500~550这个范围(每次得到的room大小是不一样的)
+                        int roomSize = roomInfo.size;
+
+                        //////////////////////////AAC编码操作//////////////////////////
+                        /***
+                         roomInfo.offset一直为0
+                         置bufferInfo.offset这个位置,
+                         意思就是:从room的第bufferInfo.offset个位置开始读数据
+                         */
+                        room.position(roomInfo.offset);
+                        room.limit(roomInfo.offset + roomSize);
+                        // 一帧AAC数据和ADTS头的总大小
+                        int frameSize = roomSize + 7;
+                        // 空间只能不断地new
+                        byte[] aacData = new byte[frameSize];
+                        // 先添加7个字节的头信息
+                        MediaUtils.addADTStoFrame(aacData, frameSize);
+                        room.get(aacData, 7, roomSize);
+                        room.position(roomInfo.offset);
                         try {
-                            // BufferOutputStream将文件保存到内存卡中
-                            bos.write(chunkAudio, 0, chunkAudio.length);
-                            // *.aac
+                            aacOS.write(aacData, 0, aacData.length);
                         } catch (IOException e) {
                             e.printStackTrace();
                         }
+                        /////////////////////////////////////////////////////////////
+
+                        //////////////////////////其他编码操作//////////////////////////
+                        // ......
+                        //////////////////////////////////////////////////////////////
+
                         try {
                             mAudioEncoderMediaCodec.releaseOutputBuffer(roomIndex, false);
                             roomIndex = mAudioEncoderMediaCodec.dequeueOutputBuffer(
-                                    bufferInfo, 10000);
+                                    roomInfo, 10000);
                         } catch (IllegalStateException e) {
                             MLog.e(TAG, "startRecording Output occur exception: " + e);
                             e.printStackTrace();
                         }
                     }
+                    // 退出装置
                     if (!mIsRecordRunning) {
                         synchronized (mStopLock) {
                             if (DEBUG)
@@ -774,43 +871,43 @@ public class AudioFragment extends BaseFragment {
                 }
 
                 try {
-                    if (os != null) {
-                        os.flush();
+                    if (pcmOS != null) {
+                        pcmOS.flush();
                     }
                 } catch (IOException e) {
                     e.printStackTrace();
                 } finally {
-                    if (os != null) {
+                    if (pcmOS != null) {
                         try {
-                            os.close();
+                            pcmOS.close();
                         } catch (IOException e) {
                             e.printStackTrace();
                         } finally {
-                            os = null;
+                            pcmOS = null;
                         }
                     }
                 }
 
                 try {
-                    if (bos != null) {
-                        bos.flush();
+                    if (aacOS != null) {
+                        aacOS.flush();
                     }
                 } catch (IOException e) {
                     e.printStackTrace();
                 } finally {
-                    if (bos != null) {
+                    if (aacOS != null) {
                         try {
-                            bos.close();
+                            aacOS.close();
                         } catch (IOException e) {
                             e.printStackTrace();
                         } finally {
-                            bos = null;
+                            aacOS = null;
                         }
                     }
                 }
 
                 if (DEBUG)
-                    MLog.d(TAG, "startRecording() end");
+                    MLog.w(TAG, "startRecording() end");
 
                 mPcmData = null;
             }
