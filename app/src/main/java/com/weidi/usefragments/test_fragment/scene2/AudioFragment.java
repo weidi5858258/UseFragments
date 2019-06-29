@@ -24,6 +24,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.Toast;
 
 import com.weidi.usefragments.R;
 import com.weidi.usefragments.fragment.FragOperManager;
@@ -640,16 +641,34 @@ public class AudioFragment extends BaseFragment {
     }
 
     private void pcmTOwav() {
+        MLog.d(TAG, "pcmTOwav() start");
+
         File pcmFile = new File(PATH, "test.pcm");
         File wavFile = new File(PATH, "test.wav");
         if (!pcmFile.exists()
                 || pcmFile.length() <= 0) {
             return;
         }
+        if (wavFile.exists()) {
+            try {
+                wavFile.delete();
+            } catch (SecurityException e) {
+                e.printStackTrace();
+                return;
+            }
+        }
+        if (!wavFile.exists()) {
+            try {
+                wavFile.createNewFile();
+            } catch (IOException e) {
+                e.printStackTrace();
+                return;
+            }
+        }
         FileInputStream pcmIS = null;
         FileOutputStream wavOS = null;
         try {
-            pcmIS = new FileInputStream(wavFile);
+            pcmIS = new FileInputStream(pcmFile);
         } catch (FileNotFoundException e) {
             e.printStackTrace();
             return;
@@ -700,6 +719,15 @@ public class AudioFragment extends BaseFragment {
                 }
             }
         }
+
+        mUiHandler.post(new Runnable() {
+            @Override
+            public void run() {
+                Toast.makeText(getContext(), "成功生成wav文件", Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        MLog.d(TAG, "pcmTOwav() end");
     }
 
     private void startRecording() {
