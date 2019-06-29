@@ -446,7 +446,7 @@ public class AudioFragment extends BaseFragment {
                 mThreadHandler.sendEmptyMessage(PCM_TO_WAV);
                 break;
             case R.id.jump_btn:
-                FragOperManager.getInstance().enter3(new A2Fragment());
+                FragOperManager.getInstance().enter3(new DecodeAudioFragment());
                 break;
             default:
         }

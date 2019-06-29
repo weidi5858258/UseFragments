@@ -525,7 +525,7 @@ public class MediaUtils {
     public static final int sampleRateInHz = 44100;
     // 下面两个是对应关系,只是方法所需要的参数不一样而已
     public static final int channelCount = 2;
-    // 立体声
+    // 立体声(AudioFormat.CHANNEL_IN_STEREO = AudioFormat.CHANNEL_OUT_STEREO)
     private static final int channelConfig = AudioFormat.CHANNEL_IN_STEREO;
     // 数据位宽(兼容所有Android设备)
     private static final int audioFormat = AudioFormat.ENCODING_PCM_16BIT;
@@ -550,6 +550,15 @@ public class MediaUtils {
      在Android中,一帧的大小可以根据下面的公式得到,
      但是音频缓冲区的大小则必须是一帧大小的2～N倍.
      */
+    public static int getMinBufferSize(int sampleRateInHz,
+                                       int channelConfig,
+                                       int audioFormat) {
+        return AudioRecord.getMinBufferSize(
+                sampleRateInHz,
+                channelConfig,
+                audioFormat);
+    }
+
     public static int getMinBufferSize() {
         return AudioRecord.getMinBufferSize(
                 sampleRateInHz,
@@ -748,14 +757,16 @@ public class MediaUtils {
 
     /***
      使用AudioTrack播放的音频必须是解码后的PCM数据
+     @param streamType AudioManager.STREAM_MUSIC
      @param sampleRateInHz 44100
      @param channelCount 声道数
      @param audioFormat AudioFormat.ENCODING_PCM_16BIT
-     @param mode AudioTrack.MODE_STREAM
+     @param mode AudioTrack.MODE_STREAM or AudioTrack.MODE_STATIC
      @param sessionId AudioManager.AUDIO_SESSION_ID_GENERATE
      @return
      */
     public static AudioTrack createAudioTrack(
+            int streamType,
             int sampleRateInHz, int channelCount,
             int audioFormat, int mode, int sessionId) {
         int channelConfig = channelCount == 2
@@ -774,7 +785,7 @@ public class MediaUtils {
         }
 
         if (DEBUG)
-            MLog.d(TAG, "createAudioTrack() minBufferSize: " + bufferSizeInBytes);
+            MLog.d(TAG, "createAudioTrack() bufferSizeInBytes: " + bufferSizeInBytes);
         bufferSizeInBytes *= 2;
         AudioAttributes attributes = new AudioAttributes.Builder()
                 .setUsage(AudioAttributes.USAGE_MEDIA)
@@ -803,7 +814,59 @@ public class MediaUtils {
         return audioTrack;
     }
 
-    public static AudioTrack createAudioTrack() {
+    public static AudioTrack createAudioTrack(
+            int streamType,
+            int sampleRateInHz, int channelCount,
+            int audioFormat, int mode) {
+        if (DEBUG)
+            MLog.d(TAG, "createAudioTrack(...) start");
+        int channelConfig = channelCount == 2
+                ?
+                AudioFormat.CHANNEL_OUT_STEREO
+                :
+                AudioFormat.CHANNEL_OUT_MONO;
+        int bufferSizeInBytes = getMinBufferSize(
+                sampleRateInHz, channelConfig, audioFormat);
+        if (DEBUG)
+            MLog.d(TAG, "createAudioTrack(...) bufferSizeInBytes: " + bufferSizeInBytes);
+        if (bufferSizeInBytes <= 0) {
+            if (DEBUG)
+                MLog.e(TAG, String.format(Locale.US,
+                        "Bad arguments: getMinBufferSize(%d, %d, %d)",
+                        sampleRateInHz, channelConfig, audioFormat));
+            return null;
+        }
+
+        bufferSizeInBytes *= 2;
+        AudioTrack audioTrack = new AudioTrack(
+                streamType,
+                sampleRateInHz,
+                channelConfig,
+                audioFormat,
+                bufferSizeInBytes,
+                mode);
+        if (audioTrack.getState() == AudioTrack.STATE_UNINITIALIZED) {
+            if (DEBUG)
+                MLog.e(TAG, String.format(Locale.US,
+                        "Bad arguments to new AudioTrack(%d, %d, %d, %d, %d)",
+                        sampleRateInHz, channelConfig, audioFormat, mode, sessionId));
+            try {
+                audioTrack.release();
+            } finally {
+                audioTrack = null;
+            }
+            return null;
+        }
+
+        if (DEBUG)
+            MLog.d(TAG, "createAudioTrack(...) end");
+        return audioTrack;
+    }
+
+    public static AudioTrack createAudioTrack(int sessionId) {
+        if (sessionId < 0) {
+            return null;
+        }
         if (DEBUG)
             MLog.d(TAG, "createAudioTrack() start");
         int bufferSizeInBytes = getMinBufferSize();
@@ -866,10 +929,7 @@ public class MediaUtils {
         return audioTrack;
     }
 
-    public static AudioTrack createAudioTrack(int sessionId) {
-        if (sessionId < 0) {
-            return null;
-        }
+    public static AudioTrack createAudioTrack() {
         if (DEBUG)
             MLog.d(TAG, "createAudioTrack() start");
         int bufferSizeInBytes = getMinBufferSize();
