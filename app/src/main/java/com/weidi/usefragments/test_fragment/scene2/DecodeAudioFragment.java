@@ -4,17 +4,7 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.res.Configuration;
-import android.media.AudioFormat;
-import android.media.AudioManager;
-import android.media.AudioTrack;
-import android.media.MediaCodec;
-import android.media.MediaExtractor;
-import android.media.MediaFormat;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.HandlerThread;
-import android.os.Looper;
-import android.os.Message;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.view.LayoutInflater;
@@ -27,11 +17,14 @@ import com.weidi.usefragments.fragment.FragOperManager;
 import com.weidi.usefragments.fragment.base.BaseFragment;
 import com.weidi.usefragments.inject.InjectOnClick;
 import com.weidi.usefragments.inject.InjectView;
-import com.weidi.usefragments.media.MediaUtils;
 import com.weidi.usefragments.tool.MLog;
+import com.weidi.usefragments.tool.SampleAudioPlayer;
 
-import java.io.IOException;
-import java.nio.ByteBuffer;
+import java.io.File;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Random;
 
 /***
 
@@ -284,40 +277,39 @@ public class DecodeAudioFragment extends BaseFragment {
 
     /////////////////////////////////////////////////////////////////
 
-    private static final int PREPARE = 0x0001;
-    private static final int PAUSE = 0x0002;
-    private static final int STOP = 0x0003;
     private static final String PATH =
             "/storage/2430-1702/Android/data/com.weidi.usefragments/files/Music/";
 
-    @InjectView(R.id.start_btn)
-    private Button mStartBtn;
+    // 顺序播放
+    private static final int SEQUENTIAL_PLAYBACK = 0x001;
+    // 随机播放
+    private static final int RANDOM_PLAYBACK = 0x002;
+    // 循环播放
+    private static final int LOOP_PLAYBACK = 0x003;
+
+    private int mPlayMode = RANDOM_PLAYBACK;
+
+    @InjectView(R.id.play_btn)
+    private Button mPlayBtn;
     @InjectView(R.id.pause_btn)
     private Button mPauseBtn;
     @InjectView(R.id.stop_btn)
     private Button mStopBtn;
+    @InjectView(R.id.next_btn)
+    private Button mNextBtn;
+    @InjectView(R.id.prev_btn)
+    private Button mPrevBtn;
     @InjectView(R.id.jump_btn)
     private Button mJumpBtn;
 
-    private MediaExtractor mMediaExtractor;
-    private MediaCodec mAudioDncoderMediaCodec;
-    private MediaFormat mAudioDncoderMediaFormat;
-    private AudioTrack mAudioTrack;
-    private byte[] mPcmData;
-    private int mAudioTrackIndex = -1;
-    private int sampleRateInHz;
-    private int channelCount;
-    private int channelConfig;
-    private int audioFormat;
-    private int bufferSizeInBytes;
-    private boolean mIsRunning = false;
+    private SampleAudioPlayer mSampleAudioPlayer;
 
-    private HandlerThread mHandlerThread;
-    private Handler mThreadHandler;
-    private Handler mUiHandler;
+    private List<File> musicFiles;
+    private int mCurMusicIndex;
+    private File mCurMusicFile;
 
-    private Object mPauseLock = new Object();
-    private Object mStopLock = new Object();
+    private Random mRandom = new Random();
+    private List<Integer> mHasPlayed = new ArrayList<Integer>();
 
     /***
      代码执行的内容跟onStart(),onResume()一样,
@@ -328,10 +320,12 @@ public class DecodeAudioFragment extends BaseFragment {
         if (DEBUG)
             MLog.d(TAG, "onShow(): " + printThis());
 
-//        mStartBtn.setText("播放");
-//        mPauseBtn.setText("暂停");
-//        mStopBtn.setText("停止");
-//        mJumpBtn.setText("跳转到");
+        mPlayBtn.setText("播放");
+        mPauseBtn.setText("暂停");
+        mStopBtn.setText("停止");
+        mPrevBtn.setText("上一首");
+        mNextBtn.setText("下一首");
+        mJumpBtn.setText("跳转到");
     }
 
     /***
@@ -345,24 +339,33 @@ public class DecodeAudioFragment extends BaseFragment {
     }
 
     private void initData() {
-        mHandlerThread = new HandlerThread(TAG);
-        mHandlerThread.start();
-        mThreadHandler = new Handler(mHandlerThread.getLooper()) {
-            @Override
-            public void handleMessage(Message msg) {
-                //super.threadHandleMessage(msg);
-                DecodeAudioFragment.this.threadHandleMessage(msg);
+        File file = new File("/storage/2430-1702/BaiduNetdisk/music");
+        if (file.isDirectory()) {
+            File[] files = file.listFiles();
+            if (files != null && files.length > 0) {
+                musicFiles = new ArrayList<File>();
+                Collections.addAll(musicFiles, files);
             }
-        };
-        mUiHandler = new Handler(Looper.getMainLooper()) {
-            @Override
-            public void handleMessage(Message msg) {
-                //super.handleMessage(msg);
-                DecodeAudioFragment.this.uiHandleMessage(msg);
-            }
-        };
+            // /storage/2430-1702/BaiduNetdisk/music/谭咏麟 - 水中花.mp3
+            /*for (File tempFile : files) {
+                if (DEBUG)
+                    MLog.d(TAG, "initData(): " + printThis() + " " + tempFile.getAbsolutePath());
+            }*/
+        }
 
-        mThreadHandler.sendEmptyMessage(PREPARE);
+        mSampleAudioPlayer = new SampleAudioPlayer();
+        mSampleAudioPlayer.setCallback(
+                new SampleAudioPlayer.Callback() {
+                    @Override
+                    public void playbackFinished() {
+                        next();
+                    }
+                });
+        if (musicFiles != null) {
+            mCurMusicIndex = 0;
+            mCurMusicFile = musicFiles.get(mCurMusicIndex);
+            mSampleAudioPlayer.setPath(mCurMusicFile.getAbsolutePath());
+        }
     }
 
     private void initView(View view, Bundle savedInstanceState) {
@@ -374,22 +377,28 @@ public class DecodeAudioFragment extends BaseFragment {
     }
 
     private void destroy() {
-
+        mSampleAudioPlayer.release();
     }
 
-    @InjectOnClick({R.id.play_btn, R.id.pause_btn, R.id.stop_btn, R.id.jump_btn})
+    @InjectOnClick({R.id.play_btn, R.id.pause_btn, R.id.stop_btn,
+            R.id.prev_btn, R.id.next_btn,
+            R.id.jump_btn})
     private void onClick(View v) {
         switch (v.getId()) {
             case R.id.play_btn:
-                start();
+                mSampleAudioPlayer.play();
                 break;
             case R.id.pause_btn:
-                mThreadHandler.removeMessages(PAUSE);
-                mThreadHandler.sendEmptyMessage(PAUSE);
+                mSampleAudioPlayer.pause();
                 break;
             case R.id.stop_btn:
-                mThreadHandler.removeMessages(STOP);
-                mThreadHandler.sendEmptyMessage(STOP);
+                mSampleAudioPlayer.stop();
+                break;
+            case R.id.prev_btn:
+                prev();
+                break;
+            case R.id.next_btn:
+                next();
                 break;
             case R.id.jump_btn:
                 FragOperManager.getInstance().enter3(new A2Fragment());
@@ -399,204 +408,88 @@ public class DecodeAudioFragment extends BaseFragment {
         }
     }
 
-    private void prepare() {
-        mMediaExtractor = new MediaExtractor();
-        try {
-            mMediaExtractor.setDataSource(PATH + "DreamItPossible.mp3");
-        } catch (IOException e) {
-            e.printStackTrace();
+    private void prev() {
+        if (musicFiles == null
+                || musicFiles.isEmpty()) {
             return;
         }
 
-        int trackCount = mMediaExtractor.getTrackCount();
-        for (int i = 0; i < trackCount; i++) {
-            mAudioDncoderMediaFormat = mMediaExtractor.getTrackFormat(i);
-            String mime = mAudioDncoderMediaFormat.getString(MediaFormat.KEY_MIME);
-            if (mime.startsWith("audio/")) {
-                try {
-                    mAudioDncoderMediaCodec = MediaCodec.createDecoderByType(mime);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                    return;
+        switch (mPlayMode) {
+            case SEQUENTIAL_PLAYBACK:
+                mCurMusicIndex -= 1;
+                if (mCurMusicIndex < 0) {
+                    mCurMusicIndex = musicFiles.size() - 1;
                 }
-                mAudioTrackIndex = i;
+                mCurMusicFile = musicFiles.get(mCurMusicIndex);
                 break;
-            }
-        }
-        if (mAudioTrackIndex < 0
-                || mAudioDncoderMediaFormat == null) {
-            return;
-        }
-
-        mMediaExtractor.selectTrack(mAudioTrackIndex);
-        sampleRateInHz = mAudioDncoderMediaFormat.getInteger(MediaFormat.KEY_SAMPLE_RATE);
-        channelCount = mAudioDncoderMediaFormat.getInteger(MediaFormat.KEY_CHANNEL_COUNT);
-        // 有异常,在Android平台上录制音频时可能会设置下面的值
-        /*channelConfig = mAudioDncoderMediaFormat.getInteger(MediaFormat.KEY_CHANNEL_MASK);
-        if (channelConfig <= 0) {
-        }*/
-        switch (channelCount) {
-            case 1:
-                // 如果是单声道的话还不能确定是哪个值
-                channelConfig = AudioFormat.CHANNEL_IN_MONO;// 16
-                channelConfig = AudioFormat.CHANNEL_OUT_MONO;// 4
-                break;
-            case 2:
-                channelConfig = AudioFormat.CHANNEL_IN_STEREO;// 12
-                channelConfig = AudioFormat.CHANNEL_OUT_STEREO;// 12
-                break;
-            default:
-                channelConfig = AudioFormat.CHANNEL_OUT_STEREO;
-                break;
-        }
-        // 还不知道怎样从一个音频中得到"数据位宽"
-        audioFormat = AudioFormat.ENCODING_PCM_16BIT;
-        bufferSizeInBytes = MediaUtils.getMinBufferSize(
-                sampleRateInHz, channelConfig, audioFormat);
-        mPcmData = new byte[bufferSizeInBytes * 2];
-        mAudioTrack = MediaUtils.createAudioTrack(
-                AudioManager.STREAM_MUSIC,
-                sampleRateInHz, channelCount, audioFormat,
-                AudioTrack.MODE_STREAM);
-    }
-
-    private void start() {
-        if (mAudioDncoderMediaCodec == null
-                || mAudioDncoderMediaFormat == null
-                || mAudioTrack == null) {
-            return;
-        }
-
-        mIsRunning = true;
-        mAudioDncoderMediaCodec.configure(
-                mAudioDncoderMediaFormat, null, null, 0);
-        mAudioDncoderMediaCodec.start();
-        mAudioTrack.play();
-        new Thread(new DecodeAudioThread()).start();
-    }
-
-    private void pause() {
-
-    }
-
-    private void stop() {
-        if (!mIsRunning) {
-            return;
-        }
-
-        mIsRunning = false;
-
-        synchronized (mStopLock) {
-            try {
-                mStopLock.wait();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
-
-        MediaUtils.stopMediaCodec(mAudioDncoderMediaCodec);
-        MediaUtils.stopAudioTrack(mAudioTrack);
-    }
-
-    private void threadHandleMessage(Message msg) {
-        if (msg == null) {
-            return;
-        }
-        switch (msg.what) {
-            case PREPARE:
-                prepare();
-                break;
-            case PAUSE:
-                pause();
-                break;
-            case STOP:
-                stop();
-                break;
-            default:
-                break;
-        }
-    }
-
-    private void uiHandleMessage(Message msg) {
-        if (msg == null) {
-            return;
-        }
-    }
-
-    private class DecodeAudioThread implements Runnable {
-        @Override
-        public void run() {
-            if (DEBUG)
-                MLog.w(TAG, "DecodeAudioThread start");
-
-            int readSize = -1;
-            // 房间编号
-            int roomIndex = MediaCodec.INFO_TRY_AGAIN_LATER;
-            // 房间
-            ByteBuffer room = null;
-            // 用于保存房间信息
-            MediaCodec.BufferInfo roomInfo = new MediaCodec.BufferInfo();
-            while (mIsRunning) {
-                // Input
-                roomIndex = mAudioDncoderMediaCodec.dequeueInputBuffer(-1);
-                if (roomIndex >= 0) {
-                    room = mAudioDncoderMediaCodec.getInputBuffer(roomIndex);
-                    room.clear();
-                    readSize = mMediaExtractor.readSampleData(room, 0);
-                    long presentationTimeUs = System.nanoTime() / 1000;
-                    if (readSize < 0) {
-                        mAudioDncoderMediaCodec.queueInputBuffer(
-                                roomIndex,
-                                0,
-                                0,
-                                presentationTimeUs,
-                                MediaCodec.BUFFER_FLAG_END_OF_STREAM);
-
-                        if (DEBUG)
-                            MLog.w(TAG, "DecodeAudioThread read end");
-                        mIsRunning = false;
+            case RANDOM_PLAYBACK:
+                int size = musicFiles.size();
+                while (true) {
+                    int randomNumber = mRandom.nextInt(size);
+                    if (!mHasPlayed.contains(randomNumber)) {
+                        mHasPlayed.add(randomNumber);
+                        mCurMusicIndex = randomNumber;
+                        mCurMusicFile = musicFiles.get(mCurMusicIndex);
                         break;
                     } else {
-                        mAudioDncoderMediaCodec.queueInputBuffer(
-                                roomIndex,
-                                0,
-                                readSize,
-                                presentationTimeUs,
-                                0);
-                        mMediaExtractor.advance();
+                        if (mHasPlayed.size() == size) {
+                            mHasPlayed.clear();
+                        }
                     }
                 }
-                // Output
-                roomIndex = mAudioDncoderMediaCodec.dequeueOutputBuffer(
-                        roomInfo, 10000);
-                while (roomIndex >= 0) {
-                    room = mAudioDncoderMediaCodec.getOutputBuffer(roomIndex);
-                    // room.limit()与bufferInfo.size的大小是相同的
-                    // 一帧AAC数据,大小大概为500~550这个范围(每次得到的room大小是不一样的)
-                    int roomSize = roomInfo.size;
-                    byte[] pcmData = new byte[roomSize];
-                    room.get(pcmData, 0, pcmData.length);
-                    mAudioTrack.write(pcmData, 0, pcmData.length);
-
-                    try {
-                        mAudioDncoderMediaCodec.releaseOutputBuffer(roomIndex, false);
-                        roomIndex = mAudioDncoderMediaCodec.dequeueOutputBuffer(
-                                roomInfo, 10000);
-                    } catch (IllegalStateException e) {
-                        MLog.e(TAG, "startRecording Output occur exception: " + e);
-                        e.printStackTrace();
-                    }
-                }
-                //
-                if (!mIsRunning) {
-                    synchronized (mStopLock) {
-                        mStopLock.notify();
-                    }
-                }
-            }
-            if (DEBUG)
-                MLog.w(TAG, "DecodeAudioThread end");
+                break;
+            case LOOP_PLAYBACK:
+                break;
+            default:
+                break;
         }
+        mSampleAudioPlayer.setPath(mCurMusicFile.getAbsolutePath());
+        if (DEBUG)
+            MLog.d(TAG, "prev() mCurMusicIndex: " + mCurMusicIndex +
+                    " " + mCurMusicFile.getAbsolutePath());
+        mSampleAudioPlayer.prev();
+    }
+
+    private void next() {
+        if (musicFiles == null
+                || musicFiles.isEmpty()) {
+            return;
+        }
+
+        switch (mPlayMode) {
+            case SEQUENTIAL_PLAYBACK:
+                mCurMusicIndex += 1;
+                if (mCurMusicIndex >= musicFiles.size()) {
+                    mCurMusicIndex = 0;
+                }
+                mCurMusicFile = musicFiles.get(mCurMusicIndex);
+                break;
+            case RANDOM_PLAYBACK:
+                int size = musicFiles.size();
+                while (true) {
+                    int randomNumber = mRandom.nextInt(size);
+                    if (!mHasPlayed.contains(randomNumber)) {
+                        mHasPlayed.add(randomNumber);
+                        mCurMusicIndex = randomNumber;
+                        mCurMusicFile = musicFiles.get(mCurMusicIndex);
+                        break;
+                    } else {
+                        if (mHasPlayed.size() == size) {
+                            mHasPlayed.clear();
+                        }
+                    }
+                }
+                break;
+            case LOOP_PLAYBACK:
+                break;
+            default:
+                break;
+        }
+        mSampleAudioPlayer.setPath(mCurMusicFile.getAbsolutePath());
+        if (DEBUG)
+            MLog.d(TAG, "next() mCurMusicIndex: " + mCurMusicIndex +
+                    " " + mCurMusicFile.getAbsolutePath());
+        mSampleAudioPlayer.next();
     }
 
 }

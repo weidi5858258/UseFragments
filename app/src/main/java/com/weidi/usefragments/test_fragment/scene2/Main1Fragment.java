@@ -277,7 +277,6 @@ public class Main1Fragment extends BaseFragment {
     }
 
     private static class HeadsetPlugReceiver extends BroadcastReceiver {
-
         @Override
         public void onReceive(Context context, Intent intent) {
             if (intent.hasExtra("state")) {
@@ -294,7 +293,6 @@ public class Main1Fragment extends BaseFragment {
                 }
             }
         }
-
     }
 
 }

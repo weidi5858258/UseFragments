@@ -535,10 +535,10 @@ public class MainActivity1 extends BaseActivity
                     // 短按Home键
                     if (DEBUG)
                         Log.d(TAG, "onReceive() Home");
-                    Intent intent1 = new Intent();
+                    /*Intent intent1 = new Intent();
                     intent1.putExtra("TEST", "alexander");
                     MainActivity1.this.setResult(Activity.RESULT_OK, intent1);
-                    MainActivity1.this.finish();
+                    MainActivity1.this.finish();*/
                 } else if (SYSTEM_DIALOG_REASON_RECENT_APPS.equals(reason)) {
                     // startSelf();
                     // 长按Menu键 或者 activity切换键
