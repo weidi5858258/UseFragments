@@ -431,7 +431,7 @@ public class DecodeAudioFragment extends BaseFragment {
         mMediaExtractor.selectTrack(mAudioTrackIndex);
         sampleRateInHz = mAudioDncoderMediaFormat.getInteger(MediaFormat.KEY_SAMPLE_RATE);
         channelCount = mAudioDncoderMediaFormat.getInteger(MediaFormat.KEY_CHANNEL_COUNT);
-        // 在Android平台上录制音频时可能下面的值
+        // 有异常,在Android平台上录制音频时可能会设置下面的值
         /*channelConfig = mAudioDncoderMediaFormat.getInteger(MediaFormat.KEY_CHANNEL_MASK);
         if (channelConfig <= 0) {
         }*/
