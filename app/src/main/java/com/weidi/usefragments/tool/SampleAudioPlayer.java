@@ -43,6 +43,7 @@ public class SampleAudioPlayer {
     private MediaFormat mAudioDncoderMediaFormat;
     private AudioTrack mAudioTrack;
     private int mAudioTrackIndex = -1;
+    private long mCurFileSize;
 
     private HandlerThread mHandlerThread;
     private Handler mThreadHandler;
@@ -219,6 +220,11 @@ public class SampleAudioPlayer {
         mMediaExtractor.selectTrack(mAudioTrackIndex);
         int sampleRateInHz = mAudioDncoderMediaFormat.getInteger(MediaFormat.KEY_SAMPLE_RATE);
         int channelCount = mAudioDncoderMediaFormat.getInteger(MediaFormat.KEY_CHANNEL_COUNT);
+        mCurFileSize = file.length();
+        if (DEBUG)
+            MLog.i(TAG, "internalPrepare() mCurFileSize: " + mCurFileSize);
+        // 9561547
+        // 9525288
         int channelConfig = AudioFormat.CHANNEL_IN_DEFAULT;
         // 有异常,在Android平台上录制音频时可能会设置下面的值
         /*channelConfig = mAudioDncoderMediaFormat.getInteger(MediaFormat.KEY_CHANNEL_MASK);
@@ -265,6 +271,7 @@ public class SampleAudioPlayer {
                 mAudioDncoderMediaFormat, null, null, 0);
         mAudioDncoderMediaCodec.start();
 
+        long hasReadedSize = 0;
         int readSize = -1;
         // 房间编号
         int roomIndex = MediaCodec.INFO_TRY_AGAIN_LATER;
@@ -295,6 +302,10 @@ public class SampleAudioPlayer {
                     room = mAudioDncoderMediaCodec.getInputBuffer(roomIndex);
                     room.clear();
                     readSize = mMediaExtractor.readSampleData(room, 0);
+                    hasReadedSize += readSize;
+                    /*if (DEBUG)
+                        MLog.i(TAG, "internalStart() hasReadedSize: " + hasReadedSize +
+                                " readSize: " + readSize);*/
                     long presentationTimeUs = System.nanoTime() / 1000;
                     if (readSize < 0) {
                         mAudioDncoderMediaCodec.queueInputBuffer(

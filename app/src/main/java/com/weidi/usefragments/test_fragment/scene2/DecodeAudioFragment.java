@@ -5,12 +5,15 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.res.Configuration;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.TextView;
 
 import com.weidi.usefragments.R;
 import com.weidi.usefragments.fragment.FragOperManager;
@@ -277,9 +280,6 @@ public class DecodeAudioFragment extends BaseFragment {
 
     /////////////////////////////////////////////////////////////////
 
-    private static final String PATH =
-            "/storage/2430-1702/Android/data/com.weidi.usefragments/files/Music/";
-
     // 顺序播放
     private static final int SEQUENTIAL_PLAYBACK = 0x001;
     // 随机播放
@@ -289,6 +289,8 @@ public class DecodeAudioFragment extends BaseFragment {
 
     private int mPlayMode = RANDOM_PLAYBACK;
 
+    @InjectView(R.id.info_tv)
+    private TextView mShowInfoTv;
     @InjectView(R.id.play_btn)
     private Button mPlayBtn;
     @InjectView(R.id.pause_btn)
@@ -308,6 +310,7 @@ public class DecodeAudioFragment extends BaseFragment {
     private int mCurMusicIndex;
     private File mCurMusicFile;
 
+    private Handler mUiHandler = new Handler(Looper.getMainLooper());
     private Random mRandom = new Random();
     private List<Integer> mHasPlayed = new ArrayList<Integer>();
 
@@ -320,6 +323,11 @@ public class DecodeAudioFragment extends BaseFragment {
         if (DEBUG)
             MLog.d(TAG, "onShow(): " + printThis());
 
+        if (mCurMusicFile != null) {
+            String name = mCurMusicFile.getAbsolutePath();
+            name = name.substring(name.lastIndexOf("/") + 1, name.length());
+            mShowInfoTv.setText(name);
+        }
         mPlayBtn.setText("播放");
         mPauseBtn.setText("暂停");
         mStopBtn.setText("停止");
@@ -374,6 +382,12 @@ public class DecodeAudioFragment extends BaseFragment {
                     @Override
                     public void onPlaybackFinished() {
                         next();
+                        mUiHandler.post(new Runnable() {
+                            @Override
+                            public void run() {
+                                onShow();
+                            }
+                        });
                     }
 
                     @Override
@@ -422,9 +436,11 @@ public class DecodeAudioFragment extends BaseFragment {
                 break;
             case R.id.prev_btn:
                 prev();
+                onShow();
                 break;
             case R.id.next_btn:
                 next();
+                onShow();
                 break;
             case R.id.jump_btn:
                 FragOperManager.getInstance().enter3(new A2Fragment());
