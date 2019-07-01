@@ -11,7 +11,6 @@ import android.os.HandlerThread;
 import android.os.Looper;
 import android.os.Message;
 import android.text.TextUtils;
-import android.widget.Toast;
 
 import com.weidi.usefragments.media.MediaUtils;
 
@@ -57,7 +56,12 @@ public class SampleAudioPlayer {
     private Callback mCallback;
 
     public interface Callback {
-        void playbackFinished();
+        void onPlaybackReady();
+        void onPlaybackPaused();
+        void onPlaybackStarted();
+        void onPlaybackFinished();
+        void onProgressUpdated(int progress);
+        void onPlaybackError();
     }
 
     public void setCallback(Callback callback) {
@@ -299,7 +303,7 @@ public class SampleAudioPlayer {
                         mIsRunning = false;
                         internalStop(false);
                         if (mCallback != null) {
-                            mCallback.playbackFinished();
+                            mCallback.onPlaybackFinished();
                         }
                         break;
                     } else {

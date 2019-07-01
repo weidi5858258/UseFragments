@@ -357,10 +357,36 @@ public class DecodeAudioFragment extends BaseFragment {
         mSampleAudioPlayer.setCallback(
                 new SampleAudioPlayer.Callback() {
                     @Override
-                    public void playbackFinished() {
+                    public void onPlaybackReady() {
+
+                    }
+
+                    @Override
+                    public void onPlaybackPaused() {
+
+                    }
+
+                    @Override
+                    public void onPlaybackStarted() {
+
+                    }
+
+                    @Override
+                    public void onPlaybackFinished() {
                         next();
                     }
+
+                    @Override
+                    public void onProgressUpdated(int progress) {
+
+                    }
+
+                    @Override
+                    public void onPlaybackError() {
+
+                    }
                 });
+
         if (musicFiles != null) {
             mCurMusicIndex = 0;
             mCurMusicFile = musicFiles.get(mCurMusicIndex);
