@@ -4,6 +4,7 @@ import android.app.Application;
 import android.os.Looper;
 
 import com.weidi.application.WeidiApplication;
+import com.weidi.eventbus.EventBusUtils;
 import com.weidi.handler.HandlerUtils;
 import com.weidi.handler.ThreadHandlerUtils;
 import com.weidi.usefragments.fragment.FragOperManager;
@@ -20,6 +21,6 @@ public class MyApplication extends WeidiApplication {
         FragOperManager.getInstance();
         HandlerUtils.init(Looper.getMainLooper());
         ThreadHandlerUtils.init();
-//        EventBusUtils.init();
+        EventBusUtils.init();
     }
 }

@@ -17,6 +17,8 @@ import com.weidi.usefragments.media.MediaUtils;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * Created by weidi on 2019/6/30.
@@ -42,11 +44,10 @@ public class SampleAudioPlayer {
     private AudioTrack mAudioTrack;
     private int mAudioTrackIndex = -1;
 
-    private HandlerThread mPlayHandlerThread;
-    private Handler mPlayThreadHandler;
-    private HandlerThread mOtherHandlerThread;
-    private Handler mOtherThreadHandler;
+    private HandlerThread mHandlerThread;
+    private Handler mThreadHandler;
     private Handler mUiHandler;
+    private volatile static ExecutorService singleService;
 
     private boolean mIsRunning = false;
     private boolean mIsPaused = false;
@@ -57,10 +58,15 @@ public class SampleAudioPlayer {
 
     public interface Callback {
         void onPlaybackReady();
+
         void onPlaybackPaused();
+
         void onPlaybackStarted();
+
         void onPlaybackFinished();
+
         void onProgressUpdated(int progress);
+
         void onPlaybackError();
     }
 
@@ -84,69 +90,73 @@ public class SampleAudioPlayer {
     }
 
     public void play() {
-        if (!mIsRunning && !mIsPaused) {
+        mUiHandler.removeMessages(PLAY);
+        mUiHandler.sendEmptyMessage(PLAY);
+
+        /*if (!mIsRunning && !mIsPaused) {
             // 目的是解码工作在此线程中工作
             mPlayThreadHandler.removeMessages(PLAY);
             mPlayThreadHandler.sendEmptyMessage(PLAY);
         } else {
             if (mIsPaused) {
-                mOtherThreadHandler.removeMessages(PLAY);
-                mOtherThreadHandler.sendEmptyMessage(PLAY);
+                mThreadHandler.removeMessages(PLAY);
+                mThreadHandler.sendEmptyMessage(PLAY);
             }
-        }
+        }*/
     }
 
     public void pause() {
-        mOtherThreadHandler.removeMessages(PAUSE);
-        mOtherThreadHandler.sendEmptyMessage(PAUSE);
+        mThreadHandler.removeMessages(PAUSE);
+        mThreadHandler.sendEmptyMessage(PAUSE);
     }
 
     public void stop() {
-        mOtherThreadHandler.removeMessages(STOP);
-        mOtherThreadHandler.sendEmptyMessage(STOP);
+        mThreadHandler.removeMessages(STOP);
+        mThreadHandler.sendEmptyMessage(STOP);
     }
 
     public void prev() {
-        mOtherThreadHandler.removeMessages(PREV);
-        mOtherThreadHandler.sendEmptyMessageDelayed(PREV, 500);
+        mThreadHandler.removeMessages(PREV);
+        mThreadHandler.sendEmptyMessageDelayed(PREV, 500);
     }
 
     public void next() {
-        mOtherThreadHandler.removeMessages(NEXT);
-        mOtherThreadHandler.sendEmptyMessageDelayed(NEXT, 500);
+        mThreadHandler.removeMessages(NEXT);
+        mThreadHandler.sendEmptyMessageDelayed(NEXT, 500);
     }
 
     public void release() {
-        mOtherThreadHandler.removeMessages(RELEASE);
-        mOtherThreadHandler.sendEmptyMessage(RELEASE);
+        mThreadHandler.removeMessages(RELEASE);
+        mThreadHandler.sendEmptyMessage(RELEASE);
     }
 
     public void destroy() {
-        if (mPlayHandlerThread != null) {
-            mPlayHandlerThread.quit();
-            mPlayHandlerThread = null;
-        }
-        if (mOtherHandlerThread != null) {
-            mOtherHandlerThread.quit();
-            mOtherHandlerThread = null;
+        if (mHandlerThread != null) {
+            mHandlerThread.quit();
+            mHandlerThread = null;
         }
     }
 
-    private void init() {
-        mPlayHandlerThread = new HandlerThread("PlayHandlerThread");
-        mPlayHandlerThread.start();
-        mPlayThreadHandler = new Handler(mPlayHandlerThread.getLooper()) {
-            @Override
-            public void handleMessage(Message msg) {
-                SampleAudioPlayer.this.playThreadHandleMessage(msg);
+    private static ExecutorService getSingleThreadPool() {
+        if (singleService == null) {
+            synchronized (SampleAudioPlayer.class) {
+                if (singleService == null) {
+                    singleService = Executors.newSingleThreadExecutor();
+                }
             }
-        };
-        mOtherHandlerThread = new HandlerThread("OtherHandlerThread");
-        mOtherHandlerThread.start();
-        mOtherThreadHandler = new Handler(mOtherHandlerThread.getLooper()) {
+        }
+        return singleService;
+    }
+
+    private void init() {
+        getSingleThreadPool();
+
+        mHandlerThread = new HandlerThread("OtherHandlerThread");
+        mHandlerThread.start();
+        mThreadHandler = new Handler(mHandlerThread.getLooper()) {
             @Override
             public void handleMessage(Message msg) {
-                SampleAudioPlayer.this.otherThreadHandleMessage(msg);
+                SampleAudioPlayer.this.threadHandleMessage(msg);
             }
         };
         mUiHandler = new Handler(Looper.getMainLooper()) {
@@ -171,10 +181,6 @@ public class SampleAudioPlayer {
 
         if (DEBUG)
             MLog.d(TAG, "internalPrepare() start");
-
-        // state
-        mIsRunning = true;
-        mIsPaused = false;
 
         mMediaExtractor = null;
         mAudioDncoderMediaCodec = null;
@@ -362,8 +368,10 @@ public class SampleAudioPlayer {
 
     private void internalPlay() {
         if (!mIsRunning && !mIsPaused) {
-            internalPrepare();
-            internalStart();
+            // state
+            mIsRunning = true;
+            mIsPaused = false;
+            getSingleThreadPool().execute(mPlayRunnable);
         }
 
         if (mIsRunning) {
@@ -431,47 +439,20 @@ public class SampleAudioPlayer {
 
     private void internalPrev() {
         internalRelease();
-        mUiHandler.post(new Runnable() {
-            @Override
-            public void run() {
-                play();
-            }
-        });
+        play();
     }
 
     private void internalNext() {
         internalRelease();
-        mUiHandler.post(new Runnable() {
-            @Override
-            public void run() {
-                play();
-            }
-        });
+        play();
     }
 
-    private void playThreadHandleMessage(Message msg) {
+    private void threadHandleMessage(Message msg) {
         if (msg == null) {
             return;
         }
 
         switch (msg.what) {
-            case PLAY:
-                internalPlay();
-                break;
-            default:
-                break;
-        }
-    }
-
-    private void otherThreadHandleMessage(Message msg) {
-        if (msg == null) {
-            return;
-        }
-
-        switch (msg.what) {
-            case PLAY:
-                internalPlay();
-                break;
             case PAUSE:
                 internalPause();
                 break;
@@ -496,6 +477,22 @@ public class SampleAudioPlayer {
         if (msg == null) {
             return;
         }
+
+        switch (msg.what) {
+            case PLAY:
+                internalPlay();
+                break;
+            default:
+                break;
+        }
     }
+
+    private Runnable mPlayRunnable = new Runnable() {
+        @Override
+        public void run() {
+            internalPrepare();
+            internalStart();
+        }
+    };
 
 }

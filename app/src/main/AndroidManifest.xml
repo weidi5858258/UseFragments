@@ -72,6 +72,9 @@
             android:configChanges="keyboardHidden|screenLayout|screenSize|smallestScreenSize|orientation"
             android:exported="false"/>
 
+        <service android:name=".service.MusicService"
+                 android:exported="false"/>
+
         <!--<activity
             android:name=".MainActivity2">
             <intent-filter>
