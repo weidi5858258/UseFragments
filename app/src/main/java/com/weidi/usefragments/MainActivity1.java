@@ -587,11 +587,14 @@ public class MainActivity1 extends BaseActivity
         mSampleAudioPlayer = sampleAudioPlayer;
     }
 
+    /***
+     锁屏后不会被回调
+     */
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
-        if (mSampleAudioPlayer != null) {
+        /*if (mSampleAudioPlayer != null) {
             return mSampleAudioPlayer.onKeyDown(keyCode, event);
-        }
+        }*/
         return super.onKeyDown(keyCode, event);
     }
 

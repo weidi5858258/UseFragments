@@ -20,7 +20,9 @@ import android.text.TextUtils;
 import android.util.Log;
 import android.view.KeyEvent;
 
+import com.weidi.eventbus.EventBusUtils;
 import com.weidi.usefragments.media.MediaUtils;
+import com.weidi.usefragments.receiver.MediaButtonReceiver;
 
 import java.io.File;
 import java.io.IOException;
@@ -144,6 +146,11 @@ public class SampleAudioPlayer {
             mHandlerThread = null;
         }
         unregisterHeadsetPlugReceiver();
+        EventBusUtils.unregister(this);
+    }
+
+    public boolean isRunning() {
+        return mIsRunning;
     }
 
     private static final int KEYEVENT = 0x000;
@@ -195,6 +202,7 @@ public class SampleAudioPlayer {
     }
 
     private void init() {
+        EventBusUtils.register(this);
         getSingleThreadPool();
 
         mHandlerThread = new HandlerThread("OtherHandlerThread");
@@ -621,6 +629,18 @@ public class SampleAudioPlayer {
         play();
     }
 
+    private Object onEvent(int what, Object[] objArray) {
+        Object result = null;
+        switch (what) {
+            case KeyEvent.KEYCODE_HEADSETHOOK:
+                onKeyDown(KeyEvent.KEYCODE_HEADSETHOOK, null);
+                break;
+            default:
+                break;
+        }
+        return result;
+    }
+
     private void threadHandleMessage(Message msg) {
         if (msg == null) {
             return;
@@ -705,6 +725,8 @@ public class SampleAudioPlayer {
 
     // Android监听耳机的插拔事件(只能动态注册,经过测试可行)
     private HeadsetPlugReceiver mHeadsetPlugReceiver;
+    private AudioManager mAudioManager;
+    private ComponentName mMediaButtonReceiver;
 
     private void registerHeadsetPlugReceiver() {
         if (mContext == null) {
@@ -716,6 +738,12 @@ public class SampleAudioPlayer {
         filter.addAction("android.intent.action.HEADSET_PLUG");
         filter.setPriority(2147483647);
         mContext.registerReceiver(mHeadsetPlugReceiver, filter);
+
+        mAudioManager =
+                (AudioManager) mContext.getSystemService(Context.AUDIO_SERVICE);
+        mMediaButtonReceiver = new ComponentName(
+                mContext.getPackageName(), MediaButtonReceiver.class.getName());
+        mAudioManager.registerMediaButtonEventReceiver(mMediaButtonReceiver);
     }
 
     private void unregisterHeadsetPlugReceiver() {
@@ -724,6 +752,7 @@ public class SampleAudioPlayer {
         }
 
         mContext.unregisterReceiver(mHeadsetPlugReceiver);
+        mAudioManager.unregisterMediaButtonEventReceiver(mMediaButtonReceiver);
     }
 
     private class HeadsetPlugReceiver extends BroadcastReceiver {

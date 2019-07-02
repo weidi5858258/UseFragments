@@ -6,11 +6,15 @@ import android.content.Intent;
 import android.media.AudioManager;
 import android.view.KeyEvent;
 
+import com.weidi.eventbus.EventBusUtils;
 import com.weidi.usefragments.tool.MLog;
+import com.weidi.usefragments.tool.SampleAudioPlayer;
 
-/**
- * Created by root on 19-7-2.
- * 没有效果
+/***
+ Created by root on 19-7-2.
+ 这个广播需要两个地方注册才有效
+ 1.AndroidManifest.xml
+ 2.SampleAudioPlayer(AudioManager)
  */
 
 public class MediaButtonReceiver extends BroadcastReceiver {
@@ -21,27 +25,22 @@ public class MediaButtonReceiver extends BroadcastReceiver {
     @Override
     public void onReceive(Context context, Intent intent) {
         String intentAction = intent.getAction();
+        if (DEBUG)
+            MLog.d(TAG, "MediaButtonReceiver " + intentAction);
         if (Intent.ACTION_MEDIA_BUTTON.equals(intentAction)) {
-            if (DEBUG)
-                MLog.d(TAG, "MediaButtonReceiver " + intentAction);
             KeyEvent event =
                     (KeyEvent) intent.getParcelableExtra(Intent.EXTRA_KEY_EVENT);
             if (event == null) {
                 return;
             }
 
-            int action = event.getAction();
-            if (DEBUG)
-                MLog.d(TAG, "MediaButtonReceiver action: " + action +
-                        " " + event.getKeyCode());
-            //long eventtime = event.getEventTime();
-
-            // single quick press: pause/resume.
-            // double press: next track
-            // long press: start auto-shuffle mode.
-
             switch (event.getKeyCode()) {
                 case KeyEvent.KEYCODE_HEADSETHOOK:
+                    if (event.getAction() == KeyEvent.ACTION_DOWN) {
+                        EventBusUtils.post(
+                                SampleAudioPlayer.class, KeyEvent.KEYCODE_HEADSETHOOK, null);
+                    }
+                    break;
                 case KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE:
                     break;
                 case KeyEvent.KEYCODE_MEDIA_PLAY:
@@ -58,8 +57,7 @@ public class MediaButtonReceiver extends BroadcastReceiver {
                     break;
             }
         } else if (AudioManager.ACTION_AUDIO_BECOMING_NOISY.equals(intentAction)) {
-            if (DEBUG)
-                MLog.d(TAG, "MediaButtonReceiver " + intentAction);
+            // 耳机插拔
         }
     }
 }

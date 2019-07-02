@@ -431,15 +431,16 @@ public class DecodeAudioFragment extends BaseFragment {
     }
 
     private void initView(View view, Bundle savedInstanceState) {
-        if (musicFiles != null) {
+        if (musicFiles != null
+                && !mSampleAudioPlayer.isRunning()) {
             /*mCurMusicIndex = 0;
             mCurMusicFile = musicFiles.get(mCurMusicIndex);
             mSampleAudioPlayer.setPath(mCurMusicFile.getAbsolutePath());*/
             next();
             mShowInoSB.append(getName());
             mShowInoSB.append("\n");
-            setText(mShowInoSB);
         }
+        setText(mShowInoSB);
     }
 
     private void handleBeforeOfConfigurationChangedEvent() {
