@@ -61,9 +61,6 @@ public class Main1Fragment extends BaseFragment {
         if (DEBUG)
             MLog.d(TAG, "onCreate(): " + this
                     + " savedInstanceState: " + savedInstanceState);
-
-        // 注册监听
-        registerHeadsetPlugReceiver();
     }
 
     @Override
@@ -187,9 +184,6 @@ public class Main1Fragment extends BaseFragment {
         super.onDestroy();
         if (DEBUG)
             MLog.d(TAG, "onDestroy(): " + this);
-
-        //注销监听
-        getContext().unregisterReceiver(mHeadsetPlugReceiver);
     }
 
     @Override
@@ -264,35 +258,6 @@ public class Main1Fragment extends BaseFragment {
     @Override
     public boolean onBackPressed() {
         return true;
-    }
-
-    // Android监听耳机的插拔事件(经过测试可行)
-    private HeadsetPlugReceiver mHeadsetPlugReceiver;
-
-    private void registerHeadsetPlugReceiver() {
-        mHeadsetPlugReceiver = new HeadsetPlugReceiver();
-        IntentFilter filter = new IntentFilter();
-        filter.addAction("android.intent.action.HEADSET_PLUG");
-        getContext().registerReceiver(mHeadsetPlugReceiver, filter);
-    }
-
-    private static class HeadsetPlugReceiver extends BroadcastReceiver {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            if (intent.hasExtra("state")) {
-                switch (intent.getIntExtra("state", 0)) {
-                    case 0:
-                        if (DEBUG)
-                            MLog.d(TAG, "onReceive() headset not connected");
-                        break;
-                    case 1:
-                        if (DEBUG)
-                            MLog.d(TAG, "onReceive() headset  connected");
-                        break;
-                    default:
-                }
-            }
-        }
     }
 
 }

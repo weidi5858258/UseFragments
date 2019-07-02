@@ -7,14 +7,18 @@ import android.content.res.Configuration;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.Message;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.util.Log;
+import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.TextView;
 
+import com.weidi.usefragments.MainActivity1;
 import com.weidi.usefragments.R;
 import com.weidi.usefragments.fragment.FragOperManager;
 import com.weidi.usefragments.fragment.base.BaseFragment;
@@ -280,6 +284,8 @@ public class DecodeAudioFragment extends BaseFragment {
 
     /////////////////////////////////////////////////////////////////
 
+    private static final int PLAYBACK_INFO = 0x001;
+
     // 顺序播放
     private static final int SEQUENTIAL_PLAYBACK = 0x001;
     // 随机播放
@@ -310,7 +316,8 @@ public class DecodeAudioFragment extends BaseFragment {
     private int mCurMusicIndex;
     private File mCurMusicFile;
 
-    private Handler mUiHandler = new Handler(Looper.getMainLooper());
+    private StringBuilder mShowInoSB = new StringBuilder();
+    private Handler mUiHandler;
     private Random mRandom = new Random();
     private List<Integer> mHasPlayed = new ArrayList<Integer>();
 
@@ -323,11 +330,6 @@ public class DecodeAudioFragment extends BaseFragment {
         if (DEBUG)
             MLog.d(TAG, "onShow(): " + printThis());
 
-        if (mCurMusicFile != null) {
-            String name = mCurMusicFile.getAbsolutePath();
-            name = name.substring(name.lastIndexOf("/") + 1, name.length());
-            mShowInfoTv.setText(name);
-        }
         mPlayBtn.setText("播放");
         mPauseBtn.setText("暂停");
         mStopBtn.setText("停止");
@@ -362,6 +364,7 @@ public class DecodeAudioFragment extends BaseFragment {
         }
 
         mSampleAudioPlayer = new SampleAudioPlayer();
+        mSampleAudioPlayer.setContext(getContext());
         mSampleAudioPlayer.setCallback(
                 new SampleAudioPlayer.Callback() {
                     @Override
@@ -385,7 +388,10 @@ public class DecodeAudioFragment extends BaseFragment {
                         mUiHandler.post(new Runnable() {
                             @Override
                             public void run() {
-                                onShow();
+                                mShowInoSB.delete(0, mShowInoSB.length() - 1);
+                                mShowInoSB.append(getName());
+                                mShowInoSB.append("\n");
+                                setText(mShowInoSB);
                             }
                         });
                     }
@@ -399,17 +405,41 @@ public class DecodeAudioFragment extends BaseFragment {
                     public void onPlaybackError() {
 
                     }
+
+                    @Override
+                    public void onPlaybackInfo(String info) {
+                        Message msg = mUiHandler.obtainMessage();
+                        msg.obj = info;
+                        msg.what = PLAYBACK_INFO;
+                        mUiHandler.sendMessage(msg);
+                    }
                 });
 
-        if (musicFiles != null) {
-            mCurMusicIndex = 0;
-            mCurMusicFile = musicFiles.get(mCurMusicIndex);
-            mSampleAudioPlayer.setPath(mCurMusicFile.getAbsolutePath());
+        mUiHandler = new Handler(Looper.getMainLooper()) {
+            @Override
+            public void handleMessage(Message msg) {
+                DecodeAudioFragment.this.handleMessage(msg);
+            }
+        };
+
+        Activity activity = getAttachedActivity();
+        if (activity != null
+                && activity instanceof MainActivity1) {
+            MainActivity1 mainActivity1 = (MainActivity1) activity;
+            mainActivity1.setSampleAudioPlayer(mSampleAudioPlayer);
         }
     }
 
     private void initView(View view, Bundle savedInstanceState) {
-
+        if (musicFiles != null) {
+            /*mCurMusicIndex = 0;
+            mCurMusicFile = musicFiles.get(mCurMusicIndex);
+            mSampleAudioPlayer.setPath(mCurMusicFile.getAbsolutePath());*/
+            next();
+            mShowInoSB.append(getName());
+            mShowInoSB.append("\n");
+            setText(mShowInoSB);
+        }
     }
 
     private void handleBeforeOfConfigurationChangedEvent() {
@@ -418,6 +448,7 @@ public class DecodeAudioFragment extends BaseFragment {
 
     private void destroy() {
         mSampleAudioPlayer.release();
+        mSampleAudioPlayer.destroy();
     }
 
     @InjectOnClick({R.id.play_btn, R.id.pause_btn, R.id.stop_btn,
@@ -436,11 +467,17 @@ public class DecodeAudioFragment extends BaseFragment {
                 break;
             case R.id.prev_btn:
                 prev();
-                onShow();
+                mShowInoSB.delete(0, mShowInoSB.length());
+                mShowInoSB.append(getName());
+                mShowInoSB.append("\n");
+                setText(mShowInoSB);
                 break;
             case R.id.next_btn:
                 next();
-                onShow();
+                mShowInoSB.delete(0, mShowInoSB.length());
+                mShowInoSB.append(getName());
+                mShowInoSB.append("\n");
+                setText(mShowInoSB);
                 break;
             case R.id.jump_btn:
                 FragOperManager.getInstance().enter3(new A2Fragment());
@@ -532,6 +569,36 @@ public class DecodeAudioFragment extends BaseFragment {
             MLog.d(TAG, "next() mCurMusicIndex: " + mCurMusicIndex +
                     " " + mCurMusicFile.getAbsolutePath());
         mSampleAudioPlayer.next();
+    }
+
+    private void handleMessage(Message msg) {
+        if (msg == null) {
+            return;
+        }
+
+        switch (msg.what) {
+            case PLAYBACK_INFO:
+                mShowInoSB.append(msg.obj);
+                mShowInoSB.append("\n");
+                setText(mShowInoSB);
+                break;
+            default:
+                break;
+        }
+    }
+
+    private String getName() {
+        if (mCurMusicFile != null) {
+            String name = mCurMusicFile.getAbsolutePath();
+            return name.substring(name.lastIndexOf("/") + 1, name.length());
+        }
+        return "@@@@@@@@@@@@";
+    }
+
+    private void setText(StringBuilder infoSB) {
+        if (mShowInfoTv != null) {
+            mShowInfoTv.setText(infoSB.toString());
+        }
     }
 
 }

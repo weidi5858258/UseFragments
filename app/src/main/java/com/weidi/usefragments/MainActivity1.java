@@ -10,6 +10,7 @@ import android.content.res.Configuration;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.util.Log;
+import android.view.KeyEvent;
 import android.view.View;
 import android.widget.FrameLayout;
 
@@ -34,6 +35,7 @@ import com.weidi.usefragments.test_fragment.scene2.RecordScreenFragment;
 import com.weidi.usefragments.test_fragment.scene2.TestMotionEventFragment;
 import com.weidi.usefragments.test_fragment.scene2.ViewPagerFragment;
 import com.weidi.usefragments.tool.MLog;
+import com.weidi.usefragments.tool.SampleAudioPlayer;
 
 import java.util.HashMap;
 import java.util.List;
@@ -565,5 +567,32 @@ public class MainActivity1 extends BaseActivity
      * which is packaged with this application.
      */
     public native String stringFromJNI();
+
+    /***
+     action=ACTION_DOWN, keyCode=KEYCODE_HEADSETHOOK, scanCode=226, metaState=0, flags=0x8,
+     repeatCount=0, eventTime=300767594, downTime=300767594, deviceId=9, source=0x101
+     action=ACTION_UP, keyCode=KEYCODE_HEADSETHOOK, scanCode=226, metaState=0, flags=0x8,
+     repeatCount=0, eventTime=300767770, downTime=300767594, deviceId=9, source=0x101
+     */
+    /*@Override
+    public boolean dispatchKeyEvent(KeyEvent event) {
+        if (DEBUG)
+            Log.d(TAG, "dispatchKeyEvent() event: " + event);
+        return super.dispatchKeyEvent(event);
+    }*/
+
+    private SampleAudioPlayer mSampleAudioPlayer;
+
+    public void setSampleAudioPlayer(SampleAudioPlayer sampleAudioPlayer) {
+        mSampleAudioPlayer = sampleAudioPlayer;
+    }
+
+    @Override
+    public boolean onKeyDown(int keyCode, KeyEvent event) {
+        if (mSampleAudioPlayer != null) {
+            return mSampleAudioPlayer.onKeyDown(keyCode, event);
+        }
+        return super.onKeyDown(keyCode, event);
+    }
 
 }

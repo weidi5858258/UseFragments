@@ -820,11 +820,23 @@ public class MediaUtils {
             int audioFormat, int mode) {
         if (DEBUG)
             MLog.d(TAG, "createAudioTrack(...) start");
-        int channelConfig = channelCount == 2
-                ?
-                AudioFormat.CHANNEL_OUT_STEREO
-                :
-                AudioFormat.CHANNEL_OUT_MONO;
+        // 在我的手机上使用AudioFormat.CHANNEL_OUT_MONO创建不了AudioTrack
+        int channelConfig = AudioFormat.CHANNEL_IN_DEFAULT;
+        switch (channelCount) {
+            case 1:
+                // 如果是单声道的话还不能确定是哪个值
+                channelConfig = AudioFormat.CHANNEL_IN_MONO;// 16
+                channelConfig = AudioFormat.CHANNEL_OUT_MONO;// 4
+                channelConfig = AudioFormat.CHANNEL_OUT_STEREO;// 12
+                break;
+            case 2:
+                channelConfig = AudioFormat.CHANNEL_IN_STEREO;// 12
+                channelConfig = AudioFormat.CHANNEL_OUT_STEREO;// 12
+                break;
+            default:
+                channelConfig = AudioFormat.CHANNEL_OUT_STEREO;
+                break;
+        }
         int bufferSizeInBytes = getMinBufferSize(
                 sampleRateInHz, channelConfig, audioFormat);
         if (DEBUG)
@@ -838,6 +850,7 @@ public class MediaUtils {
         }
 
         bufferSizeInBytes *= 2;
+        // java.lang.IllegalArgumentException: Unsupported channel configuration.
         AudioTrack audioTrack = new AudioTrack(
                 streamType,
                 sampleRateInHz,

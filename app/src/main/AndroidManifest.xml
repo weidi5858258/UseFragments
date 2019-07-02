@@ -75,6 +75,13 @@
         <service android:name=".service.MusicService"
                  android:exported="false"/>
 
+        <receiver android:name="com.weidi.usefragments.receiver.MediaButtonReceiver" >
+            <intent-filter>
+                <action android:name="android.intent.action.MEDIA_BUTTON" />
+                <action android:name="android.media.AUDIO_BECOMING_NOISY" />
+            </intent-filter>
+        </receiver>
+
         <!--<activity
             android:name=".MainActivity2">
             <intent-filter>
