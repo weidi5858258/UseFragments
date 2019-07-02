@@ -279,24 +279,10 @@ public class SampleAudioPlayer {
                 break;
             }
         }
-        if (mAudioDncoderMediaCodec == null) {
-            mIsRunning = false;
-            if (mCallback != null) {
-                mCallback.onPlaybackInfo("internalStart() mAudioDncoderMediaCodec is null");
-                mCallback.onPlaybackFinished();
-            }
-            return;
-        } else if (mAudioDncoderMediaFormat == null) {
+        if (mAudioDncoderMediaFormat == null) {
             mIsRunning = false;
             if (mCallback != null) {
                 mCallback.onPlaybackInfo("internalStart() mAudioDncoderMediaFormat is null");
-                mCallback.onPlaybackFinished();
-            }
-            return;
-        } else if (mAudioTrackIndex < 0) {
-            mIsRunning = false;
-            if (mCallback != null) {
-                mCallback.onPlaybackInfo("internalStart() mAudioTrackIndex < 0");
                 mCallback.onPlaybackFinished();
             }
             return;
@@ -333,6 +319,20 @@ public class SampleAudioPlayer {
             mIsRunning = false;
             if (mCallback != null) {
                 mCallback.onPlaybackInfo("internalStart() mAudioTrack is null");
+                mCallback.onPlaybackFinished();
+            }
+            return;
+        } else if (mAudioDncoderMediaCodec == null) {
+            mIsRunning = false;
+            if (mCallback != null) {
+                mCallback.onPlaybackInfo("internalStart() mAudioDncoderMediaCodec is null");
+                mCallback.onPlaybackFinished();
+            }
+            return;
+        } else if (mAudioTrackIndex < 0) {
+            mIsRunning = false;
+            if (mCallback != null) {
+                mCallback.onPlaybackInfo("internalStart() mAudioTrackIndex < 0");
                 mCallback.onPlaybackFinished();
             }
             return;
