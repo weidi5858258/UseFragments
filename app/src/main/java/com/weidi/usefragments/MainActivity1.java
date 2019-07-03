@@ -33,6 +33,8 @@ import com.weidi.usefragments.test_fragment.scene2.Main3Fragment;
 import com.weidi.usefragments.test_fragment.scene2.Main4Fragment;
 import com.weidi.usefragments.test_fragment.scene2.RecordScreenFragment;
 import com.weidi.usefragments.test_fragment.scene2.TestMotionEventFragment;
+import com.weidi.usefragments.test_fragment.scene2.ThrowingScreenFragment;
+import com.weidi.usefragments.test_fragment.scene2.VideoLiveBroadcastingFragment;
 import com.weidi.usefragments.test_fragment.scene2.ViewPagerFragment;
 import com.weidi.usefragments.tool.MLog;
 import com.weidi.usefragments.tool.SampleAudioPlayer;
@@ -121,6 +123,12 @@ public class MainActivity1 extends BaseActivity
                 FragOperManager.POP_BACK_STACK);
         sFragmentBackTypeSMap.put(
                 ViewPagerFragment.class.getSimpleName(),
+                FragOperManager.POP_BACK_STACK);
+        sFragmentBackTypeSMap.put(
+                ThrowingScreenFragment.class.getSimpleName(),
+                FragOperManager.POP_BACK_STACK);
+        sFragmentBackTypeSMap.put(
+                VideoLiveBroadcastingFragment.class.getSimpleName(),
                 FragOperManager.POP_BACK_STACK);
     }
 
