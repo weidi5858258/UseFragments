@@ -1,5 +1,6 @@
 package com.weidi.usefragments.media;
 
+import android.graphics.Bitmap;
 import android.media.AudioAttributes;
 import android.media.AudioFormat;
 import android.media.AudioManager;
@@ -9,17 +10,20 @@ import android.media.MediaCodec;
 import android.media.MediaCodecInfo;
 import android.media.MediaCodecList;
 import android.media.MediaFormat;
+import android.media.MediaMetadataRetriever;
 import android.media.MediaRecorder;
+import android.media.ThumbnailUtils;
 import android.support.annotation.NonNull;
 import android.text.TextUtils;
 import android.util.Log;
 import android.util.SparseArray;
 
-
 import com.weidi.usefragments.tool.MLog;
 
+import java.io.ByteArrayOutputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.nio.ByteBuffer;
@@ -537,7 +541,25 @@ public class MediaUtils {
     private static final int mode = AudioTrack.MODE_STREAM;
     public static final int sessionId = AudioManager.AUDIO_SESSION_ID_GENERATE;
     // 比特率(audioFormat = 16 / 8,所以AUDIO_BIT_RATE的值不需要再除以8)
+    // 没有除以8之前的单位是bit,除以8之后的单位是byte
     public static final int AUDIO_BIT_RATE = sampleRateInHz * audioFormat * channelCount;
+
+    /***
+     AudioTrack
+     int sampleRateInHz = 44100;
+     int channelCount = 1;
+     int channelConfig = AudioFormat.CHANNEL_IN_MONO;// 16
+     int audioFormat = AudioFormat.ENCODING_PCM_8BIT;
+     int audioFormat = AudioFormat.ENCODING_PCM_16BIT;
+     java.lang.IllegalArgumentException: Unsupported channel configuration.
+
+     int sampleRateInHz = 44100;
+     int channelCount = 1;
+     int channelConfig = AudioFormat.CHANNEL_OUT_MONO;// 4
+     int audioFormat = AudioFormat.ENCODING_PCM_8BIT;
+     int audioFormat = AudioFormat.ENCODING_PCM_16BIT;
+     getMinBufferSize(): Invalid channel configuration.
+     */
 
     /***
      bufferSizeInBytes
@@ -604,13 +626,26 @@ public class MediaUtils {
          AudioFormat.CHANNEL_IN_STEREO
          AudioFormat.CHANNEL_IN_MONO(在所有设备上都能正常工作)
          */
-        int channelConfig = channelCount == 2
-                ?
-                AudioFormat.CHANNEL_IN_STEREO
-                :
-                AudioFormat.CHANNEL_IN_MONO;
+        int channelConfig = AudioFormat.CHANNEL_IN_DEFAULT;
+        switch (channelCount) {
+            case 1:
+                // 如果是单声道的话还不能确定是哪个值
+                channelConfig = AudioFormat.CHANNEL_IN_MONO;// 16
+                channelConfig = AudioFormat.CHANNEL_OUT_MONO;// 4
+                channelConfig = AudioFormat.CHANNEL_OUT_STEREO;// 12
+                break;
+            case 2:
+                channelConfig = AudioFormat.CHANNEL_IN_STEREO;// 12
+                channelConfig = AudioFormat.CHANNEL_OUT_STEREO;// 12
+                break;
+            default:
+                channelConfig = AudioFormat.CHANNEL_OUT_STEREO;
+                break;
+        }
         int bufferSizeInBytes = AudioRecord.getMinBufferSize(
-                sampleRateInHz, channelConfig, audioFormat) * 2;
+                sampleRateInHz, channelConfig, audioFormat);
+        if (DEBUG)
+            MLog.d(TAG, "createAudioRecord() bufferSizeInBytes: " + bufferSizeInBytes);
         if (bufferSizeInBytes <= 0) {
             if (DEBUG)
                 MLog.e(TAG, String.format(Locale.US,
@@ -618,15 +653,20 @@ public class MediaUtils {
                         sampleRateInHz, channelConfig, audioFormat));
             return null;
         }
-        if (DEBUG)
-            MLog.d(TAG, "createAudioRecord() bufferSizeInBytes: " + (bufferSizeInBytes / 2));
 
-        AudioRecord audioRecord = new AudioRecord(
-                audioSource,
-                sampleRateInHz,
-                channelConfig,
-                audioFormat,
-                bufferSizeInBytes);
+        bufferSizeInBytes *= 2;
+        AudioRecord audioRecord = null;
+        try {
+            audioRecord = new AudioRecord(
+                    audioSource,
+                    sampleRateInHz,
+                    channelConfig,
+                    audioFormat,
+                    bufferSizeInBytes);
+        } catch (IllegalArgumentException e) {
+            e.printStackTrace();
+            return null;
+        }
         if (audioRecord.getState() == AudioRecord.STATE_UNINITIALIZED) {
             if (DEBUG)
                 MLog.e(TAG, String.format(Locale.US,
@@ -681,6 +721,7 @@ public class MediaUtils {
                     audioFormat,
                     bufferSizeInBytes);
         } catch (IllegalArgumentException e) {
+            e.printStackTrace();
             return null;
         }
         // 此判断很关键
@@ -769,11 +810,22 @@ public class MediaUtils {
             int streamType,
             int sampleRateInHz, int channelCount,
             int audioFormat, int mode, int sessionId) {
-        int channelConfig = channelCount == 2
-                ?
-                AudioFormat.CHANNEL_IN_STEREO
-                :
-                AudioFormat.CHANNEL_IN_MONO;
+        int channelConfig = AudioFormat.CHANNEL_IN_DEFAULT;
+        switch (channelCount) {
+            case 1:
+                // 如果是单声道的话还不能确定是哪个值
+                channelConfig = AudioFormat.CHANNEL_IN_MONO;// 16
+                channelConfig = AudioFormat.CHANNEL_OUT_MONO;// 4
+                channelConfig = AudioFormat.CHANNEL_OUT_STEREO;// 12
+                break;
+            case 2:
+                channelConfig = AudioFormat.CHANNEL_IN_STEREO;// 12
+                channelConfig = AudioFormat.CHANNEL_OUT_STEREO;// 12
+                break;
+            default:
+                channelConfig = AudioFormat.CHANNEL_OUT_STEREO;
+                break;
+        }
         int bufferSizeInBytes = AudioRecord.getMinBufferSize(
                 sampleRateInHz, channelConfig, audioFormat);
         if (bufferSizeInBytes <= 0) {
@@ -796,12 +848,18 @@ public class MediaUtils {
                 .setChannelMask(channelConfig)
                 .setEncoding(audioFormat)
                 .build();
-        AudioTrack audioTrack = new AudioTrack(
-                attributes,
-                format,
-                bufferSizeInBytes,
-                mode,
-                sessionId);
+        AudioTrack audioTrack = null;
+        try {
+            audioTrack = new AudioTrack(
+                    attributes,
+                    format,
+                    bufferSizeInBytes,
+                    mode,
+                    sessionId);
+        } catch (IllegalArgumentException e) {
+            e.printStackTrace();
+            return null;
+        }
         if (audioTrack.getState() == AudioTrack.STATE_UNINITIALIZED) {
             audioTrack.release();
             if (DEBUG)
@@ -850,14 +908,20 @@ public class MediaUtils {
         }
 
         bufferSizeInBytes *= 2;
+        AudioTrack audioTrack = null;
         // java.lang.IllegalArgumentException: Unsupported channel configuration.
-        AudioTrack audioTrack = new AudioTrack(
-                streamType,
-                sampleRateInHz,
-                channelConfig,
-                audioFormat,
-                bufferSizeInBytes,
-                mode);
+        try {
+            audioTrack = new AudioTrack(
+                    streamType,
+                    sampleRateInHz,
+                    channelConfig,
+                    audioFormat,
+                    bufferSizeInBytes,
+                    mode);
+        } catch (IllegalArgumentException e) {
+            e.printStackTrace();
+            return null;
+        }
         if (audioTrack.getState() == AudioTrack.STATE_UNINITIALIZED) {
             if (DEBUG)
                 MLog.e(TAG, String.format(Locale.US,
@@ -894,7 +958,6 @@ public class MediaUtils {
         }
 
         bufferSizeInBytes *= 2;
-        AudioTrack audioTrack = null;
         AudioAttributes attributes = new AudioAttributes.Builder()
                 .setUsage(AudioAttributes.USAGE_MEDIA)
                 .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
@@ -907,6 +970,7 @@ public class MediaUtils {
                 .setChannelMask(channelConfig)
                 .setEncoding(audioFormat)
                 .build();
+        AudioTrack audioTrack = null;
         try {
             audioTrack = new AudioTrack(
                     attributes,
@@ -922,6 +986,7 @@ public class MediaUtils {
                     bufferSizeInBytes,
                     mode);*/
         } catch (IllegalArgumentException e) {
+            e.printStackTrace();
             return null;
         }
         if (audioTrack.getState() == AudioTrack.STATE_UNINITIALIZED) {
@@ -957,7 +1022,6 @@ public class MediaUtils {
         }
 
         bufferSizeInBytes *= 2;
-        AudioTrack audioTrack = null;
         AudioAttributes attributes = new AudioAttributes.Builder()
                 .setUsage(AudioAttributes.USAGE_MEDIA)
                 .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
@@ -970,6 +1034,7 @@ public class MediaUtils {
                 .setChannelMask(channelConfig)
                 .setEncoding(audioFormat)
                 .build();
+        AudioTrack audioTrack = null;
         try {
             audioTrack = new AudioTrack(
                     attributes,
@@ -985,6 +1050,7 @@ public class MediaUtils {
                     bufferSizeInBytes,
                     mode);*/
         } catch (IllegalArgumentException e) {
+            e.printStackTrace();
             return null;
         }
         if (audioTrack.getState() == AudioTrack.STATE_UNINITIALIZED) {
@@ -1274,6 +1340,167 @@ public class MediaUtils {
         header[42] = (byte) ((pcmSize >> 16) & 0xff);
         header[43] = (byte) ((pcmSize >> 24) & 0xff);
         wavOS.write(header, 0, 44);
+    }
+
+    /***
+     使用MediaMetadataRetriever获取视频的第一帧作为缩略图
+     //获取第一帧原尺寸图片
+     mmrc.getFrameAtTime();
+     //获取指定位置的原尺寸图片 注意这里传的timeUs是微秒
+     mmrc.getFrameAtTime(timeUs, option);
+     //获取指定位置指定宽高的缩略图
+     mmrc.getScaledFrameAtTime(
+     timeUs, MediaMetadataRetrieverCompat.OPTION_CLOSEST, width, height);
+     //获取指定位置指定宽高并且旋转的缩略图
+     mmrc.getScaledFrameAtTime(
+     timeUs, MediaMetadataRetrieverCompat.OPTION_CLOSEST, width, height, rotate);
+     OPTION_CLOSEST    在给定的时间，检索最近一个帧,这个帧不一定是关键帧。
+     OPTION_CLOSEST_SYNC    在给定的时间，检索最近一个同步与数据源相关联的的帧（关键帧）。
+     OPTION_NEXT_SYNC  在给定时间之后检索一个同步与数据源相关联的关键帧。
+     OPTION_PREVIOUS_SYNC   顾名思义，同上
+     */
+    private static Bitmap getVideoThumb(String path) {
+        MediaMetadataRetriever media = new MediaMetadataRetriever();
+        media.setDataSource(path);
+        return media.getFrameAtTime();
+    }
+
+    /***
+     * 使用ThumbnailUtils获取视频的第一帧作为缩略图
+     * 获取视频的缩略图
+     * 先通过ThumbnailUtils来创建一个视频的缩略图，然后再利用ThumbnailUtils来生成指定大小的缩略图。
+     * 如果想要的缩略图的宽和高都小于MICRO_KIND，则类型要使用MICRO_KIND作为kind的值，这样会节省内存。
+     * @param videoPath 视频的路径
+     * @param width 指定输出视频缩略图的宽度
+     * @param height 指定输出视频缩略图的高度度
+     * @param kind 参照MediaStore.Images(Video).Thumbnails类中的常量MINI_KIND和MICRO_KIND。
+     *            其中，MINI_KIND: 512 x 384，MICRO_KIND: 96 x 96
+     * @return 指定大小的视频缩略图
+     */
+    private static Bitmap getVideoThumbnail(String videoPath, int width, int height, int kind) {
+        Bitmap bitmap = null;
+        // 获取视频的缩略图
+        //調用ThumbnailUtils類的靜態方法createVideoThumbnail獲取視頻的截圖；
+        bitmap = ThumbnailUtils.createVideoThumbnail(videoPath, kind);
+        if (bitmap != null) {
+            //調用ThumbnailUtils類的靜態方法extractThumbnail將原圖片（即上方截取的圖片）轉化為指定大小；
+            bitmap = ThumbnailUtils.extractThumbnail(bitmap, width, height,
+                    ThumbnailUtils.OPTIONS_RECYCLE_INPUT);
+        }
+        return bitmap;
+    }
+
+    /***
+     android硬编出来的第一帧数据就是sps和pps
+     SPS(Sequence Parameter Set：序列参数集)
+     PPS(Picture  Parameter Set：图像参数集)
+     sps: 0, 0, 0, 1, 39, 66, -32, 30, -115, 104, 10, 3, -38, 108, -128,
+     0, 0, 3, 0, -128, 0, 0, 12, -121, -118, 17, 80
+     pps: 0, 0, 0, 1, 40, -50, 4, 73, 32
+     0, 0, 0, 1是startcode
+     获取到了sps和pps存起来碰到关键帧给他加上去就好了
+     */
+    private void onGetYuvFrame(MediaCodec encoder, byte[] yuvData) {
+        // feed the encoder with yuv frame, got the encoded 264 es stream.
+        ByteBuffer room = null;
+        byte[] mediaHead = null;
+        byte[] streamData = null;
+
+        int roomIndex = encoder.dequeueInputBuffer(-1);
+        if (roomIndex >= 0) {
+            room = encoder.getInputBuffer(roomIndex);
+            room.clear();
+            room.put(yuvData, 0, yuvData.length);
+            long presentationTimeUs = System.nanoTime() / 1000;
+            encoder.queueInputBuffer(
+                    roomIndex, 0, yuvData.length, presentationTimeUs, 0);
+        }
+
+        for (; ; ) {
+            MediaCodec.BufferInfo roomInfo = new MediaCodec.BufferInfo();
+            roomIndex = encoder.dequeueOutputBuffer(roomInfo, 0);
+            if (roomIndex >= 0) {
+                room = encoder.getOutputBuffer(roomIndex);
+                int roomSize = roomInfo.size;
+                byte[] encodedData = new byte[roomSize];
+                room.get(encodedData);
+
+                if (mediaHead == null) {
+                    streamData = new byte[roomSize];
+                } else {
+                    streamData = new byte[roomSize + mediaHead.length];
+                }
+                if (mediaHead == null) {
+                    ByteBuffer spsPpsBuffer = ByteBuffer.wrap(encodedData);
+                    if (spsPpsBuffer.getInt() == 0x00000001) {
+                        mediaHead = new byte[roomSize];
+                        System.arraycopy(
+                                encodedData, 0, mediaHead, 0, roomSize);
+                    } else {
+                        Log.e(TAG, "not found media head.");
+                    }
+                }
+
+                if (mediaHead != null
+                        // 判断该帧是否是关键帧(关键帧的数组长度比一般帧要长很多)
+                        && ((encodedData[4] == 0x65) || (encodedData[4] == 0x25))) { // key
+                    // frame
+                    // 编码器生成关键帧时只有
+                    // 00 00 00
+                    // 01 65
+                    // 没有pps sps 要加上
+                    Log.i("Ifarme", "关键帧长度=" + encodedData.length + "*****"
+                            + encodedData[4] + "**outByte长度**" + streamData.length
+                            + "****" + mediaHead.length);
+                    System.arraycopy(
+                            mediaHead, 0, streamData, 0, mediaHead.length);
+                    System.arraycopy(
+                            encodedData, 0, streamData, mediaHead.length, encodedData.length);
+                    if (streamData.length > 0) {
+                        /*int writeStreamVideoData =
+                                myNative.peekInstance().WriteStreamVideoData(
+                                        streamData, streamData.length, 1);*/
+                    }
+                } else {
+                    streamData = encodedData;
+                    if (streamData.length > 0) {
+                        /*int writeStreamVideoData =
+                                myNative.peekInstance().WriteStreamVideoData(
+                                        streamData, streamData.length, 0);*/
+                    }
+                }
+                encoder.releaseOutputBuffer(roomIndex, false);
+            } else {
+                break;
+            }
+        }
+    }
+
+    /***
+     * 从socket读byte数组
+     *
+     * @param in
+     * @param length
+     * @return
+     */
+    public static byte[] readBytes(InputStream in, long length) {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        byte[] buffer = new byte[1024];
+        int read = 0;
+        while (read < length) {
+            int cur = 0;
+            try {
+                cur = in.read(buffer, 0, (int) Math.min(1024, length - read));
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            if (cur < 0) {
+                break;
+            }
+            read += cur;
+            baos.write(buffer, 0, cur);
+        }
+        return baos.toByteArray();
     }
 
 }

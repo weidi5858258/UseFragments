@@ -153,10 +153,9 @@ public class SampleAudioPlayer {
         return mIsRunning;
     }
 
-    private static final int KEYEVENT = 0x000;
-    private long firstTime = 0;
-    private long secondTime = 0;
-    private long threeTime = 0;
+    private boolean firstFlag = false;
+    private boolean secondFlag = false;
+    private boolean threeFlag = false;
 
     /***
      action=ACTION_DOWN, keyCode=KEYCODE_HEADSETHOOK,
@@ -168,20 +167,16 @@ public class SampleAudioPlayer {
             Log.d(TAG, "onKeyDown() event: " + event);*/
         switch (keyCode) {
             case KeyEvent.KEYCODE_HEADSETHOOK:
-                if (firstTime == 0) {
-                    firstTime = SystemClock.uptimeMillis();
-                } else if (firstTime != 0 && secondTime == 0) {
-                    secondTime = SystemClock.uptimeMillis();
-                } else if (firstTime != 0 && secondTime != 0 && threeTime == 0) {
-                    threeTime = SystemClock.uptimeMillis();
+                if (!firstFlag) {
+                    firstFlag = true;
+                } else if (firstFlag && !secondFlag) {
+                    secondFlag = true;
+                } else if (firstFlag && secondFlag && !threeFlag) {
+                    threeFlag = true;
                 }
-                /*if (DEBUG)
-                    Log.d(TAG, "onKeyDown() firstTime: " + firstTime +
-                            " secondTime: " + secondTime +
-                            " threeTime: " + threeTime);*/
                 // 单位时间内按1次,2次,3次分别实现单击,双击,三击
-                mUiHandler.removeMessages(KEYEVENT);
-                mUiHandler.sendEmptyMessageDelayed(KEYEVENT, 1000);
+                mUiHandler.removeMessages(KeyEvent.KEYCODE_HEADSETHOOK);
+                mUiHandler.sendEmptyMessageDelayed(KeyEvent.KEYCODE_HEADSETHOOK, 300);
                 return true;
             default:
                 break;
@@ -673,20 +668,20 @@ public class SampleAudioPlayer {
         }
 
         switch (msg.what) {
-            case KEYEVENT:
-                if (firstTime != 0 && secondTime != 0 && threeTime != 0) {
+            case KeyEvent.KEYCODE_HEADSETHOOK:
+                if (firstFlag && secondFlag && threeFlag) {
                     if (DEBUG)
                         Log.d(TAG, "onKeyDown() 3");
                     if (mCallback != null) {
                         mCallback.onPlaybackFinished();
                     }
-                } else if (firstTime != 0 && secondTime != 0) {
+                } else if (firstFlag && secondFlag) {
                     if (DEBUG)
                         Log.d(TAG, "onKeyDown() 2");
                     if (mCallback != null) {
                         mCallback.onPlaybackFinished();
                     }
-                } else if (firstTime != 0 && secondTime == 0) {
+                } else {
                     if (DEBUG)
                         Log.d(TAG, "onKeyDown() 1");
                     if (mIsRunning) {
@@ -697,9 +692,9 @@ public class SampleAudioPlayer {
                         }
                     }
                 }
-                firstTime = 0;
-                secondTime = 0;
-                threeTime = 0;
+                firstFlag = false;
+                secondFlag = false;
+                threeFlag = false;
                 break;
             case PLAY:
                 internalPlay();
