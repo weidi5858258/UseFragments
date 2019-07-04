@@ -19,7 +19,7 @@ public class SocketServer {
     private static final boolean DEBUG = true;
 
     // 127.0.0.1
-    public static final String IP = "192.168.1.105";
+    public static final String IP = "192.168.0.104";
     public static final int PORT = 5858;
     private static volatile SocketServer sSocketServer;
     private static volatile ServerSocket sServerSocket;
@@ -99,7 +99,8 @@ public class SocketServer {
     }
 
     public void close() {
-        if (sServerSocket != null) {
+        if (sServerSocket != null
+                && !sServerSocket.isClosed()) {
             try {
                 sServerSocket.close();
             } catch (IOException e) {

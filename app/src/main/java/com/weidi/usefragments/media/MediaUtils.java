@@ -332,19 +332,21 @@ public class MediaUtils {
 
     /***
      根据实际视频使用，因为mime不一定是“video/avc”
-     * @param width
-     * @param height
      * @return
      */
-    public static MediaCodec getVideoDecoderMediaCodec(int width, int height) {
+    public static MediaCodec getVideoDecoderMediaCodec() {
         MediaCodecInfo codecInfo = getMediaCodecInfo(VIDEO_MIME_TYPE);
         if (codecInfo == null) {
-            throw new RuntimeException("不支持的编码格式");
+            throw new RuntimeException(
+                    "根据 \"" + VIDEO_MIME_TYPE + "\" 这个mime找不到对应的MediaCodecInfo对象");
         }
 
         MediaCodec decoder = null;
         try {
-            decoder = MediaCodec.createByCodecName(codecInfo.getName());
+            //decoder = MediaCodec.createByCodecName(codecInfo.getName());
+            decoder = MediaCodec.createByCodecName("OMX.google.h264.encoder");
+            if (DEBUG)
+                MLog.d(TAG, "getVideoDecoderMediaCodec() MediaCodec create success");
             // 最后一个参数是flag,用来标记是否是编码,传入0表示作为解码.
             /*decoder.configure(
                     getMediaDecoderFormat(width, height),
@@ -354,6 +356,7 @@ public class MediaUtils {
             decoder.start();*/
         } catch (IOException e) {
             e.printStackTrace();
+            return null;
         }
         /***
          onInputBufferAvailable会一直回调来让我们不断的从队列中取出数据提交给解码器。
@@ -404,6 +407,34 @@ public class MediaUtils {
         return decoder;
     }
 
+    public static MediaCodec getAudioDecoderMediaCodec() {
+        MediaCodecInfo codecInfo = getMediaCodecInfo(AUDIO_MIME_TYPE);
+        if (codecInfo == null) {
+            throw new RuntimeException(
+                    "根据 \"" + AUDIO_MIME_TYPE + "\" 这个mime找不到对应的MediaCodecInfo对象");
+        }
+
+        MediaCodec decoder = null;
+        try {
+            // decoder = MediaCodec.createEncoderByType(AUDIO_MIME_TYPE);
+            decoder = MediaCodec.createByCodecName(codecInfo.getName());
+            if (DEBUG)
+                MLog.d(TAG, "getAudioDecoderMediaCodec() MediaCodec create success");
+            // MediaCodec.CONFIGURE_FLAG_ENCODE表示编码flag
+            /*encoder.configure(
+                    getMediaEncoderFormat(width, height),
+                    null,
+                    null,
+                    MediaCodec.CONFIGURE_FLAG_ENCODE);
+            encoder.start();*/
+        } catch (IOException e) {
+            e.printStackTrace();
+            return null;
+        }
+
+        return decoder;
+    }
+
     /***
      Encoder时可以自己作主指定mime得到MediaFormat对象
      这个方法是给录屏设置的参数
@@ -413,6 +444,9 @@ public class MediaUtils {
      */
     public static MediaFormat getVideoEncoderMediaFormat(int width, int height) {
         MediaFormat format = MediaFormat.createVideoFormat(VIDEO_MIME_TYPE, width, height);
+        format.setInteger(MediaFormat.KEY_MAX_INPUT_SIZE, width * height);
+        format.setInteger(MediaFormat.KEY_MAX_WIDTH, width);
+        format.setInteger(MediaFormat.KEY_MAX_HEIGHT, height);
         // 必须设置为COLOR_FormatSurface，因为是用surface作为输入源
         int colorFormat = MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface;
         format.setInteger(MediaFormat.KEY_COLOR_FORMAT, colorFormat);
@@ -468,9 +502,40 @@ public class MediaUtils {
     public static MediaFormat getVideoDecoderMediaFormat(int width, int height) {
         MediaFormat format = MediaFormat.createVideoFormat(VIDEO_MIME_TYPE, width, height);
         // 设置帧率
+        format.setInteger(MediaFormat.KEY_MAX_INPUT_SIZE, width * height);
+        format.setInteger(MediaFormat.KEY_MAX_WIDTH, width);
+        format.setInteger(MediaFormat.KEY_MAX_HEIGHT, height);
+        // 设置比特率
+        format.setInteger(MediaFormat.KEY_BIT_RATE, VIDEO_BIT_RATE);
+        // 设置帧率
         format.setInteger(MediaFormat.KEY_FRAME_RATE, FRAME_RATE);
+        // 设置抽取关键帧的间隔，以s为单位，负数或者0表示不抽取关键帧
+        // i-frame iinterval
+        format.setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, IFRAME_INTERVAL);
         if (DEBUG)
-            MLog.d(TAG, "getDecoderMediaFormat() created video format: " + format);
+            MLog.d(TAG, "getVideoDecoderMediaFormat() created video format: " + format);
+
+        return format;
+    }
+
+    public static MediaFormat getAudioDecoderMediaFormat() {
+        MediaFormat format = MediaFormat.createAudioFormat(
+                AUDIO_MIME_TYPE, sampleRateInHz, channelCount);
+        format.setInteger(
+                MediaFormat.KEY_AAC_PROFILE,
+                MediaCodecInfo.CodecProfileLevel.AACObjectLC);
+        // AAC-HE
+        format.setInteger(
+                MediaFormat.KEY_BIT_RATE,
+                AUDIO_BIT_RATE);
+        format.setInteger(
+                MediaFormat.KEY_CHANNEL_MASK,
+                channelConfig);
+        format.setInteger(
+                MediaFormat.KEY_MAX_INPUT_SIZE,
+                getMinBufferSize() * 2);
+        if (DEBUG)
+            MLog.d(TAG, "getAudioDecoderMediaFormat() created video format: " + format);
 
         return format;
     }

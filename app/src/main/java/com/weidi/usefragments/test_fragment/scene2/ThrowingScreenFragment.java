@@ -41,6 +41,7 @@ import com.weidi.usefragments.tool.MLog;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.net.Socket;
 import java.nio.ByteBuffer;
 
@@ -612,7 +613,7 @@ public class ThrowingScreenFragment extends BaseFragment {
             // 音频先启动,让音频的mOutputAudioTrack先得到值
             new Thread(new AudioEncoderThread()).start();
             new Thread(new VideoEncoderThread()).start();
-            new Thread(new SocketAcceptThread()).start();
+            //new Thread(new SocketAcceptThread()).start();
 
             mVirtualDisplay = mMediaProjection.createVirtualDisplay(
                     TAG + "-Display",
@@ -627,7 +628,8 @@ public class ThrowingScreenFragment extends BaseFragment {
                 MLog.d(TAG, "startRecordScreen() " + printThis() +
                         " created virtual display: " + mVirtualDisplay.getDisplay());
 
-            mThreadHandler.sendEmptyMessageDelayed(STOP_RECORD_SCREEN, 60 * 1000);
+            // 60 * 1000
+            mThreadHandler.sendEmptyMessageDelayed(STOP_RECORD_SCREEN, 10 * 1000);
 
             // 相当于按了“Home”键
             getAttachedActivity().moveTaskToBack(true);
@@ -644,9 +646,11 @@ public class ThrowingScreenFragment extends BaseFragment {
         if (DEBUG)
             MLog.d(TAG, "stopRecordScreen() start");
 
+        mIsVideoRecording = false;
         synchronized (mVideoEncoderLock) {
-            mIsVideoRecording = false;
             try {
+                mUiHandler.removeMessages(VIDEO_NOTIFY);
+                mUiHandler.sendEmptyMessageDelayed(VIDEO_NOTIFY, 1000);
                 MLog.d(TAG, "stopRecordScreen mVideoEncoderLock.wait() start");
                 mVideoEncoderLock.wait();
                 MLog.d(TAG, "stopRecordScreen mVideoEncoderLock.wait() end");
@@ -655,8 +659,8 @@ public class ThrowingScreenFragment extends BaseFragment {
             }
         }
 
+        mIsAudioRecording = false;
         synchronized (mAudioEncoderLock) {
-            mIsAudioRecording = false;
             try {
                 MLog.d(TAG, "stopRecordScreen mAudioEncoderLock.wait() start");
                 mAudioEncoderLock.wait();
@@ -823,6 +827,13 @@ public class ThrowingScreenFragment extends BaseFragment {
             MediaCodec.BufferInfo roomInfo = new MediaCodec.BufferInfo();
             byte[] mSpsPps = new byte[0];
             while (mIsVideoRecording) {
+                //
+                if (!mIsVideoRecording) {
+                    mUiHandler.removeMessages(VIDEO_NOTIFY);
+                    mUiHandler.sendEmptyMessageDelayed(VIDEO_NOTIFY, 300);
+                    break;
+                }
+
                 // 等到音频的mOutputAudioTrack >= 0时,才往下走
                 // 先把音频的准备工作做好了,再准备视频的准备工作
                 if (mOutputAudioTrack < 0) {
@@ -836,121 +847,114 @@ public class ThrowingScreenFragment extends BaseFragment {
                 // 没有Input过程
 
                 // Output过程
-                for (; ; ) {
-                    if (!mIsVideoRecording) {
-                        mUiHandler.removeMessages(VIDEO_NOTIFY);
-                        mUiHandler.sendEmptyMessageDelayed(VIDEO_NOTIFY, 300);
-                        break;
+                try {
+                    roomIndex = mVideoEncoderMediaCodec.dequeueOutputBuffer(
+                            roomInfo, 33333);
+                    switch (roomIndex) {
+                        case MediaCodec.INFO_TRY_AGAIN_LATER:
+                            // 录屏时roomIndex经常得到MediaCodec.INFO_TRY_AGAIN_LATER值
+                            break;
+                        case MediaCodec.INFO_OUTPUT_FORMAT_CHANGED:
+                            MLog.d(TAG, "VideoEncoderThread " +
+                                    "Output MediaCodec.INFO_OUTPUT_FORMAT_CHANGED");
+                            mVideoEncoderMediaFormat = mVideoEncoderMediaCodec
+                                    .getOutputFormat();
+                            if (mVideoEncoderMediaFormat != null) {
+                                mOutputVideoTrack = mMediaMuxer.addTrack
+                                        (mVideoEncoderMediaFormat);
+                                MLog.d(TAG, "VideoEncoderThread mOutputVideoTrack: " +
+                                        mOutputVideoTrack);
+                            }
+                            continue;
+                        case MediaCodec.INFO_OUTPUT_BUFFERS_CHANGED:
+                            MLog.d(TAG, "VideoEncoderThread " +
+                                    "Output MediaCodec.INFO_OUTPUT_BUFFERS_CHANGED");
+                            //outputBuffers = mVideoEncoderMediaCodec.getOutputBuffers();
+                            continue;
+                        default:
+                            break;
                     }
-                    try {
-                        roomIndex = mVideoEncoderMediaCodec.dequeueOutputBuffer(
-                                roomInfo, 33333);
-                        switch (roomIndex) {
-                            case MediaCodec.INFO_TRY_AGAIN_LATER:
-                                // 录屏时roomIndex经常得到MediaCodec.INFO_TRY_AGAIN_LATER值
-                                continue;
-                            case MediaCodec.INFO_OUTPUT_FORMAT_CHANGED:
-                                MLog.d(TAG, "VideoEncoderThread " +
-                                        "Output MediaCodec.INFO_OUTPUT_FORMAT_CHANGED");
-                                mVideoEncoderMediaFormat = mVideoEncoderMediaCodec
-                                        .getOutputFormat();
-                                if (mVideoEncoderMediaFormat != null) {
-                                    mOutputVideoTrack = mMediaMuxer.addTrack
-                                            (mVideoEncoderMediaFormat);
-                                    MLog.d(TAG, "VideoEncoderThread mOutputVideoTrack: " +
-                                            mOutputVideoTrack);
-                                }
-                                continue;
-                            case MediaCodec.INFO_OUTPUT_BUFFERS_CHANGED:
-                                MLog.d(TAG, "VideoEncoderThread " +
-                                        "Output MediaCodec.INFO_OUTPUT_BUFFERS_CHANGED");
-                                //outputBuffers = mVideoEncoderMediaCodec.getOutputBuffers();
-                                break;
-                            default:
-                                break;
-                        }
 
-                        if (!mIsMuxerStarted
-                                && mOutputVideoTrack >= 0
-                                && mOutputAudioTrack >= 0) {
-                            mMediaMuxer.start();
-                            mIsMuxerStarted = true;
-                            MLog.d(TAG, "VideoEncoderThread mMediaMuxer.start()");
-                        }
-                        if (roomIndex < 0) {
-                            break;
-                        }
-                        room = mVideoEncoderMediaCodec.getOutputBuffer(roomIndex);
-                        int roomSize = roomInfo.size;
+                    //                        room.position(roomInfo.offset);
+                    //                        room.limit(roomInfo.offset + roomSize);
+                    //byte[] encodedData = new byte[roomSize];
+                    //room.get(encodedData);
 
-                        if ((roomInfo.flags & MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0) {
-                            MLog.d(TAG, "VideoEncoderThread " +
-                                    "Output MediaCodec.BUFFER_FLAG_END_OF_STREAM");
-                            mIsVideoRecording = false;
-                            break;
-                        }
-                        boolean sync = false;
-                        if ((roomInfo.flags & MediaCodec.BUFFER_FLAG_CODEC_CONFIG) != 0) {
-                            // mVideoEncoderMediaCodec.releaseOutputBuffer(roomIndex, false);
-                            // 会产生sps和pps
-                            MLog.d(TAG, "VideoEncoderThread " +
-                                    "Output MediaCodec.BUFFER_FLAG_CODEC_CONFIG");
-                            // 标记是I帧(关键帧)还是同步帧
-                            sync = (roomInfo.flags & MediaCodec.BUFFER_FLAG_KEY_FRAME) != 0;
-                            MLog.d(TAG, "VideoEncoderThread sync: " + sync);
-                            // 如果是同步帧,也就是填充着sps和pps参数
-                            if (!sync) {
-                                // 走这里
-                                byte[] encodedData = new byte[roomSize];
-                                room.get(encodedData);
-                                mSpsPps = encodedData;
-                                MLog.d(TAG, "VideoEncoderThread mSpsPps.length: " + mSpsPps.length);
-                            }
-                        }
-
-                        // 操作一
-                        if (mSocket != null && mSocket.isConnected()) {
-                            room.position(0);
-                            byte[] encodedData = new byte[roomSize];
-                            room.get(encodedData);
-                            // 关键帧
-                            if ((encodedData[4] == 0x65) || (encodedData[4] == 0x25)) {
-                                // MLog.d(TAG, "VideoEncoderThread 关键帧");
-                                int totalSize = mSpsPps.length + roomSize;
-                                encodedData = new byte[totalSize];
-                                System.arraycopy(mSpsPps, 0, encodedData, 0, mSpsPps.length);
-                                room.position(0);
-                                room.get(encodedData, mSpsPps.length, roomSize);
-                                // 传递encodedData数据
-                            } else {
-                                // MLog.d(TAG, "VideoEncoderThread 非关键帧");
-                                // 传递encodedData数据
-                            }
-                        }
-
-                        // 操作二
-                        room.position(0);
-                        if (mIsMuxerStarted
-                                && mOutputVideoTrack >= 0
-                                && roomSize != 0) {
-                            roomInfo.presentationTimeUs = System.nanoTime() / 1000;
-                            mMediaMuxer.writeSampleData(mOutputVideoTrack, room, roomInfo);
-                        }
-                        // 通知MediaCodec,房间的东西已经被消耗了,这样MediaCodec可以再次利用此房间
-                        mVideoEncoderMediaCodec.releaseOutputBuffer(roomIndex, false);
-                    } catch (MediaCodec.CryptoException
-                            | IllegalStateException e) {
-                        MLog.e(TAG, "VideoEncoderThread Output occur exception: " + e);
+                    if ((roomInfo.flags & MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0) {
+                        MLog.d(TAG, "VideoEncoderThread " +
+                                "Output MediaCodec.BUFFER_FLAG_END_OF_STREAM");
                         mIsVideoRecording = false;
-                        stopRecordScreen();
-                        mUiHandler.removeMessages(VIDEO_NOTIFY);
-                        mUiHandler.sendEmptyMessageDelayed(VIDEO_NOTIFY, 300);
                         break;
                     }
-                }
+                    if ((roomInfo.flags & MediaCodec.BUFFER_FLAG_CODEC_CONFIG) != 0) {
+                        // 会产生sps和pps
+                        MLog.d(TAG, "VideoEncoderThread " +
+                                "Output MediaCodec.BUFFER_FLAG_CODEC_CONFIG");
+                        // 标记是I帧(关键帧)还是同步帧
+                        boolean sync = (roomInfo.flags & MediaCodec.BUFFER_FLAG_KEY_FRAME) != 0;
+                        MLog.d(TAG, "VideoEncoderThread sync: " + sync);
+                        if (!sync) {
+                            // 如果是同步帧,也就是填充着sps和pps参数
+                            //mSpsPps = encodedData;
+                            MLog.d(TAG, "VideoEncoderThread mSpsPps.length: " + mSpsPps.length);
+                        }
+                        mVideoEncoderMediaCodec.releaseOutputBuffer(roomIndex, false);
+                        continue;
+                    }
 
-                //
-                if (!mIsVideoRecording) {
+                    if (roomIndex < 0) {
+                        continue;
+                    }
+                    room = mVideoEncoderMediaCodec.getOutputBuffer(roomIndex);
+                    int roomSize = roomInfo.size;
+
+                    if (mIsVideoRecording
+                            && !mIsMuxerStarted
+                            && mOutputVideoTrack >= 0
+                            && mOutputAudioTrack >= 0) {
+                        mMediaMuxer.start();
+                        mIsMuxerStarted = true;
+                        MLog.d(TAG, "VideoEncoderThread mMediaMuxer.start()");
+                    }
+
+                    // 操作一
+                    room.position(roomInfo.offset);
+                    room.limit(roomInfo.offset + roomSize);
+                    if (mIsMuxerStarted
+                            && mOutputVideoTrack >= 0
+                            && roomSize != 0) {
+                        roomInfo.presentationTimeUs = System.nanoTime() / 1000;
+                        mMediaMuxer.writeSampleData(mOutputVideoTrack, room, roomInfo);
+                    }
+
+                    // 操作二
+                    /*if (mSocket != null && mSocket.isConnected()) {
+                        OutputStream outputStream = mSocket.getOutputStream();
+                        // 关键帧
+                        if ((encodedData[4] == 0x65) || (encodedData[4] == 0x25)) {
+                            // MLog.d(TAG, "VideoEncoderThread 关键帧");
+                            int totalSize = mSpsPps.length + roomSize;
+                            encodedData = new byte[totalSize];
+                            System.arraycopy(mSpsPps, 0, encodedData, 0, mSpsPps.length);
+                            room.position(roomInfo.offset);
+                            room.limit(roomInfo.offset + roomSize);
+                            room.get(encodedData, mSpsPps.length, roomSize);
+                            // 传递encodedData数据
+                            outputStream.write(encodedData, 0, totalSize);
+                        } else {
+                            // MLog.d(TAG, "VideoEncoderThread 非关键帧");
+                            // 传递encodedData数据
+                            outputStream.write(encodedData, 0, roomSize);
+                        }
+                    }*/
+
+                    // 通知MediaCodec,房间的东西已经被消耗了,这样MediaCodec可以再次利用此房间
+                    mVideoEncoderMediaCodec.releaseOutputBuffer(roomIndex, false);
+                } catch (MediaCodec.CryptoException
+                        | IllegalStateException e) {
+                    MLog.e(TAG, "VideoEncoderThread Output occur exception: " + e);
+                    mIsVideoRecording = false;
+                    stopRecordScreen();
                     mUiHandler.removeMessages(VIDEO_NOTIFY);
                     mUiHandler.sendEmptyMessageDelayed(VIDEO_NOTIFY, 300);
                     break;
@@ -973,6 +977,13 @@ public class ThrowingScreenFragment extends BaseFragment {
             byte[] pcmData = new byte[MediaUtils.getMinBufferSize() * 2];
 
             while (mIsAudioRecording) {
+                // Exit device
+                if (!mIsAudioRecording) {
+                    mUiHandler.removeMessages(AUDIO_NOTIFY);
+                    mUiHandler.sendEmptyMessageDelayed(AUDIO_NOTIFY, 200);
+                    break;
+                }
+
                 // 取数据过程
                 if (pcmData != null) {
                     //Arrays.fill(pcmData, (byte) 0);
@@ -1043,15 +1054,10 @@ public class ThrowingScreenFragment extends BaseFragment {
                                 MLog.d(TAG, "AudioEncoderThread " +
                                         "Output MediaCodec.INFO_OUTPUT_BUFFERS_CHANGED");
                                 //outputBuffers = mAudioEncoderMediaCodec.getOutputBuffers();
-                                break;
+                                continue;
                             default:
                                 break;
                         }
-
-                        if (roomIndex < 0) {
-                            break;
-                        }
-                        room = mAudioEncoderMediaCodec.getOutputBuffer(roomIndex);
 
                         if ((roomInfo.flags & MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0) {
                             MLog.d(TAG, "AudioEncoderThread " +
@@ -1060,17 +1066,26 @@ public class ThrowingScreenFragment extends BaseFragment {
                             break;
                         }
                         if ((roomInfo.flags & MediaCodec.BUFFER_FLAG_CODEC_CONFIG) != 0) {
-                            // mAudioEncoderMediaCodec.releaseOutputBuffer(roomIndex, false);
                             // 会执行一次
+                            // 含有同步帧,因此如果在这里continue的话,writeSampleData应该调到上面执行
                             MLog.d(TAG, "AudioEncoderThread " +
                                     "Output MediaCodec.BUFFER_FLAG_CODEC_CONFIG");
+                            mAudioEncoderMediaCodec.releaseOutputBuffer(roomIndex, false);
+                            continue;
                         }
-                        if (mIsMuxerStarted
+
+                        if (roomIndex < 0) {
+                            break;
+                        }
+                        room = mAudioEncoderMediaCodec.getOutputBuffer(roomIndex);
+
+                        if (mIsAudioRecording
+                                && mIsMuxerStarted
                                 && mOutputAudioTrack >= 0
                                 && roomInfo.size != 0) {
-                            //MLog.d(TAG, "AudioEncoderThread() roomInfo.size: " + roomInfo.size);
                             mMediaMuxer.writeSampleData(mOutputAudioTrack, room, roomInfo);
                         }
+
                         mAudioEncoderMediaCodec.releaseOutputBuffer(roomIndex, false);
                     } catch (MediaCodec.CryptoException
                             | IllegalStateException e) {
@@ -1081,13 +1096,6 @@ public class ThrowingScreenFragment extends BaseFragment {
                         mUiHandler.sendEmptyMessageDelayed(AUDIO_NOTIFY, 200);
                         break;
                     }
-                }
-
-                // Exit device
-                if (!mIsAudioRecording) {
-                    mUiHandler.removeMessages(AUDIO_NOTIFY);
-                    mUiHandler.sendEmptyMessageDelayed(AUDIO_NOTIFY, 200);
-                    break;
                 }
             }// while end
             MLog.d(TAG, "AudioEncoderThread end");

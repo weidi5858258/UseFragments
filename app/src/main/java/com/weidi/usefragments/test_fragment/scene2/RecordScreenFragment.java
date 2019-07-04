@@ -783,7 +783,7 @@ public class RecordScreenFragment extends BaseFragment {
                             // 录屏时roomIndex经常得到MediaCodec.INFO_TRY_AGAIN_LATER值
                             /*MLog.d(TAG, "VideoEncoderThread " +
                                     "Output MediaCodec.INFO_TRY_AGAIN_LATER");*/
-                            break;
+                            continue;
                         case MediaCodec.INFO_OUTPUT_FORMAT_CHANGED:
                             MLog.d(TAG, "VideoEncoderThread " +
                                     "Output MediaCodec.INFO_OUTPUT_FORMAT_CHANGED");
