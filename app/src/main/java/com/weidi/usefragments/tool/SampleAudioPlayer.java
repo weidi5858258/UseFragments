@@ -437,9 +437,9 @@ public class SampleAudioPlayer {
 
                 mIsRunning = false;
                 internalStop(false);
-                if (mCallback != null) {
+                /*if (mCallback != null) {
                     mCallback.onPlaybackFinished();
-                }
+                }*/
                 break;
             }
 
@@ -473,9 +473,9 @@ public class SampleAudioPlayer {
 
                     mIsRunning = false;
                     internalStop(false);
-                    if (mCallback != null) {
+                    /*if (mCallback != null) {
                         mCallback.onPlaybackFinished();
-                    }
+                    }*/
                     break;
                 }
             }

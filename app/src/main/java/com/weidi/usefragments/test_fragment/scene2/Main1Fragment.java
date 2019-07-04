@@ -89,7 +89,7 @@ public class Main1Fragment extends BaseFragment {
             @Override
             public void onClick(View v) {
                 //FragOperManager.getInstance().enter3(new TestMotionEventFragment());
-                FragOperManager.getInstance().enter3(new DecodePlayFragment());
+                FragOperManager.getInstance().enter3(new ThrowingScreenFragment());
             }
         });
     }

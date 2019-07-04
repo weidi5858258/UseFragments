@@ -369,7 +369,7 @@ public class MediaUtils {
          是的话就必须当做配置信息提交给解码器，
          不是的话就直接提交一帧完整的数据给解码器。
          */
-        decoder.setCallback(new MediaCodec.Callback() {
+        /*decoder.setCallback(new MediaCodec.Callback() {
 
             @Override
             public void onInputBufferAvailable(
@@ -399,7 +399,7 @@ public class MediaUtils {
                     @NonNull MediaFormat format) {
 
             }
-        });
+        });*/
 
         return decoder;
     }

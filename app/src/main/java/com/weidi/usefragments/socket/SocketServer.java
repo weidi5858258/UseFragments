@@ -1,5 +1,7 @@
 package com.weidi.usefragments.socket;
 
+import com.weidi.usefragments.tool.MLog;
+
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
@@ -16,7 +18,8 @@ public class SocketServer {
             SocketServer.class.getSimpleName();
     private static final boolean DEBUG = true;
 
-    public static final String IP = "192.168.1.111";
+    // 127.0.0.1
+    public static final String IP = "192.168.1.105";
     public static final int PORT = 5858;
     private static volatile SocketServer sSocketServer;
     private static volatile ServerSocket sServerSocket;
@@ -44,10 +47,14 @@ public class SocketServer {
     }
 
     private boolean bind() {
+        if (DEBUG)
+            MLog.d(TAG, "bind()");
         try {
             InetSocketAddress inetSocketAddress =
                     new InetSocketAddress(IP, PORT);
             sServerSocket.bind(inetSocketAddress);
+            if (DEBUG)
+                MLog.d(TAG, "bind() succeeded");
         } catch (IllegalArgumentException e) {
             e.printStackTrace();
             return false;
@@ -61,11 +68,15 @@ public class SocketServer {
         return true;
     }
 
-    private void accept() {
+    public void accept() {
         if (bind()) {
+            if (DEBUG)
+                MLog.d(TAG, "accept()");
             try {
                 mSocket = sServerSocket.accept();
                 if (mSocket != null && mSocket.isConnected()) {
+                    if (DEBUG)
+                        MLog.d(TAG, "accept() " + mSocket.toString());
                 }
             } catch (java.nio.channels.IllegalBlockingModeException e) {
                 e.printStackTrace();
@@ -83,5 +94,28 @@ public class SocketServer {
         }
     }
 
+    public Socket getSocket() {
+        return mSocket;
+    }
+
+    public void close() {
+        if (sServerSocket != null) {
+            try {
+                sServerSocket.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    /*public static void main(String args[]) {
+        SocketServer.getInstance();
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                SocketServer.getInstance().accept();
+            }
+        }).start();
+    }*/
 
 }

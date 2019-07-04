@@ -2,6 +2,8 @@ package com.weidi.usefragments.socket;
 
 import android.os.Message;
 
+import com.weidi.usefragments.tool.MLog;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.Socket;
@@ -17,29 +19,56 @@ public class SocketClient {
             SocketClient.class.getSimpleName();
     private static final boolean DEBUG = true;
 
+    private static volatile SocketClient sSocketClient;
+
     private Socket mSocket;
+
+    private SocketClient() {
+
+    }
+
+    public static SocketClient getInstance() {
+        if (sSocketClient == null) {
+            synchronized (SocketClient.class) {
+                if (sSocketClient == null) {
+                    sSocketClient = new SocketClient();
+                }
+            }
+        }
+        return sSocketClient;
+    }
 
 
     public void connect() {
+        if (DEBUG)
+            MLog.d(TAG, "connect()");
         try {
             mSocket = new Socket(SocketServer.IP, SocketServer.PORT);
             if (mSocket.isConnected()) {
-
+                if (DEBUG)
+                    MLog.d(TAG, "connect() " + mSocket.toString());
             }
         } catch (IllegalArgumentException e) {
             e.printStackTrace();
+            mSocket = null;
         } catch (SecurityException e) {
             e.printStackTrace();
+            mSocket = null;
         } catch (IOException e) {
             e.printStackTrace();
+            mSocket = null;
         }
     }
 
     public void disconnect() {
+        if (DEBUG)
+            MLog.d(TAG, "disconnect()");
         try {
             if (mSocket != null
                     && mSocket.isConnected()
                     && !mSocket.isClosed()) {
+                if (DEBUG)
+                    MLog.d(TAG, "disconnect() mSocket.close()");
                 mSocket.close();
                 mSocket = null;
             }
@@ -48,6 +77,10 @@ public class SocketClient {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    public Socket getSocket() {
+        return mSocket;
     }
 
 }

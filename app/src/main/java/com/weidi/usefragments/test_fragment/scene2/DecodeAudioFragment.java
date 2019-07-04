@@ -10,12 +10,14 @@ import android.os.Looper;
 import android.os.Message;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.text.Html;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.ScrollView;
 import android.widget.TextView;
 
 import com.weidi.usefragments.MainActivity1;
@@ -295,6 +297,8 @@ public class DecodeAudioFragment extends BaseFragment {
 
     private int mPlayMode = RANDOM_PLAYBACK;
 
+    @InjectView(R.id.scrollView)
+    private ScrollView mScrollView;
     @InjectView(R.id.info_tv)
     private TextView mShowInfoTv;
     @InjectView(R.id.play_btn)
@@ -582,6 +586,12 @@ public class DecodeAudioFragment extends BaseFragment {
                 mShowInoSB.append(msg.obj);
                 mShowInoSB.append("\n");
                 setText(mShowInoSB);
+                mUiHandler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        mScrollView.fullScroll(ScrollView.FOCUS_DOWN);
+                    }
+                });
                 break;
             default:
                 break;
