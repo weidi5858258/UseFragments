@@ -32,18 +32,6 @@
         android:layout_height="wrap_content"/>
 
     <Button
-        android:id="@+id/connect_btn"
-        android:layout_marginTop="16dp"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"/>
-
-    <Button
-        android:id="@+id/disconnect_btn"
-        android:layout_marginTop="16dp"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"/>
-
-    <Button
         android:id="@+id/jump_btn"
         android:layout_marginTop="16dp"
         android:layout_width="match_parent"

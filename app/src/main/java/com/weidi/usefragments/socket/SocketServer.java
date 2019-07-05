@@ -19,7 +19,7 @@ public class SocketServer {
     private static final boolean DEBUG = true;
 
     // 127.0.0.1
-    public static final String IP = "192.168.0.104";
+    public static final String IP = "192.168.1.105";
     public static final int PORT = 5858;
     private static volatile SocketServer sSocketServer;
     private static volatile ServerSocket sServerSocket;
@@ -46,7 +46,7 @@ public class SocketServer {
         return sSocketServer;
     }
 
-    private boolean bind() {
+    public boolean bind() {
         if (DEBUG)
             MLog.d(TAG, "bind()");
         try {
@@ -69,28 +69,26 @@ public class SocketServer {
     }
 
     public void accept() {
-        if (bind()) {
-            if (DEBUG)
-                MLog.d(TAG, "accept()");
-            try {
-                mSocket = sServerSocket.accept();
-                if (mSocket != null && mSocket.isConnected()) {
-                    if (DEBUG)
-                        MLog.d(TAG, "accept() " + mSocket.toString());
-                }
-            } catch (java.nio.channels.IllegalBlockingModeException e) {
-                e.printStackTrace();
-                mSocket = null;
-            } catch (SocketTimeoutException e) {
-                e.printStackTrace();
-                mSocket = null;
-            } catch (SecurityException e) {
-                e.printStackTrace();
-                mSocket = null;
-            } catch (IOException e) {
-                e.printStackTrace();
-                mSocket = null;
+        if (DEBUG)
+            MLog.d(TAG, "accept()");
+        try {
+            mSocket = sServerSocket.accept();
+            if (mSocket != null && mSocket.isConnected()) {
+                if (DEBUG)
+                    MLog.d(TAG, "accept() " + mSocket.toString());
             }
+        } catch (java.nio.channels.IllegalBlockingModeException e) {
+            e.printStackTrace();
+            mSocket = null;
+        } catch (SocketTimeoutException e) {
+            e.printStackTrace();
+            mSocket = null;
+        } catch (SecurityException e) {
+            e.printStackTrace();
+            mSocket = null;
+        } catch (IOException e) {
+            e.printStackTrace();
+            mSocket = null;
         }
     }
 

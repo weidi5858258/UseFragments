@@ -26,6 +26,7 @@ import com.weidi.usefragments.test_fragment.scene2.CameraPreviewFragment;
 import com.weidi.usefragments.test_fragment.scene2.D2Fragment;
 import com.weidi.usefragments.test_fragment.scene2.DecodeAudioFragment;
 import com.weidi.usefragments.test_fragment.scene2.DecodePlayFragment;
+import com.weidi.usefragments.test_fragment.scene2.DecodeVideoFragment;
 import com.weidi.usefragments.test_fragment.scene2.E2Fragment;
 import com.weidi.usefragments.test_fragment.scene2.Main1Fragment;
 import com.weidi.usefragments.test_fragment.scene2.Main2Fragment;
@@ -114,6 +115,9 @@ public class MainActivity1 extends BaseActivity
                 FragOperManager.POP_BACK_STACK);
         sFragmentBackTypeSMap.put(
                 DecodePlayFragment.class.getSimpleName(),
+                FragOperManager.POP_BACK_STACK);
+        sFragmentBackTypeSMap.put(
+                DecodeVideoFragment.class.getSimpleName(),
                 FragOperManager.POP_BACK_STACK);
         sFragmentBackTypeSMap.put(
                 RecordScreenFragment.class.getSimpleName(),

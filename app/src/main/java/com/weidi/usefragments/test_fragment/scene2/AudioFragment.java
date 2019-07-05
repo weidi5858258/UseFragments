@@ -4,9 +4,6 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.res.Configuration;
-import android.icu.text.SimpleDateFormat;
-import android.media.AudioFormat;
-import android.media.AudioManager;
 import android.media.AudioRecord;
 import android.media.AudioTrack;
 import android.media.MediaCodec;
@@ -326,7 +323,7 @@ public class AudioFragment extends BaseFragment {
     private boolean mIsRecordRunning = false;
     private boolean mIsRecordPaused = false;
     private boolean mIsTrackRunning = false;
-    private SimpleDateFormat mSimpleDateFormat = new SimpleDateFormat("yyyyMMddHHmmssSSS");
+    //private SimpleDateFormat mSimpleDateFormat = new SimpleDateFormat("yyyyMMddHHmmssSSS");
 
     private HandlerThread mHandlerThread;
     private Handler mThreadHandler;

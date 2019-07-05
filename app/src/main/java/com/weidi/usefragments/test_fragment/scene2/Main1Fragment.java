@@ -1,15 +1,8 @@
 package com.weidi.usefragments.test_fragment.scene2;
 
 import android.app.Activity;
-import android.app.Fragment;
-import android.content.BroadcastReceiver;
-import android.content.Context;
-import android.content.Intent;
-import android.content.IntentFilter;
 import android.content.res.Configuration;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Looper;
 import android.support.annotation.Nullable;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -21,9 +14,7 @@ import com.weidi.usefragments.R;
 import com.weidi.usefragments.fragment.FragOperManager;
 import com.weidi.usefragments.fragment.base.BaseFragment;
 import com.weidi.usefragments.inject.InjectView;
-import com.weidi.usefragments.media.MediaUtils;
 import com.weidi.usefragments.tool.MLog;
-import com.weidi.usefragments.tool.PermissionsUtils;
 
 
 /***
@@ -89,7 +80,7 @@ public class Main1Fragment extends BaseFragment {
             @Override
             public void onClick(View v) {
                 //FragOperManager.getInstance().enter3(new TestMotionEventFragment());
-                FragOperManager.getInstance().enter3(new ThrowingScreenFragment());
+                FragOperManager.getInstance().enter3(new DecodeVideoFragment());
             }
         });
     }
