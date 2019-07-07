@@ -707,6 +707,7 @@ public class SampleAudioPlayer {
     private Runnable mPlayRunnable = new Runnable() {
         @Override
         public void run() {
+            Thread.currentThread().setPriority(Thread.MAX_PRIORITY);
             internalPrepare();
             internalStart();
         }
