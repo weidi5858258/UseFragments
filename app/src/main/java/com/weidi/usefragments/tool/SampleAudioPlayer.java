@@ -58,6 +58,7 @@ public class SampleAudioPlayer {
     private AudioTrack mAudioTrack;
     private int mAudioTrackIndex = -1;
     private long mCurFileSize;
+    private long mDurationUs;
 
     private HandlerThread mHandlerThread;
     private Handler mThreadHandler;
@@ -233,14 +234,13 @@ public class SampleAudioPlayer {
         // 9525288
         mCurFileSize = file.length();
         if (DEBUG)
-            MLog.i(TAG, "internalPrepare() mCurFileSize: " + mCurFileSize);
+            MLog.d(TAG, "internalPrepare() mCurFileSize: " + mCurFileSize);
 
         if (DEBUG)
             MLog.d(TAG, "internalPrepare() start");
         if (mCallback != null) {
-            mCallback.onPlaybackInfo("mIsRunning: " + mIsRunning +
-                    " mIsPaused: " + mIsPaused);
-            mCallback.onPlaybackInfo("internalPrepare() start");
+            onPlaybackInfo("mIsRunning: " + mIsRunning + " mIsPaused: " + mIsPaused);
+            onPlaybackInfo("internalPrepare() start");
         }
 
         mMediaExtractor = null;
@@ -263,10 +263,8 @@ public class SampleAudioPlayer {
                 MLog.d(TAG, "internalPrepare() mAudioDncoderMediaFormat: " +
                         mAudioDncoderMediaFormat.toString());
             if (mCallback != null) {
-                mCallback.onPlaybackInfo("mIsRunning: " + mIsRunning +
-                        " mIsPaused: " + mIsPaused);
-                mCallback.onPlaybackInfo("internalPrepare() " +
-                        mAudioDncoderMediaFormat.toString());
+                onPlaybackInfo("mIsRunning: " + mIsRunning + " mIsPaused: " + mIsPaused);
+                onPlaybackInfo("internalPrepare() " + mAudioDncoderMediaFormat.toString());
             }
             String mime = mAudioDncoderMediaFormat.getString(MediaFormat.KEY_MIME);
             if (mime.startsWith("audio/")) {
@@ -308,12 +306,16 @@ public class SampleAudioPlayer {
         if (mAudioDncoderMediaFormat == null) {
             mIsRunning = false;
             if (mCallback != null) {
-                mCallback.onPlaybackInfo("internalStart() mAudioDncoderMediaFormat is null");
+                onPlaybackInfo("internalStart() mAudioDncoderMediaFormat is null");
                 mCallback.onPlaybackFinished();
             }
             return;
         }
 
+        mDurationUs = mAudioDncoderMediaFormat.getLong(MediaFormat.KEY_DURATION);
+        // 229735400
+        if (DEBUG)
+            MLog.d(TAG, "internalPrepare() mDurationUs: " + mDurationUs);
         int sampleRateInHz = mAudioDncoderMediaFormat.getInteger(MediaFormat.KEY_SAMPLE_RATE);
         int channelCount = mAudioDncoderMediaFormat.getInteger(MediaFormat.KEY_CHANNEL_COUNT);
         // 还不知道怎样从一个音频中得到"数据位宽"
@@ -330,32 +332,29 @@ public class SampleAudioPlayer {
 
         if (DEBUG)
             MLog.d(TAG, "internalPrepare() end");
-        if (mCallback != null) {
-            mCallback.onPlaybackInfo("mIsRunning: " + mIsRunning +
-                    " mIsPaused: " + mIsPaused);
-            mCallback.onPlaybackInfo("internalPrepare() end");
-        }
+        onPlaybackInfo("mIsRunning: " + mIsRunning + " mIsPaused: " + mIsPaused);
+        onPlaybackInfo("internalPrepare() end");
     }
 
     private void internalStart() {
         if (mAudioTrack == null) {
             mIsRunning = false;
             if (mCallback != null) {
-                mCallback.onPlaybackInfo("internalStart() mAudioTrack is null");
+                onPlaybackInfo("internalStart() mAudioTrack is null");
                 mCallback.onPlaybackFinished();
             }
             return;
         } else if (mAudioDncoderMediaCodec == null) {
             mIsRunning = false;
             if (mCallback != null) {
-                mCallback.onPlaybackInfo("internalStart() mAudioDncoderMediaCodec is null");
+                onPlaybackInfo("internalStart() mAudioDncoderMediaCodec is null");
                 mCallback.onPlaybackFinished();
             }
             return;
         } else if (mAudioTrackIndex < 0) {
             mIsRunning = false;
             if (mCallback != null) {
-                mCallback.onPlaybackInfo("internalStart() mAudioTrackIndex < 0");
+                onPlaybackInfo("internalStart() mAudioTrackIndex < 0");
                 mCallback.onPlaybackFinished();
             }
             return;
@@ -364,12 +363,13 @@ public class SampleAudioPlayer {
         if (DEBUG)
             MLog.d(TAG, "internalStart() start");
         if (mCallback != null) {
-            mCallback.onPlaybackInfo("mIsRunning: " + mIsRunning +
-                    " mIsPaused: " + mIsPaused);
-            mCallback.onPlaybackInfo("internalStart() start");
+            onPlaybackInfo("mIsRunning: " + mIsRunning + " mIsPaused: " + mIsPaused);
+            onPlaybackInfo("internalStart() start");
         }
 
-        long hasReadedSize = 0;
+        // long presentationTimeUs = System.nanoTime() / 1000;
+        long presentationTimeUsTotal = 0;
+        boolean hasPlaybackFinished = false;
         int readSize = -1;
         // 房间号
         int roomIndex = MediaCodec.INFO_TRY_AGAIN_LATER;
@@ -381,12 +381,17 @@ public class SampleAudioPlayer {
         MediaCodec.BufferInfo roomInfo = new MediaCodec.BufferInfo();
         ByteBuffer[] inputBuffers = mAudioDncoderMediaCodec.getInputBuffers();
         ByteBuffer[] outputBuffers = mAudioDncoderMediaCodec.getOutputBuffers();
-        while (mIsRunning) {
+        /***
+         总体思想:
+         播放完毕,播放异常,停止播放
+         都设置
+         mIsRunning = false;
+         然后退出while循环,
+         最后release.
+         */
+        while (true) {
             // stop device
             if (!mIsRunning) {
-                synchronized (mStopLock) {
-                    mStopLock.notify();
-                }
                 break;
             }
 
@@ -395,10 +400,8 @@ public class SampleAudioPlayer {
                 synchronized (mPauseLock) {
                     if (DEBUG)
                         MLog.w(TAG, "internalStart() mPauseLock.wait() start");
-                    onPlaybackInfo(
-                            "mIsRunning: " + mIsRunning + " mIsPaused: " + mIsPaused);
-                    onPlaybackInfo(
-                            "internalStart() mPauseLock.wait() start");
+                    onPlaybackInfo("mIsRunning: " + mIsRunning + " mIsPaused: " + mIsPaused);
+                    onPlaybackInfo("internalStart() mPauseLock.wait() start");
                     try {
                         mPauseLock.wait();
                     } catch (InterruptedException e) {
@@ -406,14 +409,13 @@ public class SampleAudioPlayer {
                     }
                     if (DEBUG)
                         MLog.w(TAG, "internalStart() mPauseLock.wait() end");
-                    onPlaybackInfo(
-                            "mIsRunning: " + mIsRunning + " mIsPaused: " + mIsPaused);
-                    onPlaybackInfo(
-                            "internalStart() mPauseLock.wait() end");
+                    onPlaybackInfo("mIsRunning: " + mIsRunning + " mIsPaused: " + mIsPaused);
+                    onPlaybackInfo("internalStart() mPauseLock.wait() end");
                 }
             }
 
             try {
+                // mMediaExtractor.seekTo(100000000, MediaExtractor.SEEK_TO_NEXT_SYNC);
                 // Input
                 roomIndex = mAudioDncoderMediaCodec.dequeueInputBuffer(-1);
                 if (roomIndex >= 0) {
@@ -424,85 +426,56 @@ public class SampleAudioPlayer {
                     }
                     room.clear();
                     readSize = mMediaExtractor.readSampleData(room, 0);
-                    hasReadedSize += readSize;
                     /*if (DEBUG)
                         MLog.i(TAG, "internalStart() hasReadedSize: " + hasReadedSize +
                                 " readSize: " + readSize);*/
-                    long presentationTimeUs = System.nanoTime() / 1000;
+                    int flags = 0;
+                    /***
+                     第一次为0
+                     然后大概26ms读一次数据(26122us)
+                     结束为-1
+                     */
+                    long presentationTimeUs = mMediaExtractor.getSampleTime();
+                    /*presentationTimeUsTotal += presentationTimeUs;
+                    MLog.w(TAG, "internalStart() " +
+                            ((presentationTimeUsTotal / mDurationUs)));*/
+                    // 26122(大概26ms循环一次)
+                    // MLog.w(TAG, "internalStart() presentationTimeUs: " + presentationTimeUs);
                     if (readSize < 0) {
-                        mAudioDncoderMediaCodec.queueInputBuffer(
-                                roomIndex,
-                                0,
-                                0,
-                                0,
-                                /***
-                                 发送此flags的目的是,在Output阶段,根据
-                                 (info.flags & MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0
-                                 这个条件判断已经到结尾了,然后退出.这是优雅的退出方式.
-                                 */
-                                MediaCodec.BUFFER_FLAG_END_OF_STREAM);
+                        hasPlaybackFinished = true;
+                        readSize = 0;
+                        presentationTimeUs = 0;
+                        /***
+                         发送此flags(MediaCodec.BUFFER_FLAG_END_OF_STREAM)的目的是,
+                         在Output阶段,根据
+                         (info.flags & MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0
+                         这个条件判断已经到结尾了,然后退出.这是优雅的退出方式.
+                         */
+                        flags = MediaCodec.BUFFER_FLAG_END_OF_STREAM;
 
                         if (DEBUG)
                             MLog.i(TAG, "internalStart() read end");
-                        onPlaybackInfo(
-                                "mIsRunning: " + mIsRunning + " mIsPaused: " + mIsPaused);
-                        onPlaybackInfo(
-                                "internalStart() read end");
-                        mIsRunning = false;
-                        internalStop(false);
-                        if (mCallback != null) {
-                            mCallback.onPlaybackFinished();
-                        }
-                        break;
-                    } else {
-                        mAudioDncoderMediaCodec.queueInputBuffer(
-                                roomIndex,
-                                0,
-                                readSize,
-                                // presentationTimeUs,
-                                mMediaExtractor.getSampleTime(),
-                                0);
+                    }
+                    mAudioDncoderMediaCodec.queueInputBuffer(
+                            roomIndex,
+                            0,
+                            readSize,
+                            presentationTimeUs,
+                            flags);
+
+                    if (!hasPlaybackFinished) {
                         mMediaExtractor.advance();
                     }
                 }
-            } catch (MediaCodec.CryptoException e) {
+            } catch (MediaCodec.CryptoException
+                    | IllegalStateException
+                    | NullPointerException e) {
                 MLog.e(TAG, "internalStart Input occur exception: " + e);
-                onPlaybackInfo(
-                        "mIsRunning: " + mIsRunning + " mIsPaused: " + mIsPaused);
-                onPlaybackInfo(
-                        "internalStart() Input occur exception: ");
-                onPlaybackInfo(
-                        e.toString());
-                // internalStop(false);
+                onPlaybackInfo("mIsRunning: " + mIsRunning + " mIsPaused: " + mIsPaused);
+                onPlaybackInfo("internalStart() Input occur exception: ");
+                onPlaybackInfo(e.toString());
 
                 mIsRunning = false;
-                internalStop(false);
-                break;
-            } catch (MediaCodec.CodecException e) {
-                MLog.e(TAG, "internalStart Input occur exception: " + e);
-                if (mCallback != null) {
-                    mCallback.onPlaybackInfo("mIsRunning: " + mIsRunning +
-                            " mIsPaused: " + mIsPaused);
-                    mCallback.onPlaybackInfo("internalStart() Input occur exception: ");
-                    mCallback.onPlaybackInfo(e.toString());
-                }
-                // internalStop(false);
-
-                mIsRunning = false;
-                internalStop(false);
-                break;
-            } catch (IllegalStateException e) {
-                MLog.e(TAG, "internalStart Input occur exception: " + e);
-                if (mCallback != null) {
-                    mCallback.onPlaybackInfo("mIsRunning: " + mIsRunning +
-                            " mIsPaused: " + mIsPaused);
-                    mCallback.onPlaybackInfo("internalStart() Input occur exception: ");
-                    mCallback.onPlaybackInfo(e.toString());
-                }
-                // internalStop(false);
-
-                mIsRunning = false;
-                internalStop(false);
                 break;
             }
 
@@ -511,17 +484,46 @@ public class SampleAudioPlayer {
             for (; ; ) {
                 // stop device
                 if (!mIsRunning) {
-                    synchronized (mStopLock) {
-                        mStopLock.notify();
-                    }
-                    return;
+                    break;
                 }
                 try {
                     roomIndex = mAudioDncoderMediaCodec.dequeueOutputBuffer(
                             roomInfo, TIME_OUT);
+                    switch (roomIndex) {
+                        case MediaCodec.INFO_TRY_AGAIN_LATER:
+                            break;
+                        case MediaCodec.INFO_OUTPUT_FORMAT_CHANGED:
+                            MLog.d(TAG, "internalStart() " +
+                                    "Output MediaCodec.INFO_OUTPUT_FORMAT_CHANGED");
+                            mAudioDncoderMediaFormat = mAudioDncoderMediaCodec.getOutputFormat();
+                            break;
+                        case MediaCodec.INFO_OUTPUT_BUFFERS_CHANGED:
+                            MLog.d(TAG, "internalStart() " +
+                                    "Output MediaCodec.INFO_OUTPUT_BUFFERS_CHANGED");
+                            outputBuffers = mAudioDncoderMediaCodec.getOutputBuffers();
+                            break;
+                        default:
+                            break;
+                    }
                     if (roomIndex < 0) {
                         break;
                     }
+
+                    if ((roomInfo.flags & MediaCodec.BUFFER_FLAG_CODEC_CONFIG) != 0) {
+                        MLog.d(TAG, "internalStart() " +
+                                "Output MediaCodec.BUFFER_FLAG_CODEC_CONFIG");
+                        mAudioDncoderMediaCodec.releaseOutputBuffer(roomIndex, false);
+                        continue;
+                    }
+                    // 非常重要
+                    if ((roomInfo.flags & MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0) {
+                        MLog.d(TAG, "internalStart() " +
+                                "Output MediaCodec.BUFFER_FLAG_END_OF_STREAM");
+
+                        mIsRunning = false;
+                        break;
+                    }
+
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
                         room = mAudioDncoderMediaCodec.getOutputBuffer(roomIndex);
                     } else {
@@ -536,65 +538,49 @@ public class SampleAudioPlayer {
                     room.get(pcmData, 0, pcmData.length);
                     mAudioTrack.write(pcmData, 0, pcmData.length);
                     mAudioDncoderMediaCodec.releaseOutputBuffer(roomIndex, false);
-                } catch (MediaCodec.CodecException e) {
+                } catch (IllegalStateException
+                        | IllegalArgumentException
+                        | NullPointerException e) {
                     MLog.e(TAG, "internalStart() Output occur exception: " + e);
-                    if (mCallback != null) {
-                        mCallback.onPlaybackInfo("mIsRunning: " + mIsRunning +
-                                " mIsPaused: " + mIsPaused);
-                        mCallback.onPlaybackInfo("internalStart() Output occur exception: ");
-                        mCallback.onPlaybackInfo(e.toString());
-                    }
-                    // internalStop(false);
+                    onPlaybackInfo("mIsRunning: " + mIsRunning + " mIsPaused: " + mIsPaused);
+                    onPlaybackInfo("internalStart() Output occur exception: ");
+                    onPlaybackInfo(e.toString());
 
                     mIsRunning = false;
-                    internalStop(false);
-                    return;
-                } catch (IllegalStateException e) {
-                    MLog.e(TAG, "internalStart() Output occur exception: " + e);
-                    if (mCallback != null) {
-                        mCallback.onPlaybackInfo("mIsRunning: " + mIsRunning +
-                                " mIsPaused: " + mIsPaused);
-                        mCallback.onPlaybackInfo("internalStart() Output occur exception: ");
-                        mCallback.onPlaybackInfo(e.toString());
-                    }
-                    // internalStop(false);
-
-                    mIsRunning = false;
-                    internalStop(false);
-                    return;
-                } catch (IllegalArgumentException e) {
-                    MLog.e(TAG, "internalStart() Output occur exception: " + e);
-                    if (mCallback != null) {
-                        mCallback.onPlaybackInfo("mIsRunning: " + mIsRunning +
-                                " mIsPaused: " + mIsPaused);
-                        mCallback.onPlaybackInfo("internalStart() Output occur exception: ");
-                        mCallback.onPlaybackInfo(e.toString());
-                    }
-                    // internalStop(false);
-
-                    mIsRunning = false;
-                    internalStop(false);
-                    return;
+                    break;
                 }
+            }// for(;;) end
+        }
+
+        internalRelease();
+
+        synchronized (mStopLock) {
+            mStopLock.notify();
+        }
+
+        if (hasPlaybackFinished) {
+            onPlaybackInfo("mIsRunning: " + mIsRunning + " mIsPaused: " + mIsPaused);
+            onPlaybackInfo("internalStart() read end");
+            if (mCallback != null) {
+                mCallback.onPlaybackFinished();
             }
         }
 
         if (DEBUG)
             MLog.d(TAG, "internalStart() end");
-        if (mCallback != null) {
-            mCallback.onPlaybackInfo("mIsRunning: " + mIsRunning +
-                    " mIsPaused: " + mIsPaused);
-            mCallback.onPlaybackInfo("internalStart() end");
-        }
+        onPlaybackInfo("mIsRunning: " + mIsRunning + " mIsPaused: " + mIsPaused);
+        onPlaybackInfo("internalStart() end");
     }
 
     private void internalPlay() {
         if (!mIsRunning && !mIsPaused) {
             if (mCallback != null) {
-                mCallback.onPlaybackInfo("mIsRunning: " + mIsRunning +
-                        " mIsPaused: " + mIsPaused);
-                mCallback.onPlaybackInfo("internalPlay() execute Runnable");
+                onPlaybackInfo("mIsRunning: " + mIsRunning + " mIsPaused: " + mIsPaused);
+                onPlaybackInfo("internalPlay() execute Runnable");
             }
+
+            if (DEBUG)
+                MLog.d(TAG, "internalPlay() execute Runnable");
             // state
             mIsRunning = true;
             mIsPaused = false;
@@ -605,9 +591,8 @@ public class SampleAudioPlayer {
             if (DEBUG)
                 MLog.d(TAG, "internalPlay() start");
             if (mCallback != null) {
-                mCallback.onPlaybackInfo("mIsRunning: " + mIsRunning +
-                        " mIsPaused: " + mIsPaused);
-                mCallback.onPlaybackInfo("internalPlay() start");
+                onPlaybackInfo("mIsRunning: " + mIsRunning + " mIsPaused: " + mIsPaused);
+                onPlaybackInfo("internalPlay() start");
             }
 
             mIsPaused = false;
@@ -618,9 +603,8 @@ public class SampleAudioPlayer {
             if (DEBUG)
                 MLog.d(TAG, "internalPlay() end");
             if (mCallback != null) {
-                mCallback.onPlaybackInfo("mIsRunning: " + mIsRunning +
-                        " mIsPaused: " + mIsPaused);
-                mCallback.onPlaybackInfo("internalPlay() end");
+                onPlaybackInfo("mIsRunning: " + mIsRunning + " mIsPaused: " + mIsPaused);
+                onPlaybackInfo("internalPlay() end");
             }
         }
     }
@@ -633,85 +617,73 @@ public class SampleAudioPlayer {
         mIsPaused = true;
     }
 
-    private void internalStop(boolean needWait) {
+    private void internalStop() {
         if (!mIsRunning) {
             return;
         }
 
         if (DEBUG)
             MLog.d(TAG, "internalStop() start");
-        if (mCallback != null) {
-            mCallback.onPlaybackInfo("mIsRunning: " + mIsRunning +
-                    " mIsPaused: " + mIsPaused);
-            mCallback.onPlaybackInfo("internalStop() start");
-        }
+        onPlaybackInfo("mIsRunning: " + mIsRunning + " mIsPaused: " + mIsPaused);
+        onPlaybackInfo("internalStop() start");
 
         mIsPaused = false;
         synchronized (mPauseLock) {
             mPauseLock.notify();
         }
 
-        if (mIsRunning && needWait) {
-            mIsRunning = false;
-            synchronized (mStopLock) {
-                if (mCallback != null) {
-                    mCallback.onPlaybackInfo("mIsRunning: " + mIsRunning +
-                            " mIsPaused: " + mIsPaused);
-                    mCallback.onPlaybackInfo("internalStop mStopLock.wait() start");
-                }
-                try {
-                    mStopLock.wait();
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-                if (mCallback != null) {
-                    mCallback.onPlaybackInfo("mIsRunning: " + mIsRunning +
-                            " mIsPaused: " + mIsPaused);
-                    mCallback.onPlaybackInfo("internalStop mStopLock.wait() end");
-                }
-            }
-        }
-        mIsRunning = false;
-
-        MediaUtils.stopAudioTrack(mAudioTrack);
-        MediaUtils.stopMediaCodec(mAudioDncoderMediaCodec);
+        notifyAudioEndOfStream();
 
         if (DEBUG)
             MLog.d(TAG, "internalStop() end");
-        if (mCallback != null) {
-            mCallback.onPlaybackInfo("mIsRunning: " + mIsRunning +
-                    " mIsPaused: " + mIsPaused);
-            mCallback.onPlaybackInfo("internalStop() end");
-        }
+        onPlaybackInfo("mIsRunning: " + mIsRunning + " mIsPaused: " + mIsPaused);
+        onPlaybackInfo("internalStop() end");
     }
 
     private void internalRelease() {
         if (DEBUG)
             MLog.d(TAG, "internalRelease() start");
         if (mCallback != null) {
-            mCallback.onPlaybackInfo("mIsRunning: " + mIsRunning +
-                    " mIsPaused: " + mIsPaused);
-            mCallback.onPlaybackInfo("internalRelease() start");
+            onPlaybackInfo("mIsRunning: " + mIsRunning + " mIsPaused: " + mIsPaused);
+            onPlaybackInfo("internalRelease() start");
         }
-        internalStop(false);
+        MediaUtils.stopAudioTrack(mAudioTrack);
+        MediaUtils.stopMediaCodec(mAudioDncoderMediaCodec);
         MediaUtils.releaseAudioTrack(mAudioTrack);
         MediaUtils.releaseMediaCodec(mAudioDncoderMediaCodec);
         if (DEBUG)
             MLog.d(TAG, "internalRelease() end");
         if (mCallback != null) {
-            mCallback.onPlaybackInfo("mIsRunning: " + mIsRunning +
-                    " mIsPaused: " + mIsPaused);
-            mCallback.onPlaybackInfo("internalRelease() end");
+            onPlaybackInfo("mIsRunning: " + mIsRunning + " mIsPaused: " + mIsPaused);
+            onPlaybackInfo("internalRelease() end");
         }
     }
 
     private void internalPrev() {
-        internalRelease();
+        internalStop();
+        if (mIsRunning) {
+            synchronized (mStopLock) {
+                try {
+                    mStopLock.wait();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
         play();
     }
 
     private void internalNext() {
-        internalRelease();
+        internalStop();
+        if (mIsRunning) {
+            synchronized (mStopLock) {
+                try {
+                    mStopLock.wait();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
         play();
     }
 
@@ -733,6 +705,38 @@ public class SampleAudioPlayer {
         }
     }
 
+    /***
+     相当于发送一个消息
+     */
+    private void notifyAudioEndOfStream() {
+        if (DEBUG)
+            MLog.d(TAG, "notifyAudioEndOfStream() start");
+        onPlaybackInfo("mIsRunning: " + mIsRunning + " mIsPaused: " + mIsPaused);
+        onPlaybackInfo("notifyAudioEndOfStream() start");
+
+        if (mAudioDncoderMediaCodec != null) {
+            // audio end notify
+            int roomIndex = MediaCodec.INFO_TRY_AGAIN_LATER;
+            for (; ; ) {
+                roomIndex = mAudioDncoderMediaCodec.dequeueInputBuffer(0);
+                if (roomIndex >= 0) {
+                    break;
+                }
+            }
+            mAudioDncoderMediaCodec.queueInputBuffer(
+                    roomIndex,
+                    0,
+                    0,
+                    0,
+                    MediaCodec.BUFFER_FLAG_END_OF_STREAM);
+        }
+
+        if (DEBUG)
+            MLog.d(TAG, "notifyAudioEndOfStream() end");
+        onPlaybackInfo("mIsRunning: " + mIsRunning + " mIsPaused: " + mIsPaused);
+        onPlaybackInfo("notifyAudioEndOfStream() end");
+    }
+
     private void threadHandleMessage(Message msg) {
         if (msg == null) {
             return;
@@ -743,10 +747,8 @@ public class SampleAudioPlayer {
                 internalPause();
                 break;
             case STOP:
-                internalStop(true);
-                break;
             case RELEASE:
-                internalRelease();
+                internalStop();
                 break;
             case PREV:
                 internalPrev();
