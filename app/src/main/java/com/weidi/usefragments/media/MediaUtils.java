@@ -13,12 +13,11 @@ import android.media.MediaFormat;
 import android.media.MediaMetadataRetriever;
 import android.media.MediaRecorder;
 import android.media.ThumbnailUtils;
-import android.support.annotation.NonNull;
+import android.os.Build;
 import android.text.TextUtils;
 import android.util.Log;
 import android.util.SparseArray;
 
-import com.lidroid.xutils.util.LogUtils;
 import com.weidi.usefragments.tool.MLog;
 
 import java.io.ByteArrayOutputStream;
@@ -43,9 +42,6 @@ public class MediaUtils {
             MediaUtils.class.getSimpleName();
     private static final boolean DEBUG = true;
 
-    // 想要的编码格式
-    public static final String VIDEO_MIME_TYPE = MediaFormat.MIMETYPE_VIDEO_AVC;// video/avc
-    public static final String AUDIO_MIME_TYPE = MediaFormat.MIMETYPE_AUDIO_AAC;// audio/mp4a-latm
     /***
      相同条件:
      mWidth = 720;
@@ -73,6 +69,11 @@ public class MediaUtils {
      VIDEO_BIT_RATE = 64000;
      一分钟大概15.9MB
      */
+    // 想要的编码格式
+    // video/avc(H264)
+    public static final String VIDEO_MIME_TYPE = MediaFormat.MIMETYPE_VIDEO_AVC;
+    // audio/mp4a-latm(AAC)
+    public static final String AUDIO_MIME_TYPE = MediaFormat.MIMETYPE_AUDIO_AAC;
     private static final int VIDEO_BIT_RATE = 64000;// 1200000 8000000 800000
     // audio的有关参数定义在一起了(在下面)
     // private static final int AUDIO_BIT_RATE = 64000;// 64kbps
@@ -1599,4 +1600,81 @@ public class MediaUtils {
         //mSurface = mEncoder.createInputSurface();
     }
 
+    public static int getAudioTrackChannelConfig(int channelCount) {
+        switch (channelCount) {
+            case 1:
+                return AudioFormat.CHANNEL_OUT_MONO;
+            case 2:
+                return AudioFormat.CHANNEL_OUT_STEREO;
+            case 3:
+                return AudioFormat.CHANNEL_OUT_STEREO | AudioFormat.CHANNEL_OUT_FRONT_CENTER;
+            case 4:
+                return AudioFormat.CHANNEL_OUT_QUAD;
+            case 5:
+                return AudioFormat.CHANNEL_OUT_QUAD | AudioFormat.CHANNEL_OUT_FRONT_CENTER;
+            case 6:
+                return AudioFormat.CHANNEL_OUT_5POINT1;
+            case 7:
+                return AudioFormat.CHANNEL_OUT_5POINT1 | AudioFormat.CHANNEL_OUT_BACK_CENTER;
+            case 8:
+                if (Build.VERSION.SDK_INT >= 23) {
+                    return AudioFormat.CHANNEL_OUT_7POINT1_SURROUND;
+                } else if (Build.VERSION.SDK_INT >= 21) {
+                    // Equal to AudioFormat.CHANNEL_OUT_7POINT1_SURROUND,
+                    // which is hidden before Android M.
+                    return AudioFormat.CHANNEL_OUT_5POINT1
+                            | AudioFormat.CHANNEL_OUT_SIDE_LEFT
+                            | AudioFormat.CHANNEL_OUT_SIDE_RIGHT;
+                } else {
+                    // 8 ch output is not supported before Android L.
+                    return AudioFormat.CHANNEL_INVALID;
+                }
+            default:
+                return AudioFormat.CHANNEL_INVALID;
+        }
+    }
+
 }
+
+/***
+ MediaCodec 有两种方式触发输出关键帧，
+ 一是由配置时设置的 KEY_FRAME_RATE和KEY_I_FRAME_INTERVAL参数自动触发，
+ 二是运行过程中通过 setParameters 手动触发输出关键帧。
+ 自动触发实际是按照帧数触发的，
+ 例如设置帧率为 20 fps，关键帧间隔为 1s ，
+ 那就会每 20桢输出一个关键帧，一旦实际帧率低于配置帧率，
+ 那就会导致关键帧间隔时间变长。
+ 由于 MediaCodec 启动后就不能修改配置帧率/关键帧间隔了，
+ 所以如果希望改变关键帧间隔帧数，就必须重启编码器。
+ 手动触发输出关键帧：
+ if (System.currentTimeMillis() - timeStamp >= 1000) {//1000毫秒后，设置参数
+ timeStamp = System.currentTimeMillis();
+ if (Build.VERSION.SDK_INT >= 23) {
+ Bundle params = new Bundle();
+ params.putInt(MediaCodec.PARAMETER_KEY_REQUEST_SYNC_FRAME, 0);
+ mMediaCodec.setParameters(params);
+ }
+ }
+ 关键帧踩坑
+ 有时候你会发现自动触发关键帧方式失效了
+ 经排查发现真正的原因是在于视频的输入源，如果是通过Camera的PreviewCallback的方式来获取视频数据再喂给MediaCodec的方式是无法控制输出关键帧的数量的。
+ 发现当选择支持颜色格式为yuv420p的编码器时，KEY_I_FRAME_INTERVAL 设置无效；
+ 选择支持yuv420sp的编码器时，KEY_I_FRAME_INTERVAL 设置有效；
+
+ 想要控制输出输出关键帧数量就必须通过调用MediaCodec.createInputSurface()
+ 方法获取输入Surface，再通过Opengl渲染后喂给MediaCodec才能真正控制关键帧的数量。
+ //判断输出数据是否为关键帧的方法：
+ boolean keyFrame = (bufferInfo.flags & MediaCodec.BUFFER_FLAG_KEY_FRAME) != 0;
+ 部分机型MediaCodec.dequeueOutputBuffer一直报IllegalStateException
+ 部分机型会一直卡在MediaCodec.INFO_TRY_AGAIN_LATER中，有的原因也是因为这个
+ 该机型硬解码最大配置分辨率低于当前视频流的分辨率
+ 关于 level、profile设置
+ 由于视频编码后显示的数据质量偏低，所以需要调整质量。这个时候需要在这个设置level、profile
+ Profile是对视频压缩特性的描述（CABAC呀、颜色采样数等等）。
+ Level是对视频本身特性的描述（码率、分辨率、fps）。
+ 简单来说，Profile越高，就说明采用了越高级的压缩特性。
+ Level越高，视频的码率、分辨率、fps越高
+ // 不支持设置Profile和Level，而应该采用默认设置
+ mediaFormat.setInteger(MediaFormat.KEY_PROFILE, MediaCodecInfo.CodecProfileLevel.AVCProfileHigh);
+ mediaFormat.setInteger("level", MediaCodecInfo.CodecProfileLevel.AVCLevel41); // Level 4.1
+ */

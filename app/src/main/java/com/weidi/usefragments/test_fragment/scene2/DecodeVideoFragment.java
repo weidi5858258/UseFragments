@@ -17,8 +17,6 @@ import android.os.HandlerThread;
 import android.os.Looper;
 import android.os.Message;
 import android.os.SystemClock;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
 import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.Surface;
@@ -99,7 +97,7 @@ public class DecodeVideoFragment extends BaseFragment {
     }
 
     @Override
-    public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
+    public void onViewCreated(View view, Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
         if (DEBUG)
             MLog.d(TAG, "onViewCreated(): " + printThis() +
@@ -262,8 +260,8 @@ public class DecodeVideoFragment extends BaseFragment {
     @Override
     public void onRequestPermissionsResult(
             int requestCode,
-            @NonNull String[] permissions,
-            @NonNull int[] grantResults) {
+            String[] permissions,
+            int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         if (DEBUG)
             MLog.d(TAG, "onRequestPermissionsResult(): " + printThis() +
@@ -774,13 +772,6 @@ public class DecodeVideoFragment extends BaseFragment {
         }
     }
 
-    // 延迟渲染(这一步很关键)
-    private void sleepRender(MediaCodec.BufferInfo roomInfo, long startMs) {
-        while (roomInfo.presentationTimeUs / 1000 > System.currentTimeMillis() - startMs) {
-            SystemClock.sleep(10);
-        }
-    }
-
     private class VideoDecoderThread implements Runnable {
         @Override
         public void run() {
@@ -864,8 +855,26 @@ public class DecodeVideoFragment extends BaseFragment {
                         if (roomIndex < 0) {
                             break;
                         }
-                        sleepRender(roomInfo, startMs);
                         room = mVideoDecoderMediaCodec.getOutputBuffer(roomIndex);
+
+                        /***
+                         roomInfo.presentationTimeUs        ---> 微妙
+                         roomInfo.presentationTimeUs / 1000 ---> 毫秒
+                         roomInfo.presentationTimeUs / 1000 某帧将要显示的时间点
+                         System.currentTimeMillis()         当前的时间点
+                         这样去理解:
+                         某个产品只需要在明天的某个时间点完成就行了,
+                         但是实际是这个产品在今天的某个时间点就完成了,
+                         这就说明了工作麻利,提前完成任务了,也就是"快"的意思.
+                         类比现在的情况:
+                         "某帧将要显示的时间点"比"当前的时间点"大,
+                         说明显示过早了,应该等一等再显示.
+                         */
+                        while (roomInfo.presentationTimeUs / 1000
+                                > System.currentTimeMillis() - startMs) {
+                            SystemClock.sleep(10);
+                        }
+
                         mVideoDecoderMediaCodec.releaseOutputBuffer(roomIndex, true);
                     } catch (MediaCodec.CodecException e) {
                         e.printStackTrace();
