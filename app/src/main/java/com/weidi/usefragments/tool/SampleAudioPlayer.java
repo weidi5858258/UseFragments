@@ -18,6 +18,7 @@ import android.os.Looper;
 import android.os.Message;
 import android.os.SystemClock;
 import android.text.TextUtils;
+import android.text.format.DateUtils;
 import android.util.Log;
 import android.view.KeyEvent;
 
@@ -49,6 +50,8 @@ public class SampleAudioPlayer {
     private static final int PREV = 0x0005;
     private static final int NEXT = 0x0006;
 
+    private static final int SEEKBAR_PROGRESS = 3840;
+
     // 为了注册广播
     private Context mContext;
     private String mPath;
@@ -59,6 +62,7 @@ public class SampleAudioPlayer {
     private int mAudioTrackIndex = -1;
     private long mCurFileSize;
     private long mDurationUs;
+    private long mProgressUs = -1;
 
     private HandlerThread mHandlerThread;
     private Handler mThreadHandler;
@@ -81,7 +85,7 @@ public class SampleAudioPlayer {
 
         void onPlaybackFinished();
 
-        void onProgressUpdated(int progress);
+        void onProgressUpdated(long presentationTimeUs);
 
         void onPlaybackError();
 
@@ -154,6 +158,14 @@ public class SampleAudioPlayer {
 
     public boolean isRunning() {
         return mIsRunning;
+    }
+
+    public long getDurationUs() {
+        return mDurationUs;
+    }
+
+    public void setProgressUs(long progressUs) {
+        mProgressUs = progressUs;
     }
 
     private boolean firstFlag = false;
@@ -239,6 +251,7 @@ public class SampleAudioPlayer {
         if (DEBUG)
             MLog.d(TAG, "internalPrepare() start");
         if (mCallback != null) {
+            mCallback.onPlaybackReady();
             onPlaybackInfo("mIsRunning: " + mIsRunning + " mIsPaused: " + mIsPaused);
             onPlaybackInfo("internalPrepare() start");
         }
@@ -363,12 +376,15 @@ public class SampleAudioPlayer {
         if (DEBUG)
             MLog.d(TAG, "internalStart() start");
         if (mCallback != null) {
+            mCallback.onPlaybackStarted();
             onPlaybackInfo("mIsRunning: " + mIsRunning + " mIsPaused: " + mIsPaused);
             onPlaybackInfo("internalStart() start");
         }
 
         // long presentationTimeUs = System.nanoTime() / 1000;
-        long presentationTimeUsTotal = 0;
+        long tempTimeUs = 0;
+        String prevElapsedTime = null;
+        String curElapsedTime = null;
         boolean hasPlaybackFinished = false;
         int readSize = -1;
         // 房间号
@@ -414,8 +430,14 @@ public class SampleAudioPlayer {
                 }
             }
 
+            // seekTo
+            if (mProgressUs != -1) {
+                mMediaExtractor.seekTo(mProgressUs, MediaExtractor.SEEK_TO_NEXT_SYNC);
+                mProgressUs = -1;
+                tempTimeUs = 0;
+            }
+
             try {
-                // mMediaExtractor.seekTo(100000000, MediaExtractor.SEEK_TO_NEXT_SYNC);
                 // Input
                 roomIndex = mAudioDncoderMediaCodec.dequeueInputBuffer(-1);
                 if (roomIndex >= 0) {
@@ -426,9 +448,6 @@ public class SampleAudioPlayer {
                     }
                     room.clear();
                     readSize = mMediaExtractor.readSampleData(room, 0);
-                    /*if (DEBUG)
-                        MLog.i(TAG, "internalStart() hasReadedSize: " + hasReadedSize +
-                                " readSize: " + readSize);*/
                     int flags = 0;
                     /***
                      第一次为0
@@ -436,12 +455,17 @@ public class SampleAudioPlayer {
                      结束为-1
                      */
                     long presentationTimeUs = mMediaExtractor.getSampleTime();
-                    /*presentationTimeUsTotal += presentationTimeUs;
-                    MLog.w(TAG, "internalStart() " +
-                            ((presentationTimeUsTotal / mDurationUs)));*/
-                    // 26122(大概26ms循环一次)
-                    // MLog.w(TAG, "internalStart() presentationTimeUs: " + presentationTimeUs);
-                    if (readSize < 0) {
+                    if (presentationTimeUs != -1
+                            && presentationTimeUs - tempTimeUs >= 1000000) {
+                        tempTimeUs = presentationTimeUs;
+                        curElapsedTime = DateUtils.formatElapsedTime(
+                                (presentationTimeUs / 1000) / 1000);
+                        if (mCallback != null
+                                && !TextUtils.equals(curElapsedTime, prevElapsedTime)) {
+                            prevElapsedTime = curElapsedTime;
+                            mCallback.onProgressUpdated(presentationTimeUs);
+                        }
+                    } else if (presentationTimeUs == -1) {// game over
                         hasPlaybackFinished = true;
                         readSize = 0;
                         presentationTimeUs = 0;
@@ -453,9 +477,13 @@ public class SampleAudioPlayer {
                          */
                         flags = MediaCodec.BUFFER_FLAG_END_OF_STREAM;
 
+                        if (mCallback != null) {
+                            mCallback.onProgressUpdated(mDurationUs);
+                        }
                         if (DEBUG)
                             MLog.i(TAG, "internalStart() read end");
                     }
+
                     mAudioDncoderMediaCodec.queueInputBuffer(
                             roomIndex,
                             0,
@@ -493,14 +521,17 @@ public class SampleAudioPlayer {
                         case MediaCodec.INFO_TRY_AGAIN_LATER:
                             break;
                         case MediaCodec.INFO_OUTPUT_FORMAT_CHANGED:
+                            mAudioDncoderMediaFormat = mAudioDncoderMediaCodec.getOutputFormat();
                             MLog.d(TAG, "internalStart() " +
                                     "Output MediaCodec.INFO_OUTPUT_FORMAT_CHANGED");
-                            mAudioDncoderMediaFormat = mAudioDncoderMediaCodec.getOutputFormat();
+                            MLog.d(TAG, "internalStart() " + mAudioDncoderMediaFormat);
                             break;
                         case MediaCodec.INFO_OUTPUT_BUFFERS_CHANGED:
                             MLog.d(TAG, "internalStart() " +
                                     "Output MediaCodec.INFO_OUTPUT_BUFFERS_CHANGED");
-                            outputBuffers = mAudioDncoderMediaCodec.getOutputBuffers();
+                            if (Build.VERSION.SDK_INT < 21) {
+                                outputBuffers = mAudioDncoderMediaCodec.getOutputBuffers();
+                            }
                             break;
                         default:
                             break;
@@ -529,14 +560,17 @@ public class SampleAudioPlayer {
                     } else {
                         room = outputBuffers[roomIndex];
                     }
-                    // room.limit()与bufferInfo.size的大小是相同的
-                    // 一帧AAC数据,大小大概为500~550这个范围(每次得到的room大小是不一样的)
-                    roomSize = roomInfo.size;
-                    room.position(roomInfo.offset);
-                    room.limit(roomInfo.offset + roomSize);
-                    byte[] pcmData = new byte[roomSize];
-                    room.get(pcmData, 0, pcmData.length);
-                    mAudioTrack.write(pcmData, 0, pcmData.length);
+                    if (room != null) {
+                        // room.limit()与bufferInfo.size的大小是相同的
+                        // 一帧AAC数据,大小大概为500~550这个范围(每次得到的room大小是不一样的)
+                        roomSize = roomInfo.size;
+                        room.position(roomInfo.offset);
+                        room.limit(roomInfo.offset + roomSize);
+                        byte[] pcmData = new byte[roomSize];
+                        room.get(pcmData, 0, pcmData.length);
+                        mAudioTrack.write(pcmData, 0, pcmData.length);
+                    }
+
                     mAudioDncoderMediaCodec.releaseOutputBuffer(roomIndex, false);
                 } catch (IllegalStateException
                         | IllegalArgumentException
@@ -550,7 +584,7 @@ public class SampleAudioPlayer {
                     break;
                 }
             }// for(;;) end
-        }
+        }// while(true) end
 
         internalRelease();
 
@@ -715,20 +749,33 @@ public class SampleAudioPlayer {
         onPlaybackInfo("notifyAudioEndOfStream() start");
 
         if (mAudioDncoderMediaCodec != null) {
-            // audio end notify
-            int roomIndex = MediaCodec.INFO_TRY_AGAIN_LATER;
-            for (; ; ) {
-                roomIndex = mAudioDncoderMediaCodec.dequeueInputBuffer(0);
-                if (roomIndex >= 0) {
-                    break;
+            long startTime = SystemClock.uptimeMillis();
+            try {
+                for (; ; ) {
+                    int roomIndex = mAudioDncoderMediaCodec.dequeueInputBuffer(0);
+                    if (roomIndex >= 0) {
+                        mAudioDncoderMediaCodec.queueInputBuffer(
+                                roomIndex,
+                                0,
+                                0,
+                                0,
+                                MediaCodec.BUFFER_FLAG_END_OF_STREAM);
+                        break;
+                    }
+                    if (SystemClock.uptimeMillis() - startTime >= 5000) {
+                        mIsRunning = false;
+                        return;
+                    }
                 }
+            } catch (MediaCodec.CryptoException
+                    | IllegalStateException e) {
+                e.printStackTrace();
+                mIsRunning = false;
+                return;
             }
-            mAudioDncoderMediaCodec.queueInputBuffer(
-                    roomIndex,
-                    0,
-                    0,
-                    0,
-                    MediaCodec.BUFFER_FLAG_END_OF_STREAM);
+        } else {
+            mIsRunning = false;
+            return;
         }
 
         if (DEBUG)

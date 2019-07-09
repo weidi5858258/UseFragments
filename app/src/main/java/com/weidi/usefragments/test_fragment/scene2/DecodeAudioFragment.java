@@ -6,18 +6,18 @@ import android.content.Intent;
 import android.content.res.Configuration;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.HandlerThread;
 import android.os.Looper;
 import android.os.Message;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
-import android.text.Html;
-import android.util.Log;
-import android.view.KeyEvent;
+import android.text.format.DateUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.ScrollView;
+import android.widget.SeekBar;
 import android.widget.TextView;
 
 import com.weidi.usefragments.MainActivity1;
@@ -287,6 +287,8 @@ public class DecodeAudioFragment extends BaseFragment {
     /////////////////////////////////////////////////////////////////
 
     private static final int PLAYBACK_INFO = 0x001;
+    private static final int PLAYBACK_PROGRESS_UPDATED = 0x002;
+    private static final int PLAYBACK_PROGRESS_CHANGED = 0x003;
 
     // 顺序播放
     private static final int SEQUENTIAL_PLAYBACK = 0x001;
@@ -301,6 +303,12 @@ public class DecodeAudioFragment extends BaseFragment {
     private ScrollView mScrollView;
     @InjectView(R.id.info_tv)
     private TextView mShowInfoTv;
+    @InjectView(R.id.play_position_seekbar)
+    private SeekBar mPlayPositionSB;
+    @InjectView(R.id.process_time_tv)
+    private TextView mShowProcessTimeTv;
+    @InjectView(R.id.duration_time_tv)
+    private TextView mShowDurationTimeTv;
     @InjectView(R.id.play_btn)
     private Button mPlayBtn;
     @InjectView(R.id.pause_btn)
@@ -319,8 +327,12 @@ public class DecodeAudioFragment extends BaseFragment {
     private List<File> musicFiles;
     private int mCurMusicIndex;
     private File mCurMusicFile;
+    private int mProgress;
+    private long mPresentationTimeUs;
 
     private StringBuilder mShowInoSB = new StringBuilder();
+    private HandlerThread mHandlerThread;
+    private Handler mThreadHandler;
     private Handler mUiHandler;
     private Random mRandom = new Random();
     private List<Integer> mHasPlayed = new ArrayList<Integer>();
@@ -373,7 +385,14 @@ public class DecodeAudioFragment extends BaseFragment {
                 new SampleAudioPlayer.Callback() {
                     @Override
                     public void onPlaybackReady() {
-
+                        mUiHandler.post(new Runnable() {
+                            @Override
+                            public void run() {
+                                mShowProcessTimeTv.setText("00:00");
+                                mShowDurationTimeTv.setText("00:00");
+                                mPlayPositionSB.setProgress(0);
+                            }
+                        });
                     }
 
                     @Override
@@ -383,7 +402,17 @@ public class DecodeAudioFragment extends BaseFragment {
 
                     @Override
                     public void onPlaybackStarted() {
-
+                        long durationUs = mSampleAudioPlayer.getDurationUs();
+                        String elapsedTime =
+                                DateUtils.formatElapsedTime(
+                                        (durationUs / 1000) / 1000);
+                        mUiHandler.post(new Runnable() {
+                            @Override
+                            public void run() {
+                                mShowProcessTimeTv.setText("00:00");
+                                mShowDurationTimeTv.setText(elapsedTime);
+                            }
+                        });
                     }
 
                     @Override
@@ -396,13 +425,17 @@ public class DecodeAudioFragment extends BaseFragment {
                                 mShowInoSB.append(getName());
                                 mShowInoSB.append("\n");
                                 setText(mShowInoSB);
+                                mPlayPositionSB.setProgress(0);
+                                mPlayPositionSB.setSecondaryProgress(0);
                             }
                         });
                     }
 
                     @Override
-                    public void onProgressUpdated(int progress) {
-
+                    public void onProgressUpdated(long presentationTimeUs) {
+                        mPresentationTimeUs = presentationTimeUs;
+                        mThreadHandler.removeMessages(PLAYBACK_PROGRESS_UPDATED);
+                        mThreadHandler.sendEmptyMessage(PLAYBACK_PROGRESS_UPDATED);
                     }
 
                     @Override
@@ -419,10 +452,18 @@ public class DecodeAudioFragment extends BaseFragment {
                     }
                 });
 
+        mHandlerThread = new HandlerThread(TAG);
+        mHandlerThread.start();
+        mThreadHandler = new Handler(mHandlerThread.getLooper()) {
+            @Override
+            public void handleMessage(Message msg) {
+                DecodeAudioFragment.this.threadHandleMessage(msg);
+            }
+        };
         mUiHandler = new Handler(Looper.getMainLooper()) {
             @Override
             public void handleMessage(Message msg) {
-                DecodeAudioFragment.this.handleMessage(msg);
+                DecodeAudioFragment.this.uiHandleMessage(msg);
             }
         };
 
@@ -445,6 +486,40 @@ public class DecodeAudioFragment extends BaseFragment {
             mShowInoSB.append("\n");
         }
         setText(mShowInoSB);
+
+        mPlayPositionSB.setProgress(0);
+        mPlayPositionSB.setSecondaryProgress(0);
+        mPlayPositionSB.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            // Tracking start
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {
+                //mGrabbed = true;
+            }
+
+            // Tracking
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromTouch) {
+                /*if (mDuration > 0 && mGrabbed) {
+                    float r = (float) seekBar.getProgress() / seekBar.getMax();
+                    float pf = (float) mDuration * r;
+                    int position = (int) pf;
+                    seekToUi(position);
+                }*/
+                /*MLog.w(TAG, "onProgressChanged() progress: " + progress +
+                        " fromTouch: " + fromTouch);*/
+                if (fromTouch) {
+                    mProgress = progress;
+                    mThreadHandler.removeMessages(PLAYBACK_PROGRESS_CHANGED);
+                    mThreadHandler.sendEmptyMessageDelayed(PLAYBACK_PROGRESS_CHANGED, 50);
+                }
+            }
+
+            // Tracking end
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {
+                //mGrabbed = false;
+            }
+        });
     }
 
     private void handleBeforeOfConfigurationChangedEvent() {
@@ -469,6 +544,9 @@ public class DecodeAudioFragment extends BaseFragment {
                 break;
             case R.id.stop_btn:
                 mSampleAudioPlayer.stop();
+                mShowProcessTimeTv.setText("00:00");
+                mShowDurationTimeTv.setText("00:00");
+                mPlayPositionSB.setProgress(0);
                 break;
             case R.id.prev_btn:
                 prev();
@@ -576,7 +654,47 @@ public class DecodeAudioFragment extends BaseFragment {
         mSampleAudioPlayer.next();
     }
 
-    private void handleMessage(Message msg) {
+    private void threadHandleMessage(Message msg) {
+        if (msg == null) {
+            return;
+        }
+
+        switch (msg.what) {
+            case PLAYBACK_PROGRESS_UPDATED:
+                String curElapsedTime = DateUtils.formatElapsedTime(
+                        (mPresentationTimeUs / 1000) / 1000);
+                /*int progress =
+                        (int) (mPresentationTimeUs * 3840 / mSampleAudioPlayer.getDurationUs());*/
+                // MLog.d(TAG, "threadHandleMessage() progress: " + progress);
+
+                int duration = (int) mSampleAudioPlayer.getDurationUs() / 1000;
+                int currentPosition = (int) mPresentationTimeUs / 1000;
+                float pos = (float) currentPosition / duration;
+                int target = Math.round(pos * mPlayPositionSB.getMax());
+                int progress = mPlayPositionSB.getProgress();
+
+                mUiHandler.removeMessages(PLAYBACK_PROGRESS_UPDATED);
+                if (progress != target) {
+                    msg = mUiHandler.obtainMessage();
+                    msg.what = PLAYBACK_PROGRESS_UPDATED;
+                    msg.obj = curElapsedTime;
+                    msg.arg1 = target;
+                    mUiHandler.sendMessage(msg);
+                }
+                break;
+            case PLAYBACK_PROGRESS_CHANGED:
+                long process = (long) ((mProgress / 3840.00) * mSampleAudioPlayer.getDurationUs());
+                MLog.d(TAG, "threadHandleMessage() process: " + process);
+                mSampleAudioPlayer.setProgressUs(process);
+                MLog.d(TAG, "threadHandleMessage() PLAYBACK_PROGRESS_CHANGED: " +
+                        DateUtils.formatElapsedTime(process / 1000 / 1000));
+                break;
+            default:
+                break;
+        }
+    }
+
+    private void uiHandleMessage(Message msg) {
         if (msg == null) {
             return;
         }
@@ -592,6 +710,10 @@ public class DecodeAudioFragment extends BaseFragment {
                         mScrollView.fullScroll(ScrollView.FOCUS_DOWN);
                     }
                 });
+                break;
+            case PLAYBACK_PROGRESS_UPDATED:
+                mShowProcessTimeTv.setText((String) msg.obj);
+                mPlayPositionSB.setProgress(msg.arg1);
                 break;
             default:
                 break;
