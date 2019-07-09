@@ -215,7 +215,7 @@ public class SampleAudioPlayer {
         EventBusUtils.register(this);
         getSingleThreadPool();
 
-        mHandlerThread = new HandlerThread("OtherHandlerThread");
+        mHandlerThread = new HandlerThread(TAG);
         mHandlerThread.start();
         mThreadHandler = new Handler(mHandlerThread.getLooper()) {
             @Override
@@ -266,6 +266,8 @@ public class SampleAudioPlayer {
             mMediaExtractor.setDataSource(mPath);
         } catch (IOException e) {
             e.printStackTrace();
+            onPlaybackInfo("internalPrepare() mMediaExtractor.setDataSource(...) failed");
+            mIsRunning = false;
             return;
         }
 
@@ -382,7 +384,7 @@ public class SampleAudioPlayer {
         }
 
         // long presentationTimeUs = System.nanoTime() / 1000;
-        long tempTimeUs = 0;
+        long startTimeUs = 0;
         String prevElapsedTime = null;
         String curElapsedTime = null;
         boolean hasPlaybackFinished = false;
@@ -434,7 +436,7 @@ public class SampleAudioPlayer {
             if (mProgressUs != -1) {
                 mMediaExtractor.seekTo(mProgressUs, MediaExtractor.SEEK_TO_NEXT_SYNC);
                 mProgressUs = -1;
-                tempTimeUs = 0;
+                startTimeUs = 0;
             }
 
             try {
@@ -446,8 +448,10 @@ public class SampleAudioPlayer {
                     } else {
                         room = inputBuffers[roomIndex];
                     }
-                    room.clear();
-                    readSize = mMediaExtractor.readSampleData(room, 0);
+                    if (room != null) {
+                        room.clear();
+                        readSize = mMediaExtractor.readSampleData(room, 0);
+                    }
                     int flags = 0;
                     /***
                      第一次为0
@@ -456,11 +460,14 @@ public class SampleAudioPlayer {
                      */
                     long presentationTimeUs = mMediaExtractor.getSampleTime();
                     if (presentationTimeUs != -1
-                            && presentationTimeUs - tempTimeUs >= 1000000) {
-                        tempTimeUs = presentationTimeUs;
+                            // 过一秒才更新
+                            && presentationTimeUs - startTimeUs >= 1000000) {
+                        startTimeUs = presentationTimeUs;
+
                         curElapsedTime = DateUtils.formatElapsedTime(
                                 (presentationTimeUs / 1000) / 1000);
                         if (mCallback != null
+                                // 防止重复更新
                                 && !TextUtils.equals(curElapsedTime, prevElapsedTime)) {
                             prevElapsedTime = curElapsedTime;
                             mCallback.onProgressUpdated(presentationTimeUs);
@@ -529,7 +536,7 @@ public class SampleAudioPlayer {
                         case MediaCodec.INFO_OUTPUT_BUFFERS_CHANGED:
                             MLog.d(TAG, "internalStart() " +
                                     "Output MediaCodec.INFO_OUTPUT_BUFFERS_CHANGED");
-                            if (Build.VERSION.SDK_INT < 21) {
+                            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
                                 outputBuffers = mAudioDncoderMediaCodec.getOutputBuffers();
                             }
                             break;
