@@ -989,7 +989,6 @@ public class MediaUtils {
                 // 如果是单声道的话还不能确定是哪个值
                 channelConfig = AudioFormat.CHANNEL_IN_MONO;// 16
                 channelConfig = AudioFormat.CHANNEL_OUT_MONO;// 4
-                channelConfig = AudioFormat.CHANNEL_OUT_STEREO;// 12
                 break;
             case 2:
                 channelConfig = AudioFormat.CHANNEL_IN_STEREO;// 12
@@ -1058,7 +1057,6 @@ public class MediaUtils {
                 // 如果是单声道的话还不能确定是哪个值
                 channelConfig = AudioFormat.CHANNEL_IN_MONO;// 16
                 channelConfig = AudioFormat.CHANNEL_OUT_MONO;// 4
-                channelConfig = AudioFormat.CHANNEL_OUT_STEREO;// 12
                 break;
             case 2:
                 channelConfig = AudioFormat.CHANNEL_IN_STEREO;// 12
