@@ -133,10 +133,10 @@ public class SampleVideoPlayer {
     }
 
     public void play() {
-        /*mUiHandler.removeMessages(PLAY);
-        mUiHandler.sendEmptyMessage(PLAY);*/
+        mThreadHandler.removeMessages(PLAY);
+        mThreadHandler.sendEmptyMessage(PLAY);
 
-        mThreadHandler.sendEmptyMessage(PREPARE);
+        // mThreadHandler.sendEmptyMessage(PREPARE);
     }
 
     public void pause() {
@@ -175,7 +175,7 @@ public class SampleVideoPlayer {
     }
 
     public boolean isRunning() {
-        return mIsAudioRunning;
+        return mIsAudioRunning && mIsVideoRunning;
     }
 
     public long getDurationUs() {
@@ -441,6 +441,9 @@ public class SampleVideoPlayer {
             // state
             mIsAudioRunning = true;
             mIsVideoRunning = true;
+            mIsAudioPaused = false;
+            mIsVideoPaused = false;
+            internalPrepare();
             internalStart();
         }
 
@@ -467,8 +470,14 @@ public class SampleVideoPlayer {
             return;
         }
 
+        if (DEBUG)
+            MLog.d(TAG, "internalPause() start");
+
         mIsAudioPaused = true;
         mIsVideoPaused = true;
+
+        if (DEBUG)
+            MLog.d(TAG, "internalPause() end");
     }
 
     private void internalStop() {
@@ -681,6 +690,9 @@ public class SampleVideoPlayer {
             case PREPARE:
                 internalPrepare();
                 mUiHandler.sendEmptyMessage(PLAY);
+                break;
+            case PLAY:
+                internalPlay();
                 break;
             case PAUSE:
                 internalPause();
@@ -1259,12 +1271,12 @@ public class SampleVideoPlayer {
                     case 0:
                         if (DEBUG)
                             MLog.d(TAG, "HeadsetPlugReceiver headset not connected");
-                        pause();
+                        //pause();
                         break;
                     case 1:
                         if (DEBUG)
                             MLog.d(TAG, "HeadsetPlugReceiver headset has connected");
-                        play();
+                        //play();
                         break;
                     default:
                 }

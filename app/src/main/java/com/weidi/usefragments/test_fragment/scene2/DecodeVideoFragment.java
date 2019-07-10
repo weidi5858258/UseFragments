@@ -319,6 +319,10 @@ public class DecodeVideoFragment extends BaseFragment {
         if (DEBUG)
             MLog.d(TAG, "onShow() " + printThis());
 
+        if (mSampleVideoPlayer.isRunning()) {
+            mSampleVideoPlayer.play();
+        }
+
         mJumpBtn.setVisibility(View.GONE);
         Configuration mConfiguration = this.getResources().getConfiguration(); //获取设置的配置信息
         int ori = mConfiguration.orientation; //获取屏幕方向
