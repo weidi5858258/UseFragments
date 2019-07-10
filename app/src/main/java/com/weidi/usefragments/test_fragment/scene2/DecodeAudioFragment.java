@@ -26,6 +26,7 @@ import com.weidi.usefragments.fragment.FragOperManager;
 import com.weidi.usefragments.fragment.base.BaseFragment;
 import com.weidi.usefragments.inject.InjectOnClick;
 import com.weidi.usefragments.inject.InjectView;
+import com.weidi.usefragments.media.MediaUtils;
 import com.weidi.usefragments.tool.MLog;
 import com.weidi.usefragments.tool.SampleAudioPlayer;
 
@@ -362,8 +363,11 @@ public class DecodeAudioFragment extends BaseFragment {
             MLog.d(TAG, "onHide(): " + printThis());
     }
 
+    private static final String PATH = "/storage/2430-1702/BaiduNetdisk/music/mylove/";
+    //    private static final String PATH = "/storage/2430-1702/BaiduNetdisk/music/test_audio/";
+
     private void initData() {
-        File file = new File("/storage/2430-1702/BaiduNetdisk/music");
+        File file = new File(PATH);
         if (file.isDirectory()) {
             File[] files = file.listFiles();
             if (files != null && files.length > 0) {
@@ -460,6 +464,8 @@ public class DecodeAudioFragment extends BaseFragment {
             MainActivity1 mainActivity1 = (MainActivity1) activity;
             mainActivity1.setSampleAudioPlayer(mSampleAudioPlayer);
         }
+
+        MediaUtils.lookAtMe();
     }
 
     private void initView(View view, Bundle savedInstanceState) {

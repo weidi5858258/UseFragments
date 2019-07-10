@@ -16,6 +16,7 @@ import android.media.ThumbnailUtils;
 import android.os.Build;
 import android.text.TextUtils;
 import android.util.Log;
+import android.util.Range;
 import android.util.SparseArray;
 
 import com.weidi.usefragments.tool.MLog;
@@ -81,6 +82,109 @@ public class MediaUtils {
     private static final int IFRAME_INTERVAL = 1;
 
     /***
+     MediaCodecList ---> MediaCodecInfo --->
+     CodecCapabilities,AudioCapabilities,VideoCapabilities
+
+     看我吧
+     */
+    public static void lookAtMe() {
+        // 第一步
+        MediaCodecList mediaCodecList = new MediaCodecList(MediaCodecList.ALL_CODECS);
+        // 第二步
+        MediaCodecInfo[] mediaCodecInfos = mediaCodecList.getCodecInfos();
+        if (mediaCodecInfos == null) {
+            return;
+        }
+        for (MediaCodecInfo mediaCodecInfo : mediaCodecInfos) {
+            if (mediaCodecInfo == null) {
+                continue;
+            }
+            if (DEBUG)
+                MLog.d(TAG,
+                        "lookAtMe()===================================================");
+            if (DEBUG)
+                MLog.d(TAG,
+                        "lookAtMe() mediaCodecInfo.name: " + mediaCodecInfo.getName());
+            String[] types = mediaCodecInfo.getSupportedTypes();
+            if (types == null) {
+                continue;
+            }
+            // MediaCodecInfo.CodecCapabilities需要通过type得到
+            for (String type : types) {
+                if (TextUtils.isEmpty(type)) {
+                    continue;
+                }
+                if (DEBUG)
+                    MLog.d(TAG,
+                            "lookAtMe() type: " + type);
+                MediaCodecInfo.CodecCapabilities codecCapabilities =
+                        mediaCodecInfo.getCapabilitiesForType(type);
+                if (codecCapabilities == null) {
+                    continue;
+                }
+                MediaCodecInfo.AudioCapabilities audioCapabilities =
+                        codecCapabilities.getAudioCapabilities();
+                MediaCodecInfo.VideoCapabilities videoCapabilities =
+                        codecCapabilities.getVideoCapabilities();
+
+                // 好像是用在TV上,对4K 60FPS的视频进行播放的一种模式
+                // 支持的话才能启用相关的代码.如AudioAttributes.FLAG_HW_AV_SYNC这个flag的设置
+                boolean isTunneling = Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP
+                        && codecCapabilities.isFeatureSupported(
+                        MediaCodecInfo.CodecCapabilities.FEATURE_TunneledPlayback);
+                if (DEBUG)
+                    MLog.d(TAG,
+                            "lookAtMe() isTunneling: " + isTunneling);
+                // 然后可以通过audioCapabilities和videoCapabilities得到各自的有关信息
+                if (audioCapabilities != null) {
+                    if (DEBUG)
+                        MLog.d(TAG,
+                                "lookAtMe() 音频比特率范围: " +
+                                        audioCapabilities.getBitrateRange().toString());
+                    Range<Integer>[] sampleRateRanges =
+                            audioCapabilities.getSupportedSampleRateRanges();
+                    int sampleRateRangesCount = sampleRateRanges.length;
+                    StringBuilder stringBuilder = new StringBuilder("[");
+                    for (int i = 0; i < sampleRateRangesCount; i++) {
+                        stringBuilder.append(sampleRateRanges[i].getLower());
+                        if (i != sampleRateRangesCount - 1) {
+                            stringBuilder.append(", ");
+                        } else {
+                            stringBuilder.append("]");
+                        }
+                    }
+                    if (DEBUG)
+                        MLog.d(TAG,
+                                "lookAtMe() 音频采样率范围: " +
+                                        stringBuilder.toString());
+                    if (DEBUG)
+                        MLog.d(TAG,
+                                "lookAtMe() 音频最大输入通道数: " +
+                                        audioCapabilities.getMaxInputChannelCount());
+                }
+                if (videoCapabilities != null) {
+                    if (DEBUG)
+                        MLog.d(TAG,
+                                "lookAtMe() 视频比特率范围:" +
+                                        videoCapabilities.getBitrateRange().toString());
+                    if (DEBUG)
+                        MLog.d(TAG,
+                                "lookAtMe() 视频支持的宽度范围: " +
+                                        videoCapabilities.getSupportedWidths().toString());
+                    if (DEBUG)
+                        MLog.d(TAG,
+                                "lookAtMe() 视频支持的高度范围: " +
+                                        videoCapabilities.getSupportedHeights().toString());
+                    if (DEBUG)
+                        MLog.d(TAG,
+                                "lookAtMe() 视频帧率范围: " +
+                                        videoCapabilities.getSupportedFrameRates().toString());
+                }
+            }
+        }
+    }
+
+    /***
      * Find an encoder supported specified MIME type
      * 查找支持"video/avc"这种MIME type的CodecName,
      * 然后就可以通过MediaCodec.createByCodecName(CodecName)
@@ -99,6 +203,7 @@ public class MediaUtils {
      *
      */
     public static MediaCodecInfo[] findEncodersByMimeType(String mimeType) {
+        // MediaCodecList.REGULAR_CODECS
         MediaCodecList codecList = new MediaCodecList(MediaCodecList.ALL_CODECS);
         List<MediaCodecInfo> mediaCodecInfos = new ArrayList<MediaCodecInfo>();
         for (MediaCodecInfo mediaCodecInfo : codecList.getCodecInfos()) {
@@ -979,13 +1084,31 @@ public class MediaUtils {
         AudioTrack audioTrack = null;
         // java.lang.IllegalArgumentException: Unsupported channel configuration.
         try {
-            audioTrack = new AudioTrack(
-                    streamType,
-                    sampleRateInHz,
-                    channelConfig,
-                    audioFormat,
-                    bufferSizeInBytes,
-                    mode);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                AudioAttributes attributes = new AudioAttributes.Builder()
+                        .setUsage(AudioAttributes.USAGE_MEDIA)
+                        .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+                        .build();
+                AudioFormat format = new AudioFormat.Builder()
+                        .setSampleRate(sampleRateInHz)
+                        .setChannelMask(channelConfig)
+                        .setEncoding(audioFormat)
+                        .build();
+                audioTrack = new AudioTrack(
+                        attributes,
+                        format,
+                        bufferSizeInBytes,
+                        mode,
+                        sessionId);
+            } else {
+                audioTrack = new AudioTrack(
+                        streamType,
+                        sampleRateInHz,
+                        channelConfig,
+                        audioFormat,
+                        bufferSizeInBytes,
+                        mode);
+            }
         } catch (IllegalArgumentException e) {
             e.printStackTrace();
             return null;
@@ -1026,33 +1149,36 @@ public class MediaUtils {
         }
 
         bufferSizeInBytes *= 2;
-        AudioAttributes attributes = new AudioAttributes.Builder()
-                .setUsage(AudioAttributes.USAGE_MEDIA)
-                .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
-                // 一使用这个就出错
-                // .setFlags(AudioAttributes.FLAG_HW_AV_SYNC)
-                .build();
-        AudioFormat format = new AudioFormat.Builder()
-                .setSampleRate(sampleRateInHz)
-                // 很关键的一个参数
-                .setChannelMask(channelConfig)
-                .setEncoding(audioFormat)
-                .build();
         AudioTrack audioTrack = null;
         try {
-            audioTrack = new AudioTrack(
-                    attributes,
-                    format,
-                    bufferSizeInBytes,
-                    mode,
-                    sessionId);
-            /*audioTrack = new AudioTrack(
-                    streamType,
-                    sampleRateInHz,
-                    channelConfig_Track,
-                    audioFormat,
-                    bufferSizeInBytes,
-                    mode);*/
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                AudioAttributes attributes = new AudioAttributes.Builder()
+                        .setUsage(AudioAttributes.USAGE_MEDIA)
+                        .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+                        // 一使用这个flag就出错
+                        // .setFlags(AudioAttributes.FLAG_HW_AV_SYNC)
+                        .build();
+                AudioFormat format = new AudioFormat.Builder()
+                        .setSampleRate(sampleRateInHz)
+                        // 很关键的一个参数
+                        .setChannelMask(channelConfig)
+                        .setEncoding(audioFormat)
+                        .build();
+                audioTrack = new AudioTrack(
+                        attributes,
+                        format,
+                        bufferSizeInBytes,
+                        mode,
+                        sessionId);
+            } else {
+                audioTrack = new AudioTrack(
+                        streamType,
+                        sampleRateInHz,
+                        channelConfig,
+                        audioFormat,
+                        bufferSizeInBytes,
+                        mode);
+            }
         } catch (IllegalArgumentException e) {
             e.printStackTrace();
             return null;
@@ -1677,4 +1803,25 @@ public class MediaUtils {
  // 不支持设置Profile和Level，而应该采用默认设置
  mediaFormat.setInteger(MediaFormat.KEY_PROFILE, MediaCodecInfo.CodecProfileLevel.AVCProfileHigh);
  mediaFormat.setInteger("level", MediaCodecInfo.CodecProfileLevel.AVCLevel41); // Level 4.1
+
+ DRM是英文Digital rights management的缩写,可以理解为版权保护
+ public static final UUID WIDEVINE_UUID = new UUID(0xEDEF8BA979D64ACEL, 0xA3C827DCD51D21EDL);
+ //获取sessionId
+ MediaDrm mediaDrm = new MediaDrm();
+ String sessionId = mediaDrm.openSession();
+ //创建MediaCrypto
+ sessionId 是串联MediaDrm和MediaCrypto的关键
+ MediaCrypto ctypto = new MediaCrypto(WIDEVINE_UUID, sessionId)
+ //用cypto对象来进行解密
+ MediaCodec codec = new MediaCodec("xxxx")
+ codec.configure(..,...,ctypto)
+ 注意的是license并不需要在configure之前获取，可以稍后再进行
+ //网络连接
+ byte[] license = HttpUrlConnection.connect().......
+ mediaDrm.provideKeyResponse(xxx,license);
+ 所有工作结束，视频可以正常播放了
+
+ Android Tunnel Mode
+ https://blog.csdn.net/yingmuliuchuan/article/details/81807512
+ https://developer.amazon.com/zh/docs/fire-tv/4k-tunnel-mode-playback.html
  */

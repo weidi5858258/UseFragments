@@ -356,21 +356,21 @@ public class SampleAudioPlayer {
             mIsRunning = false;
             if (mCallback != null) {
                 onPlaybackInfo("internalStart() mAudioTrack is null");
-                mCallback.onPlaybackFinished();
+                //mCallback.onPlaybackFinished();
             }
             return;
         } else if (mAudioDncoderMediaCodec == null) {
             mIsRunning = false;
             if (mCallback != null) {
                 onPlaybackInfo("internalStart() mAudioDncoderMediaCodec is null");
-                mCallback.onPlaybackFinished();
+                //mCallback.onPlaybackFinished();
             }
             return;
         } else if (mAudioTrackIndex < 0) {
             mIsRunning = false;
             if (mCallback != null) {
                 onPlaybackInfo("internalStart() mAudioTrackIndex < 0");
-                mCallback.onPlaybackFinished();
+                //mCallback.onPlaybackFinished();
             }
             return;
         }
@@ -532,6 +532,7 @@ public class SampleAudioPlayer {
                             MLog.d(TAG, "internalStart() " +
                                     "Output MediaCodec.INFO_OUTPUT_FORMAT_CHANGED");
                             MLog.d(TAG, "internalStart() " + mAudioDncoderMediaFormat);
+                            onPlaybackInfo("internalStart() " + mAudioDncoderMediaFormat);
                             break;
                         case MediaCodec.INFO_OUTPUT_BUFFERS_CHANGED:
                             MLog.d(TAG, "internalStart() " +
