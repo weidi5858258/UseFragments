@@ -126,6 +126,7 @@ public class SampleVideoPlayer {
     public void setPath(String path) {
         mPath = path;
         mPath = "/storage/37C8-3904/myfiles/video/Silent_Movie_321_AC4_H265_MP4_50fps.mp4";
+        mPath = "/storage/2430-1702/BaiduNetdisk/video/流浪的地球.mp4";
         if (DEBUG)
             MLog.d(TAG, "setPath() mPath: " + mPath);
     }

@@ -12,6 +12,7 @@ import android.text.TextUtils;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
+import android.view.WindowManager;
 import android.widget.FrameLayout;
 
 import com.weidi.usefragments.fragment.FragOperManager;
@@ -139,6 +140,9 @@ public class MainActivity1 extends BaseActivity
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
+        getWindow().setFlags(
+                WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON,
+                WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         super.onCreate(savedInstanceState);
         mRootView = View.inflate(this, R.layout.activity_main, null);
         FrameLayout contentLayout = getContentLayout(this);
