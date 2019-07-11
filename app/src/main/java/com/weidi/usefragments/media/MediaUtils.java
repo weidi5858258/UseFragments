@@ -20,6 +20,7 @@ import android.util.Range;
 import android.util.SparseArray;
 
 import com.weidi.usefragments.tool.MLog;
+import com.weidi.usefragments.tool.MimeTypes;
 
 import java.io.ByteArrayOutputStream;
 import java.io.FileOutputStream;
@@ -102,9 +103,12 @@ public class MediaUtils {
             if (DEBUG)
                 MLog.d(TAG,
                         "lookAtMe()===================================================");
-            if (DEBUG)
+            if (DEBUG) {
                 MLog.d(TAG,
-                        "lookAtMe() mediaCodecInfo.name: " + mediaCodecInfo.getName());
+                        "lookAtMe() mediaCodecInfo.name:      " + mediaCodecInfo.getName());
+                MLog.d(TAG,
+                        "lookAtMe() mediaCodecInfo.isEncoder: " + mediaCodecInfo.isEncoder());
+            }
             String[] types = mediaCodecInfo.getSupportedTypes();
             if (types == null) {
                 continue;
@@ -122,11 +126,6 @@ public class MediaUtils {
                 if (codecCapabilities == null) {
                     continue;
                 }
-                MediaCodecInfo.AudioCapabilities audioCapabilities =
-                        codecCapabilities.getAudioCapabilities();
-                MediaCodecInfo.VideoCapabilities videoCapabilities =
-                        codecCapabilities.getVideoCapabilities();
-
                 // 好像是用在TV上,对4K 60FPS的视频进行播放的一种模式
                 // 支持的话才能启用相关的代码.如AudioAttributes.FLAG_HW_AV_SYNC这个flag的设置
                 boolean isTunneling = Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP
@@ -135,6 +134,11 @@ public class MediaUtils {
                 if (DEBUG)
                     MLog.d(TAG,
                             "lookAtMe() isTunneling: " + isTunneling);
+
+                MediaCodecInfo.AudioCapabilities audioCapabilities =
+                        codecCapabilities.getAudioCapabilities();
+                MediaCodecInfo.VideoCapabilities videoCapabilities =
+                        codecCapabilities.getVideoCapabilities();
                 // 然后可以通过audioCapabilities和videoCapabilities得到各自的有关信息
                 if (audioCapabilities != null) {
                     if (DEBUG)
@@ -226,12 +230,36 @@ public class MediaUtils {
         return mediaCodecInfos.toArray(new MediaCodecInfo[mediaCodecInfos.size()]);
     }
 
+    public static MediaCodecInfo[] findDecodersByMimeType(String mimeType) {
+        // MediaCodecList.REGULAR_CODECS
+        MediaCodecList codecList = new MediaCodecList(MediaCodecList.ALL_CODECS);
+        List<MediaCodecInfo> mediaCodecInfos = new ArrayList<MediaCodecInfo>();
+        for (MediaCodecInfo mediaCodecInfo : codecList.getCodecInfos()) {
+            if (mediaCodecInfo.isEncoder()) {
+                continue;
+            }
+            try {
+                MediaCodecInfo.CodecCapabilities codecCapabilities =
+                        mediaCodecInfo.getCapabilitiesForType(mimeType);
+                if (codecCapabilities == null) {
+                    continue;
+                }
+            } catch (IllegalArgumentException e) {
+                // unsupported
+                continue;
+            }
+            mediaCodecInfos.add(mediaCodecInfo);
+        }
+
+        return mediaCodecInfos.toArray(new MediaCodecInfo[mediaCodecInfos.size()]);
+    }
+
     /***
      *
      * @param mimeType "video/avc" "audio/mp4a-latm"
      * @return
      */
-    public static MediaCodecInfo getMediaCodecInfo(String mimeType) {
+    public static MediaCodecInfo getEncoderMediaCodecInfo(String mimeType) {
         if (TextUtils.isEmpty(mimeType)) {
             return null;
         }
@@ -239,6 +267,38 @@ public class MediaUtils {
         /*MediaCodecList list = new MediaCodecList(MediaCodecList.REGULAR_CODECS);
         infos = list.getCodecInfos();*/
         infos = findEncodersByMimeType(mimeType);
+        if (infos == null) {
+            return null;
+        }
+        for (MediaCodecInfo info : infos) {
+            if (info == null
+                    || info.isEncoder()) {
+                continue;
+            }
+            for (String type : info.getSupportedTypes()) {
+                if (TextUtils.isEmpty(type)) {
+                    continue;
+                }
+                if (type.equalsIgnoreCase(mimeType)) {
+                    if (DEBUG)
+                        MLog.d(TAG,
+                                "getEncoderMediaCodecInfo() the selected encoder is : " + info
+                                        .getName());
+                    return info;
+                }
+            }
+        }
+        return null;
+    }
+
+    public static MediaCodecInfo getDecoderMediaCodecInfo(String mimeType) {
+        if (TextUtils.isEmpty(mimeType)) {
+            return null;
+        }
+        MediaCodecInfo[] infos = null;
+        /*MediaCodecList list = new MediaCodecList(MediaCodecList.REGULAR_CODECS);
+        infos = list.getCodecInfos();*/
+        infos = findDecodersByMimeType(mimeType);
         if (infos == null) {
             return null;
         }
@@ -254,7 +314,8 @@ public class MediaUtils {
                 if (type.equalsIgnoreCase(mimeType)) {
                     if (DEBUG)
                         MLog.d(TAG,
-                                "getMediaCodecInfo() the selected encoder is : " + info.getName());
+                                "getEncoderMediaCodecInfo() the selected encoder is : " + info
+                                        .getName());
                     return info;
                 }
             }
@@ -266,7 +327,7 @@ public class MediaUtils {
         if (TextUtils.isEmpty(mimeType)) {
             return null;
         }
-        MediaCodecInfo mediaCodecInfo = getMediaCodecInfo(mimeType);
+        MediaCodecInfo mediaCodecInfo = getEncoderMediaCodecInfo(mimeType);
         if (mediaCodecInfo == null) {
             return null;
         }
@@ -277,7 +338,7 @@ public class MediaUtils {
         if (TextUtils.isEmpty(mimeType)) {
             return null;
         }
-        MediaCodecInfo mediaCodecInfo = getMediaCodecInfo(mimeType);
+        MediaCodecInfo mediaCodecInfo = getEncoderMediaCodecInfo(mimeType);
         if (mediaCodecInfo == null) {
             return null;
         }
@@ -320,7 +381,7 @@ public class MediaUtils {
          MediaCodecInfo对象,然后只要使用其中一个MediaCodecInfo对象就可以得到
          MediaCodec对象了.
          */
-        MediaCodecInfo codecInfo = getMediaCodecInfo(VIDEO_MIME_TYPE);
+        MediaCodecInfo codecInfo = getEncoderMediaCodecInfo(VIDEO_MIME_TYPE);
         if (codecInfo == null) {
             throw new RuntimeException(
                     "根据 \"" + VIDEO_MIME_TYPE + "\" 这个mime找不到对应的MediaCodecInfo对象");
@@ -410,7 +471,7 @@ public class MediaUtils {
      @return
      */
     public static MediaCodec getAudioEncoderMediaCodec() {
-        MediaCodecInfo codecInfo = getMediaCodecInfo(AUDIO_MIME_TYPE);
+        MediaCodecInfo codecInfo = getEncoderMediaCodecInfo(AUDIO_MIME_TYPE);
         if (codecInfo == null) {
             throw new RuntimeException(
                     "根据 \"" + AUDIO_MIME_TYPE + "\" 这个mime找不到对应的MediaCodecInfo对象");
@@ -442,7 +503,7 @@ public class MediaUtils {
      * @return
      */
     public static MediaCodec getVideoDecoderMediaCodec() {
-        MediaCodecInfo codecInfo = getMediaCodecInfo(VIDEO_MIME_TYPE);
+        MediaCodecInfo codecInfo = getEncoderMediaCodecInfo(VIDEO_MIME_TYPE);
         if (codecInfo == null) {
             throw new RuntimeException(
                     "根据 \"" + VIDEO_MIME_TYPE + "\" 这个mime找不到对应的MediaCodecInfo对象");
@@ -516,7 +577,7 @@ public class MediaUtils {
     }
 
     public static MediaCodec getAudioDecoderMediaCodec() {
-        MediaCodecInfo codecInfo = getMediaCodecInfo(AUDIO_MIME_TYPE);
+        MediaCodecInfo codecInfo = getEncoderMediaCodecInfo(AUDIO_MIME_TYPE);
         if (codecInfo == null) {
             throw new RuntimeException(
                     "根据 \"" + AUDIO_MIME_TYPE + "\" 这个mime找不到对应的MediaCodecInfo对象");
@@ -983,21 +1044,8 @@ public class MediaUtils {
             int streamType,
             int sampleRateInHz, int channelCount,
             int audioFormat, int mode, int sessionId) {
-        int channelConfig = AudioFormat.CHANNEL_IN_DEFAULT;
-        switch (channelCount) {
-            case 1:
-                // 如果是单声道的话还不能确定是哪个值
-                channelConfig = AudioFormat.CHANNEL_IN_MONO;// 16
-                channelConfig = AudioFormat.CHANNEL_OUT_MONO;// 4
-                break;
-            case 2:
-                channelConfig = AudioFormat.CHANNEL_IN_STEREO;// 12
-                channelConfig = AudioFormat.CHANNEL_OUT_STEREO;// 12
-                break;
-            default:
-                channelConfig = AudioFormat.CHANNEL_OUT_STEREO;
-                break;
-        }
+        boolean isInputPcm = isEncodingLinearPcm(audioFormat);
+        int channelConfig = getChannelConfig(channelCount, isInputPcm);
         int bufferSizeInBytes = AudioRecord.getMinBufferSize(
                 sampleRateInHz, channelConfig, audioFormat);
         if (bufferSizeInBytes <= 0) {
@@ -1051,21 +1099,8 @@ public class MediaUtils {
         if (DEBUG)
             MLog.d(TAG, "createAudioTrack(...) start");
         // 在我的手机上使用AudioFormat.CHANNEL_OUT_MONO创建不了AudioTrack
-        int channelConfig = AudioFormat.CHANNEL_IN_DEFAULT;
-        switch (channelCount) {
-            case 1:
-                // 如果是单声道的话还不能确定是哪个值
-                channelConfig = AudioFormat.CHANNEL_IN_MONO;// 16
-                channelConfig = AudioFormat.CHANNEL_OUT_MONO;// 4
-                break;
-            case 2:
-                channelConfig = AudioFormat.CHANNEL_IN_STEREO;// 12
-                channelConfig = AudioFormat.CHANNEL_OUT_STEREO;// 12
-                break;
-            default:
-                channelConfig = AudioFormat.CHANNEL_OUT_STEREO;
-                break;
-        }
+        boolean isInputPcm = isEncodingLinearPcm(audioFormat);
+        int channelConfig = getChannelConfig(channelCount, isInputPcm);
         int bufferSizeInBytes = getMinBufferSize(
                 sampleRateInHz, channelConfig, audioFormat);
         if (DEBUG)
@@ -1305,6 +1340,152 @@ public class MediaUtils {
         } catch (Exception e) {
             audioTrack = null;
         }
+    }
+
+    private static boolean isEncodingLinearPcm(int encoding) {
+        return encoding == AudioFormat.ENCODING_PCM_8BIT
+                || encoding == AudioFormat.ENCODING_PCM_16BIT
+                || encoding == 0x80000000
+                || encoding == 0x40000000
+                || encoding == AudioFormat.ENCODING_PCM_FLOAT;
+    }
+
+    private static int getChannelConfig(int channelCount, boolean isInputPcm) {
+        if (Build.VERSION.SDK_INT <= 28 && !isInputPcm) {
+            // In passthrough mode the channel count used to configure the audio track doesn't
+            // affect how
+            // the stream is handled, except that some devices do overly-strict channel
+            // configuration
+            // checks. Therefore we override the channel count so that a known-working channel
+            // configuration is chosen in all cases. See [Internal: b/29116190].
+            if (channelCount == 7) {
+                channelCount = 8;
+            } else if (channelCount == 3 || channelCount == 4 || channelCount == 5) {
+                channelCount = 6;
+            }
+        }
+
+        // Workaround for Nexus Player not reporting support for mono passthrough.
+        // (See [Internal: b/34268671].)
+        if (Build.VERSION.SDK_INT <= 26
+                && "fugu".equals(Build.DEVICE)
+                && !isInputPcm
+                && channelCount == 1) {
+            channelCount = 2;
+        }
+
+        return getAudioTrackChannelConfig(channelCount);
+    }
+
+    private static int getAudioTrackChannelConfig(int channelCount) {
+        switch (channelCount) {
+            case 1:
+                return AudioFormat.CHANNEL_OUT_MONO;
+            case 2:
+                return AudioFormat.CHANNEL_OUT_STEREO;
+            case 3:
+                return AudioFormat.CHANNEL_OUT_STEREO
+                        | AudioFormat.CHANNEL_OUT_FRONT_CENTER;
+            case 4:
+                return AudioFormat.CHANNEL_OUT_QUAD;
+            case 5:
+                return AudioFormat.CHANNEL_OUT_QUAD
+                        | AudioFormat.CHANNEL_OUT_FRONT_CENTER;
+            case 6:
+                return AudioFormat.CHANNEL_OUT_5POINT1;
+            case 7:
+                return AudioFormat.CHANNEL_OUT_5POINT1
+                        | AudioFormat.CHANNEL_OUT_BACK_CENTER;
+            case 8:
+                if (Build.VERSION.SDK_INT >= 23) {
+                    return AudioFormat.CHANNEL_OUT_7POINT1_SURROUND;
+                } else if (Build.VERSION.SDK_INT >= 21) {
+                    // Equal to AudioFormat.CHANNEL_OUT_7POINT1_SURROUND,
+                    // which is hidden before Android M.
+                    return AudioFormat.CHANNEL_OUT_5POINT1
+                            | AudioFormat.CHANNEL_OUT_SIDE_LEFT
+                            | AudioFormat.CHANNEL_OUT_SIDE_RIGHT;
+                } else {
+                    // 8 ch output is not supported before Android L.
+                    return AudioFormat.CHANNEL_INVALID;
+                }
+            default:
+                return AudioFormat.CHANNEL_INVALID;
+        }
+    }
+
+    private static int decideChannelConfig(
+            final int channelCount, final boolean passthrough, String mimeType) {
+        int channelConfig;
+        switch (channelCount) {
+            case 1:
+                channelConfig = AudioFormat.CHANNEL_OUT_MONO;
+                break;
+            case 2:
+                channelConfig = AudioFormat.CHANNEL_OUT_STEREO;
+                break;
+            case 3:
+                channelConfig = AudioFormat.CHANNEL_OUT_STEREO | AudioFormat
+                        .CHANNEL_OUT_FRONT_CENTER;
+                break;
+            case 4:
+                channelConfig = AudioFormat.CHANNEL_OUT_QUAD;
+                break;
+            case 5:
+                if (mimeType.equals(MimeTypes.AUDIO_AC3)
+                        || mimeType.equals(MimeTypes.AUDIO_E_AC3)
+                        || mimeType.equals(MimeTypes.AUDIO_AC4)
+                        || mimeType.equals(MimeTypes.AUDIO_E_AC3_JOC)
+                        || mimeType.equals(MimeTypes.AUDIO_AC4_JOC)) {
+                    channelConfig = AudioFormat.CHANNEL_OUT_5POINT1;
+                } else {
+                    channelConfig = AudioFormat.CHANNEL_OUT_QUAD
+                            | AudioFormat.CHANNEL_OUT_FRONT_CENTER;
+                }
+                break;
+            case 6:
+                channelConfig = AudioFormat.CHANNEL_OUT_5POINT1;
+                break;
+            case 7:
+                channelConfig = AudioFormat.CHANNEL_OUT_5POINT1
+                        | AudioFormat.CHANNEL_OUT_BACK_CENTER;
+                break;
+            case 8:
+                channelConfig = Build.VERSION.SDK_INT < 23
+                        ? AudioFormat.CHANNEL_OUT_7POINT1
+                        : AudioFormat.CHANNEL_OUT_7POINT1_SURROUND;
+                break;
+            default:
+                throw new IllegalArgumentException("Unsupported channel count: " + channelCount);
+        }
+        // Workaround for overly strict channel configuration checks on nVidia Shield.
+        if (Build.VERSION.SDK_INT <= 23
+                && "foster".equals(Build.DEVICE)
+                && "NVIDIA".equals(Build.MANUFACTURER)) {
+            switch (channelCount) {
+                case 7:
+                    channelConfig = Build.VERSION.SDK_INT < 23
+                            ? AudioFormat.CHANNEL_OUT_7POINT1
+                            : AudioFormat.CHANNEL_OUT_7POINT1_SURROUND;
+                    break;
+                case 3:
+                case 5:
+                    channelConfig = AudioFormat.CHANNEL_OUT_5POINT1;
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        // Workaround for Nexus Player not reporting support for mono passthrough.
+        // (See [Internal: b/34268671].)
+        if (Build.VERSION.SDK_INT <= 25
+                && "fugu".equals(Build.DEVICE)
+                && passthrough
+                && channelCount == 1) {
+            channelConfig = AudioFormat.CHANNEL_OUT_STEREO;
+        }
+        return channelConfig;
     }
 
     public static void printMediaCodecInfos(MediaCodecInfo[] mediaCodecInfos,
@@ -1722,40 +1903,6 @@ public class MediaUtils {
         //很出乎大家的意料，MediaCodec并没有要求我们传一个流文件进去，而是要求我们指定一个surface
         //而这个surface，其实就是我们在上一讲MediaProjection中用来展示屏幕采集数据的surface
         //mSurface = mEncoder.createInputSurface();
-    }
-
-    public static int getAudioTrackChannelConfig(int channelCount) {
-        switch (channelCount) {
-            case 1:
-                return AudioFormat.CHANNEL_OUT_MONO;
-            case 2:
-                return AudioFormat.CHANNEL_OUT_STEREO;
-            case 3:
-                return AudioFormat.CHANNEL_OUT_STEREO | AudioFormat.CHANNEL_OUT_FRONT_CENTER;
-            case 4:
-                return AudioFormat.CHANNEL_OUT_QUAD;
-            case 5:
-                return AudioFormat.CHANNEL_OUT_QUAD | AudioFormat.CHANNEL_OUT_FRONT_CENTER;
-            case 6:
-                return AudioFormat.CHANNEL_OUT_5POINT1;
-            case 7:
-                return AudioFormat.CHANNEL_OUT_5POINT1 | AudioFormat.CHANNEL_OUT_BACK_CENTER;
-            case 8:
-                if (Build.VERSION.SDK_INT >= 23) {
-                    return AudioFormat.CHANNEL_OUT_7POINT1_SURROUND;
-                } else if (Build.VERSION.SDK_INT >= 21) {
-                    // Equal to AudioFormat.CHANNEL_OUT_7POINT1_SURROUND,
-                    // which is hidden before Android M.
-                    return AudioFormat.CHANNEL_OUT_5POINT1
-                            | AudioFormat.CHANNEL_OUT_SIDE_LEFT
-                            | AudioFormat.CHANNEL_OUT_SIDE_RIGHT;
-                } else {
-                    // 8 ch output is not supported before Android L.
-                    return AudioFormat.CHANNEL_INVALID;
-                }
-            default:
-                return AudioFormat.CHANNEL_INVALID;
-        }
     }
 
 }

@@ -9,6 +9,7 @@ import android.media.AudioFormat;
 import android.media.AudioManager;
 import android.media.AudioTrack;
 import android.media.MediaCodec;
+import android.media.MediaCodecInfo;
 import android.media.MediaExtractor;
 import android.media.MediaFormat;
 import android.os.Build;
@@ -124,6 +125,7 @@ public class SampleVideoPlayer {
 
     public void setPath(String path) {
         mPath = path;
+        mPath = "/storage/37C8-3904/myfiles/video/Silent_Movie_321_AC4_H265_MP4_50fps.mp4";
         if (DEBUG)
             MLog.d(TAG, "setPath() mPath: " + mPath);
     }
@@ -180,6 +182,10 @@ public class SampleVideoPlayer {
 
     public long getDurationUs() {
         return mDurationUs;
+    }
+
+    public long getCurPositionUs() {
+        return mCurPositionUs;
     }
 
     public void setProgressUs(long progressUs) {
@@ -280,11 +286,11 @@ public class SampleVideoPlayer {
         int trackCount = mAudioExtractor.getTrackCount();
         for (int i = 0; i < trackCount; i++) {
             mAudioDncoderMediaFormat = mAudioExtractor.getTrackFormat(i);
-            if (DEBUG)
-                MLog.d(TAG, "internalPrepare() mAudioDncoderMediaFormat: " +
-                        mAudioDncoderMediaFormat.toString());
             String mime = mAudioDncoderMediaFormat.getString(MediaFormat.KEY_MIME);
             if (mime.startsWith("audio/")) {
+                MLog.d(TAG, "internalPrepare() audio mime: " + mime);
+                MLog.d(TAG, "internalPrepare() mAudioDncoderMediaFormat: " +
+                        mAudioDncoderMediaFormat.toString());
                 boolean hasException = false;
                 try {
                     mAudioExtractor.selectTrack(i);
@@ -301,12 +307,44 @@ public class SampleVideoPlayer {
                     hasException = true;
                 }
                 if (hasException) {
-                    if (mAudioDncoderMediaCodec != null) {
-                        mAudioDncoderMediaCodec.release();
-                    }
+                    hasException = false;
                     mAudioDncoderMediaCodec = null;
-                    mAudioDncoderMediaFormat = null;
-                    mAudioTrackIndex = -1;
+                    try {
+                        mAudioExtractor.selectTrack(i);
+                        MediaCodecInfo mediaCodecInfo = MediaUtils.getDecoderMediaCodecInfo(mime);
+                        String codecName = null;
+                        if (mediaCodecInfo != null) {
+                            codecName = mediaCodecInfo.getName();
+                        } else {
+                            if (TextUtils.equals("audio/ac4", mime)) {
+                                codecName = "OMX.google.raw.decoder";
+                                mAudioDncoderMediaFormat.setString(
+                                        MediaFormat.KEY_MIME, "audio/raw");
+                            }
+                        }
+                        if (!TextUtils.isEmpty(codecName)) {
+                            mAudioDncoderMediaCodec =
+                                    MediaCodec.createByCodecName(codecName);
+                            mAudioDncoderMediaCodec.configure(
+                                    mAudioDncoderMediaFormat, null, null, 0);
+                            mAudioDncoderMediaCodec.start();
+                            mAudioTrackIndex = i;
+                        }
+                    } catch (MediaCodec.CryptoException
+                            | IllegalStateException
+                            | IllegalArgumentException
+                            | IOException e) {
+                        e.printStackTrace();
+                        hasException = true;
+                    }
+                    if (hasException) {
+                        if (mAudioDncoderMediaCodec != null) {
+                            mAudioDncoderMediaCodec.release();
+                        }
+                        mAudioDncoderMediaCodec = null;
+                        mAudioDncoderMediaFormat = null;
+                        mAudioTrackIndex = -1;
+                    }
                 }
                 break;
             }
@@ -324,11 +362,11 @@ public class SampleVideoPlayer {
         trackCount = mVideoExtractor.getTrackCount();
         for (int i = 0; i < trackCount; i++) {
             mVideoDncoderMediaFormat = mVideoExtractor.getTrackFormat(i);
-            if (DEBUG)
-                MLog.d(TAG, "internalPrepare() mVideoDncoderMediaFormat: " +
-                        mVideoDncoderMediaFormat.toString());
             String mime = mVideoDncoderMediaFormat.getString(MediaFormat.KEY_MIME);
             if (mime.startsWith("video/")) {
+                MLog.d(TAG, "internalPrepare() video mime: " + mime);
+                MLog.d(TAG, "internalPrepare() mVideoDncoderMediaFormat: " +
+                        mVideoDncoderMediaFormat.toString());
                 boolean hasException = false;
                 try {
                     mVideoExtractor.selectTrack(i);
@@ -396,13 +434,13 @@ public class SampleVideoPlayer {
                 AudioTrack.MODE_STREAM);
         if (mAudioTrack != null) {
             mAudioTrack.play();
-        } else {
+        } /*else {
             mIsAudioRunning = false;
-            /*if (mCallback != null) {
+            *//*if (mCallback != null) {
                 mCallback.onPlaybackFinished();
-            }*/
+            }*//*
             return;
-        }
+        }*/
 
         if (DEBUG)
             MLog.d(TAG, "internalPrepare() end");
@@ -431,6 +469,8 @@ public class SampleVideoPlayer {
         if (DEBUG)
             MLog.d(TAG, "internalPlay() start");
 
+        MLog.d(TAG, "internalPlay() mIsAudioRunning: " + mIsAudioRunning +
+                " mIsVideoRunning: " + mIsVideoRunning);
         if (!mIsAudioRunning
                 && !mIsVideoRunning
                 && !mIsAudioPaused
@@ -544,14 +584,34 @@ public class SampleVideoPlayer {
         internalStop();
         if (mIsAudioRunning) {
             synchronized (mAudioStopLock) {
+                if (DEBUG)
+                    MLog.d(TAG, "internalNext() mAudioStopLock.wait() start");
                 try {
                     mAudioStopLock.wait();
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
+                if (DEBUG)
+                    MLog.d(TAG, "internalNext() mAudioStopLock.wait() end");
             }
         }
-        play();
+        if (mIsVideoRunning) {
+            synchronized (mVideoStopLock) {
+                if (DEBUG)
+                    MLog.d(TAG, "internalNext() mVideoStopLock.wait() start");
+                try {
+                    mVideoStopLock.wait();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                if (DEBUG)
+                    MLog.d(TAG, "internalNext() mVideoStopLock.wait() end");
+            }
+        }
+        mIsAudioRunning = false;
+        mIsVideoRunning = false;
+        mThreadHandler.removeMessages(PLAY);
+        mThreadHandler.sendEmptyMessageDelayed(PLAY, 1000);
     }
 
     private Object onEvent(int what, Object[] objArray) {
@@ -787,7 +847,8 @@ public class SampleVideoPlayer {
              */
             while (true) {
                 // stop device
-                if (!mIsAudioRunning) {
+                if (!mIsAudioRunning || !mIsVideoRunning) {
+                    mIsAudioRunning = false;
                     break;
                 }
 
@@ -851,7 +912,13 @@ public class SampleVideoPlayer {
                                 mCallback.onProgressUpdated(presentationTimeUs);
                             }
                         } else if (presentationTimeUs == -1) {// game over
-                            hasPlaybackFinished = true;
+                            if (!hasPlaybackFinished) {
+                                hasPlaybackFinished = true;
+                            } else {
+                                // 起保护作用
+                                mIsAudioRunning = false;
+                                break;
+                            }
                             readSize = 0;
                             presentationTimeUs = 0;
                             /***
@@ -893,7 +960,8 @@ public class SampleVideoPlayer {
                 // Output
                 for (; ; ) {
                     // stop device
-                    if (!mIsAudioRunning) {
+                    if (!mIsAudioRunning || !mIsVideoRunning) {
+                        mIsAudioRunning = false;
                         break;
                     }
                     try {
@@ -903,11 +971,34 @@ public class SampleVideoPlayer {
                             case MediaCodec.INFO_TRY_AGAIN_LATER:
                                 break;
                             case MediaCodec.INFO_OUTPUT_FORMAT_CHANGED:
-                                mAudioDncoderMediaFormat = mAudioDncoderMediaCodec
-                                        .getOutputFormat();
+                                mAudioDncoderMediaFormat =
+                                        mAudioDncoderMediaCodec.getOutputFormat();
                                 MLog.d(TAG, "mAudioPlayRunnable " +
                                         "Output MediaCodec.INFO_OUTPUT_FORMAT_CHANGED");
                                 MLog.d(TAG, "mAudioPlayRunnable " + mAudioDncoderMediaFormat);
+                                if (mAudioTrack != null) {
+                                    break;
+                                }
+                                int sampleRateInHz =
+                                        mAudioDncoderMediaFormat.getInteger(
+                                                MediaFormat.KEY_SAMPLE_RATE);
+                                int channelCount =
+                                        mAudioDncoderMediaFormat.getInteger(
+                                                MediaFormat.KEY_CHANNEL_COUNT);
+                                int audioFormat =
+                                        mAudioDncoderMediaFormat.getInteger(
+                                                MediaFormat.KEY_PCM_ENCODING);
+                                mAudioTrack = MediaUtils.createAudioTrack(
+                                        AudioManager.STREAM_MUSIC,
+                                        sampleRateInHz, channelCount, audioFormat,
+                                        AudioTrack.MODE_STREAM);
+                                if (mAudioTrack != null) {
+                                    mAudioTrack.play();
+                                } else {
+                                    // mIsAudioRunning = false;
+                                    MLog.d(TAG, "mAudioPlayRunnable " +
+                                            "mAudioTrack is null");
+                                }
                                 break;
                             case MediaCodec.INFO_OUTPUT_BUFFERS_CHANGED:
                                 MLog.d(TAG, "mAudioPlayRunnable " +
@@ -951,7 +1042,9 @@ public class SampleVideoPlayer {
                             room.limit(roomInfo.offset + roomSize);
                             byte[] pcmData = new byte[roomSize];
                             room.get(pcmData, 0, pcmData.length);
-                            mAudioTrack.write(pcmData, 0, pcmData.length);
+                            if (mAudioTrack != null) {
+                                mAudioTrack.write(pcmData, 0, pcmData.length);
+                            }
                         }
 
                         mAudioDncoderMediaCodec.releaseOutputBuffer(roomIndex, false);
@@ -969,7 +1062,14 @@ public class SampleVideoPlayer {
             internalAudioRelease();
 
             synchronized (mAudioStopLock) {
+                if (DEBUG)
+                    MLog.d(TAG, "mAudioPlayRunnable mAudioStopLock.notify()");
                 mAudioStopLock.notify();
+            }
+            synchronized (mVideoStopLock) {
+                if (DEBUG)
+                    MLog.d(TAG, "mAudioPlayRunnable mVideoStopLock.notify()");
+                mVideoStopLock.notify();
             }
 
             if (hasPlaybackFinished) {
@@ -977,6 +1077,8 @@ public class SampleVideoPlayer {
                     mCallback.onPlaybackFinished();
                 }
             }
+
+            MLog.d(TAG, "mAudioPlayRunnable mIsAudioRunning: " + mIsAudioRunning);
 
             if (DEBUG)
                 MLog.d(TAG, "mAudioPlayRunnable end");
@@ -1021,7 +1123,8 @@ public class SampleVideoPlayer {
              */
             while (true) {
                 // stop device
-                if (!mIsVideoRunning) {
+                if (!mIsAudioRunning || !mIsVideoRunning) {
+                    mIsVideoRunning = false;
                     break;
                 }
 
@@ -1086,7 +1189,13 @@ public class SampleVideoPlayer {
                                 mCallback.onProgressUpdated(presentationTimeUs);
                             }
                         } else if (presentationTimeUs == -1) {// game over
-                            hasPlaybackFinished = true;
+                            if (!hasPlaybackFinished) {
+                                hasPlaybackFinished = true;
+                            } else {
+                                // 起保护作用
+                                mIsAudioRunning = false;
+                                break;
+                            }
                             readSize = 0;
                             presentationTimeUs = 0;
                             /***
@@ -1128,7 +1237,8 @@ public class SampleVideoPlayer {
                 // Output
                 for (; ; ) {
                     // stop device
-                    if (!mIsVideoRunning) {
+                    if (!mIsAudioRunning || !mIsVideoRunning) {
+                        mIsVideoRunning = false;
                         break;
                     }
                     try {
@@ -1210,7 +1320,14 @@ public class SampleVideoPlayer {
 
             internalVideoRelease();
 
+            synchronized (mAudioStopLock) {
+                if (DEBUG)
+                    MLog.d(TAG, "mVideoPlayRunnable mAudioStopLock.notify()");
+                mAudioStopLock.notify();
+            }
             synchronized (mVideoStopLock) {
+                if (DEBUG)
+                    MLog.d(TAG, "mVideoPlayRunnable mVideoStopLock.notify()");
                 mVideoStopLock.notify();
             }
 
@@ -1219,6 +1336,8 @@ public class SampleVideoPlayer {
                     mCallback.onPlaybackFinished();
                 }
             }
+
+            MLog.d(TAG, "mVideoPlayRunnable mIsVideoRunning: " + mIsVideoRunning);
 
             if (DEBUG)
                 MLog.d(TAG, "mVideoPlayRunnable end");

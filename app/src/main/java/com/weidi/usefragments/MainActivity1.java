@@ -39,6 +39,7 @@ import com.weidi.usefragments.test_fragment.scene2.VideoLiveBroadcastingFragment
 import com.weidi.usefragments.test_fragment.scene2.ViewPagerFragment;
 import com.weidi.usefragments.tool.MLog;
 import com.weidi.usefragments.tool.SampleAudioPlayer;
+import com.weidi.usefragments.tool.SampleVideoPlayer;
 
 import java.util.HashMap;
 import java.util.List;
@@ -594,9 +595,14 @@ public class MainActivity1 extends BaseActivity
     }*/
 
     private SampleAudioPlayer mSampleAudioPlayer;
+    private SampleVideoPlayer mSampleVideoPlayer;
 
     public void setSampleAudioPlayer(SampleAudioPlayer sampleAudioPlayer) {
         mSampleAudioPlayer = sampleAudioPlayer;
+    }
+
+    public void setSampleVideoPlayer(SampleVideoPlayer sampleVideoPlayer) {
+        mSampleVideoPlayer = sampleVideoPlayer;
     }
 
     /***
@@ -604,9 +610,14 @@ public class MainActivity1 extends BaseActivity
      */
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
-        /*if (mSampleAudioPlayer != null) {
-            return mSampleAudioPlayer.onKeyDown(keyCode, event);
+        /*if (mSampleVideoPlayer != null) {
+            return mSampleVideoPlayer.onKeyDown(keyCode, event);
         }*/
+        if (mBaseFragment != null
+                && mBaseFragment instanceof DecodeVideoFragment) {
+            DecodeVideoFragment decodeVideoFragment = (DecodeVideoFragment) mBaseFragment;
+            return decodeVideoFragment.onKeyDown(keyCode, event);
+        }
         return super.onKeyDown(keyCode, event);
     }
 

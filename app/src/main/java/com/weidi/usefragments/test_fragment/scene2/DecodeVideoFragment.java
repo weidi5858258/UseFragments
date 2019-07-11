@@ -19,6 +19,7 @@ import android.os.Looper;
 import android.os.Message;
 import android.os.SystemClock;
 import android.text.TextUtils;
+import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.Surface;
 import android.view.SurfaceHolder;
@@ -28,6 +29,7 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.Toast;
 
+import com.weidi.usefragments.MainActivity1;
 import com.weidi.usefragments.R;
 import com.weidi.usefragments.fragment.FragOperManager;
 import com.weidi.usefragments.fragment.base.BaseFragment;
@@ -39,9 +41,14 @@ import com.weidi.usefragments.tool.MLog;
 import com.weidi.usefragments.tool.SampleVideoPlayer;
 
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Random;
 
 /***
  视频解码
@@ -296,11 +303,21 @@ public class DecodeVideoFragment extends BaseFragment {
 
     /////////////////////////////////////////////////////////////////
 
+    // 顺序播放
+    private static final int SEQUENTIAL_PLAYBACK = 0x001;
+    // 随机播放
+    private static final int RANDOM_PLAYBACK = 0x002;
+    // 循环播放
+    private static final int LOOP_PLAYBACK = 0x003;
+
+    private int mPlayMode = RANDOM_PLAYBACK;
+
     @InjectView(R.id.surfaceView)
     private SurfaceView mSurfaceView;
     @InjectView(R.id.jump_btn)
     private Button mJumpBtn;
 
+    private static final String PATH = "/storage/37C8-3904/myfiles/video/";
     //    private String mVideoPath = "/storage/2430-1702/BaiduNetdisk/music/谭咏麟 - 水中花.mp3";
     //    private String mVideoPath = "/storage/2430-1702/BaiduNetdisk/video/权力的游戏第四季05.mp4";
     private String mVideoPath = "/storage/2430-1702/BaiduNetdisk/video/流浪的地球.mp4";
@@ -309,6 +326,15 @@ public class DecodeVideoFragment extends BaseFragment {
             "output.mp4";*/
     private Surface mSurface;
     private SampleVideoPlayer mSampleVideoPlayer;
+
+    private List<File> videoFiles;
+    private int mCurVideoIndex;
+    private File mCurVideoFile;
+    private int mProgress;
+    private long mPresentationTimeUs;
+
+    private Random mRandom = new Random();
+    private List<Integer> mHasPlayed = new ArrayList<Integer>();
 
     /***
      代码执行的内容跟onStart(),onResume()一样,
@@ -356,9 +382,27 @@ public class DecodeVideoFragment extends BaseFragment {
     }
 
     private void initData() {
+        File file = new File(PATH);
+        if (file.isDirectory()) {
+            File[] files = file.listFiles();
+            if (files != null && files.length > 0) {
+                videoFiles = new ArrayList<File>();
+                Collections.addAll(videoFiles, files);
+            }
+        }
         mSampleVideoPlayer = new SampleVideoPlayer();
         mSampleVideoPlayer.setContext(getContext());
-        mSampleVideoPlayer.setPath(mVideoPath);
+        mSampleVideoPlayer.setCallback(mCallback);
+        // mSampleVideoPlayer.setPath(mVideoPath);
+
+        Activity activity = getAttachedActivity();
+        if (activity != null
+                && activity instanceof MainActivity1) {
+            MainActivity1 mainActivity1 = (MainActivity1) activity;
+            mainActivity1.setSampleVideoPlayer(mSampleVideoPlayer);
+        }
+
+        MediaUtils.lookAtMe();
     }
 
     private void initView(View view, Bundle savedInstanceState) {
@@ -376,7 +420,7 @@ public class DecodeVideoFragment extends BaseFragment {
                     SurfaceHolder holder) {
                 mSurface = holder.getSurface();
                 mSampleVideoPlayer.setSurface(mSurface);
-                mSampleVideoPlayer.play();
+                next();
             }
 
             @Override
@@ -409,5 +453,104 @@ public class DecodeVideoFragment extends BaseFragment {
                 break;
         }
     }
+
+    private void next() {
+        if (videoFiles == null
+                || videoFiles.isEmpty()) {
+            return;
+        }
+
+        switch (mPlayMode) {
+            case SEQUENTIAL_PLAYBACK:
+                mCurVideoIndex += 1;
+                if (mCurVideoIndex >= videoFiles.size()) {
+                    mCurVideoIndex = 0;
+                }
+                mCurVideoFile = videoFiles.get(mCurVideoIndex);
+                break;
+            case RANDOM_PLAYBACK:
+                int size = videoFiles.size();
+                while (true) {
+                    int randomNumber = mRandom.nextInt(size);
+                    if (!mHasPlayed.contains(randomNumber)) {
+                        mHasPlayed.add(randomNumber);
+                        mCurVideoIndex = randomNumber;
+                        mCurVideoFile = videoFiles.get(mCurVideoIndex);
+                        break;
+                    } else {
+                        if (mHasPlayed.size() == size) {
+                            mHasPlayed.clear();
+                        }
+                    }
+                }
+                break;
+            case LOOP_PLAYBACK:
+                break;
+            default:
+                break;
+        }
+        mSampleVideoPlayer.setPath(mCurVideoFile.getAbsolutePath());
+        if (DEBUG)
+            MLog.d(TAG, "next() mCurVideoIndex: " + mCurVideoIndex +
+                    " " + mCurVideoFile.getAbsolutePath());
+        mSampleVideoPlayer.next();
+    }
+
+    public boolean onKeyDown(int keyCode, KeyEvent event) {
+        /*if (DEBUG)
+            Log.d(TAG, "onKeyDown() event: " + event);*/
+        switch (keyCode) {
+            case KeyEvent.KEYCODE_MEDIA_STOP:
+            case KeyEvent.KEYCODE_MEDIA_FAST_FORWARD:
+            case KeyEvent.KEYCODE_MEDIA_REWIND:
+                break;
+            case KeyEvent.KEYCODE_MEDIA_PREVIOUS:
+                break;
+            case KeyEvent.KEYCODE_MEDIA_NEXT:
+                next();
+                return true;
+            default:
+                break;
+        }
+
+        return false;
+    }
+
+    private SampleVideoPlayer.Callback mCallback = new SampleVideoPlayer.Callback() {
+        @Override
+        public void onPlaybackReady() {
+
+        }
+
+        @Override
+        public void onPlaybackPaused() {
+
+        }
+
+        @Override
+        public void onPlaybackStarted() {
+
+        }
+
+        @Override
+        public void onPlaybackFinished() {
+            next();
+        }
+
+        @Override
+        public void onProgressUpdated(long presentationTimeUs) {
+
+        }
+
+        @Override
+        public void onPlaybackError() {
+
+        }
+
+        @Override
+        public void onPlaybackInfo(String info) {
+
+        }
+    };
 
 }
