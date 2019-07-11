@@ -208,9 +208,11 @@ public class MediaUtils {
      */
     public static MediaCodecInfo[] findEncodersByMimeType(String mimeType) {
         // MediaCodecList.REGULAR_CODECS
+        // MediaCodecList.ALL_CODECS
         MediaCodecList codecList = new MediaCodecList(MediaCodecList.ALL_CODECS);
         List<MediaCodecInfo> mediaCodecInfos = new ArrayList<MediaCodecInfo>();
         for (MediaCodecInfo mediaCodecInfo : codecList.getCodecInfos()) {
+            // 过滤掉非编码器
             if (!mediaCodecInfo.isEncoder()) {
                 continue;
             }
@@ -231,10 +233,10 @@ public class MediaUtils {
     }
 
     public static MediaCodecInfo[] findDecodersByMimeType(String mimeType) {
-        // MediaCodecList.REGULAR_CODECS
         MediaCodecList codecList = new MediaCodecList(MediaCodecList.ALL_CODECS);
         List<MediaCodecInfo> mediaCodecInfos = new ArrayList<MediaCodecInfo>();
         for (MediaCodecInfo mediaCodecInfo : codecList.getCodecInfos()) {
+            // 过滤掉编码器
             if (mediaCodecInfo.isEncoder()) {
                 continue;
             }
@@ -263,28 +265,25 @@ public class MediaUtils {
         if (TextUtils.isEmpty(mimeType)) {
             return null;
         }
-        MediaCodecInfo[] infos = null;
-        /*MediaCodecList list = new MediaCodecList(MediaCodecList.REGULAR_CODECS);
-        infos = list.getCodecInfos();*/
-        infos = findEncodersByMimeType(mimeType);
+        // 找到的都是编码器
+        MediaCodecInfo[] infos = findEncodersByMimeType(mimeType);
         if (infos == null) {
             return null;
         }
-        for (MediaCodecInfo info : infos) {
-            if (info == null
-                    || info.isEncoder()) {
+        for (MediaCodecInfo mediaCodecInfo : infos) {
+            if (mediaCodecInfo == null) {
                 continue;
             }
-            for (String type : info.getSupportedTypes()) {
+            for (String type : mediaCodecInfo.getSupportedTypes()) {
                 if (TextUtils.isEmpty(type)) {
                     continue;
                 }
                 if (type.equalsIgnoreCase(mimeType)) {
                     if (DEBUG)
                         MLog.d(TAG,
-                                "getEncoderMediaCodecInfo() the selected encoder is : " + info
-                                        .getName());
-                    return info;
+                                "getEncoderMediaCodecInfo() the selected encoder is : " +
+                                        mediaCodecInfo.getName());
+                    return mediaCodecInfo;
                 }
             }
         }
@@ -295,28 +294,25 @@ public class MediaUtils {
         if (TextUtils.isEmpty(mimeType)) {
             return null;
         }
-        MediaCodecInfo[] infos = null;
-        /*MediaCodecList list = new MediaCodecList(MediaCodecList.REGULAR_CODECS);
-        infos = list.getCodecInfos();*/
-        infos = findDecodersByMimeType(mimeType);
+        // 找到的都是解码器
+        MediaCodecInfo[] infos = findDecodersByMimeType(mimeType);
         if (infos == null) {
             return null;
         }
-        for (MediaCodecInfo info : infos) {
-            if (info == null
-                    || !info.isEncoder()) {
+        for (MediaCodecInfo mediaCodecInfo : infos) {
+            if (mediaCodecInfo == null) {
                 continue;
             }
-            for (String type : info.getSupportedTypes()) {
+            for (String type : mediaCodecInfo.getSupportedTypes()) {
                 if (TextUtils.isEmpty(type)) {
                     continue;
                 }
                 if (type.equalsIgnoreCase(mimeType)) {
                     if (DEBUG)
                         MLog.d(TAG,
-                                "getEncoderMediaCodecInfo() the selected encoder is : " + info
-                                        .getName());
-                    return info;
+                                "getEncoderMediaCodecInfo() the selected encoder is : " +
+                                        mediaCodecInfo.getName());
+                    return mediaCodecInfo;
                 }
             }
         }

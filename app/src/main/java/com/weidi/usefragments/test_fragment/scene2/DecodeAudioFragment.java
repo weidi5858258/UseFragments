@@ -566,7 +566,7 @@ public class DecodeAudioFragment extends BaseFragment {
                 setText(mShowInoSB);
                 break;
             case R.id.jump_btn:
-                FragOperManager.getInstance().enter3(new A2Fragment());
+                FragOperManager.getInstance().enter3(new AudioFragment());
                 break;
             default:
                 break;

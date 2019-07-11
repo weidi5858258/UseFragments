@@ -445,7 +445,7 @@ public class AudioFragment extends BaseFragment {
                 mThreadHandler.sendEmptyMessage(PCM_TO_WAV);
                 break;
             case R.id.jump_btn:
-                FragOperManager.getInstance().enter3(new DecodeAudioFragment());
+                FragOperManager.getInstance().enter3(new A2Fragment());
                 break;
             default:
         }
@@ -805,13 +805,14 @@ public class AudioFragment extends BaseFragment {
                                 MLog.i(TAG, "startRecording() mPauseLock.wait() end");
                         }
                     }
-                    // audioRecord把数据读到data中
+                    // audioRecord把数据读到mPcmData中
                     readSize = mAudioRecord.read(mPcmData, 0, bufferSizeInBytes);
                     if (readSize < 0) {
                         mIsRecordRunning = false;
                         break;
                     }
                     try {
+                        // 保存pcm裸流
                         // 把data数据写到os文件流中
                         pcmOS.write(mPcmData);
                     } catch (IOException e) {
