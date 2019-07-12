@@ -1,11 +1,12 @@
 apply plugin: 'com.android.application'
 
 android {
-    compileSdkVersion 26
+    // 有些音视频方面的属性在"API 28"中才有
+    compileSdkVersion 28
     defaultConfig {
         applicationId "com.weidi.usefragments"
         minSdkVersion 21
-        targetSdkVersion 26
+        targetSdkVersion 28
         versionCode 1
         versionName "1.0"
         externalNativeBuild {

@@ -59,6 +59,7 @@ public class SampleAudioPlayer {
     private MediaCodec mAudioDncoderMediaCodec;
     private MediaFormat mAudioDncoderMediaFormat;
     private AudioTrack mAudioTrack;
+    private float mVolume = 1.0f;
     private int mAudioTrackIndex = -1;
     private long mDurationUs;
     private long mProgressUs = -1;
@@ -342,6 +343,7 @@ public class SampleAudioPlayer {
                 sampleRateInHz, channelCount, audioFormat,
                 AudioTrack.MODE_STREAM);
         if (mAudioTrack != null) {
+            setVolume();
             mAudioTrack.play();
         } else {
             mIsRunning = false;
@@ -777,6 +779,17 @@ public class SampleAudioPlayer {
             MLog.d(TAG, "notifyAudioEndOfStream() end");
         onPlaybackInfo("mIsRunning: " + mIsRunning + " mIsPaused: " + mIsPaused);
         onPlaybackInfo("notifyAudioEndOfStream() end");
+    }
+
+    private void setVolume() {
+        if (mAudioTrack == null) {
+            return;
+        }
+        if (Build.VERSION.SDK_INT >= 21) {
+            mAudioTrack.setVolume(mVolume);
+        } else {
+            mAudioTrack.setStereoVolume(mVolume, mVolume);
+        }
     }
 
     private void threadHandleMessage(Message msg) {

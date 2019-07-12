@@ -34,6 +34,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 
+import androidx.annotation.NonNull;
+
 /***
  mimeType是已知的,都是通过mimeType去得到各种对象
  */
@@ -81,6 +83,20 @@ public class MediaUtils {
     // private static final int AUDIO_BIT_RATE = 64000;// 64kbps
     private static final int FRAME_RATE = 30;
     private static final int IFRAME_INTERVAL = 1;
+
+    /***
+     AC4 is not supported in AOSP and MTK added ENCODING_AC4 in AOSP as 15.
+     It is supported in AOSP as API Level 28 or later.
+     */
+    public static final int ENCODING_AC4;
+
+    static {
+        if (Build.VERSION.SDK_INT >= 28) {
+            ENCODING_AC4 = AudioFormat.ENCODING_AC4;
+        } else {
+            ENCODING_AC4 = AudioFormat.ENCODING_AAC_ELD;
+        }
+    }
 
     /***
      MediaCodecList ---> MediaCodecInfo --->
@@ -189,12 +205,18 @@ public class MediaUtils {
     }
 
     /***
+     * 最好是通过这个方法找到多个MediaCodecInfo对象,
+     * 如果一个创建或者初始化失败,可以再使用下一个,这样能
+     * 全部循环.如果使用getEncoderMediaCodecInfo(...)
+     * 只能找到一个MediaCodecInfo对象.
+     *
+     *
      * Find an encoder supported specified MIME type
      * 查找支持"video/avc"这种MIME type的CodecName,
      * 然后就可以通过MediaCodec.createByCodecName(CodecName)
      * 这个方法得到一个可以MediaCodec对象.
      *
-     * @param mimeType 如MediaFormat.MIMETYPE_VIDEO_AVC
+     * @param mime 如MediaFormat.MIMETYPE_VIDEO_AVC
      * @return Returns empty array if not found any encoder supported specified MIME type
      *
      * 在我的手机上找到
@@ -204,9 +226,9 @@ public class MediaUtils {
      *
      * Audio的CodecName(根据"audio/mp4a-latm"):
      * "OMX.google.aac.encoder"
-     *
      */
-    public static MediaCodecInfo[] findEncodersByMimeType(String mimeType) {
+    public static @NonNull
+    MediaCodecInfo[] findAllEncodersByMime(String mime) {
         // MediaCodecList.REGULAR_CODECS
         // MediaCodecList.ALL_CODECS
         MediaCodecList codecList = new MediaCodecList(MediaCodecList.ALL_CODECS);
@@ -218,7 +240,7 @@ public class MediaUtils {
             }
             try {
                 MediaCodecInfo.CodecCapabilities codecCapabilities =
-                        mediaCodecInfo.getCapabilitiesForType(mimeType);
+                        mediaCodecInfo.getCapabilitiesForType(mime);
                 if (codecCapabilities == null) {
                     continue;
                 }
@@ -232,7 +254,8 @@ public class MediaUtils {
         return mediaCodecInfos.toArray(new MediaCodecInfo[mediaCodecInfos.size()]);
     }
 
-    public static MediaCodecInfo[] findDecodersByMimeType(String mimeType) {
+    public static @NonNull
+    MediaCodecInfo[] findAllDecodersByMime(String mime) {
         MediaCodecList codecList = new MediaCodecList(MediaCodecList.ALL_CODECS);
         List<MediaCodecInfo> mediaCodecInfos = new ArrayList<MediaCodecInfo>();
         for (MediaCodecInfo mediaCodecInfo : codecList.getCodecInfos()) {
@@ -242,7 +265,7 @@ public class MediaUtils {
             }
             try {
                 MediaCodecInfo.CodecCapabilities codecCapabilities =
-                        mediaCodecInfo.getCapabilitiesForType(mimeType);
+                        mediaCodecInfo.getCapabilitiesForType(mime);
                 if (codecCapabilities == null) {
                     continue;
                 }
@@ -258,15 +281,15 @@ public class MediaUtils {
 
     /***
      *
-     * @param mimeType "video/avc" "audio/mp4a-latm"
+     * @param mime "video/avc" "audio/mp4a-latm"
      * @return
      */
-    public static MediaCodecInfo getEncoderMediaCodecInfo(String mimeType) {
-        if (TextUtils.isEmpty(mimeType)) {
+    public static MediaCodecInfo getEncoderMediaCodecInfo(String mime) {
+        if (TextUtils.isEmpty(mime)) {
             return null;
         }
         // 找到的都是编码器
-        MediaCodecInfo[] infos = findEncodersByMimeType(mimeType);
+        MediaCodecInfo[] infos = findAllEncodersByMime(mime);
         if (infos == null) {
             return null;
         }
@@ -278,7 +301,7 @@ public class MediaUtils {
                 if (TextUtils.isEmpty(type)) {
                     continue;
                 }
-                if (type.equalsIgnoreCase(mimeType)) {
+                if (type.equalsIgnoreCase(mime)) {
                     if (DEBUG)
                         MLog.d(TAG,
                                 "getEncoderMediaCodecInfo() the selected encoder is : " +
@@ -290,12 +313,12 @@ public class MediaUtils {
         return null;
     }
 
-    public static MediaCodecInfo getDecoderMediaCodecInfo(String mimeType) {
-        if (TextUtils.isEmpty(mimeType)) {
+    public static MediaCodecInfo getDecoderMediaCodecInfo(String mime) {
+        if (TextUtils.isEmpty(mime)) {
             return null;
         }
         // 找到的都是解码器
-        MediaCodecInfo[] infos = findDecodersByMimeType(mimeType);
+        MediaCodecInfo[] infos = findAllDecodersByMime(mime);
         if (infos == null) {
             return null;
         }
@@ -307,7 +330,7 @@ public class MediaUtils {
                 if (TextUtils.isEmpty(type)) {
                     continue;
                 }
-                if (type.equalsIgnoreCase(mimeType)) {
+                if (type.equalsIgnoreCase(mime)) {
                     if (DEBUG)
                         MLog.d(TAG,
                                 "getEncoderMediaCodecInfo() the selected encoder is : " +
@@ -317,48 +340,6 @@ public class MediaUtils {
             }
         }
         return null;
-    }
-
-    public static String getCodecName(String mimeType) {
-        if (TextUtils.isEmpty(mimeType)) {
-            return null;
-        }
-        MediaCodecInfo mediaCodecInfo = getEncoderMediaCodecInfo(mimeType);
-        if (mediaCodecInfo == null) {
-            return null;
-        }
-        return mediaCodecInfo.getName();
-    }
-
-    public static MediaCodecInfo.CodecCapabilities getCodecCapabilities(String mimeType) {
-        if (TextUtils.isEmpty(mimeType)) {
-            return null;
-        }
-        MediaCodecInfo mediaCodecInfo = getEncoderMediaCodecInfo(mimeType);
-        if (mediaCodecInfo == null) {
-            return null;
-        }
-        MediaCodecInfo.CodecCapabilities codecCapabilities =
-                mediaCodecInfo.getCapabilitiesForType(mimeType);
-        return codecCapabilities;
-    }
-
-    /***
-     * 得到MediaCodecInfo.CodecProfileLevel对象的意义不大,
-     * 没必要,在有关设置中这个可以不用设置
-     * @param mimeType
-     * @return
-     */
-    public static MediaCodecInfo.CodecProfileLevel[] getCodecProfileLevels(String mimeType) {
-        if (TextUtils.isEmpty(mimeType)) {
-            return null;
-        }
-        MediaCodecInfo.CodecCapabilities codecCapabilities = getCodecCapabilities(mimeType);
-        if (codecCapabilities == null) {
-            return null;
-        }
-        MediaCodecInfo.CodecProfileLevel[] codecProfileLevels = codecCapabilities.profileLevels;
-        return codecProfileLevels;
     }
 
     /***
@@ -372,33 +353,26 @@ public class MediaUtils {
      * @return
      */
     public static MediaCodec getVideoEncoderMediaCodec() {
-        /***
-         使用findEncodersByMimeType(VIDEO_MIME_TYPE)方法可以找到当前手机支持的所有
-         MediaCodecInfo对象,然后只要使用其中一个MediaCodecInfo对象就可以得到
-         MediaCodec对象了.
-         */
-        MediaCodecInfo codecInfo = getEncoderMediaCodecInfo(VIDEO_MIME_TYPE);
-        if (codecInfo == null) {
-            throw new RuntimeException(
-                    "根据 \"" + VIDEO_MIME_TYPE + "\" 这个mime找不到对应的MediaCodecInfo对象");
+        MediaCodec encoder = null;
+        MediaCodecInfo[] mediaCodecInfos = findAllEncodersByMime(VIDEO_MIME_TYPE);
+        for (MediaCodecInfo mediaCodecInfo : mediaCodecInfos) {
+            if (mediaCodecInfo == null) {
+                continue;
+            }
+            try {
+                encoder = MediaCodec.createByCodecName(mediaCodecInfo.getName());
+                if (DEBUG)
+                    MLog.d(TAG, "getVideoEncoderMediaCodec() MediaCodec create success");
+                break;
+            } catch (NullPointerException
+                    | IllegalArgumentException
+                    | IOException e) {
+                e.printStackTrace();
+                encoder = null;
+                continue;
+            }
         }
 
-        MediaCodec encoder = null;
-        try {
-            encoder = MediaCodec.createByCodecName(codecInfo.getName());
-            if (DEBUG)
-                MLog.d(TAG, "getVideoEncoderMediaCodec() MediaCodec create success");
-            // MediaCodec.CONFIGURE_FLAG_ENCODE表示编码flag
-            /*encoder.configure(
-                    getVideoEncoderMediaFormat(width, height),
-                    null,
-                    null,
-                    MediaCodec.CONFIGURE_FLAG_ENCODE);
-            encoder.start();*/
-        } catch (IOException e) {
-            e.printStackTrace();
-            return null;
-        }
         /***
          注意:
          编码器使用了surface作为输入源，则会选择surface模式，

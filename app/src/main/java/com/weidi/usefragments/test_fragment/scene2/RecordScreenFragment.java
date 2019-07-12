@@ -20,7 +20,6 @@ import android.os.Looper;
 import android.os.Message;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Surface;
 import android.view.View;
@@ -40,7 +39,6 @@ import com.weidi.usefragments.tool.MLog;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.Arrays;
 
 /***
 
@@ -516,14 +514,14 @@ public class RecordScreenFragment extends BaseFragment {
         // test
         MLog.d(TAG, "Video Codec Name---------------------------------------------------");
         MediaCodecInfo[] mediaCodecInfos =
-                MediaUtils.findEncodersByMimeType(MediaUtils.VIDEO_MIME_TYPE);
+                MediaUtils.findAllEncodersByMime(MediaUtils.VIDEO_MIME_TYPE);
         for (MediaCodecInfo info : mediaCodecInfos) {
             MLog.d(TAG, "prepare() " + printThis() +
                     " " + info.getName());
         }
         MLog.d(TAG, "Audio Codec Name---------------------------------------------------");
         mediaCodecInfos =
-                MediaUtils.findEncodersByMimeType(MediaUtils.AUDIO_MIME_TYPE);
+                MediaUtils.findAllEncodersByMime(MediaUtils.AUDIO_MIME_TYPE);
         for (MediaCodecInfo info : mediaCodecInfos) {
             MLog.d(TAG, "prepare() " + printThis() +
                     " " + info.getName());
