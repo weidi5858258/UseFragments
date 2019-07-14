@@ -514,14 +514,14 @@ public class RecordScreenFragment extends BaseFragment {
         // test
         MLog.d(TAG, "Video Codec Name---------------------------------------------------");
         MediaCodecInfo[] mediaCodecInfos =
-                MediaUtils.findAllEncodersByMime(MediaUtils.VIDEO_MIME_TYPE);
+                MediaUtils.findAllEncodersByMime(MediaUtils.VIDEO_MIME);
         for (MediaCodecInfo info : mediaCodecInfos) {
             MLog.d(TAG, "prepare() " + printThis() +
                     " " + info.getName());
         }
         MLog.d(TAG, "Audio Codec Name---------------------------------------------------");
         mediaCodecInfos =
-                MediaUtils.findAllEncodersByMime(MediaUtils.AUDIO_MIME_TYPE);
+                MediaUtils.findAllEncodersByMime(MediaUtils.AUDIO_MIME);
         for (MediaCodecInfo info : mediaCodecInfos) {
             MLog.d(TAG, "prepare() " + printThis() +
                     " " + info.getName());

@@ -18,6 +18,7 @@ import android.text.TextUtils;
 import android.util.Log;
 import android.util.Range;
 import android.util.SparseArray;
+import android.view.Surface;
 
 import com.weidi.usefragments.tool.MLog;
 import com.weidi.usefragments.tool.MimeTypes;
@@ -75,9 +76,9 @@ public class MediaUtils {
      */
     // 想要的编码格式
     // video/avc(H264)
-    public static final String VIDEO_MIME_TYPE = MediaFormat.MIMETYPE_VIDEO_AVC;
+    public static final String VIDEO_MIME = MediaFormat.MIMETYPE_VIDEO_AVC;
     // audio/mp4a-latm(AAC)
-    public static final String AUDIO_MIME_TYPE = MediaFormat.MIMETYPE_AUDIO_AAC;
+    public static final String AUDIO_MIME = MediaFormat.MIMETYPE_AUDIO_AAC;
     private static final int VIDEO_BIT_RATE = 64000;// 1200000 8000000 800000
     // audio的有关参数定义在一起了(在下面)
     // private static final int AUDIO_BIT_RATE = 64000;// 64kbps
@@ -352,15 +353,20 @@ public class MediaUtils {
      方法就能得到用于编码的MediaCodec对象.
      * @return
      */
-    public static MediaCodec getVideoEncoderMediaCodec() {
+    public static MediaCodec getVideoEncoderMediaCodec(Surface surface) {
         MediaCodec encoder = null;
-        MediaCodecInfo[] mediaCodecInfos = findAllEncodersByMime(VIDEO_MIME_TYPE);
+        MediaCodecInfo[] mediaCodecInfos = findAllEncodersByMime(VIDEO_MIME);
         for (MediaCodecInfo mediaCodecInfo : mediaCodecInfos) {
             if (mediaCodecInfo == null) {
                 continue;
             }
             try {
                 encoder = MediaCodec.createByCodecName(mediaCodecInfo.getName());
+                encoder.configure(
+                        getAudioEncoderMediaFormat(),
+                        surface, null,
+                        MediaCodec.CONFIGURE_FLAG_ENCODE);
+                encoder.start();
                 if (DEBUG)
                     MLog.d(TAG, "getVideoEncoderMediaCodec() MediaCodec create success");
                 break;
@@ -436,33 +442,63 @@ public class MediaUtils {
         return encoder;
     }
 
+    public static MediaCodec getVideoEncoderMediaCodec() {
+        MediaCodec encoder = null;
+        MediaCodecInfo[] mediaCodecInfos = findAllEncodersByMime(VIDEO_MIME);
+        for (MediaCodecInfo mediaCodecInfo : mediaCodecInfos) {
+            if (mediaCodecInfo == null) {
+                continue;
+            }
+            try {
+                encoder = MediaCodec.createByCodecName(mediaCodecInfo.getName());
+                encoder.configure(
+                        getAudioEncoderMediaFormat(),
+                        null, null,
+                        MediaCodec.CONFIGURE_FLAG_ENCODE);
+                encoder.start();
+                if (DEBUG)
+                    MLog.d(TAG, "getVideoEncoderMediaCodec() MediaCodec create success");
+                break;
+            } catch (NullPointerException
+                    | IllegalArgumentException
+                    | IOException e) {
+                e.printStackTrace();
+                encoder = null;
+                continue;
+            }
+        }
+
+        return encoder;
+    }
+
     /***
      与下面的getAudioEncoderMediaFormat()对应,因为用的mime都是AUDIO_MIME_TYPE
      @return
      */
     public static MediaCodec getAudioEncoderMediaCodec() {
-        MediaCodecInfo codecInfo = getEncoderMediaCodecInfo(AUDIO_MIME_TYPE);
-        if (codecInfo == null) {
-            throw new RuntimeException(
-                    "根据 \"" + AUDIO_MIME_TYPE + "\" 这个mime找不到对应的MediaCodecInfo对象");
-        }
-
         MediaCodec encoder = null;
-        try {
-            // encoder = MediaCodec.createEncoderByType(AUDIO_MIME_TYPE);
-            encoder = MediaCodec.createByCodecName(codecInfo.getName());
-            if (DEBUG)
-                MLog.d(TAG, "getAudioEncoderMediaCodec() MediaCodec create success");
-            // MediaCodec.CONFIGURE_FLAG_ENCODE表示编码flag
-            /*encoder.configure(
-                    getMediaEncoderFormat(width, height),
-                    null,
-                    null,
-                    MediaCodec.CONFIGURE_FLAG_ENCODE);
-            encoder.start();*/
-        } catch (IOException e) {
-            e.printStackTrace();
-            return null;
+        MediaCodecInfo[] mediaCodecInfos = findAllEncodersByMime(AUDIO_MIME);
+        for (MediaCodecInfo mediaCodecInfo : mediaCodecInfos) {
+            if (mediaCodecInfo == null) {
+                continue;
+            }
+            try {
+                encoder = MediaCodec.createByCodecName(mediaCodecInfo.getName());
+                encoder.configure(
+                        getAudioEncoderMediaFormat(),
+                        null, null,
+                        MediaCodec.CONFIGURE_FLAG_ENCODE);
+                encoder.start();
+                if (DEBUG)
+                    MLog.d(TAG, "getAudioEncoderMediaCodec() MediaCodec create success");
+                break;
+            } catch (NullPointerException
+                    | IllegalArgumentException
+                    | IOException e) {
+                e.printStackTrace();
+                encoder = null;
+                continue;
+            }
         }
 
         return encoder;
@@ -473,17 +509,17 @@ public class MediaUtils {
      * @return
      */
     public static MediaCodec getVideoDecoderMediaCodec() {
-        MediaCodecInfo codecInfo = getEncoderMediaCodecInfo(VIDEO_MIME_TYPE);
+        MediaCodecInfo codecInfo = getEncoderMediaCodecInfo(VIDEO_MIME);
         if (codecInfo == null) {
             throw new RuntimeException(
-                    "根据 \"" + VIDEO_MIME_TYPE + "\" 这个mime找不到对应的MediaCodecInfo对象");
+                    "根据 \"" + VIDEO_MIME + "\" 这个mime找不到对应的MediaCodecInfo对象");
         }
 
         MediaCodec decoder = null;
         try {
             // decoder = MediaCodec.createByCodecName(codecInfo.getName());
             // decoder = MediaCodec.createByCodecName("OMX.google.h264.encoder");
-            decoder = MediaCodec.createDecoderByType(VIDEO_MIME_TYPE);
+            decoder = MediaCodec.createDecoderByType(VIDEO_MIME);
             if (DEBUG)
                 MLog.d(TAG, "getVideoDecoderMediaCodec() MediaCodec create success");
             // 最后一个参数是flag,用来标记是否是编码,传入0表示作为解码.
@@ -547,28 +583,29 @@ public class MediaUtils {
     }
 
     public static MediaCodec getAudioDecoderMediaCodec() {
-        MediaCodecInfo codecInfo = getEncoderMediaCodecInfo(AUDIO_MIME_TYPE);
-        if (codecInfo == null) {
-            throw new RuntimeException(
-                    "根据 \"" + AUDIO_MIME_TYPE + "\" 这个mime找不到对应的MediaCodecInfo对象");
-        }
-
         MediaCodec decoder = null;
-        try {
-            // decoder = MediaCodec.createEncoderByType(AUDIO_MIME_TYPE);
-            decoder = MediaCodec.createByCodecName(codecInfo.getName());
-            if (DEBUG)
-                MLog.d(TAG, "getAudioDecoderMediaCodec() MediaCodec create success");
-            // MediaCodec.CONFIGURE_FLAG_ENCODE表示编码flag
-            /*encoder.configure(
-                    getMediaEncoderFormat(width, height),
-                    null,
-                    null,
-                    MediaCodec.CONFIGURE_FLAG_ENCODE);
-            encoder.start();*/
-        } catch (IOException e) {
-            e.printStackTrace();
-            return null;
+        MediaCodecInfo[] mediaCodecInfos = findAllDecodersByMime(AUDIO_MIME);
+        for (MediaCodecInfo mediaCodecInfo : mediaCodecInfos) {
+            if (mediaCodecInfo == null) {
+                continue;
+            }
+            try {
+                decoder = MediaCodec.createByCodecName(mediaCodecInfo.getName());
+                /*decoder.configure(
+                        getAudioDecoderMediaFormat(),
+                        null, null,
+                        MediaCodec.CONFIGURE_FLAG_ENCODE);
+                decoder.start();*/
+                if (DEBUG)
+                    MLog.d(TAG, "getAudioDecoderMediaCodec() MediaCodec create success");
+                break;
+            } catch (NullPointerException
+                    | IllegalArgumentException
+                    | IOException e) {
+                e.printStackTrace();
+                decoder = null;
+                continue;
+            }
         }
 
         return decoder;
@@ -582,7 +619,7 @@ public class MediaUtils {
      * @return
      */
     public static MediaFormat getVideoEncoderMediaFormat(int width, int height) {
-        MediaFormat format = MediaFormat.createVideoFormat(VIDEO_MIME_TYPE, width, height);
+        MediaFormat format = MediaFormat.createVideoFormat(VIDEO_MIME, width, height);
         format.setInteger(MediaFormat.KEY_MAX_INPUT_SIZE, width * height);
         format.setInteger(MediaFormat.KEY_MAX_WIDTH, width);
         format.setInteger(MediaFormat.KEY_MAX_HEIGHT, height);
@@ -611,11 +648,10 @@ public class MediaUtils {
      */
     public static MediaFormat getAudioEncoderMediaFormat() {
         MediaFormat format = MediaFormat.createAudioFormat(
-                AUDIO_MIME_TYPE, sampleRateInHz, channelCount);
+                AUDIO_MIME, sampleRateInHz, channelCount);
         format.setInteger(
                 MediaFormat.KEY_AAC_PROFILE,
                 MediaCodecInfo.CodecProfileLevel.AACObjectLC);
-        // AAC-HE
         format.setInteger(
                 MediaFormat.KEY_BIT_RATE,
                 AUDIO_BIT_RATE);
@@ -626,8 +662,7 @@ public class MediaUtils {
                 MediaFormat.KEY_MAX_INPUT_SIZE,
                 getMinBufferSize() * 2);
         if (DEBUG)
-            MLog.d(TAG, "getAudioEncoderMediaFormat() created video format: " + format);
-
+            MLog.d(TAG, "getAudioEncoderMediaFormat() created audio format: " + format);
         return format;
     }
 
@@ -639,7 +674,7 @@ public class MediaUtils {
      * @return
      */
     public static MediaFormat getVideoDecoderMediaFormat(int width, int height) {
-        MediaFormat format = MediaFormat.createVideoFormat(VIDEO_MIME_TYPE, width, height);
+        MediaFormat format = MediaFormat.createVideoFormat(VIDEO_MIME, width, height);
         // 设置帧率
         format.setInteger(MediaFormat.KEY_MAX_INPUT_SIZE, width * height);
         format.setInteger(MediaFormat.KEY_MAX_WIDTH, width);
@@ -659,7 +694,7 @@ public class MediaUtils {
 
     public static MediaFormat getAudioDecoderMediaFormat() {
         MediaFormat format = MediaFormat.createAudioFormat(
-                AUDIO_MIME_TYPE, sampleRateInHz, channelCount);
+                AUDIO_MIME, sampleRateInHz, channelCount);
         format.setInteger(
                 MediaFormat.KEY_AAC_PROFILE,
                 MediaCodecInfo.CodecProfileLevel.AACObjectLC);
@@ -674,7 +709,7 @@ public class MediaUtils {
                 MediaFormat.KEY_MAX_INPUT_SIZE,
                 getMinBufferSize() * 2);
         if (DEBUG)
-            MLog.d(TAG, "getAudioDecoderMediaFormat() created video format: " + format);
+            MLog.d(TAG, "getAudioDecoderMediaFormat() created Audio format: " + format);
 
         return format;
     }
@@ -689,44 +724,6 @@ public class MediaUtils {
      录制是什么声音,播放才是什么声音.
      因此选择AudioFormat.CHANNEL_IN_STEREO(双声道)作为创建
      AudioRecord对象和AudioTrack对象的参数.
-
-     AAC的数据如果需要直接播放,
-     则需要添加ADT头部,
-     在每一帧AAC数据的前面添加ADTS,
-     如果要将AAC合入到MP4中则不需要添加ADT头.
-     下面的值在PCM编码成AAC,添加ADTS头时需要参照.
-     int profile = 2;  // AAC LC
-     int freqIdx = 11; // 8KHz
-     int chanCfg = 1;  // CPE
-     意思: AAC的格式对应2,8K的采样率对应参数是11,单声道是1
-     采样率freqIdx参数：
-     0: 96000 Hz
-     1: 88200 Hz
-     2: 64000 Hz
-     3: 48000 Hz
-     4: 44100 Hz
-     5: 32000 Hz
-     6: 24000 Hz
-     7: 22050 Hz
-     8: 16000 Hz
-     9: 12000 Hz
-     10: 11025 Hz
-     11: 8000 Hz
-     12: 7350 Hz
-     13: Reserved
-     14: Reserved
-     15: frequency is written explictly
-     声道数chanCfg参数： 
-     0: Defined in AOT Specifc Config
-     1: 1 channel: front-center
-     2: 2 channels: front-left, front-right
-     3: 3 channels: front-center, front-left, front-right
-     4: 4 channels: front-center, front-left, front-right, back-center
-     5: 5 channels: front-center, front-left, front-right, back-left, back-right
-     6: 6 channels: front-center, front-left, front-right, back-left, back-right, LFE-channel
-     7: 8 channels: front-center, front-left, front-right, side-left, side-right, back-left,
-     back-right, LFE-channel
-     8-15: Reserved
      */
     // 下面的参数为了得到默认的AudioRecord对象和AudioTrack对象而定义的
     // 兼容所有Android设备
@@ -1219,33 +1216,34 @@ public class MediaUtils {
         }
 
         bufferSizeInBytes *= 2;
-        AudioAttributes attributes = new AudioAttributes.Builder()
-                .setUsage(AudioAttributes.USAGE_MEDIA)
-                .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
-                // 一使用这个就出错
-                // .setFlags(AudioAttributes.FLAG_HW_AV_SYNC)
-                .build();
-        AudioFormat format = new AudioFormat.Builder()
-                .setSampleRate(sampleRateInHz)
-                // 很关键的一个参数
-                .setChannelMask(channelConfig)
-                .setEncoding(audioFormat)
-                .build();
         AudioTrack audioTrack = null;
         try {
-            audioTrack = new AudioTrack(
-                    attributes,
-                    format,
-                    bufferSizeInBytes,
-                    mode,
-                    sessionId);
-            /*audioTrack = new AudioTrack(
-                    streamType,
-                    sampleRateInHz,
-                    channelConfig_Track,
-                    audioFormat,
-                    bufferSizeInBytes,
-                    mode);*/
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                AudioAttributes attributes = new AudioAttributes.Builder()
+                        .setUsage(AudioAttributes.USAGE_MEDIA)
+                        .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+                        .build();
+                AudioFormat format = new AudioFormat.Builder()
+                        .setSampleRate(sampleRateInHz)
+                        // 很关键的一个参数
+                        .setChannelMask(channelConfig)
+                        .setEncoding(audioFormat)
+                        .build();
+                audioTrack = new AudioTrack(
+                        attributes,
+                        format,
+                        bufferSizeInBytes,
+                        mode,
+                        sessionId);
+            } else {
+                audioTrack = new AudioTrack(
+                        streamType,
+                        sampleRateInHz,
+                        channelConfig,
+                        audioFormat,
+                        bufferSizeInBytes,
+                        mode);
+            }
         } catch (IllegalArgumentException e) {
             e.printStackTrace();
             return null;
@@ -1495,7 +1493,7 @@ public class MediaUtils {
                         .append("\n  Frame Rates: ").append(videoCapabilities
                         .getSupportedFrameRates())
                         .append("\n  Bitrate: ").append(videoCapabilities.getBitrateRange());
-                if (VIDEO_MIME_TYPE.equals(mimeType)) {
+                if (VIDEO_MIME.equals(mimeType)) {
                     MediaCodecInfo.CodecProfileLevel[] levels = codecCapabilities.profileLevels;
 
                     builder.append("\n  Profile-levels: ");
@@ -1609,23 +1607,97 @@ public class MediaUtils {
     /***
      添加ADTS头到一帧的音频数据上
      freqIdx和chanCfg需要根据实际的采样率和声道数决定
-     @param packet
-     @param packetLength
+
+     AAC的数据如果需要直接播放,
+     则需要添加ADT头部,
+     在每一帧AAC数据的前面添加ADTS,
+     如果要将AAC合入到MP4中则不需要添加ADT头.
+     下面的值在PCM编码成AAC,添加ADTS头时需要参照.
+     int profile = 2;  // AAC LC
+     int freqIdx = 11; // 8KHz
+     int chanCfg = 1;  // CPE
+     意思: AAC的格式对应2,8K的采样率对应参数是11,单声道是1
+     采样率freqIdx参数：
+     0: 96000 Hz
+     1: 88200 Hz
+     2: 64000 Hz
+     3: 48000 Hz
+     4: 44100 Hz
+     5: 32000 Hz
+     6: 24000 Hz
+     7: 22050 Hz
+     8: 16000 Hz
+     9: 12000 Hz
+     10: 11025 Hz
+     11: 8000 Hz
+     12: 7350 Hz
+     13: Reserved
+     14: Reserved
+     15: frequency is written explictly
+     声道数chanCfg参数： 
+     0: Defined in AOT Specifc Config
+     1: 1 channel: front-center
+     2: 2 channels: front-left, front-right
+     3: 3 channels: front-center, front-left, front-right
+     4: 4 channels: front-center, front-left, front-right, back-center
+     5: 5 channels: front-center, front-left, front-right, back-left, back-right
+     6: 6 channels: front-center, front-left, front-right, back-left, back-right, LFE-channel
+     7: 8 channels: front-center, front-left, front-right, side-left, side-right, back-left,
+     back-right, LFE-channel
+     8-15: Reserved
+
+     @param packet        byte数组,长度为(7 + 编码后的aac数据长度)
+     @param packetLength (7 + 编码后的aac数据长度)
      */
     public static void addADTStoFrame(byte[] packet, int packetLength) {
-        int profile = 2; // AAC LC
-        int freqIdx = 4; // 44.1KHz
-        int chanCfg = 2; // CPE
+        int audioObjectType = 2; // AAC LC
+        // 如果上面的sampleRateInHz,channelConfig改变的话,下面的值也要相应的改变
+        int sampleRateIndex = 4; // 44.1KHz
+        int channelConfig = 2; // CPE
 
         // fill in ADTS data
         packet[0] = (byte) 0xFF;
         // 解决ios不能播放问题
         packet[1] = (byte) 0xF1;
-        packet[2] = (byte) (((profile - 1) << 6) + (freqIdx << 2) + (chanCfg >> 2));
-        packet[3] = (byte) (((chanCfg & 3) << 6) + (packetLength >> 11));
+        packet[2] = (byte) (((audioObjectType - 1) << 6) + (sampleRateIndex << 2) + (channelConfig >> 2));
+        packet[3] = (byte) (((channelConfig & 3) << 6) + (packetLength >> 11));
         packet[4] = (byte) ((packetLength & 0x7FF) >> 3);
         packet[5] = (byte) (((packetLength & 7) << 5) + 0x1F);
         packet[6] = (byte) 0xFC;
+
+        /***
+         不变的量: packet[0] packet[1] packet[2] packet[3] packet[6]
+         packet[0]: -1 packet[1]: -15 packet[2]: 80 packet[3]: -128 packet[4]: 64 packet[5]: 31 packet[6]: -4
+         packet[0]: -1 packet[1]: -15 packet[2]: 80 packet[3]: -128 packet[4]: 64 packet[5]: 95 packet[6]: -4
+         packet[0]: -1 packet[1]: -15 packet[2]: 80 packet[3]: -128 packet[4]: 63 packet[5]: -97 packet[6]: -4
+         packet[0]: -1 packet[1]: -15 packet[2]: 80 packet[3]: -128 packet[4]: 66 packet[5]: -33 packet[6]: -4
+         */
+        /*MLog.d(TAG, "addADTStoFrame() " +
+                " packet[0]: " + packet[0] +
+                " packet[1]: " + packet[1] +
+                " packet[2]: " + packet[2] +
+                " packet[3]: " + packet[3] +
+                " packet[4]: " + packet[4] +
+                " packet[5]: " + packet[5] +
+                " packet[6]: " + packet[6]);*/
+    }
+
+    public static byte[] buildAacAudioSpecificConfig() {
+        // 对应addADTStoFrame方法中的相同参数
+        int audioObjectType = 2;
+        int sampleRateIndex = 4;
+        int channelConfig = 2;
+
+        byte[] specificConfig = new byte[2];
+        specificConfig[0] = (byte) (((audioObjectType << 3) & 0xF8) | ((sampleRateIndex >> 1) & 0x07));
+        specificConfig[1] = (byte) (((sampleRateIndex << 7) & 0x80) | ((channelConfig << 3) & 0x78));
+        return specificConfig;
+    }
+
+    public static void setCsdBuffers(MediaFormat format, List<byte[]> csdBuffers) {
+        for (int i = 0; i < csdBuffers.size(); i++) {
+            format.setByteBuffer("csd-" + i, ByteBuffer.wrap(csdBuffers.get(i)));
+        }
     }
 
     /***
@@ -1851,7 +1923,7 @@ public class MediaUtils {
         //MediaFormat这个类是用来定义视频格式相关信息的
         //video/avc,这里的avc是高级视频编码Advanced Video Coding
         //mWidth和mHeight是视频的尺寸，这个尺寸不能超过视频采集时采集到的尺寸，否则会直接crash
-        MediaFormat format = MediaFormat.createVideoFormat(VIDEO_MIME_TYPE, 1, 1);
+        MediaFormat format = MediaFormat.createVideoFormat(VIDEO_MIME, 1, 1);
         //COLOR_FormatSurface这里表明数据将是一个graphicbuffer元数据
         format.setInteger(MediaFormat.KEY_COLOR_FORMAT,
                 MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface);
@@ -1866,7 +1938,7 @@ public class MediaUtils {
 
         Log.d(TAG, "created video format: " + format);
         //创建一个MediaCodec的实例
-        //mEncoder = MediaCodec.createEncoderByType(VIDEO_MIME_TYPE);
+        //mEncoder = MediaCodec.createEncoderByType(VIDEO_MIME);
         //定义这个实例的格式，也就是上面我们定义的format，其他参数不用过于关注
         //mEncoder.configure(format, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE);
         //这一步非常关键，它设置的，是MediaCodec的编码源，也就是说，我要告诉mEncoder，你给我解码哪些流。
@@ -1939,4 +2011,88 @@ public class MediaUtils {
  Android Tunnel Mode
  https://blog.csdn.net/yingmuliuchuan/article/details/81807512
  https://developer.amazon.com/zh/docs/fire-tv/4k-tunnel-mode-playback.html
+
+ Audio Object Types
+ MPEG-4 Audio Object Types:
+
+ 0: Null
+ 1: AAC Main
+ 2: AAC LC (Low Complexity)
+ 3: AAC SSR (Scalable Sample Rate)
+ 4: AAC LTP (Long Term Prediction)
+ 5: SBR (Spectral Band Replication)
+ 6: AAC Scalable
+ 7: TwinVQ
+ 8: CELP (Code Excited Linear Prediction)
+ 9: HXVC (Harmonic Vector eXcitation Coding)
+ 10: Reserved
+ 11: Reserved
+ 12: TTSI (Text-To-Speech Interface)
+ 13: Main Synthesis
+ 14: Wavetable Synthesis
+ 15: General MIDI
+ 16: Algorithmic Synthesis and Audio Effects
+ 17: ER (Error Resilient) AAC LC
+ 18: Reserved
+ 19: ER AAC LTP
+ 20: ER AAC Scalable
+ 21: ER TwinVQ
+ 22: ER BSAC (Bit-Sliced Arithmetic Coding)
+ 23: ER AAC LD (Low Delay)
+ 24: ER CELP
+ 25: ER HVXC
+ 26: ER HILN (Harmonic and Individual Lines plus Noise)
+ 27: ER Parametric
+ 28: SSC (SinuSoidal Coding)
+ 29: PS (Parametric Stereo)
+ 30: MPEG Surround
+ 31: (Escape value)
+ 32: Layer-1
+ 33: Layer-2
+ 34: Layer-3
+ 35: DST (Direct Stream Transfer)
+ 36: ALS (Audio Lossless)
+ 37: SLS (Scalable LosslesS)
+ 38: SLS non-core
+ 39: ER AAC ELD (Enhanced Low Delay)
+ 40: SMR (Symbolic Music Representation) Simple
+ 41: SMR Main
+ 42: USAC (Unified Speech and Audio Coding) (no SBR)
+ 43: SAOC (Spatial Audio Object Coding)
+ 44: LD MPEG Surround
+ 45: USAC
+
+ Sampling Frequencies
+ There are 13 supported frequencies:
+
+ 0: 96000 Hz
+ 1: 88200 Hz
+ 2: 64000 Hz
+ 3: 48000 Hz
+ 4: 44100 Hz
+ 5: 32000 Hz
+ 6: 24000 Hz
+ 7: 22050 Hz
+ 8: 16000 Hz
+ 9: 12000 Hz
+ 10: 11025 Hz
+ 11: 8000 Hz
+ 12: 7350 Hz
+ 13: Reserved
+ 14: Reserved
+ 15: frequency is written explictly
+
+ Channel Configurations
+ These are the channel configurations:
+
+ 0: Defined in AOT Specifc Config
+ 1: 1 channel: front-center
+ 2: 2 channels: front-left, front-right
+ 3: 3 channels: front-center, front-left, front-right
+ 4: 4 channels: front-center, front-left, front-right, back-center
+ 5: 5 channels: front-center, front-left, front-right, back-left, back-right
+ 6: 6 channels: front-center, front-left, front-right, back-left, back-right, LFE-channel
+ 7: 8 channels: front-center, front-left, front-right, side-left, side-right, back-left, back-right, LFE-channel
+ 8-15: Reserved
+
  */

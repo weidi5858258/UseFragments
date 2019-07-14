@@ -34,6 +34,13 @@ import java.util.concurrent.Executors;
 
 /***
  Created by weidi on 2019/6/30.
+
+ 使用了MediaExtractor之后,
+ 创建相应的MediaCodec和AudioTrack对象,
+ 调用MediaExtractor的readSampleData(...)方法把数据送到
+ MediaCodec解码器进行解码,
+ 在这个过程中不需要关心音频文件是什么格式的.
+ 因为MediaExtractor已经把这些工作给做了.
  */
 
 public class SampleAudioPlayer {

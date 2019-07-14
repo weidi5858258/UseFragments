@@ -420,14 +420,14 @@ public class VideoLiveBroadcastingFragment extends BaseFragment {
         // test
         MLog.d(TAG, "Video Codec Name---------------------------------------------------");
         MediaCodecInfo[] mediaCodecInfos =
-                MediaUtils.findAllEncodersByMime(MediaUtils.VIDEO_MIME_TYPE);
+                MediaUtils.findAllEncodersByMime(MediaUtils.VIDEO_MIME);
         for (MediaCodecInfo info : mediaCodecInfos) {
             MLog.d(TAG, "prepare() " + printThis() +
                     " " + info.getName());
         }
         MLog.d(TAG, "Audio Codec Name---------------------------------------------------");
         mediaCodecInfos =
-                MediaUtils.findAllEncodersByMime(MediaUtils.AUDIO_MIME_TYPE);
+                MediaUtils.findAllEncodersByMime(MediaUtils.AUDIO_MIME);
         for (MediaCodecInfo info : mediaCodecInfos) {
             MLog.d(TAG, "prepare() " + printThis() +
                     " " + info.getName());
@@ -442,7 +442,7 @@ public class VideoLiveBroadcastingFragment extends BaseFragment {
         mPps = Arrays.copyOfRange(pps, 4, ppsLength);*/
 
         /*MediaFormat format = MediaFormat.createVideoFormat(
-                MediaUtils.VIDEO_MIME_TYPE, mWidth, mHeight);
+                MediaUtils.VIDEO_MIME, mWidth, mHeight);
         // 房间的大小要大于等于width * height时,才能一次性存放需要解码的数据
         format.setInteger(MediaFormat.KEY_MAX_INPUT_SIZE, mWidth * mHeight);
         format.setInteger(MediaFormat.KEY_MAX_WIDTH, mWidth);
@@ -451,7 +451,7 @@ public class VideoLiveBroadcastingFragment extends BaseFragment {
         format.setByteBuffer("csd-1", ByteBuffer.wrap(mPps));
         MediaCodec decoder = null;
         try {
-            decoder = MediaCodec.createDecoderByType(MediaUtils.VIDEO_MIME_TYPE);
+            decoder = MediaCodec.createDecoderByType(MediaUtils.VIDEO_MIME);
         } catch (NullPointerException e) {
             e.printStackTrace();
         } catch (IllegalArgumentException e) {
