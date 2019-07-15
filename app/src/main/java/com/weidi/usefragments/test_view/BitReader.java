@@ -1,4 +1,4 @@
-package com.weidi.usefragments.tool;
+package com.weidi.usefragments.test_view;
 
 /**
  * Created by Administrator on 2018/1/2.

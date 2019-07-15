@@ -41,7 +41,6 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 
 /***
@@ -495,22 +494,11 @@ public class AudioFragment extends BaseFragment {
             }
 
         mAudioDecoderMediaFormat = MediaUtils.getAudioDecoderMediaFormat();
-        // 0X02 0x04 0x02 0X00
-        // 00010 0100 0010 000
-        // 0001 0010 0001 0000
         mAudioDecoderMediaFormat.setInteger(MediaFormat.KEY_IS_ADTS, 1);
-        mAudioDecoderMediaFormat.setInteger(MediaFormat.KEY_PRIORITY, 0 /* realtime priority
-        */);
-        // ByteBuffer key
-        //byte[] data = new byte[]{(byte) 0x12, (byte) 0x10};
-        //byte[] data = new byte[]{(byte) 0x18, (byte) 0x16};
-        byte[] data = MediaUtils.buildAacAudioSpecificConfig();
+        mAudioDecoderMediaFormat.setInteger(MediaFormat.KEY_PRIORITY, 0);
         List<byte[]> list = new ArrayList<>();
-        list.add(data);
+        list.add(MediaUtils.buildAacAudioSpecificConfig());
         MediaUtils.setCsdBuffers(mAudioDecoderMediaFormat, list);
-        /*ByteBuffer csd_0 = ByteBuffer.wrap(data);
-        // ADT头的解码信息
-        mAudioDecoderMediaFormat.setByteBuffer("csd-0", csd_0);*/
         MLog.d(TAG, "prepare() " + mAudioDecoderMediaFormat);
         mAudioDecoderMediaCodec = MediaUtils.getAudioDecoderMediaCodec(mAudioDecoderMediaFormat);
     }
@@ -712,11 +700,16 @@ public class AudioFragment extends BaseFragment {
                     return;
                 }
 
+                AACHelper aacHelper = new AACHelper();
+                aacHelper.setInputStream(fis);
+
+                if(true)return;
+
                 int bufferSizeInBytes =
                         MediaUtils.getMinBufferSize() * 2;
                 mPcmData = new byte[bufferSizeInBytes];
                 byte[] pcmData = new byte[bufferSizeInBytes];
-                byte[] frameData = new byte[1025];
+                byte[] frameData = new byte[1024];
 
                 if (DEBUG)
                     MLog.d(TAG, "playPcm() start");
