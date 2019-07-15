@@ -9,7 +9,6 @@ import android.media.MediaCodec;
 import android.media.MediaFormat;
 import android.media.audiofx.AcousticEchoCanceler;
 import android.media.audiofx.NoiseSuppressor;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
@@ -17,9 +16,6 @@ import android.os.Looper;
 import android.os.Message;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
-import android.text.TextUtils;
-import android.text.format.DateUtils;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -45,6 +41,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 /***
@@ -395,7 +392,7 @@ public class AudioFragment extends BaseFragment {
             }
         };
 
-//        mThreadHandler.sendEmptyMessage(PREPARE);
+        //        mThreadHandler.sendEmptyMessage(PREPARE);
         prepare();
     }
 
@@ -481,8 +478,6 @@ public class AudioFragment extends BaseFragment {
         mSimpleAudioRecorder.setContext(getContext());
         mSimpleAudioRecorder.setCallback(mCallback);
 
-        mAudioDecoderMediaCodec = MediaUtils.getAudioDecoderMediaCodec();
-        mAudioDecoderMediaFormat = MediaUtils.getAudioDecoderMediaFormat();
         if (mSimpleAudioRecorder.getAudioRecord() != null) {
             if (mAudioTrack == null) {
                 mAudioTrack = MediaUtils.createAudioTrack(
@@ -498,28 +493,26 @@ public class AudioFragment extends BaseFragment {
                 MLog.d(TAG, "onStarted() state: " + mAudioTrack.getState() +
                         " AudioTrackSessionId:  " + mAudioTrack.getAudioSessionId());
             }
-        if (mAudioDecoderMediaCodec != null
-                && mAudioDecoderMediaFormat != null) {
-            // 0X02 0x04 0x02 0X00
-            // 00010 0100 0010 000
-            // 0001 0010 0001 0000
-            mAudioDecoderMediaFormat.setInteger(MediaFormat.KEY_IS_ADTS, 1);
-            mAudioDecoderMediaFormat.setInteger(MediaFormat.KEY_PRIORITY, 0 /* realtime priority */);
-            // ByteBuffer key
-            //byte[] data = new byte[]{(byte) 0x12, (byte) 0x10};
-            //byte[] data = new byte[]{(byte) 0x18, (byte) 0x16};
-            byte[] data = MediaUtils.buildAacAudioSpecificConfig();
-            List<byte[]> list = new ArrayList<>();
-            list.add(data);
-            MediaUtils.setCsdBuffers(mAudioDecoderMediaFormat, list);
-            /*ByteBuffer csd_0 = ByteBuffer.wrap(data);
-            // ADT头的解码信息
-            mAudioDecoderMediaFormat.setByteBuffer("csd-0", csd_0);*/
-            MLog.d(TAG, "prepare() " + mAudioDecoderMediaFormat);
-            /*mAudioDecoderMediaCodec.configure(
-                    mAudioDecoderMediaFormat, null, null, 0);
-            mAudioDecoderMediaCodec.start();*/
-        }
+
+        mAudioDecoderMediaFormat = MediaUtils.getAudioDecoderMediaFormat();
+        // 0X02 0x04 0x02 0X00
+        // 00010 0100 0010 000
+        // 0001 0010 0001 0000
+        mAudioDecoderMediaFormat.setInteger(MediaFormat.KEY_IS_ADTS, 1);
+        mAudioDecoderMediaFormat.setInteger(MediaFormat.KEY_PRIORITY, 0 /* realtime priority
+        */);
+        // ByteBuffer key
+        //byte[] data = new byte[]{(byte) 0x12, (byte) 0x10};
+        //byte[] data = new byte[]{(byte) 0x18, (byte) 0x16};
+        byte[] data = MediaUtils.buildAacAudioSpecificConfig();
+        List<byte[]> list = new ArrayList<>();
+        list.add(data);
+        MediaUtils.setCsdBuffers(mAudioDecoderMediaFormat, list);
+        /*ByteBuffer csd_0 = ByteBuffer.wrap(data);
+        // ADT头的解码信息
+        mAudioDecoderMediaFormat.setByteBuffer("csd-0", csd_0);*/
+        MLog.d(TAG, "prepare() " + mAudioDecoderMediaFormat);
+        mAudioDecoderMediaCodec = MediaUtils.getAudioDecoderMediaCodec(mAudioDecoderMediaFormat);
     }
 
     private void playTrackOrStopTrack() {
@@ -629,23 +622,24 @@ public class AudioFragment extends BaseFragment {
     /**
      * 寻找指定buffer中AAC帧头的开始位置
      *
-     * @param startIndex 开始的位置
-     * @param data       数据
-     * @param max        需要检测的最大值
+     * @param offset 开始的位置
+     * @param data   数据
+     * @param size   需要检测的最大值
      * @return
      */
-    private int findHead(byte[] data, int startIndex, int max) {
-        int i;
-        for (i = startIndex; i <= max; i++) {
+    private void findHead(byte[] data, int offset, int size, List<Integer> list) {
+        int i = 0;
+        for (i = offset; i < size; i++) {
             //发现帧头
-            if (isHead(data, i))
-                break;
+            if (isHead(data, i)) {
+                list.add(i);
+                i += 7;
+            }
         }
         //检测到最大值，未发现帧头
-        if (i == max) {
+        /*if (i == size) {
             i = -1;
-        }
-        return i;
+        }*/
     }
 
     /**
@@ -653,8 +647,19 @@ public class AudioFragment extends BaseFragment {
      */
     private boolean isHead(byte[] data, int offset) {
         boolean result = false;
-        if (data[offset] == (byte) 0xFF && data[offset + 1] == (byte) 0xF1
-                && data[offset + 3] == (byte) 0x80) {
+        if (data[offset] == (byte) 0xFF
+                && data[offset + 1] == (byte) 0xF1
+                && data[offset + 3] == (byte) 0x80
+                && data[offset + 6] == (byte) 0xFC) {
+            // -1 -15 80 -128 63 -97 -4
+            /*MLog.d(TAG, "onBuffer() offset: " + offset +
+                    "     " + data[offset] +
+                    " " + data[offset + 1] +
+                    " " + data[offset + 2] +
+                    " " + data[offset + 3] +
+                    " " + data[offset + 4] +
+                    " " + data[offset + 5] +
+                    " " + data[offset + 6]);*/
             result = true;
         }
         return result;
@@ -685,15 +690,12 @@ public class AudioFragment extends BaseFragment {
     private static final int TIME_OUT = 10000;
     private MediaCodec mAudioDecoderMediaCodec;
     private MediaFormat mAudioDecoderMediaFormat;
+    private long playLength = 0;
 
     private void playPcm() {
         new Thread(new Runnable() {
             @Override
             public void run() {
-                mAudioDecoderMediaCodec.configure(
-                        mAudioDecoderMediaFormat, null, null, 0);
-                mAudioDecoderMediaCodec.start();
-
                 File file = new File(PATH, "test1.aac");
                 if (!file.exists()
                         || !file.canRead()) {
@@ -701,7 +703,7 @@ public class AudioFragment extends BaseFragment {
                 }
 
                 long length = file.length();
-                long playLength = 0;
+                MLog.d(TAG, "playPcm() fileLength: " + length);
                 FileInputStream fis = null;
                 try {
                     fis = new FileInputStream(file);
@@ -713,185 +715,145 @@ public class AudioFragment extends BaseFragment {
                 int bufferSizeInBytes =
                         MediaUtils.getMinBufferSize() * 2;
                 mPcmData = new byte[bufferSizeInBytes];
+                byte[] pcmData = new byte[bufferSizeInBytes];
+                byte[] frameData = new byte[1025];
 
                 if (DEBUG)
                     MLog.d(TAG, "playPcm() start");
 
-                int readSize = -1;
-                // 房间号
-                int roomIndex = MediaCodec.INFO_TRY_AGAIN_LATER;
-                // 房间
-                ByteBuffer room = null;
-                // 房间大小
-                int roomSize = 0;
-                // 房间信息
-                MediaCodec.BufferInfo roomInfo = new MediaCodec.BufferInfo();
-                ByteBuffer[] inputBuffers = mAudioDecoderMediaCodec.getInputBuffers();
-                ByteBuffer[] outputBuffers = mAudioDecoderMediaCodec.getOutputBuffers();
-                AACHelper aacHelper = null;
+                /*AACHelper aacHelper = null;
                 try {
                     aacHelper = new AACHelper(file.getAbsolutePath());
                 } catch (FileNotFoundException e) {
                     e.printStackTrace();
-                }
-
+                }*/
+                MediaUtils.Callback callback = new MediaUtils.Callback() {
+                    @Override
+                    public void onBuffer(ByteBuffer room, int roomSize) {
+                        byte[] pcmData = new byte[roomSize];
+                        room.get(pcmData, 0, pcmData.length);
+                        if (mAudioTrack != null) {
+                            int writeSize = mAudioTrack.write(pcmData, 0, roomSize);
+                            playLength += writeSize;
+                            //MLog.d(TAG, "onBuffer() writeSize: " + writeSize);
+                        }
+                    }
+                };
+                playLength = 0;
+                long startDecodeTime = System.nanoTime();
+                List<Integer> list = new ArrayList<>();
+                list.clear();
+                int lastIndex = -1;
                 while (mIsTrackRunning) {
+                    int readSize = -1;
                     try {
                         if (fis.available() <= 0) {
+                            MLog.d(TAG, "playPcm() break fis.available(): " + fis.available());
                             mIsTrackRunning = false;
                             break;
                         }
+                        if (list.isEmpty()) {
+                            if (lastIndex == -1) {
+                                readSize = fis.read(mPcmData, 0, mPcmData.length);
+                                if (readSize <= 0) {
+                                    mIsTrackRunning = false;
+                                    break;
+                                }
+                            } else {
+                                Arrays.fill(pcmData, (byte) 0);
+                                readSize = fis.read(pcmData, 0, lastIndex);
+                                if (readSize <= 0) {
+                                    mIsTrackRunning = false;
+                                    MLog.d(TAG, "playPcm() break: " + readSize);
+                                    break;
+                                }
+                                System.arraycopy(pcmData, 0,
+                                        mPcmData, mPcmData.length - lastIndex, readSize);
+                                // mPcmData的实际长度
+                                readSize += (mPcmData.length - lastIndex);
+                                /*MLog.d(TAG, "playPcm() readSize: " + readSize);
+                                MLog.d(TAG, "playPcm() mPcmData.length: " + mPcmData.length);*/
+                            }
+                        }
                     } catch (IOException e) {
                         e.printStackTrace();
+                        mIsTrackRunning = false;
                         break;
                     }
-                    try {
-                        readSize = fis.read(mPcmData, 0, mPcmData.length);
-                        MLog.d(TAG, "playPcm() readSize: " + readSize);
-                    } catch (IOException e) {
-                        e.printStackTrace();
+
+                    findHead(mPcmData, 0, readSize, list);
+                    if (list.isEmpty()) {
                         continue;
                     }
-                    if (readSize <= 0) {
-                        mIsTrackRunning = false;
-                        break;
-                    }
-
-                    // Input
-                    try {
-                        roomIndex = mAudioDecoderMediaCodec.dequeueInputBuffer(-1);
-                        if (roomIndex >= 0) {
-                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                                room = mAudioDecoderMediaCodec.getInputBuffer(roomIndex);
-                            } else {
-                                room = inputBuffers[roomIndex];
-                            }
-                            if (room != null) {
-                                room.clear();
-                                room.put(mPcmData);
-                                /*try {
-                                    readSize = aacHelper.getSample(room);
-                                    MLog.d(TAG, "playPcm() readSize: " + readSize);
-                                } catch (IOException e) {
-                                    e.printStackTrace();
-                                }*/
-                            }
-                            long presentationTimeUs = System.nanoTime() / 1000;
-                            mAudioDecoderMediaCodec.queueInputBuffer(
-                                    roomIndex,
-                                    0,
-                                    readSize,
-                                    presentationTimeUs,
-                                    0);
-                        }
-                    } catch (MediaCodec.CryptoException
-                            | IllegalStateException
-                            | NullPointerException e) {
-                        MLog.e(TAG, "playPcm() Input occur exception: " + e);
-                        e.printStackTrace();
-                        mIsTrackRunning = false;
-                        break;
-                    }
-
-                    // Output
-                    for (; ; ) {
-                        try {
-                            roomIndex = mAudioDecoderMediaCodec.dequeueOutputBuffer(
-                                    roomInfo, TIME_OUT);
-                            MLog.d(TAG, "playPcm() roomIndex: " + roomIndex);
-                            switch (roomIndex) {
-                                case MediaCodec.INFO_TRY_AGAIN_LATER:
-                                    break;
-                                case MediaCodec.INFO_OUTPUT_FORMAT_CHANGED:
-                                    MLog.d(TAG, "playPcm() " +
-                                            "Output MediaCodec.INFO_OUTPUT_FORMAT_CHANGED");
-                                    mAudioDecoderMediaFormat = mAudioDecoderMediaCodec.getOutputFormat();
-                                    MLog.d(TAG, "playPcm() " + mAudioDecoderMediaFormat);
-                                    break;
-                                case MediaCodec.INFO_OUTPUT_BUFFERS_CHANGED:
-                                    MLog.d(TAG, "playPcm() " +
-                                            "Output MediaCodec.INFO_OUTPUT_BUFFERS_CHANGED");
-                                    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
-                                        outputBuffers = mAudioDecoderMediaCodec.getOutputBuffers();
-                                    }
-                                    break;
-                                default:
-                                    break;
-                            }
-                            if (roomIndex < 0) {
-                                break;
-                            }
-
-                            if ((roomInfo.flags & MediaCodec.BUFFER_FLAG_CODEC_CONFIG) != 0) {
-                                MLog.d(TAG, "playPcm() " +
-                                        "Output MediaCodec.BUFFER_FLAG_CODEC_CONFIG");
-                                mAudioDecoderMediaCodec.releaseOutputBuffer(roomIndex, false);
-                                continue;
-                            }
-                            if ((roomInfo.flags & MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0) {
-                                MLog.d(TAG, "playPcm() " +
-                                        "Output MediaCodec.BUFFER_FLAG_END_OF_STREAM");
+                    int count = list.size();
+                    for (int i = 0; i < count; i++) {
+                        Arrays.fill(frameData, (byte) 0);
+                        if (i + 1 < count) {
+                            /***
+                             各帧之间的offset很重要,比如有:0, 519, 1038, 1585, 2147 ...
+                             知道了offset,那么就知道了要"喂"多少数据了.
+                             */
+                            int readLength = list.get(i + 1) - list.get(i);
+                            System.arraycopy(
+                                    mPcmData, list.get(i),
+                                    frameData, 0, readLength);
+                            MLog.d(TAG, "playPcm() offset: " + list.get(i) +
+                                    "    " + frameData[0] +
+                                    " " + frameData[1] +
+                                    " " + frameData[2] +
+                                    " " + frameData[3] +
+                                    " " + frameData[4] +
+                                    " " + frameData[5] +
+                                    " " + frameData[6]);
+                            MLog.d(TAG, "playPcm() readLength: " + readLength);
+                            // Input
+                            if (!MediaUtils.feedInputBuffer(
+                                    mAudioDecoderMediaCodec, frameData,
+                                    0, readLength, startDecodeTime)) {
                                 mIsTrackRunning = false;
                                 break;
                             }
-
-                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                                room = mAudioDecoderMediaCodec.getOutputBuffer(roomIndex);
+                        } else {
+                            lastIndex = list.get(i);
+                            MLog.d(TAG, "playPcm() nextIndex: " + lastIndex);
+                            System.arraycopy(
+                                    mPcmData, lastIndex,
+                                    frameData, 0, readSize - lastIndex);
+                            if (readSize == mPcmData.length) {
+                                Arrays.fill(mPcmData, (byte) 0);
+                                System.arraycopy(
+                                        frameData, 0,
+                                        mPcmData, 0, readSize - lastIndex);
+                                list.clear();
+                                break;
                             } else {
-                                room = outputBuffers[roomIndex];
+                                // 剩下大概还有一帧
+                                MLog.d(TAG, "playPcm() last readSize: " + readSize);
+                                MLog.d(TAG, "playPcm() last offset: " + 0 +
+                                        "    " + frameData[0] +
+                                        " " + frameData[1] +
+                                        " " + frameData[2] +
+                                        " " + frameData[3] +
+                                        " " + frameData[4] +
+                                        " " + frameData[5] +
+                                        " " + frameData[6]);
+                                // Input
+                                if (!MediaUtils.feedInputBuffer(
+                                        mAudioDecoderMediaCodec, frameData,
+                                        0, readSize - lastIndex, startDecodeTime)) {
+                                    mIsTrackRunning = false;
+                                    break;
+                                }
                             }
+                        }
 
-                            if (room != null) {
-                                roomSize = roomInfo.size;
-                                room.position(roomInfo.offset);
-                                room.limit(roomInfo.offset + roomSize);
-                                byte[] pcmData = new byte[roomSize];
-                                room.get(pcmData, 0, pcmData.length);
-                                int writeSize = mAudioTrack.write(pcmData, 0, roomSize);
-                                MLog.d(TAG, "playPcm() writeSize: " + writeSize);
-                                playLength += writeSize;
-                            }
-
-                            mAudioDecoderMediaCodec.releaseOutputBuffer(roomIndex, false);
-                        } catch (IllegalStateException
-                                | IllegalArgumentException
-                                | NullPointerException e) {
-                            MLog.e(TAG, "playPcm() Output occur exception: " + e);
-                            e.printStackTrace();
+                        // Output
+                        if (!MediaUtils.drainOutputBuffer(
+                                mAudioDecoderMediaCodec, false, callback)) {
                             mIsTrackRunning = false;
                             break;
                         }
-                    }// for(;;) end
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-                    /*int write = mAudioTrack.write(mPcmData, 0, readSize);
-                    playLength += write;*/
+                    }// for(...) end
                 }
 
                 try {
@@ -902,15 +864,14 @@ public class AudioFragment extends BaseFragment {
                     fis = null;
                 }
 
-                if (DEBUG)
-                    MLog.d(TAG, "playPcm() end");
-
                 MediaUtils.stopAudioTrack(mAudioTrack);
+
                 // 内容播放完毕
-                if (length == playLength) {
+                /*if (length == playLength) {
                     MLog.d(TAG, "playPcm() playLength: " + playLength);
                     mIsTrackRunning = false;
-                }
+                }*/
+                MLog.d(TAG, "playPcm() playLength: " + playLength);
                 mUiHandler.post(new Runnable() {
                     @Override
                     public void run() {
@@ -918,12 +879,13 @@ public class AudioFragment extends BaseFragment {
                     }
                 });
 
-                mPcmData = null;
+                if (DEBUG)
+                    MLog.d(TAG, "playPcm() end");
             }
         }).start();
     }
 
-    private int count = 0;
+    private int playTime = 0;
 
     private Callback mCallback = new Callback() {
         @Override
@@ -983,7 +945,7 @@ public class AudioFragment extends BaseFragment {
 
         @Override
         public void onProgressUpdated(long presentationTimeUs) {
-            MLog.d(TAG, "onProgressUpdated() time: " + (++count));
+            MLog.d(TAG, "onProgressUpdated() playTime: " + (++playTime));
         }
 
         @Override

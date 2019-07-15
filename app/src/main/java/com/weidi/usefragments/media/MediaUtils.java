@@ -220,13 +220,16 @@ public class MediaUtils {
      * @param mime 如MediaFormat.MIMETYPE_VIDEO_AVC
      * @return Returns empty array if not found any encoder supported specified MIME type
      *
-     * 在我的手机上找到
+     * 在我的手机上找到的编码器
      * Video的CodecName(根据"video/avc"):
      * "OMX.google.h264.encoder"
      * "OMX.SEC.AVC.Encoder"
      *
      * Audio的CodecName(根据"audio/mp4a-latm"):
      * "OMX.google.aac.encoder"
+     *
+     * 解码器
+     * "OMX.google.aac.decoder"
      */
     public static @NonNull
     MediaCodecInfo[] findAllEncodersByMime(String mime) {
@@ -490,7 +493,8 @@ public class MediaUtils {
                         MediaCodec.CONFIGURE_FLAG_ENCODE);
                 encoder.start();
                 if (DEBUG)
-                    MLog.d(TAG, "getAudioEncoderMediaCodec() MediaCodec create success");
+                    MLog.d(TAG, "getAudioEncoderMediaCodec() MediaCodec create success: " +
+                            mediaCodecInfo.getName());
                 break;
             } catch (NullPointerException
                     | IllegalArgumentException
@@ -591,13 +595,38 @@ public class MediaUtils {
             }
             try {
                 decoder = MediaCodec.createByCodecName(mediaCodecInfo.getName());
-                /*decoder.configure(
-                        getAudioDecoderMediaFormat(),
-                        null, null,
-                        MediaCodec.CONFIGURE_FLAG_ENCODE);
-                decoder.start();*/
+                decoder.configure(getAudioDecoderMediaFormat(), null, null, 0);
+                decoder.start();
                 if (DEBUG)
-                    MLog.d(TAG, "getAudioDecoderMediaCodec() MediaCodec create success");
+                    MLog.d(TAG, "getAudioDecoderMediaCodec() MediaCodec create success: " +
+                            mediaCodecInfo.getName());
+                break;
+            } catch (NullPointerException
+                    | IllegalArgumentException
+                    | IOException e) {
+                e.printStackTrace();
+                decoder = null;
+                continue;
+            }
+        }
+
+        return decoder;
+    }
+
+    public static MediaCodec getAudioDecoderMediaCodec(MediaFormat format) {
+        MediaCodec decoder = null;
+        MediaCodecInfo[] mediaCodecInfos = findAllDecodersByMime(AUDIO_MIME);
+        for (MediaCodecInfo mediaCodecInfo : mediaCodecInfos) {
+            if (mediaCodecInfo == null) {
+                continue;
+            }
+            try {
+                decoder = MediaCodec.createByCodecName(mediaCodecInfo.getName());
+                decoder.configure(format, null, null, 0);
+                decoder.start();
+                if (DEBUG)
+                    MLog.d(TAG, "getAudioDecoderMediaCodec() MediaCodec create success: " +
+                            mediaCodecInfo.getName());
                 break;
             } catch (NullPointerException
                     | IllegalArgumentException
@@ -695,10 +724,10 @@ public class MediaUtils {
     public static MediaFormat getAudioDecoderMediaFormat() {
         MediaFormat format = MediaFormat.createAudioFormat(
                 AUDIO_MIME, sampleRateInHz, channelCount);
+        // AAC-HE
         format.setInteger(
                 MediaFormat.KEY_AAC_PROFILE,
                 MediaCodecInfo.CodecProfileLevel.AACObjectLC);
-        // AAC-HE
         format.setInteger(
                 MediaFormat.KEY_BIT_RATE,
                 AUDIO_BIT_RATE);
@@ -1310,6 +1339,135 @@ public class MediaUtils {
         }
     }
 
+    private static final int TIME_OUT = 10000;
+
+    /***
+     * 编解码一般就下面两个套路
+     * feedInputBuffer(...)   --- Input
+     * drainOutputBuffer(...) --- Output
+     *
+     * @param codec
+     * @param data      需要编解码的数据
+     * @param offset    从什么位置开始
+     * @param size      有多少数据需要编解码
+     * @param startTime 编解码开始时先设置一个时间点
+     * @return ture is successed, and false is failed
+     */
+    public static boolean feedInputBuffer(
+            MediaCodec codec, byte[] data, int offset, int size, long startTime) {
+        try {
+            int roomIndex = codec.dequeueInputBuffer(TIME_OUT);
+            if (roomIndex >= 0) {
+                ByteBuffer room = null;
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                    room = codec.getInputBuffer(roomIndex);
+                } else {
+                    room = codec.getInputBuffers()[roomIndex];
+                }
+                if (room != null) {
+                    room.clear();
+                    room.put(data);
+                }
+                long presentationTimeUs =
+                        (System.nanoTime() - startTime) / 1000;
+                int flags = 0;
+                if (size == 0) {
+                    presentationTimeUs = 0L;
+                    flags = MediaCodec.BUFFER_FLAG_END_OF_STREAM;
+                }
+                codec.queueInputBuffer(
+                        roomIndex,
+                        offset,
+                        size,
+                        presentationTimeUs,
+                        flags);
+            }
+        } catch (MediaCodec.CryptoException
+                | IllegalStateException
+                | NullPointerException e) {
+            MLog.e(TAG, "feedInputBuffer() Input occur exception: " + e);
+            e.printStackTrace();
+            return false;
+        }
+
+        return true;
+    }
+
+    public interface Callback {
+        void onBuffer(ByteBuffer room, int roomSize);
+    }
+
+    public static boolean drainOutputBuffer(
+            MediaCodec codec, boolean render, MediaUtils.Callback callback) {
+        // 房间信息
+        MediaCodec.BufferInfo roomInfo = new MediaCodec.BufferInfo();
+        for (; ; ) {
+            try {
+                // 房间号
+                int roomIndex = codec.dequeueOutputBuffer(
+                        roomInfo, TIME_OUT);
+                switch (roomIndex) {
+                    case MediaCodec.INFO_TRY_AGAIN_LATER:
+                        break;
+                    case MediaCodec.INFO_OUTPUT_FORMAT_CHANGED:
+                        MLog.d(TAG, "drainOutputBuffer() " +
+                                "Output MediaCodec.INFO_OUTPUT_FORMAT_CHANGED");
+                        MLog.d(TAG, "drainOutputBuffer() " + codec.getOutputFormat());
+                        break;
+                    case MediaCodec.INFO_OUTPUT_BUFFERS_CHANGED:
+                        MLog.d(TAG, "drainOutputBuffer() " +
+                                "Output MediaCodec.INFO_OUTPUT_BUFFERS_CHANGED");
+                        break;
+                    default:
+                        break;
+                }
+                if (roomIndex < 0) {
+                    break;
+                }
+
+                if ((roomInfo.flags & MediaCodec.BUFFER_FLAG_CODEC_CONFIG) != 0) {
+                    MLog.d(TAG, "drainOutputBuffer() " +
+                            "Output MediaCodec.BUFFER_FLAG_CODEC_CONFIG");
+                    codec.releaseOutputBuffer(roomIndex, render);
+                    continue;
+                }
+                if ((roomInfo.flags & MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0) {
+                    MLog.d(TAG, "drainOutputBuffer() " +
+                            "Output MediaCodec.BUFFER_FLAG_END_OF_STREAM");
+                    break;
+                }
+
+                // 房间
+                ByteBuffer room = null;
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                    room = codec.getOutputBuffer(roomIndex);
+                } else {
+                    room = codec.getOutputBuffers()[roomIndex];
+                }
+
+                if (room != null) {
+                    // 房间大小
+                    int roomSize = roomInfo.size;
+                    room.position(roomInfo.offset);
+                    room.limit(roomInfo.offset + roomSize);
+                    if (callback != null) {
+                        callback.onBuffer(room, roomSize);
+                    }
+                }
+
+                codec.releaseOutputBuffer(roomIndex, render);
+            } catch (IllegalStateException
+                    | IllegalArgumentException
+                    | NullPointerException e) {
+                MLog.e(TAG, "drainOutputBuffer() Output occur exception: " + e);
+                e.printStackTrace();
+                return false;
+            }
+        }// for(;;) end
+
+        return true;
+    }
+
     private static boolean isEncodingLinearPcm(int encoding) {
         return encoding == AudioFormat.ENCODING_PCM_8BIT
                 || encoding == AudioFormat.ENCODING_PCM_16BIT
@@ -1650,16 +1808,17 @@ public class MediaUtils {
      @param packetLength (7 + 编码后的aac数据长度)
      */
     public static void addADTStoFrame(byte[] packet, int packetLength) {
-        int audioObjectType = 2; // AAC LC
+        int audioObjectType = 2;  // AAC LC
         // 如果上面的sampleRateInHz,channelConfig改变的话,下面的值也要相应的改变
-        int sampleRateIndex = 4; // 44.1KHz
-        int channelConfig = 2; // CPE
+        int sampleRateIndex = 4;  // 44.1KHz
+        int channelConfig = 2;    // CPE
 
         // fill in ADTS data
         packet[0] = (byte) 0xFF;
         // 解决ios不能播放问题
-        packet[1] = (byte) 0xF1;
-        packet[2] = (byte) (((audioObjectType - 1) << 6) + (sampleRateIndex << 2) + (channelConfig >> 2));
+        packet[1] = (byte) 0xF1;// (byte) 0xF9;
+        packet[2] = (byte) (((audioObjectType - 1) << 6) + (sampleRateIndex << 2) +
+                (channelConfig >> 2));
         packet[3] = (byte) (((channelConfig & 3) << 6) + (packetLength >> 11));
         packet[4] = (byte) ((packetLength & 0x7FF) >> 3);
         packet[5] = (byte) (((packetLength & 7) << 5) + 0x1F);
@@ -1667,10 +1826,14 @@ public class MediaUtils {
 
         /***
          不变的量: packet[0] packet[1] packet[2] packet[3] packet[6]
-         packet[0]: -1 packet[1]: -15 packet[2]: 80 packet[3]: -128 packet[4]: 64 packet[5]: 31 packet[6]: -4
-         packet[0]: -1 packet[1]: -15 packet[2]: 80 packet[3]: -128 packet[4]: 64 packet[5]: 95 packet[6]: -4
-         packet[0]: -1 packet[1]: -15 packet[2]: 80 packet[3]: -128 packet[4]: 63 packet[5]: -97 packet[6]: -4
-         packet[0]: -1 packet[1]: -15 packet[2]: 80 packet[3]: -128 packet[4]: 66 packet[5]: -33 packet[6]: -4
+         packet[0]: -1 packet[1]: -15 packet[2]: 80 packet[3]: -128 packet[4]: 64 packet[5]: 31
+         packet[6]: -4
+         packet[0]: -1 packet[1]: -15 packet[2]: 80 packet[3]: -128 packet[4]: 64 packet[5]: 95
+         packet[6]: -4
+         packet[0]: -1 packet[1]: -15 packet[2]: 80 packet[3]: -128 packet[4]: 63 packet[5]: -97
+         packet[6]: -4
+         packet[0]: -1 packet[1]: -15 packet[2]: 80 packet[3]: -128 packet[4]: 66 packet[5]: -33
+         packet[6]: -4
          */
         /*MLog.d(TAG, "addADTStoFrame() " +
                 " packet[0]: " + packet[0] +
@@ -1689,8 +1852,10 @@ public class MediaUtils {
         int channelConfig = 2;
 
         byte[] specificConfig = new byte[2];
-        specificConfig[0] = (byte) (((audioObjectType << 3) & 0xF8) | ((sampleRateIndex >> 1) & 0x07));
-        specificConfig[1] = (byte) (((sampleRateIndex << 7) & 0x80) | ((channelConfig << 3) & 0x78));
+        specificConfig[0] = (byte) (((audioObjectType << 3) & 0xF8) | ((sampleRateIndex >> 1) &
+                0x07));
+        specificConfig[1] = (byte) (((sampleRateIndex << 7) & 0x80) | ((channelConfig << 3) &
+                0x78));
         return specificConfig;
     }
 
@@ -1950,6 +2115,12 @@ public class MediaUtils {
 }
 
 /***
+ 采样率44.1KHz,双声道,16Bit
+ 重采样为
+ 采样率8KHz,单声道,16Bit
+ https://github.com/hutm/JSSRC
+ 只需要SSRC，I0Bessel，SplitRadixFft这三个类就可以实现转换采样率的功能
+
  MediaCodec 有两种方式触发输出关键帧，
  一是由配置时设置的 KEY_FRAME_RATE和KEY_I_FRAME_INTERVAL参数自动触发，
  二是运行过程中通过 setParameters 手动触发输出关键帧。
@@ -2092,7 +2263,8 @@ public class MediaUtils {
  4: 4 channels: front-center, front-left, front-right, back-center
  5: 5 channels: front-center, front-left, front-right, back-left, back-right
  6: 6 channels: front-center, front-left, front-right, back-left, back-right, LFE-channel
- 7: 8 channels: front-center, front-left, front-right, side-left, side-right, back-left, back-right, LFE-channel
+ 7: 8 channels: front-center, front-left, front-right, side-left, side-right, back-left,
+ back-right, LFE-channel
  8-15: Reserved
 
  */

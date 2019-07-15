@@ -36,9 +36,9 @@ public class ReadAACFileThread extends Thread {
     private int count = 0;
 
     public ReadAACFileThread(String path) {
-//        this.audioUtil = new AACDecoderUtil();
-//        this.filePath = path;
-//        this.audioUtil.start();
+        //        this.audioUtil = new AACDecoderUtil();
+        //        this.filePath = path;
+        //        this.audioUtil.start();
     }
 
     @Override
@@ -71,15 +71,19 @@ public class ReadAACFileThread extends Thread {
                             int headFirstIndex = findHead(frame, 0, frameLen);
                             while (headFirstIndex >= 0 && isHead(frame, headFirstIndex)) {
                                 //寻找第二个帧头
-                                int headSecondIndex = findHead(frame, headFirstIndex + FRAME_MIN_LEN, frameLen);
+                                int headSecondIndex = findHead(frame, headFirstIndex +
+                                        FRAME_MIN_LEN, frameLen);
                                 //如果第二个帧头存在，则两个帧头之间的就是一帧完整的数据
                                 if (headSecondIndex > 0 && isHead(frame, headSecondIndex)) {
                                     //视频解码
                                     count++;
-                                    Log.e("ReadAACFileThread", "Length : " + (headSecondIndex - headFirstIndex));
-                                    //audioUtil.decode(frame, headFirstIndex, headSecondIndex - headFirstIndex);
+                                    Log.e("ReadAACFileThread", "Length : " + (headSecondIndex -
+                                            headFirstIndex));
+                                    //audioUtil.decode(frame, headFirstIndex, headSecondIndex -
+                                    // headFirstIndex);
                                     //截取headSecondIndex之后到frame的有效数据,并放到frame最前面
-                                    byte[] temp = Arrays.copyOfRange(frame, headSecondIndex, frameLen);
+                                    byte[] temp = Arrays.copyOfRange(frame, headSecondIndex,
+                                            frameLen);
                                     System.arraycopy(temp, 0, frame, 0, temp.length);
                                     //修改frameLen的值
                                     frameLen = temp.length;
@@ -106,7 +110,8 @@ public class ReadAACFileThread extends Thread {
             } catch (Exception e) {
                 e.printStackTrace();
             }
-            //Log.e("ReadAACFileThread", "AllCount:" + count + "Error Count : " + audioUtil.getCount());
+            //Log.e("ReadAACFileThread", "AllCount:" + count + "Error Count : " + audioUtil
+            // .getCount());
         } else {
             Log.e("ReadH264FileThread", "File not found");
         }
@@ -122,7 +127,7 @@ public class ReadAACFileThread extends Thread {
      * @return
      */
     private int findHead(byte[] data, int startIndex, int max) {
-        int i;
+        int i = 0;
         for (i = startIndex; i <= max; i++) {
             //发现帧头
             if (isHead(data, i))
@@ -140,7 +145,8 @@ public class ReadAACFileThread extends Thread {
      */
     private boolean isHead(byte[] data, int offset) {
         boolean result = false;
-        if (data[offset] == (byte) 0xFF && data[offset + 1] == (byte) 0xF1
+        if (data[offset] == (byte) 0xFF
+                && data[offset + 1] == (byte) 0xF1
                 && data[offset + 3] == (byte) 0x80) {
             result = true;
         }
