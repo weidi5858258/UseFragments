@@ -1,17 +1,26 @@
 package com.weidi.usefragments.tool;
 
 import android.media.AudioFormat;
+import android.media.AudioManager;
+import android.media.AudioTrack;
+import android.media.MediaCodec;
 import android.media.MediaExtractor;
 import android.media.MediaFormat;
-import android.media.MediaMetadataRetriever;
+import android.os.Build;
 import android.os.SystemClock;
 import android.text.TextUtils;
+
+import com.weidi.usefragments.media.MediaUtils;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -30,7 +39,7 @@ public class AACPlayer {
     private static final boolean DEBUG = true;
 
     private static Map<Integer, Integer> sampleRateIndexMap = new HashMap<>();
-    private static Map<Integer, Integer> channelConfigMap = new HashMap<>();
+    private static Map<Integer, Integer> channelConfigIndexMap = new HashMap<>();
 
     static {
         // key是sampleRate
@@ -51,14 +60,14 @@ public class AACPlayer {
 
     static {
         // key是channelCount
-        channelConfigMap.put(0, 0);// Defined in AOT Specifc Config
-        channelConfigMap.put(1, 1);
-        channelConfigMap.put(2, 2);
-        channelConfigMap.put(3, 3);
-        channelConfigMap.put(4, 4);
-        channelConfigMap.put(5, 5);
-        channelConfigMap.put(6, 6);
-        channelConfigMap.put(8, 7);
+        channelConfigIndexMap.put(0, 0);// Defined in AOT Specifc Config
+        channelConfigIndexMap.put(1, 1);
+        channelConfigIndexMap.put(2, 2);
+        channelConfigIndexMap.put(3, 3);
+        channelConfigIndexMap.put(4, 4);
+        channelConfigIndexMap.put(5, 5);
+        channelConfigIndexMap.put(6, 6);
+        channelConfigIndexMap.put(8, 7);
     }
 
     // 如果CACHE能够一次性的装下所有数据的话,是没有问题的
@@ -72,6 +81,12 @@ public class AACPlayer {
     private int readDataSize = -1;
     private int lastOffsetIndex = -1;
     private String mPath;
+    private MediaCodec mAudioDecoderMediaCodec;
+    private MediaFormat mAudioDecoderMediaFormat;
+    private AudioTrack mAudioTrack;
+    private float mVolume = 1.0f;
+    private int mAudioTrackIndex = -1;
+    private boolean mIsLocalFile = true;
 
     public AACPlayer() {
         init();
@@ -87,11 +102,33 @@ public class AACPlayer {
             return;
         }
 
+        mIsLocalFile = true;
         if (mPath.startsWith("http")
                 || mPath.startsWith("https")
                 || mPath.startsWith("HTTP")
                 || mPath.startsWith("HTTPS")) {
-
+            try {
+                URL url = new URL(mPath);
+                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                // 设置本次请求的方式,默认是GET方式,参数要求都是大写字母
+                conn.setRequestMethod("GET");
+                // 设置连接超时
+                conn.setConnectTimeout(5000);
+                // 是否打开输入流 ， 此方法默认为true
+                conn.setDoInput(true);
+                // 是否打开输出流， 此方法默认为false
+                conn.setDoOutput(true);
+                // 表示连接
+                conn.connect();
+                int code = conn.getResponseCode();
+                if (code == 200) {
+                    mInputStream = conn.getInputStream();
+                    mIsLocalFile = false;
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+                mInputStream = null;
+            }
         } else {
             File file = new File(mPath);
             if (!file.exists()
@@ -100,7 +137,6 @@ public class AACPlayer {
             }
             long length = file.length();
             MLog.d(TAG, "setPath() fileLength: " + length);
-
             try {
                 mInputStream = new FileInputStream(file);
             } catch (FileNotFoundException e) {
@@ -134,9 +170,73 @@ public class AACPlayer {
         if (DEBUG)
             MLog.w(TAG, "readData() start");
 
-        MediaExtractor me = new MediaExtractor();
+        MediaExtractor mediaExtractor = new MediaExtractor();
+        try {
+            mediaExtractor.setDataSource(mPath);
+        } catch (IOException e) {
+            e.printStackTrace();
+            return;
+        }
+        int trackCount = mediaExtractor.getTrackCount();
+        for (int i = 0; i < trackCount; i++) {
+            mAudioDecoderMediaFormat = mediaExtractor.getTrackFormat(i);
+            if (DEBUG)
+                MLog.d(TAG, "readData() mAudioDecoderMediaFormat: " +
+                        mAudioDecoderMediaFormat.toString());
+            String mime = mAudioDecoderMediaFormat.getString(MediaFormat.KEY_MIME);
+            if (mime.startsWith("audio/")) {
+                boolean hasException = false;
+                try {
+                    mAudioTrackIndex = i;
+                    mediaExtractor.selectTrack(i);
+                    mAudioDecoderMediaFormat.setInteger(MediaFormat.KEY_IS_ADTS, 1);
+                    mAudioDecoderMediaFormat.setInteger(MediaFormat.KEY_PRIORITY, 0);
+                    //mAudioDecoderMediaFormat.setInteger(MediaFormat.KEY_MAX_INPUT_SIZE, 1024);
+                    List<byte[]> list = new ArrayList<>();
+                    int sampleRateInHz =
+                            mAudioDecoderMediaFormat.getInteger(MediaFormat.KEY_SAMPLE_RATE);
+                    int channelCount =
+                            mAudioDecoderMediaFormat.getInteger(MediaFormat.KEY_CHANNEL_COUNT);
+                    if (sampleRateIndexMap.containsKey(sampleRateInHz)
+                            && channelConfigIndexMap.containsKey(channelCount)) {
+                        list.add(MediaUtils.buildAacAudioSpecificConfig(
+                                sampleRateIndexMap.get(sampleRateInHz),
+                                channelConfigIndexMap.get(channelCount)));
+                        MediaUtils.setCsdBuffers(mAudioDecoderMediaFormat, list);
+                        mAudioDecoderMediaCodec =
+                                MediaUtils.getAudioDecoderMediaCodec(mime, mAudioDecoderMediaFormat);
+                    }
 
-
+                    int audioFormat = AudioFormat.ENCODING_PCM_16BIT;
+                    mAudioTrack = MediaUtils.createAudioTrack(
+                            AudioManager.STREAM_MUSIC,
+                            sampleRateInHz, channelCount, audioFormat,
+                            AudioTrack.MODE_STREAM);
+                    if (mAudioTrack != null) {
+                        setVolume();
+                        mAudioTrack.play();
+                    }
+                } catch (MediaCodec.CryptoException
+                        | IllegalStateException
+                        | NullPointerException e) {
+                    e.printStackTrace();
+                    hasException = true;
+                }
+                if (hasException) {
+                    if (mAudioDecoderMediaCodec != null) {
+                        mAudioDecoderMediaCodec.release();
+                    }
+                    mAudioDecoderMediaCodec = null;
+                    mAudioDecoderMediaFormat = null;
+                    mAudioTrackIndex = -1;
+                }
+                break;
+            }
+        }
+        mediaExtractor.release();
+        if (mAudioDecoderMediaCodec == null) {
+            return;
+        }
 
         readDataSize = -1;
         lastOffsetIndex = -1;
@@ -144,7 +244,7 @@ public class AACPlayer {
         mIsReading = true;
         while (mIsReading) {
             try {
-                if (mInputStream.available() <= 0) {
+                if (mIsLocalFile && mInputStream.available() <= 0) {
                     readDataSize = -1;
                     break;
                 }
@@ -161,11 +261,14 @@ public class AACPlayer {
                     }
                 } else {
                     readDataSize = mInputStream.read(mData1, 0, lastOffsetIndex);
+                    if (readDataSize < 0) {
+                        break;
+                    }
                 }
 
                 if (DEBUG) {
-                    MLog.d(TAG, "readData()    readDataSize: " + readDataSize);
-                    MLog.d(TAG, "readData() lastOffsetIndex: " + lastOffsetIndex);
+                    MLog.e(TAG, "readData()    readDataSize: " + readDataSize);
+                    MLog.e(TAG, "readData() lastOffsetIndex: " + lastOffsetIndex);
                 }
 
                 synchronized (mReadDataLock) {
@@ -209,6 +312,41 @@ public class AACPlayer {
 
         // mData2中剩下的数据大小
         int restOfDataSize = 0;
+
+        MediaUtils.Callback callback = new MediaUtils.Callback() {
+            @Override
+            public void onFormatChanged(MediaFormat newMediaFormat) {
+                if (mAudioTrack != null) {
+                    mAudioTrack.release();
+                }
+                int sampleRateInHz =
+                        newMediaFormat.getInteger(MediaFormat.KEY_SAMPLE_RATE);
+                int channelCount =
+                        newMediaFormat.getInteger(MediaFormat.KEY_CHANNEL_COUNT);
+                int audioFormat =
+                        newMediaFormat.getInteger(MediaFormat.KEY_PCM_ENCODING);
+                mAudioTrack = MediaUtils.createAudioTrack(
+                        AudioManager.STREAM_MUSIC,
+                        sampleRateInHz, channelCount, audioFormat,
+                        AudioTrack.MODE_STREAM);
+                if (mAudioTrack != null) {
+                    setVolume();
+                    mAudioTrack.play();
+                }
+            }
+
+            @Override
+            public void onBuffer(ByteBuffer room, int roomSize) {
+                byte[] pcmData = new byte[roomSize];
+                room.get(pcmData, 0, pcmData.length);
+                if (mAudioTrack != null) {
+                    int writeSize = mAudioTrack.write(pcmData, 0, roomSize);
+                    //MLog.d(TAG, "onBuffer() writeSize: " + writeSize);
+                }
+            }
+        };
+
+        long startDecodeTime = System.nanoTime();
         while (isHandlingData) {
             MLog.d(TAG, "handleData() findHead start");
             if (readDataSize == CACHE
@@ -246,8 +384,8 @@ public class AACPlayer {
                      知道了offset,那么就知道了要"喂"多少数据了.
                      */
                     int frameLength = offsetList.get(i + 1) - offsetList.get(i);
-                    MLog.d(TAG, "handleData() frameLength: " + frameLength);
                     if (frameLength > frameDataLength) {
+                        MLog.d(TAG, "handleData() 大体积帧 frameLength: " + frameLength);
                         frameDataLength = frameLength;
                         frameData = new byte[frameLength];
                     }
@@ -263,10 +401,16 @@ public class AACPlayer {
                             " " + frameData[4] +
                             " " + frameData[5] +
                             " " + frameData[6]);
+                    MLog.d(TAG, "handleData() frameLength: " + frameLength);
                     // Input
-                    SystemClock.sleep(1);
+                    // SystemClock.sleep(1);
+                    MediaUtils.feedInputBuffer(
+                            mAudioDecoderMediaCodec, frameData,
+                            0, frameLength, startDecodeTime);
                     // Output
-                    SystemClock.sleep(1);
+                    // SystemClock.sleep(1);
+                    MediaUtils.drainOutputBuffer(
+                            mAudioDecoderMediaCodec, false, callback);
                 } else {
                     // 集合中最后一个offset的位置
                     lastOffsetIndex = offsetList.get(i);
@@ -279,7 +423,8 @@ public class AACPlayer {
                                 frameData, 0, restOfDataSize);
                     }
                     if (readDataSize == lastOffsetIndex
-                            || readDataSize > frameData.length) {
+                            || readDataSize > frameData.length
+                            || (!mIsLocalFile && restOfDataSize > 0)) {
                         // 把mData2中剩下的数据移动到mData2的开头
                         Arrays.fill(mData2, (byte) 0);
                         System.arraycopy(
@@ -293,7 +438,6 @@ public class AACPlayer {
                     } else {
                         if (CACHE >= 1024 * 1024) {
                             int frameLength = restOfDataSize;
-                            MLog.d(TAG, "handleData()     frameLength: " + frameLength);
                             MLog.d(TAG, "handleData() last     offset: " + 0 +
                                     "    " + frameData[0] +
                                     " " + frameData[1] +
@@ -302,10 +446,16 @@ public class AACPlayer {
                                     " " + frameData[4] +
                                     " " + frameData[5] +
                                     " " + frameData[6]);
+                            MLog.d(TAG, "handleData()     frameLength: " + frameLength);
                             // Input
-                            SystemClock.sleep(1);
+                            // SystemClock.sleep(1);
+                            MediaUtils.feedInputBuffer(
+                                    mAudioDecoderMediaCodec, frameData,
+                                    0, frameLength, startDecodeTime);
                             // Output
-                            SystemClock.sleep(1);
+                            // SystemClock.sleep(1);
+                            MediaUtils.drainOutputBuffer(
+                                    mAudioDecoderMediaCodec, false, callback);
 
                             isHandlingData = false;
                         } else {
@@ -418,6 +568,17 @@ public class AACPlayer {
             result = true;
         }
         return result;
+    }
+
+    private void setVolume() {
+        if (mAudioTrack == null) {
+            return;
+        }
+        if (Build.VERSION.SDK_INT >= 21) {
+            mAudioTrack.setVolume(mVolume);
+        } else {
+            mAudioTrack.setStereoVolume(mVolume, mVolume);
+        }
     }
 
     private Runnable mReadData = new Runnable() {

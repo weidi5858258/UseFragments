@@ -613,6 +613,34 @@ public class MediaUtils {
         return decoder;
     }
 
+    public static MediaCodec getAudioDecoderMediaCodec(String mime, MediaFormat mediaFormat) {
+        MediaCodec decoder = null;
+        MediaCodecInfo[] mediaCodecInfos = findAllDecodersByMime(mime);
+        for (MediaCodecInfo mediaCodecInfo : mediaCodecInfos) {
+            if (mediaCodecInfo == null) {
+                continue;
+            }
+            try {
+                decoder = MediaCodec.createByCodecName(mediaCodecInfo.getName());
+                decoder.configure(mediaFormat, null, null, 0);
+                decoder.start();
+                if (DEBUG)
+                    MLog.d(TAG, "getAudioDecoderMediaCodec() " +
+                            "MediaCodec create success mime: " + mime +
+                            " codecName: " + mediaCodecInfo.getName());
+                break;
+            } catch (NullPointerException
+                    | IllegalArgumentException
+                    | IOException e) {
+                e.printStackTrace();
+                decoder = null;
+                continue;
+            }
+        }
+
+        return decoder;
+    }
+
     public static MediaCodec getAudioDecoderMediaCodec(MediaFormat format) {
         MediaCodec decoder = null;
         MediaCodecInfo[] mediaCodecInfos = findAllDecodersByMime(AUDIO_MIME);
@@ -1049,7 +1077,8 @@ public class MediaUtils {
                 MLog.e(TAG, String.format(Locale.US,
                         "Bad arguments: getMinBufferSize(%d, %d, %d)",
                         sampleRateInHz, channelConfig, audioFormat));
-            return null;
+            // return null;
+            bufferSizeInBytes = 4096;
         }
 
         if (DEBUG)
@@ -1106,7 +1135,8 @@ public class MediaUtils {
                 MLog.e(TAG, String.format(Locale.US,
                         "Bad arguments: getMinBufferSize(%d, %d, %d)",
                         sampleRateInHz, channelConfig, audioFormat));
-            return null;
+            // return null;
+            bufferSizeInBytes = 4096;
         }
 
         bufferSizeInBytes *= 2;
@@ -1174,7 +1204,8 @@ public class MediaUtils {
                 MLog.e(TAG, String.format(Locale.US,
                         "Bad arguments: getMinBufferSize(%d, %d, %d)",
                         sampleRateInHz, channelConfig, audioFormat));
-            return null;
+            // return null;
+            bufferSizeInBytes = 4096;
         }
 
         bufferSizeInBytes *= 2;
@@ -1241,7 +1272,8 @@ public class MediaUtils {
                 MLog.e(TAG, String.format(Locale.US,
                         "Bad arguments: getMinBufferSize(%d, %d, %d)",
                         sampleRateInHz, channelConfig, audioFormat));
-            return null;
+            // return null;
+            bufferSizeInBytes = 4096;
         }
 
         bufferSizeInBytes *= 2;
@@ -1366,7 +1398,7 @@ public class MediaUtils {
                 }
                 if (room != null) {
                     room.clear();
-                    room.put(data);
+                    room.put(data, offset, size);
                 }
                 long presentationTimeUs =
                         (System.nanoTime() - startTime) / 1000;
@@ -1394,6 +1426,8 @@ public class MediaUtils {
     }
 
     public interface Callback {
+        void onFormatChanged(MediaFormat newMediaFormat);
+
         void onBuffer(ByteBuffer room, int roomSize);
     }
 
@@ -1413,6 +1447,9 @@ public class MediaUtils {
                         MLog.d(TAG, "drainOutputBuffer() " +
                                 "Output MediaCodec.INFO_OUTPUT_FORMAT_CHANGED");
                         MLog.d(TAG, "drainOutputBuffer() " + codec.getOutputFormat());
+                        if (callback != null) {
+                            callback.onFormatChanged(codec.getOutputFormat());
+                        }
                         break;
                     case MediaCodec.INFO_OUTPUT_BUFFERS_CHANGED:
                         MLog.d(TAG, "drainOutputBuffer() " +
@@ -1847,6 +1884,7 @@ public class MediaUtils {
 
     public static byte[] buildAacAudioSpecificConfig() {
         // 对应addADTStoFrame方法中的相同参数
+        // audioObjectType为固定值
         int audioObjectType = 2;
         int sampleRateIndex = 4;
         int channelConfig = 2;
@@ -1855,6 +1893,19 @@ public class MediaUtils {
         specificConfig[0] = (byte) (((audioObjectType << 3) & 0xF8) | ((sampleRateIndex >> 1) &
                 0x07));
         specificConfig[1] = (byte) (((sampleRateIndex << 7) & 0x80) | ((channelConfig << 3) &
+                0x78));
+        return specificConfig;
+    }
+
+    public static byte[] buildAacAudioSpecificConfig(int sampleRateIndex, int channelConfigIndex) {
+        // 对应addADTStoFrame方法中的相同参数
+        // audioObjectType为固定值
+        int audioObjectType = 2;
+
+        byte[] specificConfig = new byte[2];
+        specificConfig[0] = (byte) (((audioObjectType << 3) & 0xF8) | ((sampleRateIndex >> 1) &
+                0x07));
+        specificConfig[1] = (byte) (((sampleRateIndex << 7) & 0x80) | ((channelConfigIndex << 3) &
                 0x78));
         return specificConfig;
     }

@@ -685,11 +685,19 @@ public class AudioFragment extends BaseFragment {
         new Thread(new Runnable() {
             @Override
             public void run() {
+                AACPlayer aacPlayer = new AACPlayer();
+//                aacPlayer.setPath(PATH + "AAC_HE-AAC.aac");
+                aacPlayer.setPath("http://192.168.0.105:8080/test1.aac");
+                aacPlayer.start();
+
+                if (true) return;
+
+
 //                File file = new File(PATH, "test1.aac");
                 File file = new File(PATH, "AAC_AAC-LC.aac");
 //                File file = new File(PATH, "AAC_HE-AAC.aac");
 //                File file = new File(PATH, "Leessang.aac");// 不是aac数据
-//                File file = new File(PATH, "tdjm.aac");
+//                File file = new File(PATH, "tdjm.aac");// 某些帧的长度太长了
                 if (!file.exists()
                         || !file.canRead()) {
                     return;
@@ -704,11 +712,6 @@ public class AudioFragment extends BaseFragment {
                     e.printStackTrace();
                     return;
                 }
-
-                AACPlayer aacPlayer = new AACPlayer();
-                aacPlayer.setInputStream(fis);
-
-                if(true)return;
 
                 int bufferSizeInBytes =
                         MediaUtils.getMinBufferSize() * 2;
@@ -726,6 +729,11 @@ public class AudioFragment extends BaseFragment {
                     e.printStackTrace();
                 }*/
                 MediaUtils.Callback callback = new MediaUtils.Callback() {
+                    @Override
+                    public void onFormatChanged(MediaFormat newMediaFormat) {
+
+                    }
+
                     @Override
                     public void onBuffer(ByteBuffer room, int roomSize) {
                         byte[] pcmData = new byte[roomSize];
