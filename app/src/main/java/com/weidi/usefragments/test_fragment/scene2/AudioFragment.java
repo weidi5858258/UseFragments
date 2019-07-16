@@ -28,7 +28,7 @@ import com.weidi.usefragments.fragment.base.BaseFragment;
 import com.weidi.usefragments.inject.InjectOnClick;
 import com.weidi.usefragments.inject.InjectView;
 import com.weidi.usefragments.media.MediaUtils;
-import com.weidi.usefragments.tool.AACHelper;
+import com.weidi.usefragments.tool.AACPlayer;
 import com.weidi.usefragments.tool.Callback;
 import com.weidi.usefragments.tool.MLog;
 import com.weidi.usefragments.tool.SimpleAudioRecorder;
@@ -303,7 +303,8 @@ public class AudioFragment extends BaseFragment {
     private static final int STOP_RECORD = 0x0002;
     private static final int PCM_TO_WAV = 0x0003;
     private static final String PATH =
-            "/storage/2430-1702/Android/data/com.weidi.usefragments/files/Music";
+//            "/storage/2430-1702/Android/data/com.weidi.usefragments/files/Music";
+            "/storage/2430-1702/BaiduNetdisk/music/test_audio/";
 
     @InjectView(R.id.control_btn)
     private Button mControlBtn;
@@ -684,7 +685,11 @@ public class AudioFragment extends BaseFragment {
         new Thread(new Runnable() {
             @Override
             public void run() {
-                File file = new File(PATH, "test1.aac");
+//                File file = new File(PATH, "test1.aac");
+                File file = new File(PATH, "AAC_AAC-LC.aac");
+//                File file = new File(PATH, "AAC_HE-AAC.aac");
+//                File file = new File(PATH, "Leessang.aac");// 不是aac数据
+//                File file = new File(PATH, "tdjm.aac");
                 if (!file.exists()
                         || !file.canRead()) {
                     return;
@@ -700,8 +705,8 @@ public class AudioFragment extends BaseFragment {
                     return;
                 }
 
-                AACHelper aacHelper = new AACHelper();
-                aacHelper.setInputStream(fis);
+                AACPlayer aacPlayer = new AACPlayer();
+                aacPlayer.setInputStream(fis);
 
                 if(true)return;
 
@@ -714,9 +719,9 @@ public class AudioFragment extends BaseFragment {
                 if (DEBUG)
                     MLog.d(TAG, "playPcm() start");
 
-                /*AACHelper aacHelper = null;
+                /*AACPlayer aacPlayer = null;
                 try {
-                    aacHelper = new AACHelper(file.getAbsolutePath());
+                    aacPlayer = new AACPlayer(file.getAbsolutePath());
                 } catch (FileNotFoundException e) {
                     e.printStackTrace();
                 }*/
