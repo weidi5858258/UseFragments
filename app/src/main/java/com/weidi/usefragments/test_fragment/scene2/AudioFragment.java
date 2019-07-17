@@ -29,7 +29,10 @@ import com.weidi.usefragments.inject.InjectOnClick;
 import com.weidi.usefragments.inject.InjectView;
 import com.weidi.usefragments.media.MediaUtils;
 import com.weidi.usefragments.tool.AACPlayer;
+import com.weidi.usefragments.tool.AACPlayer2;
 import com.weidi.usefragments.tool.Callback;
+import com.weidi.usefragments.tool.ExoPlaybackException;
+import com.weidi.usefragments.tool.HttpAccessor;
 import com.weidi.usefragments.tool.MLog;
 import com.weidi.usefragments.tool.SimpleAudioRecorder;
 
@@ -38,6 +41,8 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -303,7 +308,7 @@ public class AudioFragment extends BaseFragment {
     private static final int STOP_RECORD = 0x0002;
     private static final int PCM_TO_WAV = 0x0003;
     private static final String PATH =
-//            "/storage/2430-1702/Android/data/com.weidi.usefragments/files/Music";
+            //            "/storage/2430-1702/Android/data/com.weidi.usefragments/files/Music";
             "/storage/2430-1702/BaiduNetdisk/music/test_audio/";
 
     @InjectView(R.id.control_btn)
@@ -436,7 +441,9 @@ public class AudioFragment extends BaseFragment {
                 mSimpleAudioRecorder.pause();
                 break;
             case R.id.play_btn:
-                playTrackOrStopTrack();
+                //playTrackOrStopTrack();
+
+                playPcm();
                 break;
             case R.id.convert_btn:
                 mThreadHandler.removeMessages(PCM_TO_WAV);
@@ -685,19 +692,42 @@ public class AudioFragment extends BaseFragment {
         new Thread(new Runnable() {
             @Override
             public void run() {
-                AACPlayer aacPlayer = new AACPlayer();
-//                aacPlayer.setPath(PATH + "AAC_HE-AAC.aac");
-                aacPlayer.setPath("http://192.168.0.105:8080/test1.aac");
+                AACPlayer2 aacPlayer = new AACPlayer2();
+                aacPlayer.setPath(PATH + "AAC_AAC-LC.aac");
+                //aacPlayer.setPath("http://192.168.1.107:8080/tomcat_audio/AAC_HE-AAC.aac");
                 aacPlayer.start();
+
+                /*try {
+                    // 读取的最大值为8192
+                    int bufferLength = 1024 * 1024 * 2;
+                    byte[] buffer = new byte[bufferLength];
+                    HttpAccessor httpAccessor = new HttpAccessor(
+                            new URL("http://192.168.1.107:8080/tomcat_audio/test1.aac"),
+                            null);
+                    httpAccessor.open();
+                    MLog.d(TAG, "playPcm() read start");
+                    while (true) {
+                        int readSize = httpAccessor.read(buffer, 0, bufferLength);
+                        MLog.w(TAG, "playPcm() readSize: " + readSize);
+                        if (readSize < 0) {
+                            break;
+                        }
+                    }
+                    MLog.d(TAG, "playPcm() read end");
+                } catch (MalformedURLException e) {
+                    e.printStackTrace();
+                } catch (ExoPlaybackException e) {
+                    e.printStackTrace();
+                }*/
 
                 if (true) return;
 
 
-//                File file = new File(PATH, "test1.aac");
+                //                File file = new File(PATH, "test1.aac");
                 File file = new File(PATH, "AAC_AAC-LC.aac");
-//                File file = new File(PATH, "AAC_HE-AAC.aac");
-//                File file = new File(PATH, "Leessang.aac");// 不是aac数据
-//                File file = new File(PATH, "tdjm.aac");// 某些帧的长度太长了
+                //                File file = new File(PATH, "AAC_HE-AAC.aac");
+                //                File file = new File(PATH, "Leessang.aac");// 不是aac数据
+                //                File file = new File(PATH, "tdjm.aac");// 某些帧的长度太长了
                 if (!file.exists()
                         || !file.canRead()) {
                     return;
