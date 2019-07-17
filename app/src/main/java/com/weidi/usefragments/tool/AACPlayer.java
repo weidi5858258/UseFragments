@@ -16,7 +16,7 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.MalformedURLException;
+import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -28,6 +28,8 @@ import java.util.Map;
 /***
  Created by weidi on 2019/7/15.
  只考虑ADTS头为7个字节(9个字节的不考虑,CRC误码校验)
+
+ 本地与网络共用同一个播放器
  */
 
 public class AACPlayer {
@@ -69,7 +71,7 @@ public class AACPlayer {
     }
 
     // 如果CACHE能够一次性的装下所有数据的话,是没有问题的
-    // 2MB
+    // 音频不要小于1MB
     private static final int CACHE = 1024 * 1024;
     private InputStream mInputStream;
     private boolean mIsReading = false;
@@ -84,7 +86,6 @@ public class AACPlayer {
     private MediaFormat mAudioDecoderMediaFormat;
     private AudioTrack mAudioTrack;
     private float mVolume = 1.0f;
-    private boolean mIsLocalFile = true;
 
     public AACPlayer() {
         init();
@@ -95,48 +96,10 @@ public class AACPlayer {
             return;
         }
         mPath = path;
-        if (!mPath.endsWith(".aac")
-                && !mPath.endsWith(".AAC")) {
-            return;
-        }
-
-        mIsLocalFile = true;
-        if (mPath.startsWith("http")
-                || mPath.startsWith("https")
-                || mPath.startsWith("HTTP")
-                || mPath.startsWith("HTTPS")) {
-
-        } else {
-            File file = new File(mPath);
-            if (!file.exists()
-                    || !file.canRead()) {
-                return;
-            }
-            long length = file.length();
-            MLog.d(TAG, "setPath() fileLength: " + length);
-            try {
-                mInputStream = new FileInputStream(file);
-            } catch (FileNotFoundException e) {
-                e.printStackTrace();
-                mInputStream = null;
-            }
-        }
     }
 
     public void start() {
-        if (mInputStream != null) {
-            new Thread(mReadLocalData).start();
-        } else {
-            new Thread(mReadHttpData).start();
-        }
-    }
-
-    public void setInputStream(InputStream inputStream) {
-        if (inputStream == null) {
-            return;
-        }
-        mInputStream = inputStream;
-        new Thread(mReadLocalData).start();
+        new Thread(mReadData).start();
     }
 
     private void init() {
@@ -144,9 +107,60 @@ public class AACPlayer {
         mData2 = new byte[CACHE];
     }
 
-    private boolean prepare() {
+    private boolean prepareInputStream() {
+        if (!mPath.endsWith(".aac")
+                && !mPath.endsWith(".AAC")) {
+            return false;
+        }
+
+        if (mPath.startsWith("http")
+                || mPath.startsWith("https")
+                || mPath.startsWith("HTTP")
+                || mPath.startsWith("HTTPS")) {
+            try {
+                URL url = new URL(mPath);
+                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                // 设置本次请求的方式,默认是GET方式,参数要求都是大写字母
+                conn.setRequestMethod("GET");
+                // 设置连接超时
+                conn.setConnectTimeout(5000);
+                // 是否打开输入流 ， 此方法默认为true
+                conn.setDoInput(true);
+                // 是否打开输出流， 此方法默认为false
+                conn.setDoOutput(true);
+                // 表示连接
+                conn.connect();
+                int code = conn.getResponseCode();
+                if (code == 200) {
+                    mInputStream = conn.getInputStream();
+                    return true;
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+                mInputStream = null;
+            }
+        } else {
+            File file = new File(mPath);
+            if (!file.exists()
+                    || !file.canRead()) {
+                return false;
+            }
+            long length = file.length();
+            MLog.d(TAG, "setPath() fileLength: " + length);
+            try {
+                mInputStream = new FileInputStream(file);
+                return true;
+            } catch (FileNotFoundException e) {
+                e.printStackTrace();
+                mInputStream = null;
+            }
+        }
+        return false;
+    }
+
+    private boolean prepareMediaCodec() {
         if (DEBUG)
-            MLog.d(TAG, "prepare() start");
+            MLog.d(TAG, "prepareMediaCodec() start");
         MediaExtractor mediaExtractor = new MediaExtractor();
         try {
             mediaExtractor.setDataSource(mPath);
@@ -185,7 +199,7 @@ public class AACPlayer {
                         channelConfigIndexMap.get(channelCount)));
                 MediaUtils.setCsdBuffers(mAudioDecoderMediaFormat, list);
                 if (DEBUG)
-                    MLog.d(TAG, "prepare() " +
+                    MLog.d(TAG, "prepareMediaCodec() " +
                             mAudioDecoderMediaFormat.toString());
                 mAudioDecoderMediaCodec =
                         MediaUtils.getAudioDecoderMediaCodec(
@@ -221,93 +235,21 @@ public class AACPlayer {
         }
         mediaExtractor.release();
         if (DEBUG)
-            MLog.d(TAG, "prepare() end");
+            MLog.d(TAG, "prepareMediaCodec() end");
         return true;
     }
 
-    private void readLocalData() {
+    private void readData() {
         if (DEBUG)
-            MLog.w(TAG, "readLocalData() start");
+            MLog.w(TAG, "readData() start");
 
-        if (!prepare()) {
+        if (!prepareInputStream()) {
+            MLog.e(TAG, "readData() prepareInputStream failed");
             return;
         }
 
-        readDataSize = -1;
-        lastOffsetIndex = -1;
-        mIsReading = true;
-        boolean onlyOne = true;
-        while (mIsReading) {
-            try {
-                if (mInputStream.available() <= 0) {
-                    readDataSize = -1;
-                    break;
-                }
-
-                Arrays.fill(mData1, (byte) 0);
-                // mInputStream ---> mData1
-                if (lastOffsetIndex == -1) {
-                    readDataSize = mInputStream.read(mData1, 0, CACHE);
-                    if (readDataSize > 0 && onlyOne) {
-                        onlyOne = false;
-                        new Thread(mHandleLocalData).start();
-                    }
-                } else {
-                    readDataSize = mInputStream.read(mData1, 0, lastOffsetIndex);
-                }
-
-                if (DEBUG) {
-                    MLog.e(TAG, "readLocalData()    readDataSize: " + readDataSize);
-                    MLog.e(TAG, "readLocalData() lastOffsetIndex: " + lastOffsetIndex);
-                }
-                if (readDataSize < 0) {
-                    break;
-                }
-
-                synchronized (mReadDataLock) {
-                    try {
-                        mReadDataLock.wait();
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                }
-            } catch (IOException
-                    | NullPointerException e) {
-                e.printStackTrace();
-                break;
-            }
-        }
-
-        try {
-            mInputStream.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        } finally {
-            mInputStream = null;
-        }
-
-        if (DEBUG)
-            MLog.w(TAG, "readLocalData() end");
-    }
-
-    private void readHttpData() {
-        if (DEBUG)
-            MLog.w(TAG, "readHttpData() start");
-
-        if (!prepare()) {
-            return;
-        }
-
-        HttpAccessor httpAccessor = null;
-        try {
-            httpAccessor = new HttpAccessor(new URL(mPath), null);
-            httpAccessor.open();
-        } catch (MalformedURLException
-                | ExoPlaybackException e) {
-            e.printStackTrace();
-            httpAccessor = null;
-        }
-        if (httpAccessor == null) {
+        if (!prepareMediaCodec()) {
+            MLog.e(TAG, "readData() prepareMediaCodec failed");
             return;
         }
 
@@ -329,14 +271,14 @@ public class AACPlayer {
             try {
                 Arrays.fill(buffer, (byte) 0);
                 // httpAccessor ---> mData1
-                int readSize = httpAccessor.read(buffer, 0, bufferLength);
-                MLog.i(TAG, "readHttpData()     readSize: " + readSize);
+                int readSize = mInputStream.read(buffer, 0, bufferLength);
                 if (readSize < 0) {
+                    MLog.i(TAG, "readData()     readSize: " + readSize);
                     // 开启任务处理数据(如果还没有开启任务过的话)
                     // 如果任务是在这里被开启的,那么说明网络文件长度小于等于CACHE
                     if (!mIsHandling) {
                         mIsHandling = true;
-                        new Thread(mHandleHttpData).start();
+                        new Thread(mHandleData).start();
                     }
                     mIsReading = false;
                     break;
@@ -347,14 +289,14 @@ public class AACPlayer {
                     System.arraycopy(buffer, 0,
                             mData1, readDataSize, readSize);
                     readDataSize += readSize;
-                    MLog.i(TAG, "readHttpData() readDataSize: " + readDataSize);
+                    MLog.i(TAG, "readData() readDataSize: " + readDataSize);
                     continue;
                 } else {
                     // 开启任务处理数据
                     // 如果任务是在这里被开启的,那么说明网络文件长度大于CACHE
                     if (!mIsHandling) {
                         mIsHandling = true;
-                        new Thread(mHandleHttpData).start();
+                        new Thread(mHandleData).start();
                     }
                     // wait
                     synchronized (mReadDataLock) {
@@ -371,7 +313,7 @@ public class AACPlayer {
                     System.arraycopy(buffer, 0,
                             mData1, 0, readSize);
                 }
-            } catch (ExoPlaybackException
+            } catch (IOException
                     | NullPointerException e) {
                 e.printStackTrace();
                 mIsReading = false;
@@ -380,154 +322,20 @@ public class AACPlayer {
         }// while(...) end
 
         try {
-            if (httpAccessor != null) {
-                httpAccessor.close();
+            if (mInputStream != null) {
+                mInputStream.close();
             }
-        } catch (ExoPlaybackException e) {
+        } catch (IOException e) {
             e.printStackTrace();
         }
 
         if (DEBUG)
-            MLog.w(TAG, "readHttpData() end");
+            MLog.w(TAG, "readData() end");
     }
 
-    private void handleLocalData() {
+    private void handleData() {
         if (DEBUG)
-            MLog.w(TAG, "handleLocalData() start");
-
-        // mData2中剩下的数据大小
-        ArrayList<Integer> offsetList = new ArrayList<Integer>();
-        int restOfDataSize = 0;
-        int frameDataLength = 1024;
-        byte[] frameData = new byte[frameDataLength];
-        // mData1 ---> mData2
-        System.arraycopy(
-                mData1, 0,
-                mData2, 0, readDataSize);
-
-        long startDecodeTime = System.nanoTime();
-        boolean isHandlingData = true;
-        while (isHandlingData) {
-            MLog.d(TAG, "handleLocalData() findHead start");
-            if (readDataSize == CACHE
-                    || readDataSize == lastOffsetIndex) {
-                findHead(mData2, 0, CACHE, offsetList);
-            } else {
-                findHead(mData2, 0, readDataSize, offsetList);
-            }
-            MLog.d(TAG, "handleLocalData() findHead end");
-            int offsetCount = offsetList.size();
-            MLog.d(TAG, "handleLocalData() findHead     offsetCount: " + offsetCount);
-            if (offsetCount > 1) {
-                lastOffsetIndex = offsetList.get(offsetCount - 1);
-                restOfDataSize = readDataSize - lastOffsetIndex;
-            } else if (offsetCount == 0) {
-                StringBuilder sb = new StringBuilder();
-                for (byte bt : mData2) {
-                    sb.append(" ");
-                    sb.append(bt);
-                }
-                MLog.d(TAG, "handleLocalData() " + sb.toString());
-
-                break;
-            }
-            MLog.d(TAG, "handleLocalData() findHead lastOffsetIndex: " + lastOffsetIndex);
-            synchronized (mReadDataLock) {
-                mReadDataLock.notify();
-            }
-
-            for (int i = 0; i < offsetCount; i++) {
-                Arrays.fill(frameData, (byte) 0);
-                if (i + 1 < offsetCount) {
-                    /***
-                     集合中至少有两个offset才有一帧输出
-                     各帧之间的offset很重要,比如有:0, 519, 1038, 1585, 2147 ...
-                     知道了offset,那么就知道了要"喂"多少数据了.
-                     两个offset的位置一减就是一帧的长度
-                     */
-                    int frameLength = offsetList.get(i + 1) - offsetList.get(i);
-                    if (frameLength > frameDataLength) {
-                        MLog.d(TAG, "handleLocalData() 出现大体积帧 frameLength: " + frameLength);
-                        frameDataLength = frameLength;
-                        frameData = new byte[frameLength];
-                    }
-                    // frameData保存着一帧的数据(包括ADTS头和AAC ES(AAC音频数据))
-                    System.arraycopy(
-                            mData2, offsetList.get(i),
-                            frameData, 0, frameLength);
-                    MLog.d(TAG, "handleLocalData() offset: " + offsetList.get(i) +
-                            "    " + frameData[0] +
-                            " " + frameData[1] +
-                            " " + frameData[2] +
-                            " " + frameData[3] +
-                            " " + frameData[4] +
-                            " " + frameData[5] +
-                            " " + frameData[6]);
-                    MLog.d(TAG, "handleLocalData() frameLength: " + frameLength);
-
-                    feedInputBufferAndDrainOutputBuffer(
-                            frameData, 0, frameLength, startDecodeTime);
-                } else {
-                    // 处理集合中最后一个offset的位置
-                    lastOffsetIndex = offsetList.get(i);
-                    MLog.i(TAG, "handleLocalData()    readDataSize: " + readDataSize);
-                    MLog.i(TAG, "handleLocalData() lastOffsetIndex: " + lastOffsetIndex);
-                    MLog.i(TAG, "handleLocalData()  restOfDataSize: " + restOfDataSize);
-                    if (restOfDataSize > 0) {
-                        System.arraycopy(
-                                mData2, lastOffsetIndex,
-                                frameData, 0, restOfDataSize);
-                    }
-                    if (readDataSize == lastOffsetIndex
-                            || readDataSize > frameData.length) {
-                        // 把mData2中剩下的数据移动到mData2的开头
-                        Arrays.fill(mData2, (byte) 0);
-                        System.arraycopy(
-                                frameData, 0,
-                                mData2, 0, restOfDataSize);
-                        // mData1 ---> mData2
-                        System.arraycopy(mData1, 0,
-                                mData2, restOfDataSize, readDataSize);
-                        // mData2中有readDataSize个字节
-                        readDataSize += restOfDataSize;
-                        break;
-                    } else {
-                        // 剩下还有一帧
-                        if (CACHE >= 1024 * 1024) {
-                            int frameLength = restOfDataSize;
-                            MLog.d(TAG, "handleLocalData() last     offset: " + 0 +
-                                    "    " + frameData[0] +
-                                    " " + frameData[1] +
-                                    " " + frameData[2] +
-                                    " " + frameData[3] +
-                                    " " + frameData[4] +
-                                    " " + frameData[5] +
-                                    " " + frameData[6]);
-                            MLog.d(TAG, "handleLocalData()     frameLength: " + frameLength);
-
-                            feedInputBufferAndDrainOutputBuffer(
-                                    frameData, 0, frameLength, startDecodeTime);
-
-                            isHandlingData = false;
-                        }
-                        break;
-                    }
-                }
-            }// for(...) end
-        }// while(true) end
-
-        mIsReading = false;
-        synchronized (mReadDataLock) {
-            mReadDataLock.notify();
-        }
-
-        if (DEBUG)
-            MLog.w(TAG, "handleLocalData() end");
-    }
-
-    private void handleHttpData() {
-        if (DEBUG)
-            MLog.w(TAG, "handleHttpData() start");
+            MLog.w(TAG, "handleData() start");
 
         // mData2中剩下的数据大小
         ArrayList<Integer> offsetList = new ArrayList<Integer>();
@@ -543,37 +351,37 @@ public class AACPlayer {
         long startDecodeTime = System.nanoTime();
         boolean isHandlingData = true;
         while (isHandlingData) {
-            MLog.d(TAG, "handleHttpData() findHead start");
+            MLog.d(TAG, "handleData() findHead start");
             if (readDataSize == CACHE
                     || readDataSize == lastOffsetIndex) {
                 findHead(mData2, 0, CACHE, offsetList);
             } else {
                 findHead(mData2, 0, readDataSize, offsetList);
             }
-            MLog.d(TAG, "handleHttpData() findHead end");
+            MLog.d(TAG, "handleData() findHead end");
             int offsetCounts = offsetList.size();
-            MLog.i(TAG, "handleHttpData() findHead    offsetCounts: " + offsetCounts);
+            MLog.i(TAG, "handleData() findHead    offsetCounts: " + offsetCounts);
             if (offsetCounts > 1) {
                 preReadDataSize = readDataSize;
                 lastOffsetIndex = offsetList.get(offsetCounts - 1);
                 restOfDataSize = readDataSize - lastOffsetIndex;
-                MLog.i(TAG, "handleHttpData() findHead    readDataSize: " + readDataSize);
-                MLog.i(TAG, "handleHttpData() findHead lastOffsetIndex: " + lastOffsetIndex);
-                MLog.i(TAG, "handleHttpData() findHead  restOfDataSize: " + restOfDataSize);
+                MLog.i(TAG, "handleData() findHead    readDataSize: " + readDataSize);
+                MLog.i(TAG, "handleData() findHead lastOffsetIndex: " + lastOffsetIndex);
+                MLog.i(TAG, "handleData() findHead  restOfDataSize: " + restOfDataSize);
             } else if (offsetCounts == 0) {
                 StringBuilder sb = new StringBuilder();
                 for (byte bt : mData2) {
                     sb.append(" ");
                     sb.append(bt);
                 }
-                MLog.d(TAG, "handleHttpData() " + sb.toString());
+                MLog.d(TAG, "handleData() " + sb.toString());
 
                 break;
             }
             if (mIsReading) {
                 // 此处发送消息后,readDataSize的大小可能会变化
                 synchronized (mReadDataLock) {
-                    MLog.i(TAG, "handleHttpData() findHead mReadDataLock.notify()");
+                    MLog.i(TAG, "handleData() findHead mReadDataLock.notify()");
                     mReadDataLock.notify();
                 }
             }
@@ -589,7 +397,7 @@ public class AACPlayer {
                      */
                     int frameLength = offsetList.get(i + 1) - offsetList.get(i);
                     if (frameLength > frameDataLength) {
-                        MLog.d(TAG, "handleHttpData() 出现大体积帧 frameLength: " + frameLength);
+                        MLog.d(TAG, "handleData() 出现大体积帧 frameLength: " + frameLength);
                         frameDataLength = frameLength;
                         frameData = new byte[frameLength];
                     }
@@ -597,7 +405,7 @@ public class AACPlayer {
                     System.arraycopy(
                             mData2, offsetList.get(i),
                             frameData, 0, frameLength);
-                    MLog.d(TAG, "handleHttpData() offset: " + offsetList.get(i) +
+                    MLog.d(TAG, "handleData() offset: " + offsetList.get(i) +
                             "    " + frameData[0] +
                             " " + frameData[1] +
                             " " + frameData[2] +
@@ -605,23 +413,24 @@ public class AACPlayer {
                             " " + frameData[4] +
                             " " + frameData[5] +
                             " " + frameData[6]);
-                    MLog.d(TAG, "handleHttpData() frameLength: " + frameLength);
+                    MLog.d(TAG, "handleData() frameLength: " + frameLength);
 
                     feedInputBufferAndDrainOutputBuffer(
                             frameData, 0, frameLength, startDecodeTime);
                 } else {
                     // 处理集合中最后一个offset的位置
                     lastOffsetIndex = offsetList.get(i);
-                    MLog.i(TAG, "handleHttpData() preReadDataSize: " + preReadDataSize);
-                    MLog.i(TAG, "handleHttpData()    readDataSize: " + readDataSize);
-                    MLog.i(TAG, "handleHttpData() lastOffsetIndex: " + lastOffsetIndex);
-                    MLog.i(TAG, "handleHttpData()  restOfDataSize: " + restOfDataSize);
+                    MLog.i(TAG, "handleData() preReadDataSize: " + preReadDataSize);
+                    MLog.i(TAG, "handleData()    readDataSize: " + readDataSize);
+                    MLog.i(TAG, "handleData() lastOffsetIndex: " + lastOffsetIndex);
+                    MLog.i(TAG, "handleData()  restOfDataSize: " + restOfDataSize);
                     if (restOfDataSize > 0) {
                         System.arraycopy(
                                 mData2, lastOffsetIndex,
                                 frameData, 0, restOfDataSize);
                     }
 
+                    // mData1中还有数据
                     if (preReadDataSize != readDataSize) {
                         // 把mData2中剩下的数据移动到mData2的开头
                         Arrays.fill(mData2, (byte) 0);
@@ -633,10 +442,10 @@ public class AACPlayer {
                                 mData2, restOfDataSize, readDataSize);
                         break;
                     } else {
-                        // 剩下还有一帧
+                        // 最后一帧
                         if (CACHE >= 1024 * 1024) {
                             int frameLength = restOfDataSize;
-                            MLog.d(TAG, "handleHttpData() last     offset: " + 0 +
+                            MLog.d(TAG, "handleData() last     offset: " + 0 +
                                     "    " + frameData[0] +
                                     " " + frameData[1] +
                                     " " + frameData[2] +
@@ -644,7 +453,7 @@ public class AACPlayer {
                                     " " + frameData[4] +
                                     " " + frameData[5] +
                                     " " + frameData[6]);
-                            MLog.d(TAG, "handleHttpData()     frameLength: " + frameLength);
+                            MLog.d(TAG, "handleData()     frameLength: " + frameLength);
 
                             feedInputBufferAndDrainOutputBuffer(
                                     frameData, 0, frameLength, startDecodeTime);
@@ -657,27 +466,31 @@ public class AACPlayer {
             }// for(...) end
         }// while(true) end
 
-        mIsReading = false;
-        synchronized (mReadDataLock) {
-            mReadDataLock.notify();
+        if (mIsReading) {
+            synchronized (mReadDataLock) {
+                mReadDataLock.notify();
+            }
         }
+        mIsReading = false;
 
         if (DEBUG)
-            MLog.w(TAG, "handleHttpData() end");
+            MLog.w(TAG, "handleData() end");
     }
 
     private void feedInputBufferAndDrainOutputBuffer(
             byte[] data, int offset, int size, long startTime) {
         // Input
-        // SystemClock.sleep(1);
         MediaUtils.feedInputBuffer(
                 mAudioDecoderMediaCodec, data,
                 offset, size, startTime);
-
         // Output
-        // SystemClock.sleep(1);
         MediaUtils.drainOutputBuffer(
                 mAudioDecoderMediaCodec, false, callback);
+
+        /*// Input
+        SystemClock.sleep(1);
+        // Output
+        SystemClock.sleep(1);*/
     }
 
     /***
@@ -737,31 +550,17 @@ public class AACPlayer {
         }
     }
 
-    private Runnable mReadLocalData = new Runnable() {
+    private Runnable mReadData = new Runnable() {
         @Override
         public void run() {
-            readLocalData();
+            readData();
         }
     };
 
-    private Runnable mReadHttpData = new Runnable() {
+    private Runnable mHandleData = new Runnable() {
         @Override
         public void run() {
-            readHttpData();
-        }
-    };
-
-    private Runnable mHandleLocalData = new Runnable() {
-        @Override
-        public void run() {
-            handleLocalData();
-        }
-    };
-
-    private Runnable mHandleHttpData = new Runnable() {
-        @Override
-        public void run() {
-            handleHttpData();
+            handleData();
         }
     };
 

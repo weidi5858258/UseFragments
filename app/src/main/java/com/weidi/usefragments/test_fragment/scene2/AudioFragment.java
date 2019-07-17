@@ -29,10 +29,7 @@ import com.weidi.usefragments.inject.InjectOnClick;
 import com.weidi.usefragments.inject.InjectView;
 import com.weidi.usefragments.media.MediaUtils;
 import com.weidi.usefragments.tool.AACPlayer;
-import com.weidi.usefragments.tool.AACPlayer2;
 import com.weidi.usefragments.tool.Callback;
-import com.weidi.usefragments.tool.ExoPlaybackException;
-import com.weidi.usefragments.tool.HttpAccessor;
 import com.weidi.usefragments.tool.MLog;
 import com.weidi.usefragments.tool.SimpleAudioRecorder;
 
@@ -41,8 +38,6 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -692,8 +687,8 @@ public class AudioFragment extends BaseFragment {
         new Thread(new Runnable() {
             @Override
             public void run() {
-                AACPlayer2 aacPlayer = new AACPlayer2();
-                aacPlayer.setPath(PATH + "AAC_AAC-LC.aac");
+                AACPlayer aacPlayer = new AACPlayer();
+                aacPlayer.setPath(PATH + "AAC_HE-AAC.aac");
                 //aacPlayer.setPath("http://192.168.1.107:8080/tomcat_audio/AAC_HE-AAC.aac");
                 aacPlayer.start();
 
