@@ -526,7 +526,7 @@ public class AACPlayer {
                 && data[offset + 6] == (byte) 0xFC) {
             // -1 -15 80 -128 63 -97 -4
             // -1 -15 84   64 3  -65 -4
-            /*MLog.d(TAG, "onBuffer() offset: " + offset +
+            /*MLog.d(TAG, "onOutputBuffer() offset: " + offset +
                     "     " + data[offset] +
                     " " + data[offset + 1] +
                     " " + data[offset + 2] +
@@ -587,12 +587,17 @@ public class AACPlayer {
         }
 
         @Override
-        public void onBuffer(ByteBuffer room, int roomSize) {
+        public void onInputBuffer(ByteBuffer room, MediaUtils.InputBufferInfo info) {
+
+        }
+
+        @Override
+        public void onOutputBuffer(ByteBuffer room, int roomSize) {
             byte[] pcmData = new byte[roomSize];
             room.get(pcmData, 0, pcmData.length);
             if (mAudioTrack != null) {
                 int writeSize = mAudioTrack.write(pcmData, 0, roomSize);
-                //MLog.d(TAG, "onBuffer() writeSize: " + writeSize);
+                //MLog.d(TAG, "onOutputBuffer() writeSize: " + writeSize);
             }
         }
     };

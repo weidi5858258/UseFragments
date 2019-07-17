@@ -513,30 +513,7 @@ public class MediaUtils {
      * @return
      */
     public static MediaCodec getVideoDecoderMediaCodec() {
-        MediaCodecInfo codecInfo = getEncoderMediaCodecInfo(VIDEO_MIME);
-        if (codecInfo == null) {
-            throw new RuntimeException(
-                    "根据 \"" + VIDEO_MIME + "\" 这个mime找不到对应的MediaCodecInfo对象");
-        }
-
-        MediaCodec decoder = null;
-        try {
-            // decoder = MediaCodec.createByCodecName(codecInfo.getName());
-            // decoder = MediaCodec.createByCodecName("OMX.google.h264.encoder");
-            decoder = MediaCodec.createDecoderByType(VIDEO_MIME);
-            if (DEBUG)
-                MLog.d(TAG, "getVideoDecoderMediaCodec() MediaCodec create success");
-            // 最后一个参数是flag,用来标记是否是编码,传入0表示作为解码.
-            /*decoder.configure(
-                    getMediaDecoderFormat(width, height),
-                    surface,
-                    null,
-                    0);
-            decoder.start();*/
-        } catch (IOException e) {
-            e.printStackTrace();
-            return null;
-        }
+        return getVideoDecoderMediaCodec(getVideoDecoderMediaFormat(1280, 720));
         /***
          onInputBufferAvailable会一直回调来让我们不断的从队列中取出数据提交给解码器。
          此处一定要注意，假如用户通过dequeuinputbuffer方法获取了缓冲的索引，
@@ -582,24 +559,32 @@ public class MediaUtils {
 
             }
         });*/
-
-        return decoder;
     }
 
-    public static MediaCodec getAudioDecoderMediaCodec() {
+    public static MediaCodec getVideoDecoderMediaCodec(MediaFormat format) {
+        return getVideoDecoderMediaCodec(VIDEO_MIME, format);
+    }
+
+    public static MediaCodec getVideoDecoderMediaCodec(String mime, MediaFormat mediaFormat) {
+        return getVideoDecoderMediaCodec(mime, mediaFormat, null);
+    }
+
+    public static MediaCodec getVideoDecoderMediaCodec(
+            String mime, MediaFormat mediaFormat, Surface surface) {
         MediaCodec decoder = null;
-        MediaCodecInfo[] mediaCodecInfos = findAllDecodersByMime(AUDIO_MIME);
+        MediaCodecInfo[] mediaCodecInfos = findAllDecodersByMime(mime);
         for (MediaCodecInfo mediaCodecInfo : mediaCodecInfos) {
             if (mediaCodecInfo == null) {
                 continue;
             }
             try {
                 decoder = MediaCodec.createByCodecName(mediaCodecInfo.getName());
-                decoder.configure(getAudioDecoderMediaFormat(), null, null, 0);
+                decoder.configure(mediaFormat, surface, null, 0);
                 decoder.start();
                 if (DEBUG)
-                    MLog.d(TAG, "getAudioDecoderMediaCodec() MediaCodec create success: " +
-                            mediaCodecInfo.getName());
+                    MLog.d(TAG, "getVideoDecoderMediaCodec() " +
+                            "MediaCodec create success mime: " + mime +
+                            " codecName: " + mediaCodecInfo.getName());
                 break;
             } catch (NullPointerException
                     | IllegalArgumentException
@@ -611,6 +596,14 @@ public class MediaUtils {
         }
 
         return decoder;
+    }
+
+    public static MediaCodec getAudioDecoderMediaCodec() {
+        return getAudioDecoderMediaCodec(getAudioDecoderMediaFormat());
+    }
+
+    public static MediaCodec getAudioDecoderMediaCodec(MediaFormat format) {
+        return getAudioDecoderMediaCodec(AUDIO_MIME, format);
     }
 
     public static MediaCodec getAudioDecoderMediaCodec(String mime, MediaFormat mediaFormat) {
@@ -628,33 +621,6 @@ public class MediaUtils {
                     MLog.d(TAG, "getAudioDecoderMediaCodec() " +
                             "MediaCodec create success mime: " + mime +
                             " codecName: " + mediaCodecInfo.getName());
-                break;
-            } catch (NullPointerException
-                    | IllegalArgumentException
-                    | IOException e) {
-                e.printStackTrace();
-                decoder = null;
-                continue;
-            }
-        }
-
-        return decoder;
-    }
-
-    public static MediaCodec getAudioDecoderMediaCodec(MediaFormat format) {
-        MediaCodec decoder = null;
-        MediaCodecInfo[] mediaCodecInfos = findAllDecodersByMime(AUDIO_MIME);
-        for (MediaCodecInfo mediaCodecInfo : mediaCodecInfos) {
-            if (mediaCodecInfo == null) {
-                continue;
-            }
-            try {
-                decoder = MediaCodec.createByCodecName(mediaCodecInfo.getName());
-                decoder.configure(format, null, null, 0);
-                decoder.start();
-                if (DEBUG)
-                    MLog.d(TAG, "getAudioDecoderMediaCodec() MediaCodec create success: " +
-                            mediaCodecInfo.getName());
                 break;
             } catch (NullPointerException
                     | IllegalArgumentException
@@ -1425,10 +1391,61 @@ public class MediaUtils {
         return true;
     }
 
+    public static boolean feedInputBuffer(
+            MediaCodec codec, long startTime,
+            MediaUtils.Callback callback) {
+        try {
+            int roomIndex = codec.dequeueInputBuffer(TIME_OUT);
+            if (roomIndex >= 0) {
+                ByteBuffer room = null;
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                    room = codec.getInputBuffer(roomIndex);
+                } else {
+                    room = codec.getInputBuffers()[roomIndex];
+                }
+                InputBufferInfo info = new InputBufferInfo();
+                if (room != null) {
+                    room.clear();
+                    if (callback != null) {
+                        callback.onInputBuffer(room, info);
+                    }
+                }
+                long presentationTimeUs =
+                        (System.nanoTime() - startTime) / 1000;
+                int flags = 0;
+                if (info.size == 0) {
+                    presentationTimeUs = 0L;
+                    flags = MediaCodec.BUFFER_FLAG_END_OF_STREAM;
+                }
+                codec.queueInputBuffer(
+                        roomIndex,
+                        info.offset,
+                        info.size,
+                        presentationTimeUs,
+                        flags);
+            }
+        } catch (MediaCodec.CryptoException
+                | IllegalStateException
+                | NullPointerException e) {
+            MLog.e(TAG, "feedInputBuffer() Input occur exception: " + e);
+            e.printStackTrace();
+            return false;
+        }
+
+        return true;
+    }
+
+    public static class InputBufferInfo {
+        public int offset = 0;
+        public int size = 0;
+    }
+
     public interface Callback {
         void onFormatChanged(MediaFormat newMediaFormat);
 
-        void onBuffer(ByteBuffer room, int roomSize);
+        void onInputBuffer(ByteBuffer room, InputBufferInfo info);
+
+        void onOutputBuffer(ByteBuffer room, int roomSize);
     }
 
     public static boolean drainOutputBuffer(
@@ -1488,7 +1505,7 @@ public class MediaUtils {
                     room.position(roomInfo.offset);
                     room.limit(roomInfo.offset + roomSize);
                     if (callback != null) {
-                        callback.onBuffer(room, roomSize);
+                        callback.onOutputBuffer(room, roomSize);
                     }
                 }
 
