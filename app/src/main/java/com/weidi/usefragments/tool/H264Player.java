@@ -64,8 +64,8 @@ public class H264Player {
             return;
         }
         mPath = path;
-        mPath = "/storage/2430-1702/Android/data/com.weidi.usefragments/files/video2.h264";
         mPath = "http://192.168.1.113:8080/tomcat_video/video2.h264";
+        mPath = "/storage/2430-1702/Android/data/com.weidi.usefragments/files/video2.h264";
     }
 
     public void setSurface(Surface surface) {
@@ -476,6 +476,10 @@ public class H264Player {
             }
         }
         mIsReading = false;
+
+        if (mVideoDecoderMediaCodec != null) {
+            mVideoDecoderMediaCodec.release();
+        }
 
         MLog.w(TAG, "handleData()      frameTotal: " + frameTotal);
 
