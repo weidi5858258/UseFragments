@@ -41,13 +41,16 @@ public class H264Player {
     private static final int TIME_INTERNAL = 5;
     private int mFrameCounts;
     private InputStream mInputStream;
+    // while
     private boolean mIsReading = false;
+    // while
     private boolean mIsHandling = false;
     private boolean mIsLocalFile = true;
     private boolean mData1HasData = false;
     private byte[] mData1;
     private byte[] mData2;
     private Object mReadDataLock = new Object();
+    private Object mHandleDataLock = new Object();
     private int readDataSize = -1;
     private int lastOffsetIndex = -1;
     private String mPath;
@@ -55,17 +58,22 @@ public class H264Player {
     private MediaFormat mVideoDecoderMediaFormat;
     private Surface mSurface;
 
+    private static final int READ_UNKNOW = 0x0001;
+    private static final int READ_STARTED = 0x0002;
+    private static final int READ_PAUSED = 0x0003;
+    private static final int READ_FINISHED = 0x0004;
+    private int mReadStatus = READ_UNKNOW;
+
     public H264Player() {
         init();
     }
 
     public void setPath(String path) {
-        if (TextUtils.isEmpty(path)) {
-            return;
-        }
         mPath = path;
-        mPath = "http://192.168.1.113:8080/tomcat_video/video2.h264";
+        // 如果不解封装,是找不到h264视频流的
+        mPath = "/storage/2430-1702/BaiduNetdisk/video/05.mp4";
         mPath = "/storage/2430-1702/Android/data/com.weidi.usefragments/files/video2.h264";
+        mPath = "http://192.168.0.112:8080/tomcat_video/video2.h264";
     }
 
     public void setSurface(Surface surface) {
@@ -74,6 +82,11 @@ public class H264Player {
 
     public void start() {
         new Thread(mReadData).start();
+    }
+
+    public void stop() {
+        mIsReading = false;
+        mIsHandling = false;
     }
 
     private void init() {
@@ -106,10 +119,14 @@ public class H264Player {
     }
 
     private boolean prepareInputStream() {
-        if (!mPath.endsWith(".h264")
-                && !mPath.endsWith(".H264")) {
+        if (TextUtils.isEmpty(mPath)) {
             return false;
         }
+
+        /*if (!mPath.endsWith(".h264")
+                && !mPath.endsWith(".H264")) {
+            return false;
+        }*/
 
         mIsLocalFile = true;
         if (mPath.startsWith("http")
@@ -233,6 +250,7 @@ public class H264Player {
             return;
         }
 
+        mReadStatus = READ_UNKNOW;
         // 测试了一下,好像最大只能读取8192个byte
         int bufferLength = 1024 * 1024;
         byte[] buffer = new byte[bufferLength];
@@ -253,6 +271,7 @@ public class H264Player {
                 // httpAccessor ---> mData1
                 int readSize = mInputStream.read(buffer, 0, bufferLength);
                 if (readSize < 0) {
+                    mReadStatus = READ_FINISHED;
                     MLog.i(TAG, "readData()     readSize: " + readSize);
                     MLog.i(TAG, "readData() readDataSize: " + readDataSize);
                     // 开启任务处理数据(如果还没有开启任务过的话)
@@ -266,6 +285,7 @@ public class H264Player {
                 }
                 readTotalSize += readSize;
                 if (readTotalSize <= CACHE) {
+                    mReadStatus = READ_STARTED;
                     // buffer ---> mData1
                     System.arraycopy(buffer, 0,
                             mData1, readDataSize, readSize);
@@ -273,6 +293,10 @@ public class H264Player {
                     continue;
                 } else {
                     MLog.i(TAG, "readData() readDataSize: " + readDataSize);
+                    mReadStatus = READ_PAUSED;
+                    synchronized (mHandleDataLock) {
+                        mHandleDataLock.notify();
+                    }
                     // 开启任务处理数据
                     // 如果任务是在这里被开启的,那么说明网络文件长度大于CACHE
                     if (!mIsHandling) {
@@ -310,6 +334,7 @@ public class H264Player {
                     | NullPointerException e) {
                 e.printStackTrace();
                 mIsReading = false;
+                mReadStatus = READ_UNKNOW;
                 break;
             }
         }// while(...) end
@@ -424,7 +449,8 @@ public class H264Player {
 
                     // mData1中还有数据
                     if (readDataSize != CACHE
-                            && preReadDataSize == readDataSize) {
+                            && preReadDataSize == readDataSize
+                            && mReadStatus == READ_FINISHED) {
                         // 最后一帧
                         if (CACHE >= 1024 * 1024) {
                             int frameLength = restOfDataSize;
@@ -442,6 +468,16 @@ public class H264Player {
                         }
                         break;
                     } else {
+                        if (mReadStatus == READ_STARTED) {
+                            synchronized (mHandleDataLock) {
+                                try {
+                                    mHandleDataLock.wait();
+                                } catch (InterruptedException e) {
+                                    e.printStackTrace();
+                                }
+                            }
+                        }
+
                         // 把mData2中剩下的数据移动到mData2的开头
                         Arrays.fill(mData2, (byte) 0);
                         System.arraycopy(

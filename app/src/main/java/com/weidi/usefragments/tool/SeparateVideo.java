@@ -333,14 +333,14 @@ public class SeparateVideo {
             }
             Arrays.fill(audioData, (byte) 0);
             room.get(audioData, 0, readSize);
-            MLog.d(TAG, "audioWork() " +
+            /*MLog.d(TAG, "audioWork() " +
                     "    " + audioData[0] +
                     " " + audioData[1] +
                     " " + audioData[2] +
                     " " + audioData[3] +
                     " " + audioData[4] +
                     " " + audioData[5] +
-                    " " + audioData[6]);
+                    " " + audioData[6]);*/
             if (!oneIndex.contains(audioData[0])) {
                 oneIndex.add(audioData[0]);
             }
@@ -349,7 +349,7 @@ public class SeparateVideo {
             }
             try {
                 mAudioOS.write(audioData, 0, readSize);
-                mAudioOS.flush();
+                //mAudioOS.flush();
             } catch (IOException e) {
                 e.printStackTrace();
                 mIsAudioRunning = false;
@@ -429,17 +429,17 @@ public class SeparateVideo {
             }
             Arrays.fill(videoData, (byte) 0);
             room.get(videoData, 0, readSize);
-            MLog.i(TAG, "videoWork() " +
+            /*MLog.i(TAG, "videoWork() " +
                     "    " + videoData[0] +
                     " " + videoData[1] +
                     " " + videoData[2] +
                     " " + videoData[3] +
                     " " + videoData[4] +
                     " " + videoData[5] +
-                    " " + videoData[6]);
+                    " " + videoData[6]);*/
             try {
                 mVideoOS.write(videoData, 0, readSize);
-                mVideoOS.flush();
+                //mVideoOS.flush();
             } catch (IOException e) {
                 e.printStackTrace();
                 mIsVideoRunning = false;

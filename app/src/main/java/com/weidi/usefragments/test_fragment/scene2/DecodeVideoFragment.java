@@ -405,7 +405,7 @@ public class DecodeVideoFragment extends BaseFragment {
                 next();*/
 
                 H264Player h264Player = new H264Player();
-                h264Player.setPath("demo");
+                h264Player.setPath(null);
                 h264Player.setSurface(mSurface);
                 h264Player.start();
             }
