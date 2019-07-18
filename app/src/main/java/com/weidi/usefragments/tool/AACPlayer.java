@@ -479,6 +479,8 @@ public class AACPlayer {
 
     private void feedInputBufferAndDrainOutputBuffer(
             byte[] data, int offset, int size, long startTime) {
+        long presentationTimeUs =
+                (System.nanoTime() - startTime) / 1000;
         // Input
         MediaUtils.feedInputBuffer(
                 mAudioDecoderMediaCodec, data,
@@ -592,7 +594,8 @@ public class AACPlayer {
         }
 
         @Override
-        public void onOutputBuffer(ByteBuffer room, int roomSize) {
+        public void onOutputBuffer(
+                ByteBuffer room, MediaCodec.BufferInfo roomInfo, int roomSize) {
             byte[] pcmData = new byte[roomSize];
             room.get(pcmData, 0, pcmData.length);
             if (mAudioTrack != null) {

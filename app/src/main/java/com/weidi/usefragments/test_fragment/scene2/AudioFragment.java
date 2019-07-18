@@ -10,6 +10,7 @@ import android.media.MediaFormat;
 import android.media.audiofx.AcousticEchoCanceler;
 import android.media.audiofx.NoiseSuppressor;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Looper;
@@ -30,6 +31,7 @@ import com.weidi.usefragments.inject.InjectView;
 import com.weidi.usefragments.media.MediaUtils;
 import com.weidi.usefragments.tool.AACPlayer;
 import com.weidi.usefragments.tool.Callback;
+import com.weidi.usefragments.tool.H264Player;
 import com.weidi.usefragments.tool.MLog;
 import com.weidi.usefragments.tool.SeparateVideo;
 import com.weidi.usefragments.tool.SimpleAudioRecorder;
@@ -690,12 +692,16 @@ public class AudioFragment extends BaseFragment {
             public void run() {
                 /*AACPlayer aacPlayer = new AACPlayer();
                 aacPlayer.setPath(
-                        "/storage/2430-1702/Android/data/com.weidi.usefragments/files/Music/audio.aac");
+                        "/storage/2430-1702/Android/data/com.weidi.usefragments/files/Music/audio
+                        .aac");
                 //aacPlayer.setPath(PATH + "AAC_HE-AAC.aac");
-                //aacPlayer.setPath("http://192.168.1.107:8080/tomcat_audio/AAC_HE-AAC.aac");
+                //aacPlayer.setPath("http://192.168.1.113:8080/tomcat_audio/AAC_HE-AAC.aac");
                 aacPlayer.start();*/
 
-                new SeparateVideo().start();
+                new SeparateVideo().setPath(null).start();
+
+                /*H264Player h264Player = new H264Player();
+                h264Player.start();*/
 
                 /*try {
                     // 读取的最大值为8192
@@ -770,7 +776,8 @@ public class AudioFragment extends BaseFragment {
                     }
 
                     @Override
-                    public void onOutputBuffer(ByteBuffer room, int roomSize) {
+                    public void onOutputBuffer(
+                            ByteBuffer room, MediaCodec.BufferInfo roomInfo,int roomSize) {
                         byte[] pcmData = new byte[roomSize];
                         room.get(pcmData, 0, pcmData.length);
                         if (mAudioTrack != null) {
@@ -847,10 +854,12 @@ public class AudioFragment extends BaseFragment {
                                     " " + frameData[5] +
                                     " " + frameData[6]);
                             MLog.d(TAG, "playPcm() readLength: " + readLength);
+                            long presentationTimeUs =
+                                    (System.nanoTime() - startDecodeTime) / 1000;
                             // Input
                             if (!MediaUtils.feedInputBuffer(
                                     mAudioDecoderMediaCodec, frameData,
-                                    0, readLength, startDecodeTime)) {
+                                    0, readLength, presentationTimeUs)) {
                                 mIsTrackRunning = false;
                                 break;
                             }
@@ -878,10 +887,12 @@ public class AudioFragment extends BaseFragment {
                                         " " + frameData[4] +
                                         " " + frameData[5] +
                                         " " + frameData[6]);
+                                long presentationTimeUs =
+                                        (System.nanoTime() - startDecodeTime) / 1000;
                                 // Input
                                 if (!MediaUtils.feedInputBuffer(
                                         mAudioDecoderMediaCodec, frameData,
-                                        0, readSize - lastIndex, startDecodeTime)) {
+                                        0, readSize - lastIndex, presentationTimeUs)) {
                                     mIsTrackRunning = false;
                                     break;
                                 }

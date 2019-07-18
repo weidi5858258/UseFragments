@@ -1,7 +1,5 @@
 package com.weidi.usefragments.tool;
 
-import android.media.AudioManager;
-import android.media.AudioTrack;
 import android.media.MediaCodec;
 import android.media.MediaCodecInfo;
 import android.media.MediaExtractor;
@@ -40,11 +38,9 @@ public class SeparateVideo {
     private static final int PREV = 0x0006;
     private static final int NEXT = 0x0007;
     private static final int BUFFER = 1024 * 1024 * 2;
-    private static final String PATH =
-            "/storage/2430-1702/Android/data/com.weidi.usefragments/files/Music/";
-    //"/data/data/com.weidi.usefragments/files";
 
-    private String mPath = "/storage/2430-1702/BaiduNetdisk/video/05.mp4";
+    // 被分离的文件路径
+    private String mPath;
     // 必须要有两个MediaExtractor对象,不能共用同一个
     private MediaExtractor mAudioExtractor;
     private MediaExtractor mVideoExtractor;
@@ -69,12 +65,21 @@ public class SeparateVideo {
         init();
     }
 
-    public void setPath(String path) {
+    // 分离后文件的输出目录
+    private static final String OUTPUT_PATH =
+            //"/data/data/com.weidi.usefragments/files";
+            //"/storage/37C8-3904/Android/data/com.weidi.usefragments/files/Movies/";
+            "/storage/2430-1702/Android/data/com.weidi.usefragments/files/";
+
+    public SeparateVideo setPath(String path) {
         mPath = path;
         // mPath = "/storage/37C8-3904/myfiles/video/Silent_Movie_321_AC4_H265_MP4_50fps.mp4";
-        mPath = "/storage/2430-1702/BaiduNetdisk/video/流浪的地球.mp4";
+        mPath = "/storage/37C8-3904/myfiles/video/[HDR]4K_HDR_Technology_English.mp4";
+        mPath = "/storage/2430-1702/BaiduNetdisk/video/test.mp4";
+
         if (DEBUG)
             MLog.d(TAG, "setPath() mPath: " + mPath);
+        return this;
     }
 
     public void start() {
@@ -117,8 +122,8 @@ public class SeparateVideo {
         if (DEBUG)
             MLog.d(TAG, "internalPrepare() fileSize: " + fileSize);
 
-        File audioFile = new File(PATH, "audio.aac");
-        File videoFile = new File(PATH, "video.h264");
+        File audioFile = new File(OUTPUT_PATH, "audio.aac");
+        File videoFile = new File(OUTPUT_PATH, "video.h264");
         if (audioFile.exists()) {
             try {
                 audioFile.delete();
@@ -289,6 +294,8 @@ public class SeparateVideo {
      33 26 -113 -49 -1 -1 -7
      33 26 -113 127 -1 -2 63
 
+     33
+     0 11 43 77 107
      下面的意思是
      第一个数可能是
      33 32
@@ -315,7 +322,7 @@ public class SeparateVideo {
 
             room.clear();
             int readSize = mAudioExtractor.readSampleData(room, 0);
-            // 250~465大概范围
+            // 250~465 1002
             if (readSize < 0) {
                 MLog.d(TAG, "audioWork() readSize: " + readSize);
                 mIsAudioRunning = false;
@@ -326,14 +333,14 @@ public class SeparateVideo {
             }
             Arrays.fill(audioData, (byte) 0);
             room.get(audioData, 0, readSize);
-            /*MLog.d(TAG, "audioWork() " +
+            MLog.d(TAG, "audioWork() " +
                     "    " + audioData[0] +
                     " " + audioData[1] +
                     " " + audioData[2] +
                     " " + audioData[3] +
                     " " + audioData[4] +
                     " " + audioData[5] +
-                    " " + audioData[6]);*/
+                    " " + audioData[6]);
             if (!oneIndex.contains(audioData[0])) {
                 oneIndex.add(audioData[0]);
             }
@@ -411,7 +418,7 @@ public class SeparateVideo {
 
             room.clear();
             int readSize = mVideoExtractor.readSampleData(room, 0);
-            // 21~106538大概范围 154689
+            // 21~106538 154689 71948
             if (readSize < 0) {
                 MLog.d(TAG, "videoWork() readSize: " + readSize);
                 mIsVideoRunning = false;
@@ -422,14 +429,14 @@ public class SeparateVideo {
             }
             Arrays.fill(videoData, (byte) 0);
             room.get(videoData, 0, readSize);
-            /*MLog.i(TAG, "videoWork() " +
+            MLog.i(TAG, "videoWork() " +
                     "    " + videoData[0] +
                     " " + videoData[1] +
                     " " + videoData[2] +
                     " " + videoData[3] +
                     " " + videoData[4] +
                     " " + videoData[5] +
-                    " " + videoData[6]);*/
+                    " " + videoData[6]);
             try {
                 mVideoOS.write(videoData, 0, readSize);
                 mVideoOS.flush();
@@ -518,7 +525,7 @@ public class SeparateVideo {
         }
 
         @Override
-        public void onOutputBuffer(ByteBuffer room, int roomSize) {
+        public void onOutputBuffer(ByteBuffer room, MediaCodec.BufferInfo roomInfo, int roomSize) {
             byte[] audioData = new byte[roomSize];
             room.get(audioData, 0, audioData.length);
             MLog.d(TAG, "mAudioCallback audioData.length: " + audioData.length);
@@ -545,7 +552,7 @@ public class SeparateVideo {
         }
 
         @Override
-        public void onOutputBuffer(ByteBuffer room, int roomSize) {
+        public void onOutputBuffer(ByteBuffer room, MediaCodec.BufferInfo roomInfo, int roomSize) {
             byte[] videoData = new byte[roomSize];
             room.get(videoData, 0, videoData.length);
             MLog.d(TAG, "mVideoCallback videoData.length: " + videoData.length);

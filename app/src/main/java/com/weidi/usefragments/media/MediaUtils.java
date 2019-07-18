@@ -14,6 +14,7 @@ import android.media.MediaMetadataRetriever;
 import android.media.MediaRecorder;
 import android.media.ThumbnailUtils;
 import android.os.Build;
+import android.os.SystemClock;
 import android.text.TextUtils;
 import android.util.Log;
 import android.util.Range;
@@ -1348,11 +1349,15 @@ public class MediaUtils {
      * @param data      需要编解码的数据
      * @param offset    从什么位置开始
      * @param size      有多少数据需要编解码
-     * @param startTime 编解码开始时先设置一个时间点
+     * @param presentationTimeUs
      * @return ture is successed, and false is failed
      */
     public static boolean feedInputBuffer(
-            MediaCodec codec, byte[] data, int offset, int size, long startTime) {
+            MediaCodec codec,
+            byte[] data,
+            int offset,
+            int size,
+            long presentationTimeUs) {
         try {
             int roomIndex = codec.dequeueInputBuffer(TIME_OUT);
             if (roomIndex >= 0) {
@@ -1366,8 +1371,6 @@ public class MediaUtils {
                     room.clear();
                     room.put(data, offset, size);
                 }
-                long presentationTimeUs =
-                        (System.nanoTime() - startTime) / 1000;
                 int flags = 0;
                 if (size == 0) {
                     presentationTimeUs = 0L;
@@ -1392,7 +1395,7 @@ public class MediaUtils {
     }
 
     public static boolean feedInputBuffer(
-            MediaCodec codec, long startTime,
+            MediaCodec codec,
             MediaUtils.Callback callback) {
         try {
             int roomIndex = codec.dequeueInputBuffer(TIME_OUT);
@@ -1410,18 +1413,16 @@ public class MediaUtils {
                         callback.onInputBuffer(room, info);
                     }
                 }
-                long presentationTimeUs =
-                        (System.nanoTime() - startTime) / 1000;
                 int flags = 0;
                 if (info.size == 0) {
-                    presentationTimeUs = 0L;
+                    info.presentationTimeUs = 0L;
                     flags = MediaCodec.BUFFER_FLAG_END_OF_STREAM;
                 }
                 codec.queueInputBuffer(
                         roomIndex,
                         info.offset,
                         info.size,
-                        presentationTimeUs,
+                        info.presentationTimeUs,
                         flags);
             }
         } catch (MediaCodec.CryptoException
@@ -1438,6 +1439,7 @@ public class MediaUtils {
     public static class InputBufferInfo {
         public int offset = 0;
         public int size = 0;
+        public long presentationTimeUs = 0;
     }
 
     public interface Callback {
@@ -1445,11 +1447,21 @@ public class MediaUtils {
 
         void onInputBuffer(ByteBuffer room, InputBufferInfo info);
 
-        void onOutputBuffer(ByteBuffer room, int roomSize);
+        void onOutputBuffer(ByteBuffer room, MediaCodec.BufferInfo roomInfo, int roomSize);
     }
 
     public static boolean drainOutputBuffer(
-            MediaCodec codec, boolean render, MediaUtils.Callback callback) {
+            MediaCodec codec,
+            boolean render,
+            MediaUtils.Callback callback) {
+        return drainOutputBuffer(codec, render, false, callback);
+    }
+
+    public static boolean drainOutputBuffer(
+            MediaCodec codec,
+            boolean render,
+            boolean needToSleep,
+            MediaUtils.Callback callback) {
         // 房间信息
         MediaCodec.BufferInfo roomInfo = new MediaCodec.BufferInfo();
         for (; ; ) {
@@ -1488,7 +1500,7 @@ public class MediaUtils {
                 if ((roomInfo.flags & MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0) {
                     MLog.d(TAG, "drainOutputBuffer() " +
                             "Output MediaCodec.BUFFER_FLAG_END_OF_STREAM");
-                    break;
+                    return false;
                 }
 
                 // 房间
@@ -1505,8 +1517,12 @@ public class MediaUtils {
                     room.position(roomInfo.offset);
                     room.limit(roomInfo.offset + roomSize);
                     if (callback != null) {
-                        callback.onOutputBuffer(room, roomSize);
+                        callback.onOutputBuffer(room, roomInfo, roomSize);
                     }
+                }
+
+                if (needToSleep) {
+                    SystemClock.sleep(60);
                 }
 
                 codec.releaseOutputBuffer(roomIndex, render);

@@ -22,6 +22,7 @@ import com.weidi.usefragments.fragment.base.BaseFragment;
 import com.weidi.usefragments.inject.InjectOnClick;
 import com.weidi.usefragments.inject.InjectView;
 import com.weidi.usefragments.media.MediaUtils;
+import com.weidi.usefragments.tool.H264Player;
 import com.weidi.usefragments.tool.MLog;
 import com.weidi.usefragments.tool.SampleVideoPlayer;
 
@@ -400,8 +401,13 @@ public class DecodeVideoFragment extends BaseFragment {
             public void surfaceCreated(
                     SurfaceHolder holder) {
                 mSurface = holder.getSurface();
-                mSampleVideoPlayer.setSurface(mSurface);
-                next();
+                /*mSampleVideoPlayer.setSurface(mSurface);
+                next();*/
+
+                H264Player h264Player = new H264Player();
+                h264Player.setPath("demo");
+                h264Player.setSurface(mSurface);
+                h264Player.start();
             }
 
             @Override
