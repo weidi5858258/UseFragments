@@ -71,9 +71,10 @@ public class H264Player {
     public void setPath(String path) {
         mPath = path;
         // 如果不解封装,是找不到h264视频流的
-        mPath = "/storage/2430-1702/BaiduNetdisk/video/05.mp4";
         mPath = "/storage/2430-1702/Android/data/com.weidi.usefragments/files/video2.h264";
-        mPath = "http://192.168.0.112:8080/tomcat_video/video2.h264";
+        mPath = "http://192.168.1.113:8080/tomcat_video/权力的游戏.h264";
+        mPath = "http://192.168.1.113:8080/tomcat_video/Escape.Plan.2.h264";
+        mPath = "/storage/2430-1702/BaiduNetdisk/video/05.mp4";
     }
 
     public void setSurface(Surface surface) {
@@ -95,7 +96,7 @@ public class H264Player {
     }
 
     private void prepareMediaFormat() {
-        // http://192.168.1.113:8080/tomcat_video/video2.h264
+        // http://192.168.1.113:8080/tomcat_video/权力的游戏.h264
         int width = 1024;
         int height = 576;
         MediaFormat format = MediaFormat.createVideoFormat(MediaUtils.VIDEO_MIME, width, height);
@@ -113,6 +114,30 @@ public class H264Player {
                 46, -32, 58, -128, 2, 113, 0, 0,
                 -101, -30, 36, -61, 0, -8, -63, -120, -112};
         byte[] csd_1 = new byte[]{0, 0, 0, 1, 104, -21, -20, -78};
+        format.setByteBuffer("csd-0", ByteBuffer.wrap(csd_0));
+        format.setByteBuffer("csd-1", ByteBuffer.wrap(csd_1));
+        mVideoDecoderMediaFormat = format;
+
+        // http://192.168.1.113:8080/tomcat_video/Escape.Plan.2.h264
+        width = 1920;
+        height = 800;
+        format = MediaFormat.createVideoFormat(MediaUtils.VIDEO_MIME, width, height);
+        format.setInteger(MediaFormat.KEY_MAX_INPUT_SIZE, 431884);
+        format.setInteger(MediaFormat.KEY_MAX_WIDTH, width);
+        format.setInteger(MediaFormat.KEY_MAX_HEIGHT, height);
+        format.setInteger(MediaFormat.KEY_TRACK_ID, 1);
+        format.setInteger(MediaFormat.KEY_BIT_RATE, 2698584);
+        format.setInteger(MediaFormat.KEY_LEVEL, 2048);
+        format.setInteger(MediaFormat.KEY_FRAME_RATE, 24);
+        format.setInteger(MediaFormat.KEY_PROFILE, 8);
+        format.setLong(MediaFormat.KEY_DURATION, 5617653708L);
+        format.setString(MediaFormat.KEY_LANGUAGE, "und");
+        csd_0 = new byte[]{
+                0, 0, 0, 1, 103, 100, 0,
+                40, -84, -39, 64, 120, 6, 91,
+                1, 16, 0, 0, 62, -112, 0,
+                11, -72, 8, -15, -125, 25, 96};
+        csd_1 = new byte[]{0, 0, 0, 1, 104, -22, -31, 60, -80};
         format.setByteBuffer("csd-0", ByteBuffer.wrap(csd_0));
         format.setByteBuffer("csd-1", ByteBuffer.wrap(csd_1));
         mVideoDecoderMediaFormat = format;
@@ -292,7 +317,7 @@ public class H264Player {
                     readDataSize += readSize;
                     continue;
                 } else {
-                    MLog.i(TAG, "readData() readDataSize: " + readDataSize);
+                    MLog.w(TAG, "readData() 吃饱了,休息一下 readDataSize: " + readDataSize);
                     mReadStatus = READ_PAUSED;
                     synchronized (mHandleDataLock) {
                         mHandleDataLock.notify();
@@ -313,7 +338,7 @@ public class H264Player {
                         }
                         MLog.i(TAG, "readData() mReadDataLock.wait() end");
                     }
-                    MLog.i(TAG, "readData() 继续读取数据 mData1HasData: " + mData1HasData);
+                    MLog.d(TAG, "readData() 饿了,继续吃 mData1HasData: " + mData1HasData);
                     if (!mData1HasData) {
                         Arrays.fill(mData1, (byte) 0);
                         readDataSize = readSize;
@@ -371,14 +396,14 @@ public class H264Player {
         startTime = System.currentTimeMillis();
         boolean isHandlingData = true;
         while (isHandlingData) {
-            MLog.d(TAG, "handleData() findHead start");
+            MLog.i(TAG, "handleData() findHead start");
             if (readDataSize == CACHE
                     || readDataSize == lastOffsetIndex) {
                 findHead(mData2, 0, CACHE, offsetList);
             } else {
                 findHead(mData2, 0, readDataSize, offsetList);
             }
-            MLog.d(TAG, "handleData() findHead end");
+            MLog.i(TAG, "handleData() findHead end");
             int offsetCounts = offsetList.size();
             MLog.i(TAG, "handleData() findHead    offsetCounts: " + offsetCounts);
             if (offsetCounts > 1) {
@@ -394,7 +419,22 @@ public class H264Player {
                     sb.append(" ");
                     sb.append(bt);
                 }
-                MLog.d(TAG, "handleData() " + sb.toString());
+                MLog.d(TAG, "handleData()  二进制: " + sb.toString());
+
+                sb = new StringBuilder();
+                for (byte bt : mData2) {
+                    sb.append(" ");
+                    int v = bt & 0xFF;
+                    String hv = Integer.toHexString(v);
+                    if (hv.length() < 2) {
+                        sb.append(0);
+                    }
+                    sb.append(hv);
+                }
+                MLog.d(TAG, "handleData() 十六进制: " + sb.toString());
+
+                // 16进制转化为2进制
+                // byte c = Integer.valueOf("ca",16).byteValue();
 
                 break;
             }
@@ -527,16 +567,17 @@ public class H264Player {
 
     private void feedInputBufferAndDrainOutputBuffer(
             byte[] data, int offset, int size, long startTimeUs) {
-        /*long presentationTimeUs =
-                (System.nanoTime() - startTimeUs) / 1000;*/
+        long presentationTimeUs =
+                (System.nanoTime() - startTimeUs) / 1000;
+        //long presentationTimeUs = mFrameCounts * TIME_INTERNAL;
         // Input
         MediaUtils.feedInputBuffer(
                 mVideoDecoderMediaCodec, data, offset, size,
-                mFrameCounts * TIME_INTERNAL);
+                presentationTimeUs);
         mFrameCounts++;
         // Output
         MediaUtils.drainOutputBuffer(
-                mVideoDecoderMediaCodec, true, true, callback);
+                mVideoDecoderMediaCodec, true, false, callback);
 
         /*//线程休眠
         sleepThread(startTime, System.currentTimeMillis());

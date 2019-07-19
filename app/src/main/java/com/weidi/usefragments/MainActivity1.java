@@ -1,6 +1,5 @@
 package com.weidi.usefragments;
 
-import android.app.Activity;
 import android.app.Fragment;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -40,7 +39,7 @@ import com.weidi.usefragments.test_fragment.scene2.VideoLiveBroadcastingFragment
 import com.weidi.usefragments.test_fragment.scene2.ViewPagerFragment;
 import com.weidi.usefragments.tool.MLog;
 import com.weidi.usefragments.tool.SampleAudioPlayer;
-import com.weidi.usefragments.tool.SampleVideoPlayer;
+import com.weidi.usefragments.backup.SampleVideoPlayer;
 
 import java.util.HashMap;
 import java.util.List;

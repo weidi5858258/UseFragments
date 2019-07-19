@@ -41,6 +41,10 @@ public class SeparateVideo {
 
     // 被分离的文件路径
     private String mPath;
+    // 分离后文件的输出目录
+    private String OUTPUT_PATH;
+    private String mAudioName;
+    private String mVideoName;
     // 必须要有两个MediaExtractor对象,不能共用同一个
     private MediaExtractor mAudioExtractor;
     private MediaExtractor mVideoExtractor;
@@ -65,17 +69,19 @@ public class SeparateVideo {
         init();
     }
 
-    // 分离后文件的输出目录
-    private static final String OUTPUT_PATH =
-            //"/data/data/com.weidi.usefragments/files";
-            //"/storage/37C8-3904/Android/data/com.weidi.usefragments/files/Movies/";
-            "/storage/2430-1702/Android/data/com.weidi.usefragments/files/";
-
     public SeparateVideo setPath(String path) {
+        OUTPUT_PATH = "/data/data/com.weidi.usefragments/files/";
+        OUTPUT_PATH = "/storage/2430-1702/Android/data/com.weidi.usefragments/files/";
+        OUTPUT_PATH = "/storage/37C8-3904/Android/data/com.weidi.usefragments/files/Movies/";
+
         mPath = path;
-        // mPath = "/storage/37C8-3904/myfiles/video/Silent_Movie_321_AC4_H265_MP4_50fps.mp4";
+        mPath = "/storage/37C8-3904/myfiles/video/Silent_Movie_321_AC4_H265_MP4_50fps.mp4";
         mPath = "/storage/37C8-3904/myfiles/video/[HDR]4K_HDR_Technology_English.mp4";
         mPath = "/storage/2430-1702/BaiduNetdisk/video/test.mp4";
+
+        mPath = "/storage/37C8-3904/myfiles/video/Escape.Plan.2.mp4";
+        mAudioName = "Escape.Plan.2.aac";
+        mVideoName = "Escape.Plan.2.h264";
 
         if (DEBUG)
             MLog.d(TAG, "setPath() mPath: " + mPath);
@@ -122,8 +128,8 @@ public class SeparateVideo {
         if (DEBUG)
             MLog.d(TAG, "internalPrepare() fileSize: " + fileSize);
 
-        File audioFile = new File(OUTPUT_PATH, "audio.aac");
-        File videoFile = new File(OUTPUT_PATH, "video.h264");
+        File audioFile = new File(OUTPUT_PATH, mAudioName);
+        File videoFile = new File(OUTPUT_PATH, mVideoName);
         if (audioFile.exists()) {
             try {
                 audioFile.delete();
@@ -281,6 +287,39 @@ public class SeparateVideo {
             return false;
         }
 
+        if (mVideoDncoderMediaFormat.containsKey("csd-0")) {
+            ByteBuffer buffer = mVideoDncoderMediaFormat.getByteBuffer("csd-0");
+            byte[] csd_0 = new byte[buffer.limit()];
+            buffer.get(csd_0);
+            StringBuilder sb = new StringBuilder();
+            sb.append("{");
+            int count = csd_0.length;
+            for (int i = 0; i < count; i++) {
+                sb.append(csd_0[i]);
+                if (i <= count - 2) {
+                    sb.append(", ");
+                }
+            }
+            sb.append("}");
+            MLog.d(TAG, "internalPrepare() csd-0: " + sb.toString());
+        }
+        if (mVideoDncoderMediaFormat.containsKey("csd-1")) {
+            ByteBuffer buffer = mVideoDncoderMediaFormat.getByteBuffer("csd-1");
+            byte[] csd_1 = new byte[buffer.limit()];
+            buffer.get(csd_1);
+            StringBuilder sb = new StringBuilder();
+            sb.append("{");
+            int count = csd_1.length;
+            for (int i = 0; i < count; i++) {
+                sb.append(csd_1[i]);
+                if (i <= count - 2) {
+                    sb.append(", ");
+                }
+            }
+            sb.append("}");
+            MLog.d(TAG, "internalPrepare() csd-1: " + sb.toString());
+        }
+
         if (DEBUG)
             MLog.d(TAG, "internalPrepare() end");
         return true;
@@ -306,7 +345,7 @@ public class SeparateVideo {
      -92 -90 -86 -84 -83 -82 -85 -88 -81 -119 -117 -121 -120 -122
      */
     private void audioWork() {
-        MLog.d(TAG, "audioWork() start");
+        MLog.w(TAG, "audioWork() start");
         long startDecodeTime = System.nanoTime();
         ByteBuffer room = ByteBuffer.allocate(BUFFER);
         byte[] audioData = new byte[BUFFER];
@@ -392,7 +431,7 @@ public class SeparateVideo {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        MLog.d(TAG, "audioWork() end");
+        MLog.w(TAG, "audioWork() end");
     }
 
     /***
@@ -404,7 +443,7 @@ public class SeparateVideo {
      0 0 0 1 1 -97 -83
      */
     private void videoWork() {
-        MLog.d(TAG, "videoWork() start");
+        MLog.w(TAG, "videoWork() start");
         long startDecodeTime = System.nanoTime();
         ByteBuffer room = ByteBuffer.allocate(BUFFER);
         byte[] videoData = new byte[BUFFER];
@@ -470,7 +509,7 @@ public class SeparateVideo {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        MLog.d(TAG, "videoWork() end");
+        MLog.w(TAG, "videoWork() end");
     }
 
     private void threadHandleMessage(Message msg) {
@@ -483,8 +522,8 @@ public class SeparateVideo {
                 if (internalPrepare()) {
                     mIsAudioRunning = true;
                     mIsVideoRunning = true;
-                    new Thread(mAudioWork).start();
-                    new Thread(mVideoWork).start();
+                    /*new Thread(mAudioWork).start();
+                    new Thread(mVideoWork).start();*/
                 }
                 break;
             default:

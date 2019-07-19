@@ -756,7 +756,7 @@ public class MediaUtils {
     public static final int channelCount = 2;
     // 立体声(AudioFormat.CHANNEL_IN_STEREO = AudioFormat.CHANNEL_OUT_STEREO)
     private static final int channelConfig = AudioFormat.CHANNEL_IN_STEREO;
-    // 数据位宽(兼容所有Android设备)
+    // 采样精度,数据位宽(兼容所有Android设备)
     private static final int audioFormat = AudioFormat.ENCODING_PCM_16BIT;
     // AudioRecord(录音)
     private static final int audioSource = MediaRecorder.AudioSource.MIC;

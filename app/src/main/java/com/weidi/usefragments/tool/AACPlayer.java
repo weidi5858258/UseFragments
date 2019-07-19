@@ -38,8 +38,8 @@ public class AACPlayer {
             AACPlayer.class.getSimpleName();
     private static final boolean DEBUG = true;
 
-    private static Map<Integer, Integer> sampleRateIndexMap = new HashMap<>();
-    private static Map<Integer, Integer> channelConfigIndexMap = new HashMap<>();
+    public static Map<Integer, Integer> sampleRateIndexMap = new HashMap<>();
+    public static Map<Integer, Integer> channelConfigIndexMap = new HashMap<>();
 
     static {
         // key是sampleRate

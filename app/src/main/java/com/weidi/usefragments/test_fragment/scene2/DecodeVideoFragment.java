@@ -17,14 +17,14 @@ import android.widget.Button;
 
 import com.weidi.usefragments.MainActivity1;
 import com.weidi.usefragments.R;
+import com.weidi.usefragments.tool.H264Player;
+import com.weidi.usefragments.tool.SampleVideoPlayer;
 import com.weidi.usefragments.fragment.FragOperManager;
 import com.weidi.usefragments.fragment.base.BaseFragment;
 import com.weidi.usefragments.inject.InjectOnClick;
 import com.weidi.usefragments.inject.InjectView;
 import com.weidi.usefragments.media.MediaUtils;
-import com.weidi.usefragments.tool.H264Player;
 import com.weidi.usefragments.tool.MLog;
-import com.weidi.usefragments.tool.SampleVideoPlayer;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -375,14 +375,14 @@ public class DecodeVideoFragment extends BaseFragment {
         mSampleVideoPlayer = new SampleVideoPlayer();
         mSampleVideoPlayer.setContext(getContext());
         mSampleVideoPlayer.setCallback(mCallback);
-        // mSampleVideoPlayer.setPath(mVideoPath);
+        mSampleVideoPlayer.setPath(mVideoPath);
 
-        Activity activity = getAttachedActivity();
+        /*Activity activity = getAttachedActivity();
         if (activity != null
                 && activity instanceof MainActivity1) {
             MainActivity1 mainActivity1 = (MainActivity1) activity;
             mainActivity1.setSampleVideoPlayer(mSampleVideoPlayer);
-        }
+        }*/
 
         MediaUtils.lookAtMe();
     }
@@ -402,7 +402,8 @@ public class DecodeVideoFragment extends BaseFragment {
                     SurfaceHolder holder) {
                 mSurface = holder.getSurface();
                 /*mSampleVideoPlayer.setSurface(mSurface);
-                next();*/
+                mSampleVideoPlayer.play();*/
+                //next();
 
                 H264Player h264Player = new H264Player();
                 h264Player.setPath(null);
