@@ -1457,6 +1457,12 @@ public class MediaUtils {
         return drainOutputBuffer(codec, render, false, callback);
     }
 
+    public static long mPrePresentationTimeUs = 0;
+
+    private static long FRAME_RATE_TEMP = 42000;
+
+    public static int SLEEP_TIME = 90;
+
     public static boolean drainOutputBuffer(
             MediaCodec codec,
             boolean render,
@@ -1503,6 +1509,28 @@ public class MediaUtils {
                     return false;
                 }
 
+                /*if (needToSleep) {
+                    if (mPrePresentationTimeUs != 0) {
+                        long temp = roomInfo.presentationTimeUs - mPrePresentationTimeUs;
+                        mPrePresentationTimeUs = roomInfo.presentationTimeUs;
+                        if (temp < FRAME_RATE_TEMP) {
+                            //long t_time = (FRAME_RATE_TEMP - temp) / 1000;
+                            //MLog.d(TAG, "drainOutputBuffer() wait time: " + t_time);
+                            SystemClock.sleep(MediaUtils.SLEEP_TIME);
+                        } else {
+                            boolean keyFrame =
+                                    (roomInfo.flags & MediaCodec.BUFFER_FLAG_KEY_FRAME) != 0;
+                            if (keyFrame) {
+                                MLog.d(TAG, "drainOutputBuffer() 我还不知道为什么要这样");
+                                codec.releaseOutputBuffer(roomIndex, false);
+                                continue;
+                            }
+                        }
+                    } else {
+                        mPrePresentationTimeUs = roomInfo.presentationTimeUs;
+                    }
+                }*/
+
                 // 房间
                 ByteBuffer room = null;
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
@@ -1519,10 +1547,6 @@ public class MediaUtils {
                     if (callback != null) {
                         callback.onOutputBuffer(room, roomInfo, roomSize);
                     }
-                }
-
-                if (needToSleep) {
-                    SystemClock.sleep(60);
                 }
 
                 codec.releaseOutputBuffer(roomIndex, render);

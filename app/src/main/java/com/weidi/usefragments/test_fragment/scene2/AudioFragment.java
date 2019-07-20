@@ -436,12 +436,12 @@ public class AudioFragment extends BaseFragment {
                 }
                 break;
             case R.id.pause_record_btn:
-                mSimpleAudioRecorder.pause();
+                //mSimpleAudioRecorder.pause();
+
+                mytest();
                 break;
             case R.id.play_btn:
-                //playTrackOrStopTrack();
-
-                playPcm();
+                playTrackOrStopTrack();
                 break;
             case R.id.convert_btn:
                 mThreadHandler.removeMessages(PCM_TO_WAV);
@@ -690,45 +690,6 @@ public class AudioFragment extends BaseFragment {
         new Thread(new Runnable() {
             @Override
             public void run() {
-                /*AACPlayer aacPlayer = new AACPlayer();
-                aacPlayer.setPath(
-                        "/storage/2430-1702/Android/data/com.weidi.usefragments/files/Music/audio
-                        .aac");
-                //aacPlayer.setPath(PATH + "AAC_HE-AAC.aac");
-                //aacPlayer.setPath("http://192.168.1.113:8080/tomcat_audio/AAC_HE-AAC.aac");
-                aacPlayer.start();*/
-
-                new SeparateVideo().setPath(null).start();
-
-                /*H264Player h264Player = new H264Player();
-                h264Player.start();*/
-
-                /*try {
-                    // 读取的最大值为8192
-                    int bufferLength = 1024 * 1024 * 2;
-                    byte[] buffer = new byte[bufferLength];
-                    HttpAccessor httpAccessor = new HttpAccessor(
-                            new URL("http://192.168.1.107:8080/tomcat_audio/test1.aac"),
-                            null);
-                    httpAccessor.open();
-                    MLog.d(TAG, "playPcm() read start");
-                    while (true) {
-                        int readSize = httpAccessor.read(buffer, 0, bufferLength);
-                        MLog.w(TAG, "playPcm() readSize: " + readSize);
-                        if (readSize < 0) {
-                            break;
-                        }
-                    }
-                    MLog.d(TAG, "playPcm() read end");
-                } catch (MalformedURLException e) {
-                    e.printStackTrace();
-                } catch (ExoPlaybackException e) {
-                    e.printStackTrace();
-                }*/
-
-                if (true) return;
-
-
                 //                File file = new File(PATH, "test1.aac");
                 File file = new File(PATH, "AAC_AAC-LC.aac");
                 //                File file = new File(PATH, "AAC_HE-AAC.aac");
@@ -758,12 +719,6 @@ public class AudioFragment extends BaseFragment {
                 if (DEBUG)
                     MLog.d(TAG, "playPcm() start");
 
-                /*AACPlayer aacPlayer = null;
-                try {
-                    aacPlayer = new AACPlayer(file.getAbsolutePath());
-                } catch (FileNotFoundException e) {
-                    e.printStackTrace();
-                }*/
                 MediaUtils.Callback callback = new MediaUtils.Callback() {
                     @Override
                     public void onFormatChanged(MediaFormat newMediaFormat) {
@@ -777,7 +732,7 @@ public class AudioFragment extends BaseFragment {
 
                     @Override
                     public void onOutputBuffer(
-                            ByteBuffer room, MediaCodec.BufferInfo roomInfo,int roomSize) {
+                            ByteBuffer room, MediaCodec.BufferInfo roomInfo, int roomSize) {
                         byte[] pcmData = new byte[roomSize];
                         room.get(pcmData, 0, pcmData.length);
                         if (mAudioTrack != null) {
@@ -906,7 +861,7 @@ public class AudioFragment extends BaseFragment {
                             break;
                         }
                     }// for(...) end
-                }
+                }// while(...) end
 
                 try {
                     fis.close();
@@ -935,6 +890,44 @@ public class AudioFragment extends BaseFragment {
                     MLog.d(TAG, "playPcm() end");
             }
         }).start();
+    }
+
+    private void mytest() {
+        /*AACPlayer aacPlayer = new AACPlayer();
+        aacPlayer.setPath(
+                "/storage/2430-1702/Android/data/com.weidi.usefragments/files/Music/audio
+                .aac");
+        //aacPlayer.setPath(PATH + "AAC_HE-AAC.aac");
+        //aacPlayer.setPath("http://192.168.1.113:8080/tomcat_audio/AAC_HE-AAC.aac");
+        aacPlayer.start();*/
+
+        new SeparateVideo().setPath(null).start();
+
+        /*H264Player h264Player = new H264Player();
+        h264Player.start();*/
+
+        /*try {
+            // 读取的最大值为8192
+            int bufferLength = 1024 * 1024 * 2;
+            byte[] buffer = new byte[bufferLength];
+            HttpAccessor httpAccessor = new HttpAccessor(
+                    new URL("http://192.168.1.107:8080/tomcat_audio/test1.aac"),
+                    null);
+            httpAccessor.open();
+            MLog.d(TAG, "playPcm() read start");
+            while (true) {
+                int readSize = httpAccessor.read(buffer, 0, bufferLength);
+                MLog.w(TAG, "playPcm() readSize: " + readSize);
+                if (readSize < 0) {
+                    break;
+                }
+            }
+            MLog.d(TAG, "playPcm() read end");
+        } catch (MalformedURLException e) {
+            e.printStackTrace();
+        } catch (ExoPlaybackException e) {
+            e.printStackTrace();
+        }*/
     }
 
     private int playTime = 0;

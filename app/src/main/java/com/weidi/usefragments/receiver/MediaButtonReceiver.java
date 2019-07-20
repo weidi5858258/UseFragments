@@ -9,6 +9,7 @@ import android.view.KeyEvent;
 import com.weidi.eventbus.EventBusUtils;
 import com.weidi.usefragments.tool.MLog;
 import com.weidi.usefragments.tool.SampleAudioPlayer;
+import com.weidi.usefragments.tool.SampleVideoPlayer2;
 
 /***
  Created by root on 19-7-2.
@@ -39,6 +40,8 @@ public class MediaButtonReceiver extends BroadcastReceiver {
                     if (event.getAction() == KeyEvent.ACTION_DOWN) {
                         EventBusUtils.post(
                                 SampleAudioPlayer.class, KeyEvent.KEYCODE_HEADSETHOOK, null);
+                        EventBusUtils.post(
+                                SampleVideoPlayer2.class, KeyEvent.KEYCODE_HEADSETHOOK, null);
                     }
                     break;
                 case KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE:

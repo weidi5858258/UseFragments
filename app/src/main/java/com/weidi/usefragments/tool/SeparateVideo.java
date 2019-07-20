@@ -55,13 +55,19 @@ public class SeparateVideo {
     private int mAudioTrackIndex = -1;
     private int mVideoTrackIndex = -1;
 
-    private boolean mIsAudioRunning = false;
-    private boolean mIsVideoRunning = false;
+    private boolean mIsAudioWorking = false;
+    private boolean mIsVideoWorking = false;
 
     private HandlerThread mHandlerThread;
     private Handler mThreadHandler;
     private Handler mUiHandler;
 
+    // 是否需要保存
+    private static final boolean mAudioNeedToSave = false;
+    private static final boolean mVideoNeedToSave = false;
+    // 是否需要打印日志
+    private static final boolean mAudioNeedToPrint = false;
+    private static final boolean mVideoNeedToPrint = false;
     private BufferedOutputStream mAudioOS;
     private BufferedOutputStream mVideoOS;
 
@@ -70,18 +76,24 @@ public class SeparateVideo {
     }
 
     public SeparateVideo setPath(String path) {
-        OUTPUT_PATH = "/data/data/com.weidi.usefragments/files/";
-        OUTPUT_PATH = "/storage/2430-1702/Android/data/com.weidi.usefragments/files/";
+        OUTPUT_PATH = "/data/data/com.weidi.usefragments/files/Movies/";
         OUTPUT_PATH = "/storage/37C8-3904/Android/data/com.weidi.usefragments/files/Movies/";
+        OUTPUT_PATH = "/storage/2430-1702/Android/data/com.weidi.usefragments/files/Movies/";
 
         mPath = path;
         mPath = "/storage/37C8-3904/myfiles/video/Silent_Movie_321_AC4_H265_MP4_50fps.mp4";
         mPath = "/storage/37C8-3904/myfiles/video/[HDR]4K_HDR_Technology_English.mp4";
         mPath = "/storage/2430-1702/BaiduNetdisk/video/test.mp4";
-
         mPath = "/storage/37C8-3904/myfiles/video/Escape.Plan.2.mp4";
-        mAudioName = "Escape.Plan.2.aac";
-        mVideoName = "Escape.Plan.2.h264";
+        mPath = "http://xunlei.jingpin88.com/20171028/6WQ5SFS2/mp4/6WQ5SFS2.mp4";
+        mPath = "/storage/2430-1702/BaiduNetdisk/video/shape_of_my_heart.mp4";
+        mPath = "/storage/2430-1702/BaiduNetdisk/video/" +
+                "08_mm-MP4-H264_720x400_2997_AAC-LC_192_48.mp4";
+        mPath = "/storage/2430-1702/BaiduNetdisk/video/test.mp4";
+
+        mPath = "/storage/2430-1702/BaiduNetdisk/video/J速备战.mp4";
+        mAudioName = "shape_of_my_heart.aac";
+        mVideoName = "shape_of_my_heart.h264";
 
         if (DEBUG)
             MLog.d(TAG, "setPath() mPath: " + mPath);
@@ -117,53 +129,69 @@ public class SeparateVideo {
         if (DEBUG)
             MLog.d(TAG, "internalPrepare() start");
 
-        File file = new File(mPath);
-        if (!file.canRead()
-                || file.isDirectory()) {
+        if (!mPath.startsWith("http://")
+                && !mPath.startsWith("https://")) {
+            File file = new File(mPath);
+            if (!file.canRead()
+                    || file.isDirectory()) {
+                if (DEBUG)
+                    MLog.e(TAG, "不能读取此文件: " + mPath);
+                return false;
+            }
+            long fileSize = file.length();
             if (DEBUG)
-                MLog.e(TAG, "不能读取此文件: " + mPath);
-            return false;
+                MLog.d(TAG, "internalPrepare() fileSize: " + fileSize);
         }
-        long fileSize = file.length();
-        if (DEBUG)
-            MLog.d(TAG, "internalPrepare() fileSize: " + fileSize);
 
-        File audioFile = new File(OUTPUT_PATH, mAudioName);
-        File videoFile = new File(OUTPUT_PATH, mVideoName);
-        if (audioFile.exists()) {
+        mAudioOS = null;
+        mVideoOS = null;
+
+        if (mAudioNeedToSave) {
+            File audioFile = new File(OUTPUT_PATH, mAudioName);
+            if (audioFile.exists()) {
+                try {
+                    audioFile.delete();
+                } catch (SecurityException e) {
+                    e.printStackTrace();
+                }
+            }
             try {
-                audioFile.delete();
-            } catch (SecurityException e) {
+                audioFile.createNewFile();
+            } catch (IOException e) {
                 e.printStackTrace();
+                return false;
+            }
+            try {
+                mAudioOS = new BufferedOutputStream(
+                        new FileOutputStream(audioFile), BUFFER);// 1024 * 10
+            } catch (FileNotFoundException e) {
+                e.printStackTrace();
+                return false;
             }
         }
-        if (videoFile.exists()) {
-            try {
-                videoFile.delete();
-            } catch (SecurityException e) {
-                e.printStackTrace();
+
+        if (mVideoNeedToSave) {
+            File videoFile = new File(OUTPUT_PATH, mVideoName);
+            if (videoFile.exists()) {
+                try {
+                    videoFile.delete();
+                } catch (SecurityException e) {
+                    e.printStackTrace();
+                }
             }
-        }
-        try {
-            audioFile.createNewFile();
-            videoFile.createNewFile();
-        } catch (IOException e) {
-            e.printStackTrace();
-            return false;
-        }
-        try {
-            mAudioOS = new BufferedOutputStream(
-                    new FileOutputStream(audioFile), BUFFER);// 1024 * 10
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-            return false;
-        }
-        try {
-            mVideoOS = new BufferedOutputStream(
-                    new FileOutputStream(videoFile), BUFFER);
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-            return false;
+            try {
+                videoFile.createNewFile();
+            } catch (IOException e) {
+                e.printStackTrace();
+                return false;
+            }
+            try {
+                mVideoOS = new BufferedOutputStream(
+                        new FileOutputStream(videoFile), BUFFER);
+            } catch (FileNotFoundException e) {
+                e.printStackTrace();
+                return false;
+            }
         }
 
         mAudioExtractor = null;
@@ -243,6 +271,39 @@ public class SeparateVideo {
             return false;
         }
 
+        if (mAudioDncoderMediaFormat.containsKey("csd-0")) {
+            ByteBuffer buffer = mAudioDncoderMediaFormat.getByteBuffer("csd-0");
+            byte[] csd_0 = new byte[buffer.limit()];
+            buffer.get(csd_0);
+            StringBuilder sb = new StringBuilder();
+            sb.append("{");
+            int count = csd_0.length;
+            for (int i = 0; i < count; i++) {
+                sb.append(csd_0[i]);
+                if (i <= count - 2) {
+                    sb.append(", ");
+                }
+            }
+            sb.append("}");
+            MLog.d(TAG, "internalPrepare() audio csd-0: " + sb.toString());
+        }
+        if (mAudioDncoderMediaFormat.containsKey("csd-1")) {
+            ByteBuffer buffer = mAudioDncoderMediaFormat.getByteBuffer("csd-1");
+            byte[] csd_1 = new byte[buffer.limit()];
+            buffer.get(csd_1);
+            StringBuilder sb = new StringBuilder();
+            sb.append("{");
+            int count = csd_1.length;
+            for (int i = 0; i < count; i++) {
+                sb.append(csd_1[i]);
+                if (i <= count - 2) {
+                    sb.append(", ");
+                }
+            }
+            sb.append("}");
+            MLog.d(TAG, "internalPrepare() audio csd-1: " + sb.toString());
+        }
+
         // Video
         mVideoExtractor = new MediaExtractor();
         try {
@@ -301,7 +362,7 @@ public class SeparateVideo {
                 }
             }
             sb.append("}");
-            MLog.d(TAG, "internalPrepare() csd-0: " + sb.toString());
+            MLog.d(TAG, "internalPrepare() video csd-0: " + sb.toString());
         }
         if (mVideoDncoderMediaFormat.containsKey("csd-1")) {
             ByteBuffer buffer = mVideoDncoderMediaFormat.getByteBuffer("csd-1");
@@ -317,7 +378,7 @@ public class SeparateVideo {
                 }
             }
             sb.append("}");
-            MLog.d(TAG, "internalPrepare() csd-1: " + sb.toString());
+            MLog.d(TAG, "internalPrepare() video csd-1: " + sb.toString());
         }
 
         if (DEBUG)
@@ -346,16 +407,21 @@ public class SeparateVideo {
      */
     private void audioWork() {
         MLog.w(TAG, "audioWork() start");
+
         long startDecodeTime = System.nanoTime();
         ByteBuffer room = ByteBuffer.allocate(BUFFER);
         byte[] audioData = new byte[BUFFER];
         int audioMaxSize = 0;
         mAudioExtractor.selectTrack(mAudioTrackIndex);
         ArrayList<Byte> oneIndex = new ArrayList<Byte>();
-        ArrayList<Byte> twoIndex = new ArrayList<Byte>();
+        ArrayList<Byte> twoIndex0 = new ArrayList<Byte>();
+        ArrayList<Byte> twoIndex1 = new ArrayList<Byte>();
+        ArrayList<Byte> twoIndex2 = new ArrayList<Byte>();
+        ArrayList<Byte> twoIndex3 = new ArrayList<Byte>();
+        ArrayList<Byte> twoIndex4 = new ArrayList<Byte>();
         while (true) {
-            if (!mIsAudioRunning) {
-                mIsAudioRunning = false;
+            if (!mIsAudioWorking) {
+                mIsAudioWorking = false;
                 break;
             }
 
@@ -364,7 +430,7 @@ public class SeparateVideo {
             // 250~465 1002
             if (readSize < 0) {
                 MLog.d(TAG, "audioWork() readSize: " + readSize);
-                mIsAudioRunning = false;
+                mIsAudioWorking = false;
                 break;
             }
             if (audioMaxSize < readSize) {
@@ -372,64 +438,117 @@ public class SeparateVideo {
             }
             Arrays.fill(audioData, (byte) 0);
             room.get(audioData, 0, readSize);
-            /*MLog.d(TAG, "audioWork() " +
-                    "    " + audioData[0] +
-                    " " + audioData[1] +
-                    " " + audioData[2] +
-                    " " + audioData[3] +
-                    " " + audioData[4] +
-                    " " + audioData[5] +
-                    " " + audioData[6]);*/
+            if (mAudioNeedToPrint) {
+                MLog.d(TAG, "audioWork() " +
+                        "    " + audioData[0] +
+                        " " + audioData[1] +
+                        " " + audioData[2] +
+                        " " + audioData[3] +
+                        " " + audioData[4] +
+                        " " + audioData[5] +
+                        " " + audioData[6]);
+            }
+
             if (!oneIndex.contains(audioData[0])) {
                 oneIndex.add(audioData[0]);
             }
-            if (!twoIndex.contains(audioData[1])) {
-                twoIndex.add(audioData[1]);
+            int count = oneIndex.size();
+            for (int i = 0; i < count; i++) {
+                if (oneIndex.get(i) == audioData[0]) {
+                    switch (i) {
+                        case 0:
+                            if (!twoIndex0.contains(audioData[1])) {
+                                twoIndex0.add(audioData[1]);
+                            }
+                            break;
+                        case 1:
+                            if (!twoIndex1.contains(audioData[1])) {
+                                twoIndex1.add(audioData[1]);
+                            }
+                            break;
+                        case 2:
+                            if (!twoIndex2.contains(audioData[1])) {
+                                twoIndex2.add(audioData[1]);
+                            }
+                            break;
+                        case 3:
+                            if (!twoIndex3.contains(audioData[1])) {
+                                twoIndex3.add(audioData[1]);
+                            }
+                            break;
+                        case 4:
+                            if (!twoIndex4.contains(audioData[1])) {
+                                twoIndex4.add(audioData[1]);
+                            }
+                            break;
+                        default:
+                            break;
+                    }
+                }
             }
-            try {
-                mAudioOS.write(audioData, 0, readSize);
-                //mAudioOS.flush();
-            } catch (IOException e) {
-                e.printStackTrace();
-                mIsAudioRunning = false;
-                break;
+
+            if (mAudioNeedToSave) {
+                try {
+                    mAudioOS.write(audioData, 0, readSize);
+                    //mAudioOS.flush();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    mIsAudioWorking = false;
+                    break;
+                }
             }
             mAudioExtractor.advance();
-
-            /*if (!MediaUtils.feedInputBuffer(
-                    mAudioDncoderMediaCodec, startDecodeTime, mAudioCallback)) {
-                mIsAudioRunning = false;
-                break;
-            }
-
-            if (!MediaUtils.drainOutputBuffer(
-                    mAudioDncoderMediaCodec, false, mAudioCallback)) {
-                mIsAudioRunning = false;
-                break;
-            }*/
         }// while(trur) end
+
         MLog.d(TAG, "audioWork() audioMaxSize: " + audioMaxSize);
         StringBuffer sb = new StringBuffer();
         for (byte one : oneIndex) {
             sb.append(" ");
             sb.append(one);
         }
-        MLog.d(TAG, "audioWork() oneIndex: " + sb.toString());
+        MLog.d(TAG, "audioWork()     oneIndex: " + sb.toString());
         sb = new StringBuffer();
-        for (byte two : twoIndex) {
+        for (byte two : twoIndex0) {
             sb.append(" ");
             sb.append(two);
         }
-        MLog.d(TAG, "audioWork() twoIndex: " + sb.toString());
+        MLog.d(TAG, "audioWork()    twoIndex0: " + sb.toString());
+        sb = new StringBuffer();
+        for (byte two : twoIndex1) {
+            sb.append(" ");
+            sb.append(two);
+        }
+        MLog.d(TAG, "audioWork()    twoIndex1: " + sb.toString());
+        sb = new StringBuffer();
+        for (byte two : twoIndex2) {
+            sb.append(" ");
+            sb.append(two);
+        }
+        MLog.d(TAG, "audioWork()    twoIndex2: " + sb.toString());
+        sb = new StringBuffer();
+        for (byte two : twoIndex3) {
+            sb.append(" ");
+            sb.append(two);
+        }
+        MLog.d(TAG, "audioWork()    twoIndex3: " + sb.toString());
+        sb = new StringBuffer();
+        for (byte two : twoIndex4) {
+            sb.append(" ");
+            sb.append(two);
+        }
+        MLog.d(TAG, "audioWork()    twoIndex4: " + sb.toString());
+
         mAudioExtractor.unselectTrack(mAudioTrackIndex);
         mAudioExtractor.release();
-        try {
-            if (mAudioOS != null) {
-                mAudioOS.flush();
-                mAudioOS.close();
+        if (mAudioNeedToSave) {
+            try {
+                if (mAudioOS != null) {
+                    mAudioOS.flush();
+                    mAudioOS.close();
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
             }
-        } catch (IOException e) {
-            e.printStackTrace();
         }
         MLog.w(TAG, "audioWork() end");
     }
@@ -449,18 +568,22 @@ public class SeparateVideo {
         byte[] videoData = new byte[BUFFER];
         int videoMaxSize = 0;
         mVideoExtractor.selectTrack(mVideoTrackIndex);
+        ArrayList<Byte> oneIndex = new ArrayList<Byte>();
+        ArrayList<Byte> twoIndex = new ArrayList<Byte>();
+        ArrayList<Byte> threeIndex = new ArrayList<Byte>();
+        ArrayList<Byte> fourIndex = new ArrayList<Byte>();
         while (true) {
-            if (!mIsVideoRunning) {
-                mIsVideoRunning = false;
+            if (!mIsVideoWorking) {
+                mIsVideoWorking = false;
                 break;
             }
 
             room.clear();
             int readSize = mVideoExtractor.readSampleData(room, 0);
-            // 21~106538 154689 71948
+            // 21~106538 154689 71948 132333
             if (readSize < 0) {
                 MLog.d(TAG, "videoWork() readSize: " + readSize);
-                mIsVideoRunning = false;
+                mIsVideoWorking = false;
                 break;
             }
             if (videoMaxSize < readSize) {
@@ -468,46 +591,80 @@ public class SeparateVideo {
             }
             Arrays.fill(videoData, (byte) 0);
             room.get(videoData, 0, readSize);
-            /*MLog.i(TAG, "videoWork() " +
-                    "    " + videoData[0] +
-                    " " + videoData[1] +
-                    " " + videoData[2] +
-                    " " + videoData[3] +
-                    " " + videoData[4] +
-                    " " + videoData[5] +
-                    " " + videoData[6]);*/
-            try {
-                mVideoOS.write(videoData, 0, readSize);
-                //mVideoOS.flush();
-            } catch (IOException e) {
-                e.printStackTrace();
-                mIsVideoRunning = false;
-                break;
+            if (mVideoNeedToPrint) {
+                MLog.i(TAG, "videoWork() " +
+                        "    " + videoData[0] +
+                        " " + videoData[1] +
+                        " " + videoData[2] +
+                        " " + videoData[3] +
+                        " " + videoData[4] +
+                        " " + videoData[5] +
+                        " " + videoData[6]);
+            }
+
+            if (!oneIndex.contains(videoData[0])) {
+                oneIndex.add(videoData[0]);
+            }
+            if (!twoIndex.contains(videoData[1])) {
+                twoIndex.add(videoData[1]);
+            }
+            if (!threeIndex.contains(videoData[2])) {
+                threeIndex.add(videoData[2]);
+            }
+            if (!fourIndex.contains(videoData[3])) {
+                fourIndex.add(videoData[3]);
+            }
+
+            if (mVideoNeedToSave) {
+                try {
+                    mVideoOS.write(videoData, 0, readSize);
+                    //mVideoOS.flush();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    mIsVideoWorking = false;
+                    break;
+                }
             }
             mVideoExtractor.advance();
-
-            /*if (!MediaUtils.feedInputBuffer(
-                    mVideoDncoderMediaCodec, startDecodeTime, mVideoCallback)) {
-                mIsVideoRunning = false;
-                break;
-            }
-
-            if (!MediaUtils.drainOutputBuffer(
-                    mVideoDncoderMediaCodec, false, mVideoCallback)) {
-                mIsVideoRunning = false;
-                break;
-            }*/
         }// while(trur) end
+
         MLog.d(TAG, "videoWork() videoMaxSize: " + videoMaxSize);
+        StringBuffer sb = new StringBuffer();
+        for (byte one : oneIndex) {
+            sb.append(" ");
+            sb.append(one);
+        }
+        MLog.d(TAG, "videoWork()     oneIndex: " + sb.toString());
+        sb = new StringBuffer();
+        for (byte two : twoIndex) {
+            sb.append(" ");
+            sb.append(two);
+        }
+        MLog.d(TAG, "videoWork()     twoIndex: " + sb.toString());
+        sb = new StringBuffer();
+        for (byte two : threeIndex) {
+            sb.append(" ");
+            sb.append(two);
+        }
+        MLog.d(TAG, "videoWork()   threeIndex: " + sb.toString());
+        sb = new StringBuffer();
+        for (byte two : fourIndex) {
+            sb.append(" ");
+            sb.append(two);
+        }
+        MLog.d(TAG, "videoWork()    fourIndex: " + sb.toString());
+
         mVideoExtractor.unselectTrack(mVideoTrackIndex);
         mVideoExtractor.release();
-        try {
-            if (mVideoOS != null) {
-                mVideoOS.flush();
-                mVideoOS.close();
+        if (mVideoNeedToSave) {
+            try {
+                if (mVideoOS != null) {
+                    mVideoOS.flush();
+                    mVideoOS.close();
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
             }
-        } catch (IOException e) {
-            e.printStackTrace();
         }
         MLog.w(TAG, "videoWork() end");
     }
@@ -520,10 +677,10 @@ public class SeparateVideo {
         switch (msg.what) {
             case PREPARE:
                 if (internalPrepare()) {
-                    mIsAudioRunning = true;
-                    mIsVideoRunning = true;
-                    /*new Thread(mAudioWork).start();
-                    new Thread(mVideoWork).start();*/
+                    mIsAudioWorking = true;
+                    mIsVideoWorking = true;
+                    new Thread(mAudioWork).start();
+                    new Thread(mVideoWork).start();
                 }
                 break;
             default:
@@ -573,7 +730,7 @@ public class SeparateVideo {
                 mAudioOS.flush();
             } catch (IOException e) {
                 e.printStackTrace();
-                mIsAudioRunning = false;
+                mIsAudioWorking = false;
             }
         }
     };
@@ -600,7 +757,7 @@ public class SeparateVideo {
                 mVideoOS.flush();
             } catch (IOException e) {
                 e.printStackTrace();
-                mIsVideoRunning = false;
+                mIsVideoWorking = false;
             }
         }
     };

@@ -15,10 +15,10 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 
-import com.weidi.usefragments.MainActivity1;
 import com.weidi.usefragments.R;
 import com.weidi.usefragments.tool.H264Player;
 import com.weidi.usefragments.tool.SampleVideoPlayer;
+import com.weidi.usefragments.tool.SampleVideoPlayer2;
 import com.weidi.usefragments.fragment.FragOperManager;
 import com.weidi.usefragments.fragment.base.BaseFragment;
 import com.weidi.usefragments.inject.InjectOnClick;
@@ -308,6 +308,8 @@ public class DecodeVideoFragment extends BaseFragment {
             "output.mp4";*/
     private Surface mSurface;
     private SampleVideoPlayer mSampleVideoPlayer;
+    private SampleVideoPlayer2 mSampleVideoPlayer2;
+    private H264Player mH264Player;
 
     private List<File> videoFiles;
     private int mCurVideoIndex;
@@ -327,8 +329,8 @@ public class DecodeVideoFragment extends BaseFragment {
         if (DEBUG)
             MLog.d(TAG, "onShow() " + printThis());
 
-        if (mSampleVideoPlayer.isRunning()) {
-            mSampleVideoPlayer.play();
+        if (mSampleVideoPlayer2.isRunning()) {
+            mSampleVideoPlayer2.play();
         }
 
         mJumpBtn.setVisibility(View.GONE);
@@ -358,8 +360,8 @@ public class DecodeVideoFragment extends BaseFragment {
         if (DEBUG)
             MLog.d(TAG, "onHide() " + printThis());
 
-        if (mSampleVideoPlayer.isRunning()) {
-            mSampleVideoPlayer.pause();
+        if (mSampleVideoPlayer2.isRunning()) {
+            mSampleVideoPlayer2.pause();
         }
     }
 
@@ -372,19 +374,24 @@ public class DecodeVideoFragment extends BaseFragment {
                 Collections.addAll(videoFiles, files);
             }
         }
+
         mSampleVideoPlayer = new SampleVideoPlayer();
         mSampleVideoPlayer.setContext(getContext());
-        mSampleVideoPlayer.setCallback(mCallback);
         mSampleVideoPlayer.setPath(mVideoPath);
+
+        mSampleVideoPlayer2 = new SampleVideoPlayer2();
+        mSampleVideoPlayer2.setContext(getContext());
+        mSampleVideoPlayer2.setCallback(mCallback);
+        mSampleVideoPlayer2.setPath(mVideoPath);
 
         /*Activity activity = getAttachedActivity();
         if (activity != null
                 && activity instanceof MainActivity1) {
             MainActivity1 mainActivity1 = (MainActivity1) activity;
-            mainActivity1.setSampleVideoPlayer(mSampleVideoPlayer);
+            mainActivity1.setSampleVideoPlayer(mSampleVideoPlayer2);
         }*/
 
-        MediaUtils.lookAtMe();
+        // MediaUtils.lookAtMe();
     }
 
     private void initView(View view, Bundle savedInstanceState) {
@@ -403,12 +410,15 @@ public class DecodeVideoFragment extends BaseFragment {
                 mSurface = holder.getSurface();
                 /*mSampleVideoPlayer.setSurface(mSurface);
                 mSampleVideoPlayer.play();*/
+
+                mSampleVideoPlayer2.setSurface(mSurface);
+                mSampleVideoPlayer2.play();
                 //next();
 
-                H264Player h264Player = new H264Player();
-                h264Player.setPath(null);
-                h264Player.setSurface(mSurface);
-                h264Player.start();
+                /*mH264Player = new H264Player();
+                mH264Player.setPath(null);
+                mH264Player.setSurface(mSurface);
+                mH264Player.start();*/
             }
 
             @Override
@@ -420,17 +430,18 @@ public class DecodeVideoFragment extends BaseFragment {
             public void surfaceDestroyed(
                     SurfaceHolder holder) {
                 mSampleVideoPlayer.release();
+                mSampleVideoPlayer2.release();
             }
         });
     }
 
     private void handleBeforeOfConfigurationChangedEvent() {
-        mSampleVideoPlayer.release();
+        mSampleVideoPlayer2.release();
     }
 
     private void destroy() {
-        mSampleVideoPlayer.release();
-        mSampleVideoPlayer.destroy();
+        mSampleVideoPlayer2.release();
+        mSampleVideoPlayer2.destroy();
     }
 
     @InjectOnClick({R.id.jump_btn})
@@ -477,11 +488,11 @@ public class DecodeVideoFragment extends BaseFragment {
             default:
                 break;
         }
-        mSampleVideoPlayer.setPath(mCurVideoFile.getAbsolutePath());
+        mSampleVideoPlayer2.setPath(mCurVideoFile.getAbsolutePath());
         if (DEBUG)
             MLog.d(TAG, "next() mCurVideoIndex: " + mCurVideoIndex +
                     " " + mCurVideoFile.getAbsolutePath());
-        mSampleVideoPlayer.next();
+        mSampleVideoPlayer2.next();
     }
 
     public boolean onKeyDown(int keyCode, KeyEvent event) {
@@ -504,7 +515,7 @@ public class DecodeVideoFragment extends BaseFragment {
         return false;
     }
 
-    private SampleVideoPlayer.Callback mCallback = new SampleVideoPlayer.Callback() {
+    private SampleVideoPlayer2.Callback mCallback = new SampleVideoPlayer2.Callback() {
         @Override
         public void onPlaybackReady() {
 
