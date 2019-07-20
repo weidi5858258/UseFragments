@@ -40,7 +40,6 @@ import java.util.List;
  视频:
  1.花屏
  2.播放速度过快
- 音频:
 
  */
 
@@ -68,6 +67,7 @@ public class SampleVideoPlayer3 {
     private static final int READ_STARTED = 0x0002;
     private static final int READ_PAUSED = 0x0003;
     private static final int READ_FINISHED = 0x0004;
+    private static final int READ_ERROR = 0x0005;
 
     // 为了注册广播
     private Context mContext;
@@ -81,7 +81,8 @@ public class SampleVideoPlayer3 {
     private SimpleWrapper mAudioWrapper = new SimpleWrapper(TYPE_AUDIO);
     private SimpleWrapper mVideoWrapper = new SimpleWrapper(TYPE_VIDEO);
 
-    private static final byte[] mAudioHeaderFlag = new byte[]{88, 88, 88, 88};
+    private static final int AUDIO_HEADER_FLAG_LENGTH = 4;
+    private static final byte[] AUDIO_HEADER_FLAG = new byte[]{88, 88, 88, 88};
 
     private static class SimpleWrapper {
         public String mime = null;
@@ -99,7 +100,7 @@ public class SampleVideoPlayer3 {
         public boolean mData1HasData = false;
         public byte[] mData1 = null;
         public byte[] mData2 = null;
-        public int readDataSize = -1;
+        public int readDataSize = 0;
         public int lastOffsetIndex = -1;
         public int mReadStatus = READ_UNKNOW;
         public int CACHE;
@@ -149,6 +150,7 @@ public class SampleVideoPlayer3 {
                 "%E9%AB%98%E6%B8%85%E4%B8%AD%E8%8B%B1%E5%8F%8C%E5%AD%97%E7%89%88.mp4";
         mPath = "http://xunlei.jingpin88.com/20171028/6WQ5SFS2/mp4/6WQ5SFS2.mp4";
         mPath = "/storage/2430-1702/BaiduNetdisk/video/05.mp4";
+        mPath = "/storage/2430-1702/BaiduNetdisk/video/shape_of_my_heart.mp4";
         if (DEBUG)
             MLog.d(TAG, "setPath() mPath: " + mPath);
     }
@@ -597,7 +599,7 @@ public class SampleVideoPlayer3 {
             // 发现帧头
             if (isAudioHead(data, i, size)) {
                 list.add(i);
-                i += 1;
+                i += 4;
             } else {
                 i++;
             }
@@ -605,98 +607,14 @@ public class SampleVideoPlayer3 {
     }
 
     private boolean isAudioHead(byte[] data, int offset, int size) {
-        if (offset + 1 >= size) {
+        if (offset + 3 >= size) {
             return false;
         }
-        switch (data[offset]) {
-            case 33:
-                switch (data[offset + 1]) {
-                    case 0:
-                    case 11:
-                    case 17:
-                    case 25:
-                    case 26:
-                    case 28:
-                    case 41:
-                    case 42:
-                    case 43:
-                    case 44:
-                    case 76:
-                    case 77:
-                    case 78:
-                    case 107:
-                    case 121:
-                    case 122:
-                    case 124:
-                    case -126:
-                        return true;
-                    default:
-                        break;
-                }
-            case 32:
-                // -123 ~ -81
-                // data[offset + 1] >= -123 && data[offset + 1] <= -81
-                switch (data[offset + 1]) {
-                    case 116:
-                    case 120:
-                    case 121:
-
-                    case -81:
-                    case -82:
-                    case -83:
-                    case -84:
-                    case -85:
-                    case -86:
-                    case -87:
-                    case -88:
-                    case -89:
-                    case -90:
-                    case -91:
-                    case -92:
-                    case -93:
-                    case -94:
-                    case -95:
-                    case -96:
-                    case -97:
-                    case -98:
-                    case -99:
-                    case -100:
-                    case -101:
-                    case -102:
-                    case -103:
-                    case -104:
-                    case -105:
-                    case -106:
-                    case -107:
-                    case -108:
-                    case -109:
-                    case -110:
-                    case -111:
-                    case -112:
-                    case -113:
-                    case -114:
-                    case -115:
-                    case -116:
-                    case -117:
-                    case -118:
-                    case -119:
-                    case -120:
-                    case -121:
-                    case -122:
-                    case -123:
-                        return true;
-                    default:
-                        break;
-                }
-            case -34:
-                switch (data[offset + 1]) {
-                    case 2:
-                        return true;
-                    default:
-                        break;
-                }
-            default:
-                break;
+        if (data[offset] == 88
+                && data[offset + 1] == 88
+                && data[offset + 2] == 88
+                && data[offset + 3] == 88) {
+            return true;
         }
         return false;
     }
@@ -866,10 +784,13 @@ public class SampleVideoPlayer3 {
             MLog.w(TAG, "readData() start");
 
         wrapper.mReadStatus = READ_UNKNOW;
-        // 测试了一下,好像最大只能读取8192个byte
+        /***
+         测试了一下,好像最大只能读取8192个byte
+         数据先读到room,再转移到buffer
+         */
         int bufferLength = 1024 * 1024;
+        ByteBuffer room = ByteBuffer.allocate(bufferLength);
         byte[] buffer = new byte[bufferLength];
-        ByteBuffer byteBuffer = ByteBuffer.allocate(bufferLength);
         // mData1中保存的实际数据大小
         wrapper.readDataSize = 0;
         int readTotalSize = 0;
@@ -884,12 +805,14 @@ public class SampleVideoPlayer3 {
         wrapper.mIsReading = true;
         while (wrapper.mIsReading) {
             try {
-                Arrays.fill(buffer, (byte) 0);
-                byteBuffer.clear();
-                // httpAccessor ---> mData1
-                int readSize = wrapper.mExtractor.readSampleData(byteBuffer, 0);
+                room.clear();
+                // wrapper.mExtractor ---> room
+                // readSize为实际读到的大小,其值可能远远小于room的大小
+                int readSize = wrapper.mExtractor.readSampleData(room, 0);
+                // 没有数据可读了,结束
                 if (readSize < 0) {
                     wrapper.mReadStatus = READ_FINISHED;
+                    wrapper.mIsReading = false;
                     synchronized (wrapper.mHandleDataLock) {
                         wrapper.mHandleDataLock.notify();
                     }
@@ -905,67 +828,151 @@ public class SampleVideoPlayer3 {
                             new Thread(mVideoHandleData).start();
                         }
                     }
-                    wrapper.mIsReading = false;
                     break;
                 }
-                byteBuffer.get(buffer, 0, readSize);
-                readTotalSize += readSize;
-                if (readTotalSize <= wrapper.CACHE) {
-                    wrapper.mReadStatus = READ_STARTED;
-                    // buffer ---> mData1
-                    System.arraycopy(buffer, 0,
-                            wrapper.mData1, wrapper.readDataSize, readSize);
-                    wrapper.readDataSize += readSize;
-                } else {
-                    MLog.w(TAG, "readData() 吃饱了,休息一下 readDataSize: " +
-                            wrapper.readDataSize);
-                    wrapper.mReadStatus = READ_PAUSED;
-                    synchronized (wrapper.mHandleDataLock) {
-                        wrapper.mHandleDataLock.notify();
-                    }
-                    // 开启任务处理数据
-                    // 如果任务是在这里被开启的,那么说明网络文件长度大于CACHE
-                    if (!wrapper.mIsHandling) {
-                        wrapper.mIsHandling = true;
-                        if (wrapper.mType == TYPE_AUDIO) {
-                            new Thread(mAudioHandleData).start();
-                        } else {
-                            new Thread(mVideoHandleData).start();
-                        }
-                    }
-                    // wait
-                    synchronized (wrapper.mReadDataLock) {
-                        MLog.i(TAG, "readData() mReadDataLock.wait() start");
-                        try {
-                            wrapper.mReadDataLock.wait();
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();
-                        }
-                        MLog.i(TAG, "readData() mReadDataLock.wait() end");
-                    }
-                    MLog.d(TAG, "readData() 饿了,继续吃 mData1HasData: " + wrapper
-                            .mData1HasData);
-                    if (!wrapper.mData1HasData) {
-                        Arrays.fill(wrapper.mData1, (byte) 0);
-                        wrapper.readDataSize = readSize;
-                        readTotalSize = readSize;
-                        // 此时buffer中还有readSize个byte
+
+                Arrays.fill(buffer, (byte) 0);
+                // room ---> buffer
+                room.get(buffer, 0, readSize);
+
+                if (wrapper.mType == TYPE_AUDIO) {
+                    // audio的数据处理
+                    readTotalSize += readSize + AUDIO_HEADER_FLAG_LENGTH;
+                    if (readTotalSize <= wrapper.CACHE) {
+                        wrapper.mReadStatus = READ_STARTED;
+                        System.arraycopy(AUDIO_HEADER_FLAG, 0,
+                                wrapper.mData1, wrapper.readDataSize, AUDIO_HEADER_FLAG_LENGTH);
+                        // buffer ---> mData1
                         System.arraycopy(buffer, 0,
-                                wrapper.mData1, 0, readSize);
+                                wrapper.mData1,
+                                wrapper.readDataSize + AUDIO_HEADER_FLAG_LENGTH,
+                                readSize);
+                        wrapper.readDataSize += readSize + AUDIO_HEADER_FLAG_LENGTH;
                     } else {
-                        wrapper.mData1HasData = false;
-                        wrapper.readDataSize = readSize + (wrapper.CACHE - wrapper.lastOffsetIndex);
-                        readTotalSize = wrapper.readDataSize;
-                        // 此时buffer中还有readSize个byte
+                        MLog.w(TAG, "readData() audio 吃饱了,休息一下 readDataSize: " +
+                                wrapper.readDataSize);
+                        wrapper.mReadStatus = READ_PAUSED;
+                        synchronized (wrapper.mHandleDataLock) {
+                            wrapper.mHandleDataLock.notify();
+                        }
+                        // 开启任务处理数据
+                        // 如果任务是在这里被开启的,那么说明网络文件长度大于CACHE
+                        if (!wrapper.mIsHandling) {
+                            wrapper.mIsHandling = true;
+                            if (wrapper.mType == TYPE_AUDIO) {
+                                new Thread(mAudioHandleData).start();
+                            } else {
+                                new Thread(mVideoHandleData).start();
+                            }
+                        }
+                        // wait
+                        synchronized (wrapper.mReadDataLock) {
+                            MLog.i(TAG, "readData() audio mReadDataLock.wait() start");
+                            try {
+                                wrapper.mReadDataLock.wait();
+                            } catch (InterruptedException e) {
+                                e.printStackTrace();
+                            }
+                            MLog.i(TAG, "readData() audio mReadDataLock.wait() end");
+                        }
+
+                        MLog.e(TAG, "readData() audio 饿了,继续吃 mData1HasData: " +
+                                wrapper.mData1HasData);
+                        if (!wrapper.mData1HasData) {
+                            // wrapper.mData1没有剩余数据
+                            Arrays.fill(wrapper.mData1, (byte) 0);
+                            wrapper.readDataSize = readSize + AUDIO_HEADER_FLAG_LENGTH;
+                            readTotalSize = wrapper.readDataSize;
+                            System.arraycopy(AUDIO_HEADER_FLAG, 0,
+                                    wrapper.mData1, 0, AUDIO_HEADER_FLAG_LENGTH);
+                            // 此时buffer中还有readSize个byte
+                            System.arraycopy(buffer, 0,
+                                    wrapper.mData1, AUDIO_HEADER_FLAG_LENGTH, readSize);
+                        } else {
+                            // wrapper.mData1有剩余数据
+                            wrapper.mData1HasData = false;
+                            wrapper.readDataSize = readSize
+                                    + (wrapper.CACHE - wrapper.lastOffsetIndex)
+                                    + AUDIO_HEADER_FLAG_LENGTH;
+                            readTotalSize = wrapper.readDataSize;
+                            // 此时buffer中还有readSize个byte
+                            System.arraycopy(AUDIO_HEADER_FLAG, 0,
+                                    wrapper.mData1,
+                                    wrapper.CACHE - wrapper.lastOffsetIndex,
+                                    AUDIO_HEADER_FLAG_LENGTH);
+                            System.arraycopy(buffer, 0,
+                                    wrapper.mData1,
+                                    wrapper.CACHE
+                                            - wrapper.lastOffsetIndex
+                                            + AUDIO_HEADER_FLAG_LENGTH,
+                                    readSize);
+                        }
+                    }
+                } else {
+                    // video的数据处理
+                    readTotalSize += readSize;
+                    if (readTotalSize <= wrapper.CACHE) {
+                        wrapper.mReadStatus = READ_STARTED;
+                        // buffer ---> mData1
                         System.arraycopy(buffer, 0,
-                                wrapper.mData1, wrapper.CACHE - wrapper.lastOffsetIndex, readSize);
+                                wrapper.mData1, wrapper.readDataSize, readSize);
+                        wrapper.readDataSize += readSize;
+                    } else {
+                        MLog.w(TAG, "readData() video 吃饱了,休息一下 readDataSize: " +
+                                wrapper.readDataSize);
+                        wrapper.mReadStatus = READ_PAUSED;
+                        synchronized (wrapper.mHandleDataLock) {
+                            wrapper.mHandleDataLock.notify();
+                        }
+                        // 开启任务处理数据
+                        // 如果任务是在这里被开启的,那么说明网络文件长度大于CACHE
+                        if (!wrapper.mIsHandling) {
+                            wrapper.mIsHandling = true;
+                            if (wrapper.mType == TYPE_AUDIO) {
+                                new Thread(mAudioHandleData).start();
+                            } else {
+                                new Thread(mVideoHandleData).start();
+                            }
+                        }
+                        // wait
+                        synchronized (wrapper.mReadDataLock) {
+                            MLog.i(TAG, "readData() video mReadDataLock.wait() start");
+                            try {
+                                wrapper.mReadDataLock.wait();
+                            } catch (InterruptedException e) {
+                                e.printStackTrace();
+                            }
+                            MLog.i(TAG, "readData() video mReadDataLock.wait() end");
+                        }
+
+                        MLog.e(TAG, "readData() video 饿了,继续吃 mData1HasData: " +
+                                wrapper.mData1HasData);
+                        if (!wrapper.mData1HasData) {
+                            Arrays.fill(wrapper.mData1, (byte) 0);
+                            wrapper.readDataSize = readSize;
+                            readTotalSize = readSize;
+                            // 此时buffer中还有readSize个byte
+                            System.arraycopy(buffer, 0,
+                                    wrapper.mData1, 0, readSize);
+                        } else {
+                            wrapper.mData1HasData = false;
+                            wrapper.readDataSize =
+                                    readSize + (wrapper.CACHE - wrapper.lastOffsetIndex);
+                            readTotalSize = wrapper.readDataSize;
+                            // 此时buffer中还有readSize个byte
+                            System.arraycopy(buffer, 0,
+                                    wrapper.mData1, wrapper.CACHE - wrapper.lastOffsetIndex,
+                                    readSize);
+                        }
                     }
                 }
+
+                // 跳到下一帧
                 wrapper.mExtractor.advance();
-            } catch (NullPointerException e) {
+            } catch (Exception e) {
                 e.printStackTrace();
                 wrapper.mIsReading = false;
-                wrapper.mReadStatus = READ_UNKNOW;
+                wrapper.mReadStatus = READ_ERROR;
                 break;
             }
         }// while(...) end
@@ -992,6 +999,7 @@ public class SampleVideoPlayer3 {
         int preReadDataSize = 0;
         int restOfDataSize = 0;
         int frameDataLength = 1024 * 100;
+        // 音频或者视频一帧的大小(视频某一帧的大小可能超过frameDataLength这个值)
         byte[] frameData = new byte[frameDataLength];
         // mData1 ---> mData2
         System.arraycopy(
@@ -1006,13 +1014,13 @@ public class SampleVideoPlayer3 {
             if (wrapper.readDataSize == wrapper.CACHE
                     || wrapper.readDataSize == wrapper.lastOffsetIndex) {
                 if (wrapper.mType == TYPE_AUDIO) {
-                    findAacHead(wrapper.mData2, 0, wrapper.CACHE, offsetList);
+                    findAudioHead(wrapper.mData2, 0, wrapper.CACHE, offsetList);
                 } else {
                     findH264Head(wrapper.mData2, 0, wrapper.CACHE, offsetList);
                 }
             } else {
                 if (wrapper.mType == TYPE_AUDIO) {
-                    findAacHead(wrapper.mData2, 0, wrapper.readDataSize, offsetList);
+                    findAudioHead(wrapper.mData2, 0, wrapper.readDataSize, offsetList);
                 } else {
                     findH264Head(wrapper.mData2, 0, wrapper.readDataSize, offsetList);
                 }
@@ -1048,63 +1056,32 @@ public class SampleVideoPlayer3 {
                 }
             }
 
-            for (int i = 0; i < offsetCounts; i++) {
-                Arrays.fill(frameData, (byte) 0);
-                if (i + 1 < offsetCounts) {
-                    /***
-                     集合中至少有两个offset才有一帧输出
-                     各帧之间的offset很重要,比如有:0, 519, 1038, 1585, 2147 ...
-                     知道了offset,那么就知道了要"喂"多少数据了.
-                     两个offset的位置一减就是一帧的长度
-                     */
-                    int frameLength = offsetList.get(i + 1) - offsetList.get(i);
-                    frameTotal += frameLength;
-                    if (frameLength > frameDataLength) {
-                        MLog.d(TAG, "handleData() 出现大体积帧 frameLength: " + frameLength);
-                        frameDataLength = frameLength;
-                        frameData = new byte[frameLength];
-                    }
-                    // frameData保存着一帧的数据(包括ADTS头和AAC ES(AAC音频数据))
-                    System.arraycopy(
-                            wrapper.mData2, offsetList.get(i),
-                            frameData, 0, frameLength);
-                    /*if (wrapper.mType == TYPE_AUDIO) {
-                        MLog.d(TAG, "handleData() offset: " + offsetList.get(i) +
-                                "    " + frameData[0] +
-                                " " + frameData[1] +
-                                " " + frameData[2] +
-                                " " + frameData[3] +
-                                " " + frameData[4] +
-                                " " + frameData[5] +
-                                " " + frameData[6]);
-                        MLog.d(TAG, "handleData() frameLength: " + frameLength);
-                    }*/
-
-                    feedInputBufferAndDrainOutputBuffer(
-                            wrapper.mDecoderMediaCodec,
-                            frameData, 0, frameLength, startDecodeTime,
-                            wrapper.render, wrapper.mType == TYPE_AUDIO ? false : true,
-                            wrapper.callback);
-                } else {
-                    // 处理集合中最后一个offset的位置
-                    MLog.i(TAG, "handleData() preReadDataSize: " + preReadDataSize);
-                    MLog.i(TAG, "handleData()    readDataSize: " + wrapper.readDataSize);
-                    MLog.i(TAG, "handleData() lastOffsetIndex: " + wrapper.lastOffsetIndex);
-                    MLog.i(TAG, "handleData()  restOfDataSize: " + restOfDataSize);
-                    if (restOfDataSize > 0) {
+            if (wrapper.mType == TYPE_AUDIO) {
+                // audio的数据处理
+                for (int i = 0; i < offsetCounts; i++) {
+                    Arrays.fill(frameData, (byte) 0);
+                    if (i + 1 < offsetCounts) {
+                        /***
+                         集合中至少有两个offset才有一帧输出
+                         各帧之间的offset很重要,比如有:0, 519, 1038, 1585, 2147 ...
+                         知道了offset,那么就知道了要"喂"多少数据了.
+                         两个offset的位置一减就是一帧的长度
+                         */
+                        int frameLength = offsetList.get(i + 1)
+                                - offsetList.get(i)
+                                - AUDIO_HEADER_FLAG_LENGTH;
+                        frameTotal += frameLength;
+                        if (frameLength > frameDataLength) {
+                            MLog.d(TAG, "handleData() audio 出现大体积帧 frameLength: " +
+                                    frameLength);
+                            frameDataLength = frameLength;
+                            frameData = new byte[frameLength];
+                        }
                         System.arraycopy(
-                                wrapper.mData2, wrapper.lastOffsetIndex,
-                                frameData, 0, restOfDataSize);
-                    }
-
-                    // mData1中还有数据
-                    if (wrapper.readDataSize != wrapper.CACHE
-                            && preReadDataSize == wrapper.readDataSize
-                            && wrapper.mReadStatus == READ_FINISHED) {
-                        // 最后一帧
-                        if (wrapper.CACHE >= 1024 * 1024) {
-                            int frameLength = restOfDataSize;
-                            MLog.d(TAG, "handleData() last     offset: " + 0 +
+                                wrapper.mData2, offsetList.get(i) + AUDIO_HEADER_FLAG_LENGTH,
+                                frameData, 0, frameLength);
+                        /*if (wrapper.mType == TYPE_AUDIO) {
+                            MLog.d(TAG, "handleData() offset: " + offsetList.get(i) +
                                     "    " + frameData[0] +
                                     " " + frameData[1] +
                                     " " + frameData[2] +
@@ -1112,55 +1089,216 @@ public class SampleVideoPlayer3 {
                                     " " + frameData[4] +
                                     " " + frameData[5] +
                                     " " + frameData[6]);
-                            MLog.d(TAG, "handleData()     frameLength: " + frameLength);
-                            frameTotal += frameLength;
+                            MLog.d(TAG, "handleData() frameLength: " + frameLength);
+                        }*/
 
-                            feedInputBufferAndDrainOutputBuffer(
-                                    wrapper.mDecoderMediaCodec,
-                                    frameData, 0, frameLength, startDecodeTime,
-                                    wrapper.render, wrapper.mType == TYPE_AUDIO ? false : true,
-                                    wrapper.callback);
-
-                            isHandlingData = false;
-                        }
-                        break;
+                        feedInputBufferAndDrainOutputBuffer(
+                                wrapper.mDecoderMediaCodec,
+                                frameData, 0, frameLength, startDecodeTime,
+                                wrapper.render, wrapper.mType == TYPE_AUDIO ? false : true,
+                                wrapper.callback);
                     } else {
-                        if (wrapper.mReadStatus == READ_STARTED) {
-                            synchronized (wrapper.mHandleDataLock) {
-                                try {
-                                    wrapper.mHandleDataLock.wait();
-                                } catch (InterruptedException e) {
-                                    e.printStackTrace();
+                        // 处理集合中最后一个offset的位置
+                        MLog.i(TAG, "handleData() preReadDataSize: " + preReadDataSize);
+                        MLog.i(TAG, "handleData()    readDataSize: " + wrapper.readDataSize);
+                        MLog.i(TAG, "handleData() lastOffsetIndex: " + wrapper.lastOffsetIndex);
+                        MLog.i(TAG, "handleData()  restOfDataSize: " + restOfDataSize);
+                        if (restOfDataSize > 0) {
+                            System.arraycopy(
+                                    wrapper.mData2, wrapper.lastOffsetIndex,
+                                    frameData, 0, restOfDataSize);
+                        }
+
+                        // mData1中还有数据
+                        if (wrapper.readDataSize != wrapper.CACHE
+                                && preReadDataSize == wrapper.readDataSize
+                                && wrapper.mReadStatus == READ_FINISHED) {
+                            // 最后一帧
+                            if (wrapper.CACHE >= 1024 * 1024) {
+                                Arrays.fill(wrapper.mData1, (byte) 0);
+                                System.arraycopy(
+                                        frameData, 0,
+                                        wrapper.mData1, 0, restOfDataSize);
+                                Arrays.fill(frameData, (byte) 0);
+                                System.arraycopy(
+                                        wrapper.mData1, AUDIO_HEADER_FLAG_LENGTH,
+                                        frameData, 0, restOfDataSize - AUDIO_HEADER_FLAG_LENGTH);
+                                int frameLength = restOfDataSize - AUDIO_HEADER_FLAG_LENGTH;
+                                MLog.d(TAG, "handleData() last     offset: " + 0 +
+                                        "    " + frameData[0] +
+                                        " " + frameData[1] +
+                                        " " + frameData[2] +
+                                        " " + frameData[3] +
+                                        " " + frameData[4] +
+                                        " " + frameData[5] +
+                                        " " + frameData[6]);
+                                MLog.d(TAG, "handleData()     frameLength: " + frameLength);
+                                frameTotal += frameLength;
+
+                                feedInputBufferAndDrainOutputBuffer(
+                                        wrapper.mDecoderMediaCodec,
+                                        frameData, 0, frameLength, startDecodeTime,
+                                        wrapper.render, wrapper.mType == TYPE_AUDIO ? false : true,
+                                        wrapper.callback);
+
+                                isHandlingData = false;
+                            }
+                            break;
+                        } else {
+                            if (wrapper.mReadStatus == READ_STARTED) {
+                                synchronized (wrapper.mHandleDataLock) {
+                                    try {
+                                        wrapper.mHandleDataLock.wait();
+                                    } catch (InterruptedException e) {
+                                        e.printStackTrace();
+                                    }
                                 }
                             }
+
+                            // 把mData2中剩下的数据移动到mData2的开头
+                            Arrays.fill(wrapper.mData2, (byte) 0);
+                            System.arraycopy(
+                                    frameData, 0,
+                                    wrapper.mData2, 0, restOfDataSize);
+                            // mData1 ---> mData2
+                            if (wrapper.readDataSize + restOfDataSize <= wrapper.CACHE) {
+                                System.arraycopy(wrapper.mData1, 0,
+                                        wrapper.mData2, restOfDataSize, wrapper.readDataSize);
+                            } else {
+                                wrapper.mData1HasData = true;
+                                // mData2已填满数据
+                                System.arraycopy(wrapper.mData1, 0,
+                                        wrapper.mData2, restOfDataSize,
+                                        wrapper.CACHE - restOfDataSize);
+                                // mData1还剩下(CACHE - lastOffsetIndex)个字节
+                                byte[] buffer = new byte[wrapper.CACHE - wrapper.lastOffsetIndex];
+                                System.arraycopy(wrapper.mData1, wrapper.lastOffsetIndex,
+                                        buffer, 0, wrapper.CACHE - wrapper.lastOffsetIndex);
+                                Arrays.fill(wrapper.mData1, (byte) 0);
+                                System.arraycopy(buffer, 0,
+                                        wrapper.mData1, 0, wrapper.CACHE - wrapper.lastOffsetIndex);
+                            }
+                            break;
+                        }
+                    }
+                }// for(...) end
+            } else {
+                // video的数据处理
+                for (int i = 0; i < offsetCounts; i++) {
+                    Arrays.fill(frameData, (byte) 0);
+                    if (i + 1 < offsetCounts) {
+                        /***
+                         集合中至少有两个offset才有一帧输出
+                         各帧之间的offset很重要,比如有:0, 519, 1038, 1585, 2147 ...
+                         知道了offset,那么就知道了要"喂"多少数据了.
+                         两个offset的位置一减就是一帧的长度
+                         */
+                        int frameLength = offsetList.get(i + 1) - offsetList.get(i);
+                        frameTotal += frameLength;
+                        if (frameLength > frameDataLength) {
+                            MLog.d(TAG, "handleData() video 出现大体积帧 frameLength: " + frameLength);
+                            frameDataLength = frameLength;
+                            frameData = new byte[frameLength];
+                        }
+                        // frameData保存着一帧的数据(包括ADTS头和AAC ES(AAC音频数据))
+                        System.arraycopy(
+                                wrapper.mData2, offsetList.get(i),
+                                frameData, 0, frameLength);
+                        /*if (wrapper.mType == TYPE_AUDIO) {
+                            MLog.d(TAG, "handleData() offset: " + offsetList.get(i) +
+                                    "    " + frameData[0] +
+                                    " " + frameData[1] +
+                                    " " + frameData[2] +
+                                    " " + frameData[3] +
+                                    " " + frameData[4] +
+                                    " " + frameData[5] +
+                                    " " + frameData[6]);
+                            MLog.d(TAG, "handleData() frameLength: " + frameLength);
+                        }*/
+
+                        feedInputBufferAndDrainOutputBuffer(
+                                wrapper.mDecoderMediaCodec,
+                                frameData, 0, frameLength, startDecodeTime,
+                                wrapper.render, wrapper.mType == TYPE_AUDIO ? false : true,
+                                wrapper.callback);
+                    } else {
+                        // 处理集合中最后一个offset的位置
+                        MLog.i(TAG, "handleData() preReadDataSize: " + preReadDataSize);
+                        MLog.i(TAG, "handleData()    readDataSize: " + wrapper.readDataSize);
+                        MLog.i(TAG, "handleData() lastOffsetIndex: " + wrapper.lastOffsetIndex);
+                        MLog.i(TAG, "handleData()  restOfDataSize: " + restOfDataSize);
+                        if (restOfDataSize > 0) {
+                            System.arraycopy(
+                                    wrapper.mData2, wrapper.lastOffsetIndex,
+                                    frameData, 0, restOfDataSize);
                         }
 
-                        // 把mData2中剩下的数据移动到mData2的开头
-                        Arrays.fill(wrapper.mData2, (byte) 0);
-                        System.arraycopy(
-                                frameData, 0,
-                                wrapper.mData2, 0, restOfDataSize);
-                        // mData1 ---> mData2
-                        if (wrapper.readDataSize + restOfDataSize <= wrapper.CACHE) {
-                            System.arraycopy(wrapper.mData1, 0,
-                                    wrapper.mData2, restOfDataSize, wrapper.readDataSize);
+                        // mData1中还有数据
+                        if (wrapper.readDataSize != wrapper.CACHE
+                                && preReadDataSize == wrapper.readDataSize
+                                && wrapper.mReadStatus == READ_FINISHED) {
+                            // 最后一帧
+                            if (wrapper.CACHE >= 1024 * 1024) {
+                                int frameLength = restOfDataSize;
+                                MLog.d(TAG, "handleData() last     offset: " + 0 +
+                                        "    " + frameData[0] +
+                                        " " + frameData[1] +
+                                        " " + frameData[2] +
+                                        " " + frameData[3] +
+                                        " " + frameData[4] +
+                                        " " + frameData[5] +
+                                        " " + frameData[6]);
+                                MLog.d(TAG, "handleData()     frameLength: " + frameLength);
+                                frameTotal += frameLength;
+
+                                feedInputBufferAndDrainOutputBuffer(
+                                        wrapper.mDecoderMediaCodec,
+                                        frameData, 0, frameLength, startDecodeTime,
+                                        wrapper.render, wrapper.mType == TYPE_AUDIO ? false : true,
+                                        wrapper.callback);
+
+                                isHandlingData = false;
+                            }
+                            break;
                         } else {
-                            wrapper.mData1HasData = true;
-                            // mData2已填满数据
-                            System.arraycopy(wrapper.mData1, 0,
-                                    wrapper.mData2, restOfDataSize, wrapper.CACHE - restOfDataSize);
-                            // mData1还剩下(CACHE - lastOffsetIndex)个字节
-                            byte[] buffer = new byte[wrapper.CACHE - wrapper.lastOffsetIndex];
-                            System.arraycopy(wrapper.mData1, wrapper.lastOffsetIndex,
-                                    buffer, 0, wrapper.CACHE - wrapper.lastOffsetIndex);
-                            Arrays.fill(wrapper.mData1, (byte) 0);
-                            System.arraycopy(buffer, 0,
-                                    wrapper.mData1, 0, wrapper.CACHE - wrapper.lastOffsetIndex);
+                            if (wrapper.mReadStatus == READ_STARTED) {
+                                synchronized (wrapper.mHandleDataLock) {
+                                    try {
+                                        wrapper.mHandleDataLock.wait();
+                                    } catch (InterruptedException e) {
+                                        e.printStackTrace();
+                                    }
+                                }
+                            }
+
+                            // 把mData2中剩下的数据移动到mData2的开头
+                            Arrays.fill(wrapper.mData2, (byte) 0);
+                            System.arraycopy(
+                                    frameData, 0,
+                                    wrapper.mData2, 0, restOfDataSize);
+                            // mData1 ---> mData2
+                            if (wrapper.readDataSize + restOfDataSize <= wrapper.CACHE) {
+                                System.arraycopy(wrapper.mData1, 0,
+                                        wrapper.mData2, restOfDataSize, wrapper.readDataSize);
+                            } else {
+                                wrapper.mData1HasData = true;
+                                // mData2已填满数据
+                                System.arraycopy(wrapper.mData1, 0,
+                                        wrapper.mData2, restOfDataSize, wrapper.CACHE -
+                                                restOfDataSize);
+                                // mData1还剩下(CACHE - lastOffsetIndex)个字节
+                                byte[] buffer = new byte[wrapper.CACHE - wrapper.lastOffsetIndex];
+                                System.arraycopy(wrapper.mData1, wrapper.lastOffsetIndex,
+                                        buffer, 0, wrapper.CACHE - wrapper.lastOffsetIndex);
+                                Arrays.fill(wrapper.mData1, (byte) 0);
+                                System.arraycopy(buffer, 0,
+                                        wrapper.mData1, 0, wrapper.CACHE - wrapper.lastOffsetIndex);
+                            }
+                            break;
                         }
-                        break;
                     }
-                }
-            }// for(...) end
+                }// for(...) end
+            }// if wrapper.mType end
         }// while(true) end
 
         if (wrapper.mIsReading) {

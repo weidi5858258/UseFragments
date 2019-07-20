@@ -25,6 +25,7 @@ import com.weidi.usefragments.inject.InjectOnClick;
 import com.weidi.usefragments.inject.InjectView;
 import com.weidi.usefragments.media.MediaUtils;
 import com.weidi.usefragments.tool.MLog;
+import com.weidi.usefragments.tool.SampleVideoPlayer3;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -408,12 +409,19 @@ public class DecodeVideoFragment extends BaseFragment {
             public void surfaceCreated(
                     SurfaceHolder holder) {
                 mSurface = holder.getSurface();
+
                 /*mSampleVideoPlayer.setSurface(mSurface);
                 mSampleVideoPlayer.play();*/
-
-                mSampleVideoPlayer2.setSurface(mSurface);
-                mSampleVideoPlayer2.play();
                 //next();
+
+                /*mSampleVideoPlayer2.setSurface(mSurface);
+                mSampleVideoPlayer2.play();*/
+
+                SampleVideoPlayer3 mSampleVideoPlayer3 = new SampleVideoPlayer3();
+                mSampleVideoPlayer3.setContext(getContext());
+                mSampleVideoPlayer3.setPath(mVideoPath);
+                mSampleVideoPlayer3.setSurface(mSurface);
+                mSampleVideoPlayer3.play();
 
                 /*mH264Player = new H264Player();
                 mH264Player.setPath(null);
