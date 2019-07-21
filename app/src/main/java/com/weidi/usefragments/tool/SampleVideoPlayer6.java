@@ -17,6 +17,7 @@ import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Looper;
 import android.os.Message;
+import android.os.SystemClock;
 import android.text.TextUtils;
 import android.util.ArrayMap;
 import android.util.Log;
@@ -282,7 +283,7 @@ public class SampleVideoPlayer6 {
         switch (msg.what) {
             case PREPARE:
                 if (internalPrepare()) {
-                    new Thread(mAudioReadData).start();
+                    //new Thread(mAudioReadData).start();
                     new Thread(mVideoReadData).start();
                 }
                 break;
@@ -823,6 +824,8 @@ public class SampleVideoPlayer6 {
          */
         wrapper.mExtractor.selectTrack(wrapper.mTrackIndex);
         wrapper.mIsReading = true;
+        // Test
+        Map<Long, Integer> arrayMap = new ArrayMap<>();
         while (wrapper.mIsReading) {
             try {
                 room.clear();
@@ -866,7 +869,17 @@ public class SampleVideoPlayer6 {
                 // room ---> buffer
                 room.get(buffer, 0, readSize);
 
-                wrapper.mReadFrameLengthTotal += readSize;
+                // Test
+                if (!feedInputBufferAndDrainOutputBuffer(
+                        wrapper.mDecoderMediaCodec,
+                        buffer, 0, readSize,
+                        0,
+                        wrapper.render,
+                        wrapper.mType == TYPE_AUDIO ? false : true,
+                        wrapper.callback)) {
+                    wrapper.mIsHandling = false;
+                    break;
+                }
 
                 if (readSize > wrapper.frameMaxLength) {
                     if (wrapper.mType == TYPE_AUDIO) {
@@ -877,6 +890,7 @@ public class SampleVideoPlayer6 {
                     MLog.e(TAG, showInfo);
                 }
 
+                wrapper.mReadFrameLengthTotal += readSize;
                 // 实际读取到的大小 + 标志位长度
                 readTotalSize += readSize + HEADER_FLAG_LENGTH;
                 if (readTotalSize <= wrapper.CACHE) {
@@ -899,7 +913,69 @@ public class SampleVideoPlayer6 {
                     // 一帧对应一个时间戳
                     wrapper.mTime1.put(
                             wrapper.mReadFrameCounts, wrapper.mExtractor.getSampleTime());
+                    /*MLog.d(TAG, "Test wrapper.mReadFrameCounts: " + wrapper.mReadFrameCounts+
+                    " readSize: "+readSize);*/
+                    arrayMap.put(wrapper.mReadFrameCounts,readSize);
                 } else {
+                    /***
+                     在某些帧上多读或者少读了几个字节,造成花屏
+                     */
+                    // Test
+                    //////////////////////////////////////////////////////////////////////////
+                    MLog.i(TAG, "Test start");
+                    wrapper.mReadFrameCounts = 0;
+                    ArrayList<Integer> offsetList = new ArrayList<Integer>();
+                    int frameDataLength = 0;
+                    byte[] frameData = new byte[wrapper.frameMaxLength];
+                    System.arraycopy(
+                            wrapper.mData1, 0,
+                            wrapper.mData2, 0, wrapper.readDataSize);
+                    findHead(wrapper.mData2, 0, wrapper.readDataSize, offsetList);
+                    int offsetCounts = offsetList.size();
+                    MLog.i(TAG, "Test offsetCounts: " + offsetCounts);
+                    for (int i = 0; i < offsetCounts; i++) {
+                        Arrays.fill(frameData, (byte) 0);
+                        if (i + 1 < offsetCounts) {
+                            wrapper.mReadFrameCounts++;
+                            readSize = arrayMap.get(wrapper.mReadFrameCounts);
+                            /***
+                             集合中至少有两个offset才有一帧输出
+                             各帧之间的offset很重要,比如有:0, 519, 1038, 1585, 2147 ...
+                             知道了offset,那么就知道了要"喂"多少数据了.
+                             两个offset的位置一减就是一帧的长度
+                             */
+                            frameDataLength = offsetList.get(i + 1)
+                                    - offsetList.get(i)
+                                    - HEADER_FLAG_LENGTH;
+                            System.arraycopy(
+                                    wrapper.mData2, offsetList.get(i) + HEADER_FLAG_LENGTH,
+                                    frameData, 0, frameDataLength);
+                            if (!feedInputBufferAndDrainOutputBuffer(
+                                    wrapper.mDecoderMediaCodec,
+                                    frameData, 0, frameDataLength,
+                                    0,
+                                    wrapper.render,
+                                    wrapper.mType == TYPE_AUDIO ? false : true,
+                                    wrapper.callback)) {
+                                wrapper.mIsHandling = false;
+                                break;
+                            }
+                            if(readSize!=frameDataLength){
+                                MLog.e(TAG, "Test        wrapper.mReadFrameCounts: " + wrapper.mReadFrameCounts);
+                                MLog.e(TAG, "Test                    src readSize: " + readSize);
+                                MLog.e(TAG, "Test                 frameDataLength: " + frameDataLength);
+                            }
+                            continue;
+                        }
+                    }
+                    if (true) {
+                        MLog.i(TAG, "Test end");
+                        wrapper.mIsReading = false;
+                        break;
+                    }
+                    //////////////////////////////////////////////////////////////////////////
+
+
                     long presentationTimeUs = wrapper.mExtractor.getSampleTime();
 
                     if (wrapper.mType == TYPE_AUDIO) {
@@ -1152,16 +1228,16 @@ public class SampleVideoPlayer6 {
                         presentationTimeUs = System.nanoTime();
                     }*/
                     presentationTimeUs = (System.nanoTime() - MediaUtils.startTimeMs) * 1000;
-                    if (!feedInputBufferAndDrainOutputBuffer(
+                    /*if (!feedInputBufferAndDrainOutputBuffer(
                             wrapper.mDecoderMediaCodec,
-                                frameData, 0, frameDataLength,
+                            frameData, 0, frameDataLength,
                             presentationTimeUs,
                             wrapper.render,
                             wrapper.mType == TYPE_AUDIO ? false : true,
                             wrapper.callback)) {
                         wrapper.mIsHandling = false;
                         break;
-                    }
+                    }*/
                     continue;
                 } else {
                     // 处理集合中最后一个offset的位置
@@ -1208,7 +1284,7 @@ public class SampleVideoPlayer6 {
                             presentationTimeUs = System.nanoTime();
                         }*/
                         presentationTimeUs = (System.nanoTime() - MediaUtils.startTimeMs) / 1000;
-                        if (!feedInputBufferAndDrainOutputBuffer(
+                        /*if (!feedInputBufferAndDrainOutputBuffer(
                                 wrapper.mDecoderMediaCodec,
                                 frameData, 0, frameDataLength,
                                 presentationTimeUs,
@@ -1217,7 +1293,7 @@ public class SampleVideoPlayer6 {
                                 wrapper.callback)) {
                             wrapper.mIsHandling = false;
                             break;
-                        }
+                        }*/
                     }
 
                     if (wrapper.readDataSize != wrapper.CACHE
@@ -1294,10 +1370,10 @@ public class SampleVideoPlayer6 {
         }
         MLog.w(TAG, showInfo);
 
-        if (!mAudioWrapper.mIsHandling
+        /*if (!mAudioWrapper.mIsHandling
                 && !mVideoWrapper.mIsHandling) {
             play();
-        }
+        }*/
     }
 
     private Runnable mAudioHandleData = new Runnable() {

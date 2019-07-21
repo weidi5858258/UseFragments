@@ -899,7 +899,7 @@ public class SampleVideoPlayer {
                             room.position(0);
                             room.limit(readSize);
                             room.get(frameData, 0, readSize);
-                            MLog.d(TAG, "mAudioPlayRunnable " +
+                            /*MLog.d(TAG, "mAudioPlayRunnable " +
                                     "    " + frameData[0] +
                                     " " + frameData[1] +
                                     " " + frameData[2] +
@@ -907,7 +907,7 @@ public class SampleVideoPlayer {
                                     " " + frameData[4] +
                                     " " + frameData[5] +
                                     " " + frameData[6]);
-                            MLog.d(TAG, "mAudioPlayRunnable frameLength: " + readSize);
+                            MLog.d(TAG, "mAudioPlayRunnable frameLength: " + readSize);*/
                         }
                         int flags = 0;
                         /***
@@ -1143,6 +1143,7 @@ public class SampleVideoPlayer {
              然后退出while循环,
              最后release.
              */
+            long startTimeTest = System.currentTimeMillis();
             while (true) {
                 // stop device
                 if (!mIsAudioRunning || !mIsVideoRunning) {
@@ -1184,6 +1185,7 @@ public class SampleVideoPlayer {
                         }
                         if (room != null) {
                             room.clear();
+                            startTimeTest = System.currentTimeMillis();
                             readSize = mVideoExtractor.readSampleData(room, 0);
                         }
                         int flags = 0;
@@ -1241,6 +1243,7 @@ public class SampleVideoPlayer {
                                 readSize,
                                 presentationTimeUs,
                                 flags);
+                        MLog.i(TAG, "mVideoPlayRunnable 时间相差: "+(System.currentTimeMillis()-startTimeTest));
 
                         if (!hasPlaybackFinished) {
                             mVideoExtractor.advance();
