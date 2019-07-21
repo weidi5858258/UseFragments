@@ -30,8 +30,6 @@ public class Contents {
         mPath = "http://zuidaziyuan.com/1704/%E7%94%9F%E5%8C%96%E5%8D%B1%E6%9C%BA6%EF%BC%9A%E7%BB%88%E7%AB%A0.BD1280%E9%AB%98%E6%B8%85%E4%B8%AD%E8%8B%B1%E5%8F%8C%E5%AD%97%E7%89%88.mp4";
         // 军情五处：利益之争
         mPath = "http://vip.zuiku8.com/1808/%E5%86%9B%E6%83%85%E4%BA%94%E5%A4%84%EF%BC%9A%E5%88%A9%E7%9B%8A%E4%B9%8B%E4%BA%89.BD1280%E9%AB%98%E6%B8%85%E4%B8%AD%E8%8B%B1%E5%8F%8C%E5%AD%97%E7%89%88.mp4";
-        // 生死狙击
-        mPath = "http://xunlei.jingpin88.com/20171026/0L4MjcwA/mp4/0L4MjcwA.mp4";
         // 疾速备战
         mPath = "http://xunlei.xiazai-zuida.com/1907/J%E9%80%9F%E5%A4%87%E6%88%98.HD%E9%AB%98%E6%B8%85%E4%B8%AD%E8%8B%B1%E5%8F%8C%E5%AD%97%E7%89%88.mp4";
         // 黄飞鸿之五：龙城歼霸
@@ -41,10 +39,11 @@ public class Contents {
         mPath = "/storage/2430-1702/BaiduNetdisk/video/05.mp4";
         // 谍影重重4
         mPath = "http://xunlei.jingpin88.com/20171027/ZkYVjDJC/mp4/ZkYVjDJC.mp4";
-        // 读取的视频帧数量与处理的视频帧数量相等,所以几乎没有出现马赛克的现象
-        mPath = "/storage/2430-1702/BaiduNetdisk/video/test.mp4";
-        mPath = "/storage/2430-1702/BaiduNetdisk/video/shape_of_my_heart.mp4";
         mPath = "/storage/2430-1702/BaiduNetdisk/video/08_mm-MP4-H264_720x400_2997_AAC-LC_192_48.mp4";
+        mPath = "/storage/2430-1702/BaiduNetdisk/video/shape_of_my_heart.mp4";
+        mPath = "/storage/2430-1702/BaiduNetdisk/video/test.mp4";
+        // 生死狙击
+        mPath = "http://xunlei.jingpin88.com/20171026/0L4MjcwA/mp4/0L4MjcwA.mp4";
         return mPath;
     }
 

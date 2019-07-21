@@ -128,6 +128,8 @@ public class SampleVideoPlayer {
         mPath = "/storage/37C8-3904/myfiles/video/Silent_Movie_321_AC4_H265_MP4_50fps.mp4";
         mPath = "/storage/2430-1702/BaiduNetdisk/video/流浪的地球.mp4";
         mPath = "/storage/2430-1702/BaiduNetdisk/video/05.mp4";
+        mPath = "/storage/2430-1702/BaiduNetdisk/video/08_mm-MP4-H264_720x400_2997_AAC" +
+                "-LC_192_48.mp4";
         if (DEBUG)
             MLog.d(TAG, "setPath() mPath: " + mPath);
     }
@@ -890,6 +892,10 @@ public class SampleVideoPlayer {
                         if (room != null) {
                             room.clear();
                             readSize = mAudioExtractor.readSampleData(room, 0);
+                            if (readSize < 0) {
+                                mIsAudioRunning = false;
+                                break;
+                            }
                             room.position(0);
                             room.limit(readSize);
                             room.get(frameData, 0, readSize);

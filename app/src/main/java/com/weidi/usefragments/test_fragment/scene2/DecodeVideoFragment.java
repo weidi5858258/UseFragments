@@ -28,6 +28,7 @@ import com.weidi.usefragments.tool.MLog;
 import com.weidi.usefragments.tool.SampleVideoPlayer3;
 import com.weidi.usefragments.tool.SampleVideoPlayer4;
 import com.weidi.usefragments.tool.SampleVideoPlayer5;
+import com.weidi.usefragments.tool.SampleVideoPlayer6;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -397,11 +398,17 @@ public class DecodeVideoFragment extends BaseFragment {
                 mSampleVideoPlayer.play();*/
                 //next();
 
-                SampleVideoPlayer5 mSampleVideoPlayer5 = new SampleVideoPlayer5();
-                mSampleVideoPlayer5.setContext(getContext());
-                mSampleVideoPlayer5.setPath(mVideoPath);
-                mSampleVideoPlayer5.setSurface(mSurface);
-                mSampleVideoPlayer5.play();
+                /*SampleVideoPlayer mSampleVideoPlayer = new SampleVideoPlayer();
+                mSampleVideoPlayer.setContext(getContext());
+                mSampleVideoPlayer.setPath(mVideoPath);
+                mSampleVideoPlayer.setSurface(mSurface);
+                mSampleVideoPlayer.play();*/
+
+                SampleVideoPlayer6 mSampleVideoPlayer6 = new SampleVideoPlayer6();
+                mSampleVideoPlayer6.setContext(getContext());
+                mSampleVideoPlayer6.setPath(mVideoPath);
+                mSampleVideoPlayer6.setSurface(mSurface);
+                mSampleVideoPlayer6.play();
 
                 /*mH264Player = new H264Player();
                 mH264Player.setPath(null);
