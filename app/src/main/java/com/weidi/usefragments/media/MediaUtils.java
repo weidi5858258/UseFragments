@@ -1463,6 +1463,8 @@ public class MediaUtils {
 
     public static int SLEEP_TIME = 90;
 
+    public static long startTimeMs;
+
     public static boolean drainOutputBuffer(
             MediaCodec codec,
             boolean render,
@@ -1509,28 +1511,6 @@ public class MediaUtils {
                     return false;
                 }
 
-                /*if (needToSleep) {
-                    if (mPrePresentationTimeUs != 0) {
-                        long temp = roomInfo.presentationTimeUs - mPrePresentationTimeUs;
-                        mPrePresentationTimeUs = roomInfo.presentationTimeUs;
-                        if (temp < FRAME_RATE_TEMP) {
-                            //long t_time = (FRAME_RATE_TEMP - temp) / 1000;
-                            //MLog.d(TAG, "drainOutputBuffer() wait time: " + t_time);
-                            SystemClock.sleep(MediaUtils.SLEEP_TIME);
-                        } else {
-                            boolean keyFrame =
-                                    (roomInfo.flags & MediaCodec.BUFFER_FLAG_KEY_FRAME) != 0;
-                            if (keyFrame) {
-                                MLog.d(TAG, "drainOutputBuffer() 我还不知道为什么要这样");
-                                codec.releaseOutputBuffer(roomIndex, false);
-                                continue;
-                            }
-                        }
-                    } else {
-                        mPrePresentationTimeUs = roomInfo.presentationTimeUs;
-                    }
-                }*/
-
                 // 房间
                 ByteBuffer room = null;
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
@@ -1539,13 +1519,37 @@ public class MediaUtils {
                     room = codec.getOutputBuffers()[roomIndex];
                 }
 
-                if (room != null) {
-                    // 房间大小
-                    int roomSize = roomInfo.size;
-                    room.position(roomInfo.offset);
-                    room.limit(roomInfo.offset + roomSize);
-                    if (callback != null) {
-                        callback.onOutputBuffer(room, roomInfo, roomSize);
+                if (needToSleep) {
+                    /*long tempTime = (roomInfo.presentationTimeUs / 1000)
+                            - (System.currentTimeMillis() - MediaUtils.startTimeMs);
+                    MLog.i(TAG, "drainOutputBuffer() tempTime: " + tempTime);
+                    if (tempTime > 0) {
+                        for (; ; ) {
+                            SystemClock.sleep(10);
+                            tempTime = (roomInfo.presentationTimeUs / 1000)
+                                    - (System.currentTimeMillis() - MediaUtils.startTimeMs);
+                            if (tempTime <= 0) {
+                                break;
+                            }
+                        }
+                    } else {
+                        codec.releaseOutputBuffer(roomIndex, false);
+                        continue;
+                    }*/
+
+                    /*while (roomInfo.presentationTimeUs / 1000
+                            > System.currentTimeMillis() - MediaUtils.startTimeMs) {
+                        SystemClock.sleep(10);
+                    }*/
+                } else {
+                    if (room != null) {
+                        // 房间大小
+                        int roomSize = roomInfo.size;
+                        room.position(roomInfo.offset);
+                        room.limit(roomInfo.offset + roomSize);
+                        if (callback != null) {
+                            callback.onOutputBuffer(room, roomInfo, roomSize);
+                        }
                     }
                 }
 

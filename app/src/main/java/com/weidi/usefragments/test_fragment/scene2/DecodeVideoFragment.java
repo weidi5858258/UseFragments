@@ -27,6 +27,7 @@ import com.weidi.usefragments.media.MediaUtils;
 import com.weidi.usefragments.tool.MLog;
 import com.weidi.usefragments.tool.SampleVideoPlayer3;
 import com.weidi.usefragments.tool.SampleVideoPlayer4;
+import com.weidi.usefragments.tool.SampleVideoPlayer5;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -309,8 +310,6 @@ public class DecodeVideoFragment extends BaseFragment {
     /*"/storage/2430-1702/Android/data/com.weidi.usefragments/files/" +
             "output.mp4";*/
     private Surface mSurface;
-    private SampleVideoPlayer mSampleVideoPlayer;
-    private SampleVideoPlayer2 mSampleVideoPlayer2;
     private H264Player mH264Player;
 
     private List<File> videoFiles;
@@ -330,10 +329,6 @@ public class DecodeVideoFragment extends BaseFragment {
     private void onShow() {
         if (DEBUG)
             MLog.d(TAG, "onShow() " + printThis());
-
-        if (mSampleVideoPlayer2.isRunning()) {
-            mSampleVideoPlayer2.play();
-        }
 
         mJumpBtn.setVisibility(View.GONE);
         Configuration mConfiguration = this.getResources().getConfiguration(); //获取设置的配置信息
@@ -361,10 +356,6 @@ public class DecodeVideoFragment extends BaseFragment {
     private void onHide() {
         if (DEBUG)
             MLog.d(TAG, "onHide() " + printThis());
-
-        if (mSampleVideoPlayer2.isRunning()) {
-            mSampleVideoPlayer2.pause();
-        }
     }
 
     private void initData() {
@@ -376,15 +367,6 @@ public class DecodeVideoFragment extends BaseFragment {
                 Collections.addAll(videoFiles, files);
             }
         }
-
-        mSampleVideoPlayer = new SampleVideoPlayer();
-        mSampleVideoPlayer.setContext(getContext());
-        mSampleVideoPlayer.setPath(mVideoPath);
-
-        mSampleVideoPlayer2 = new SampleVideoPlayer2();
-        mSampleVideoPlayer2.setContext(getContext());
-        mSampleVideoPlayer2.setCallback(mCallback);
-        mSampleVideoPlayer2.setPath(mVideoPath);
 
         /*Activity activity = getAttachedActivity();
         if (activity != null
@@ -415,14 +397,11 @@ public class DecodeVideoFragment extends BaseFragment {
                 mSampleVideoPlayer.play();*/
                 //next();
 
-                /*mSampleVideoPlayer2.setSurface(mSurface);
-                mSampleVideoPlayer2.play();*/
-
-                SampleVideoPlayer4 mSampleVideoPlayer4 = new SampleVideoPlayer4();
-                mSampleVideoPlayer4.setContext(getContext());
-                mSampleVideoPlayer4.setPath(mVideoPath);
-                mSampleVideoPlayer4.setSurface(mSurface);
-                mSampleVideoPlayer4.play();
+                SampleVideoPlayer5 mSampleVideoPlayer5 = new SampleVideoPlayer5();
+                mSampleVideoPlayer5.setContext(getContext());
+                mSampleVideoPlayer5.setPath(mVideoPath);
+                mSampleVideoPlayer5.setSurface(mSurface);
+                mSampleVideoPlayer5.play();
 
                 /*mH264Player = new H264Player();
                 mH264Player.setPath(null);
@@ -438,19 +417,16 @@ public class DecodeVideoFragment extends BaseFragment {
             @Override
             public void surfaceDestroyed(
                     SurfaceHolder holder) {
-                mSampleVideoPlayer.release();
-                mSampleVideoPlayer2.release();
             }
         });
     }
 
     private void handleBeforeOfConfigurationChangedEvent() {
-        mSampleVideoPlayer2.release();
+
     }
 
     private void destroy() {
-        mSampleVideoPlayer2.release();
-        mSampleVideoPlayer2.destroy();
+
     }
 
     @InjectOnClick({R.id.jump_btn})
@@ -497,11 +473,11 @@ public class DecodeVideoFragment extends BaseFragment {
             default:
                 break;
         }
-        mSampleVideoPlayer2.setPath(mCurVideoFile.getAbsolutePath());
+        //mSampleVideoPlayer2.setPath(mCurVideoFile.getAbsolutePath());
         if (DEBUG)
             MLog.d(TAG, "next() mCurVideoIndex: " + mCurVideoIndex +
                     " " + mCurVideoFile.getAbsolutePath());
-        mSampleVideoPlayer2.next();
+        //mSampleVideoPlayer2.next();
     }
 
     public boolean onKeyDown(int keyCode, KeyEvent event) {
