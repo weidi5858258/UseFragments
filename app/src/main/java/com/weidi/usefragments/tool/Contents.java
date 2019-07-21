@@ -13,6 +13,7 @@ public class Contents {
         mPath = "/storage/2430-1702/BaiduNetdisk/video/流浪的地球.mp4";
         mPath = "http://192.168.0.112:8080/tomcat_video/test.mp4";
         mPath = "http://192.168.0.112:8080/tomcat_video/game_of_thrones_5_01.mp4";
+        // 忍者刺客
         mPath = "http://download.xunleizuida.com/1904/%E5%BF%8D%E8%80%85%E5%88%BA%E5%AE%A2.HD1280%E9%AB%98%E6%B8%85%E4%B8%AD%E8%8B%B1%E5%8F%8C%E5%AD%97%E7%89%88.mp4";
         // 突袭
         mPath = "http://xunleib.zuida360.com/1806/%E7%AA%81%E8%A2%AD.BD1280%E9%AB%98%E6%B8%85%E4%B8%AD%E5%AD%97%E7%89%88.mp4";
@@ -39,11 +40,15 @@ public class Contents {
         mPath = "/storage/2430-1702/BaiduNetdisk/video/05.mp4";
         // 谍影重重4
         mPath = "http://xunlei.jingpin88.com/20171027/ZkYVjDJC/mp4/ZkYVjDJC.mp4";
-        mPath = "/storage/2430-1702/BaiduNetdisk/video/08_mm-MP4-H264_720x400_2997_AAC-LC_192_48.mp4";
-        mPath = "/storage/2430-1702/BaiduNetdisk/video/shape_of_my_heart.mp4";
         mPath = "/storage/2430-1702/BaiduNetdisk/video/test.mp4";
         // 生死狙击
         mPath = "http://xunlei.jingpin88.com/20171026/0L4MjcwA/mp4/0L4MjcwA.mp4";
+        mPath = "/storage/2430-1702/BaiduNetdisk/video/08_mm-MP4-H264_720x400_2997_AAC-LC_192_48.mp4";
+        // 少年当自强
+        mPath = "http://okxxxzy.xzokzyzy.com/20190718/27_08326ade/%E5%B0%91%E5%B9%B4%E5%BD%93%E8%87%AA%E5%BC%BA.mp4";
+        // 黑衣人：全球追缉
+        mPath = "http://okxxzy.xzokzyzy.com/20190721/23773_0455e097/%E9%BB%91%E8%A1%A3%E4%BA%BA4%E9%9F%A9%E7%89%88%E4%B8%AD%E5%AD%97.mp4";
+        mPath = "/storage/2430-1702/BaiduNetdisk/video/shape_of_my_heart.mp4";
         return mPath;
     }
 

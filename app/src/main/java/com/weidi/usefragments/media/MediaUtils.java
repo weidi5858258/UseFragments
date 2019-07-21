@@ -1457,10 +1457,6 @@ public class MediaUtils {
         return drainOutputBuffer(codec, render, false, callback);
     }
 
-    public static long mPrePresentationTimeUs = 0;
-
-    private static long FRAME_RATE_TEMP = 42000;
-
     public static int SLEEP_TIME = 90;
 
     public static long startTimeMs;

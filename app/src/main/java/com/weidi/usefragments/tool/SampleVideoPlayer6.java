@@ -428,8 +428,12 @@ public class SampleVideoPlayer6 {
             return false;
         }
 
-        mAudioWrapper.mDecoderMediaFormat.setInteger(
-                MediaFormat.KEY_MAX_INPUT_SIZE, mAudioWrapper.frameMaxLength);
+        if (mAudioWrapper.mDecoderMediaFormat.containsKey(MediaFormat.KEY_MAX_INPUT_SIZE)) {
+            mAudioWrapper.frameMaxLength =
+                    mAudioWrapper.mDecoderMediaFormat.getInteger(MediaFormat.KEY_MAX_INPUT_SIZE);
+        }
+        /*mAudioWrapper.mDecoderMediaFormat.setInteger(
+                MediaFormat.KEY_MAX_INPUT_SIZE, mAudioWrapper.frameMaxLength);*/
         MLog.d(TAG, "internalPrepare()                mAudioWrapper.mime: " +
                 mAudioWrapper.mime);
         MLog.d(TAG, "internalPrepare() mAudioWrapper.mDecoderMediaFormat: " +
@@ -531,10 +535,20 @@ public class SampleVideoPlayer6 {
             return false;
         }
 
+        if (mVideoWrapper.mDecoderMediaFormat.containsKey(MediaFormat.KEY_MAX_INPUT_SIZE)) {
+            mVideoWrapper.frameMaxLength =
+                    mVideoWrapper.mDecoderMediaFormat.getInteger(MediaFormat.KEY_MAX_INPUT_SIZE);
+        }
+        /*mVideoWrapper.mDecoderMediaFormat.setInteger(
+                MediaFormat.KEY_MAX_INPUT_SIZE, mVideoWrapper.frameMaxLength);*/
+        /***
+         BITRATE_MODE_CQ:  表示完全不控制码率，尽最大可能保证图像质量
+         BITRATE_MODE_CBR: 表示编码器会尽量把输出码率控制为设定值
+         BITRATE_MODE_VBR: 表示编码器会根据图像内容的复杂度（实际上是帧间变化量的大小）来动态调整输出码率，
+         图像复杂则码率高，图像简单则码率低
+         */
         mVideoWrapper.mDecoderMediaFormat.setInteger(
                 MediaFormat.KEY_BITRATE_MODE, MediaCodecInfo.EncoderCapabilities.BITRATE_MODE_CQ);
-        mVideoWrapper.mDecoderMediaFormat.setInteger(
-                MediaFormat.KEY_MAX_INPUT_SIZE, mVideoWrapper.frameMaxLength);
         MLog.d(TAG, "internalPrepare()                        video mime: " +
                 mVideoWrapper.mime);
         MLog.d(TAG, "internalPrepare() mVideoWrapper.mDecoderMediaFormat: " +
@@ -787,6 +801,13 @@ public class SampleVideoPlayer6 {
             showInfo = "  readData() video start";
         }
         MLog.w(TAG, showInfo);
+
+        if (wrapper.mType == TYPE_AUDIO) {
+            showInfo = "  readData() audio wrapper.frameMaxLength: " + wrapper.frameMaxLength;
+        } else {
+            showInfo = "  readData() video wrapper.frameMaxLength: " + wrapper.frameMaxLength;
+        }
+        MLog.i(TAG, showInfo);
 
         /***
          数据先读到room,再从room转移到buffer
@@ -1121,19 +1142,20 @@ public class SampleVideoPlayer6 {
                     if (onlyOne) {
                         onlyOne = false;
                         MediaUtils.startTimeMs = System.currentTimeMillis();
+                        MediaUtils.startTimeMs = System.nanoTime();
                     }
                     long presentationTimeUs = 0;
-                    if ((Long) wrapper.mHandleFrameCounts != null
+                    /*if ((Long) wrapper.mHandleFrameCounts != null
                             && wrapper.mTime2.containsKey((Long) wrapper.mHandleFrameCounts)) {
                         presentationTimeUs = wrapper.mTime2.get((Long) wrapper.mHandleFrameCounts);
                     } else {
                         presentationTimeUs = System.nanoTime();
-                    }
+                    }*/
+                    presentationTimeUs = (System.nanoTime() - MediaUtils.startTimeMs) * 1000;
                     if (!feedInputBufferAndDrainOutputBuffer(
                             wrapper.mDecoderMediaCodec,
-                            frameData, 0, frameDataLength,
+                                frameData, 0, frameDataLength,
                             presentationTimeUs,
-                            //                            System.nanoTime(),
                             wrapper.render,
                             wrapper.mType == TYPE_AUDIO ? false : true,
                             wrapper.callback)) {
@@ -1178,18 +1200,18 @@ public class SampleVideoPlayer6 {
                                 frameData, 0, frameDataLength);
 
                         long presentationTimeUs = 0;
-                        if ((Long) wrapper.mHandleFrameCounts != null
+                        /*if ((Long) wrapper.mHandleFrameCounts != null
                                 && wrapper.mTime2.containsKey((Long) wrapper.mHandleFrameCounts)) {
                             presentationTimeUs = wrapper.mTime2.get((Long) wrapper
                                     .mHandleFrameCounts);
                         } else {
                             presentationTimeUs = System.nanoTime();
-                        }
+                        }*/
+                        presentationTimeUs = (System.nanoTime() - MediaUtils.startTimeMs) / 1000;
                         if (!feedInputBufferAndDrainOutputBuffer(
                                 wrapper.mDecoderMediaCodec,
                                 frameData, 0, frameDataLength,
                                 presentationTimeUs,
-                                //                                System.nanoTime(),
                                 wrapper.render,
                                 wrapper.mType == TYPE_AUDIO ? false : true,
                                 wrapper.callback)) {
@@ -1272,10 +1294,10 @@ public class SampleVideoPlayer6 {
         }
         MLog.w(TAG, showInfo);
 
-        /*if (!mAudioWrapper.mIsHandling
+        if (!mAudioWrapper.mIsHandling
                 && !mVideoWrapper.mIsHandling) {
             play();
-        }*/
+        }
     }
 
     private Runnable mAudioHandleData = new Runnable() {
