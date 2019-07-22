@@ -1,6 +1,7 @@
 package com.weidi.usefragments.test_fragment.scene2;
 
 import android.app.Activity;
+import android.content.Intent;
 import android.content.res.Configuration;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
@@ -10,6 +11,7 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.TextView;
 
+import com.weidi.usefragments.PlayerActivity;
 import com.weidi.usefragments.R;
 import com.weidi.usefragments.fragment.FragOperManager;
 import com.weidi.usefragments.fragment.base.BaseFragment;
@@ -81,7 +83,9 @@ public class Main1Fragment extends BaseFragment {
             public void onClick(View v) {
                 //FragOperManager.getInstance().enter3(new TestMotionEventFragment());
                 //FragOperManager.getInstance().enter3(new ThrowingScreenFragment());
-                FragOperManager.getInstance().enter3(new DecodeVideoFragment());
+                //FragOperManager.getInstance().enter3(new DecodeVideoFragment());
+                getAttachedActivity().startActivity(
+                        new Intent(getContext(), PlayerActivity.class));
             }
         });
     }
