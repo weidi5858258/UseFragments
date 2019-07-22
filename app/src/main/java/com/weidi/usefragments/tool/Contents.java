@@ -41,14 +41,14 @@ public class Contents {
         // 谍影重重4
         mPath = "http://xunlei.jingpin88.com/20171027/ZkYVjDJC/mp4/ZkYVjDJC.mp4";
         mPath = "/storage/2430-1702/BaiduNetdisk/video/test.mp4";
-        // 生死狙击
-        mPath = "http://xunlei.jingpin88.com/20171026/0L4MjcwA/mp4/0L4MjcwA.mp4";
-        mPath = "/storage/2430-1702/BaiduNetdisk/video/08_mm-MP4-H264_720x400_2997_AAC-LC_192_48.mp4";
         // 少年当自强
         mPath = "http://okxxxzy.xzokzyzy.com/20190718/27_08326ade/%E5%B0%91%E5%B9%B4%E5%BD%93%E8%87%AA%E5%BC%BA.mp4";
         // 黑衣人：全球追缉
         mPath = "http://okxxzy.xzokzyzy.com/20190721/23773_0455e097/%E9%BB%91%E8%A1%A3%E4%BA%BA4%E9%9F%A9%E7%89%88%E4%B8%AD%E5%AD%97.mp4";
         mPath = "/storage/2430-1702/BaiduNetdisk/video/shape_of_my_heart.mp4";
+        mPath = "/storage/2430-1702/BaiduNetdisk/video/08_mm-MP4-H264_720x400_2997_AAC-LC_192_48.mp4";
+        // 生死狙击
+        mPath = "http://xunlei.jingpin88.com/20171026/0L4MjcwA/mp4/0L4MjcwA.mp4";
         return mPath;
     }
 
