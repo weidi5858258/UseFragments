@@ -293,7 +293,7 @@ public class H264Player {
         while (mIsReading) {
             try {
                 Arrays.fill(buffer, (byte) 0);
-                // httpAccessor ---> mData1
+                // httpAccessor ---> mReadData1
                 int readSize = mInputStream.read(buffer, 0, bufferLength);
                 if (readSize < 0) {
                     mReadStatus = READ_FINISHED;
@@ -311,7 +311,7 @@ public class H264Player {
                 readTotalSize += readSize;
                 if (readTotalSize <= CACHE) {
                     mReadStatus = READ_STARTED;
-                    // buffer ---> mData1
+                    // buffer ---> mReadData1
                     System.arraycopy(buffer, 0,
                             mData1, readDataSize, readSize);
                     readDataSize += readSize;
@@ -387,7 +387,7 @@ public class H264Player {
         int restOfDataSize = 0;
         int frameDataLength = 1024 * 100;
         byte[] frameData = new byte[frameDataLength];
-        // mData1 ---> mData2
+        // mReadData1 ---> mHandleData
         System.arraycopy(
                 mData1, 0,
                 mData2, 0, readDataSize);
@@ -523,7 +523,7 @@ public class H264Player {
                         System.arraycopy(
                                 frameData, 0,
                                 mData2, 0, restOfDataSize);
-                        // mData1 ---> mData2
+                        // mReadData1 ---> mHandleData
                         if (readDataSize + restOfDataSize <= CACHE) {
                             System.arraycopy(mData1, 0,
                                     mData2, restOfDataSize, readDataSize);

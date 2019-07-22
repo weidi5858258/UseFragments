@@ -270,7 +270,7 @@ public class AACPlayer {
         while (mIsReading) {
             try {
                 Arrays.fill(buffer, (byte) 0);
-                // httpAccessor ---> mData1
+                // httpAccessor ---> mReadData1
                 int readSize = mInputStream.read(buffer, 0, bufferLength);
                 if (readSize < 0) {
                     MLog.i(TAG, "readData()     readSize: " + readSize);
@@ -285,7 +285,7 @@ public class AACPlayer {
                 }
                 readTotalSize += readSize;
                 if (readTotalSize <= CACHE) {
-                    // buffer ---> mData1
+                    // buffer ---> mReadData1
                     System.arraycopy(buffer, 0,
                             mData1, readDataSize, readSize);
                     readDataSize += readSize;
@@ -343,7 +343,7 @@ public class AACPlayer {
         int restOfDataSize = 0;
         int frameDataLength = 1024;
         byte[] frameData = new byte[frameDataLength];
-        // mData1 ---> mData2
+        // mReadData1 ---> mHandleData
         System.arraycopy(
                 mData1, 0,
                 mData2, 0, readDataSize);
@@ -437,7 +437,7 @@ public class AACPlayer {
                         System.arraycopy(
                                 frameData, 0,
                                 mData2, 0, restOfDataSize);
-                        // mData1 ---> mData2
+                        // mReadData1 ---> mHandleData
                         System.arraycopy(mData1, 0,
                                 mData2, restOfDataSize, readDataSize);
                         break;

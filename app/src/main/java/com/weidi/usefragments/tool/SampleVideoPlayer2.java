@@ -864,7 +864,7 @@ public class SampleVideoPlayer2 {
             try {
                 Arrays.fill(buffer, (byte) 0);
                 byteBuffer.clear();
-                // httpAccessor ---> mData1
+                // httpAccessor ---> mReadData1
                 int readSize = wrapper.mExtractor.readSampleData(byteBuffer, 0);
                 if (readSize < 0) {
                     wrapper.mReadStatus = READ_FINISHED;
@@ -890,7 +890,7 @@ public class SampleVideoPlayer2 {
                 readTotalSize += readSize;
                 if (readTotalSize <= wrapper.CACHE) {
                     wrapper.mReadStatus = READ_STARTED;
-                    // buffer ---> mData1
+                    // buffer ---> mReadData1
                     System.arraycopy(buffer, 0,
                             wrapper.mData1, wrapper.readDataSize, readSize);
                     wrapper.readDataSize += readSize;
@@ -971,7 +971,7 @@ public class SampleVideoPlayer2 {
         int restOfDataSize = 0;
         int frameDataLength = 1024 * 100;
         byte[] frameData = new byte[frameDataLength];
-        // mData1 ---> mData2
+        // mReadData1 ---> mHandleData
         System.arraycopy(
                 wrapper.mData1, 0,
                 wrapper.mData2, 0, wrapper.readDataSize);
@@ -1118,7 +1118,7 @@ public class SampleVideoPlayer2 {
                         System.arraycopy(
                                 frameData, 0,
                                 wrapper.mData2, 0, restOfDataSize);
-                        // mData1 ---> mData2
+                        // mReadData1 ---> mHandleData
                         if (wrapper.readDataSize + restOfDataSize <= wrapper.CACHE) {
                             System.arraycopy(wrapper.mData1, 0,
                                     wrapper.mData2, restOfDataSize, wrapper.readDataSize);

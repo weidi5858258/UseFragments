@@ -37,18 +37,18 @@ public class Contents {
         mPath = "http://anning.luanniao-zuida.com/1907/%E9%BB%84%E9%A3%9E%E9%B8%BF%E4%B9%8B%E4%BA%94%EF%BC%9A%E9%BE%99%E5%9F%8E%E6%AD%BC%E9%9C%B8.DVD%E5%9B%BD%E8%AF%AD%E4%B8%AD%E5%AD%97%E7%89%88.mp4";
         // 宝莱坞机器人2.0：重生归来
         mPath = "http://xunlei.xiazai-zuida.com/1906/BL%E5%9D%9E%E6%9C%BA%E5%99%A8%E4%BA%BA2.0%EF%BC%9A%E9%87%8D%E7%94%9F%E5%BD%92%E6%9D%A5.HD1280%E9%AB%98%E6%B8%85%E4%B8%AD%E8%8B%B1%E5%8F%8C%E5%AD%97%E7%89%88.mp4";
-        mPath = "/storage/2430-1702/BaiduNetdisk/video/05.mp4";
-        // 谍影重重4
-        mPath = "http://xunlei.jingpin88.com/20171027/ZkYVjDJC/mp4/ZkYVjDJC.mp4";
         mPath = "/storage/2430-1702/BaiduNetdisk/video/test.mp4";
         // 少年当自强
         mPath = "http://okxxxzy.xzokzyzy.com/20190718/27_08326ade/%E5%B0%91%E5%B9%B4%E5%BD%93%E8%87%AA%E5%BC%BA.mp4";
         // 黑衣人：全球追缉
         mPath = "http://okxxzy.xzokzyzy.com/20190721/23773_0455e097/%E9%BB%91%E8%A1%A3%E4%BA%BA4%E9%9F%A9%E7%89%88%E4%B8%AD%E5%AD%97.mp4";
-        mPath = "/storage/2430-1702/BaiduNetdisk/video/shape_of_my_heart.mp4";
-        mPath = "/storage/2430-1702/BaiduNetdisk/video/08_mm-MP4-H264_720x400_2997_AAC-LC_192_48.mp4";
         // 生死狙击
         mPath = "http://xunlei.jingpin88.com/20171026/0L4MjcwA/mp4/0L4MjcwA.mp4";
+        // 谍影重重4
+        mPath = "http://xunlei.jingpin88.com/20171027/ZkYVjDJC/mp4/ZkYVjDJC.mp4";
+        mPath = "/storage/2430-1702/BaiduNetdisk/video/05.mp4";
+        mPath = "/storage/2430-1702/BaiduNetdisk/video/08_mm-MP4-H264_720x400_2997_AAC-LC_192_48.mp4";
+        mPath = "/storage/2430-1702/BaiduNetdisk/video/shape_of_my_heart.mp4";
         return mPath;
     }
 

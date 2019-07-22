@@ -842,7 +842,7 @@ public class SampleVideoPlayer3 {
                         wrapper.mReadStatus = READ_STARTED;
                         System.arraycopy(AUDIO_HEADER_FLAG, 0,
                                 wrapper.mData1, wrapper.readDataSize, AUDIO_HEADER_FLAG_LENGTH);
-                        // buffer ---> mData1
+                        // buffer ---> mReadData1
                         System.arraycopy(buffer, 0,
                                 wrapper.mData1,
                                 wrapper.readDataSize + AUDIO_HEADER_FLAG_LENGTH,
@@ -913,7 +913,7 @@ public class SampleVideoPlayer3 {
                     readTotalSize += readSize;
                     if (readTotalSize <= wrapper.CACHE) {
                         wrapper.mReadStatus = READ_STARTED;
-                        // buffer ---> mData1
+                        // buffer ---> mReadData1
                         System.arraycopy(buffer, 0,
                                 wrapper.mData1, wrapper.readDataSize, readSize);
                         wrapper.readDataSize += readSize;
@@ -1001,7 +1001,7 @@ public class SampleVideoPlayer3 {
         int frameDataLength = 1024 * 100;
         // 音频或者视频一帧的大小(视频某一帧的大小可能超过frameDataLength这个值)
         byte[] frameData = new byte[frameDataLength];
-        // mData1 ---> mData2
+        // mReadData1 ---> mHandleData
         System.arraycopy(
                 wrapper.mData1, 0,
                 wrapper.mData2, 0, wrapper.readDataSize);
@@ -1160,7 +1160,7 @@ public class SampleVideoPlayer3 {
                             System.arraycopy(
                                     frameData, 0,
                                     wrapper.mData2, 0, restOfDataSize);
-                            // mData1 ---> mData2
+                            // mReadData1 ---> mHandleData
                             if (wrapper.readDataSize + restOfDataSize <= wrapper.CACHE) {
                                 System.arraycopy(wrapper.mData1, 0,
                                         wrapper.mData2, restOfDataSize, wrapper.readDataSize);
@@ -1276,7 +1276,7 @@ public class SampleVideoPlayer3 {
                             System.arraycopy(
                                     frameData, 0,
                                     wrapper.mData2, 0, restOfDataSize);
-                            // mData1 ---> mData2
+                            // mReadData1 ---> mHandleData
                             if (wrapper.readDataSize + restOfDataSize <= wrapper.CACHE) {
                                 System.arraycopy(wrapper.mData1, 0,
                                         wrapper.mData2, restOfDataSize, wrapper.readDataSize);

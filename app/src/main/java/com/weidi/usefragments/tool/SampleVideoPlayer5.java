@@ -855,7 +855,7 @@ public class SampleVideoPlayer5 {
                     wrapper.mReadStatus = READ_STARTED;
                     System.arraycopy(HEADER_FLAG, 0,
                             wrapper.mData1, wrapper.readDataSize, HEADER_FLAG_LENGTH);
-                    // buffer ---> mData1
+                    // buffer ---> mReadData1
                     System.arraycopy(buffer, 0,
                             wrapper.mData1,
                             wrapper.readDataSize + HEADER_FLAG_LENGTH,
@@ -992,7 +992,7 @@ public class SampleVideoPlayer5 {
         int frameDataLength = 1024 * 100;
         // 音频或者视频一帧的大小(视频某一帧的大小可能超过frameDataLength这个值)
         byte[] frameData = new byte[frameDataLength];
-        // mData1 ---> mData2
+        // mReadData1 ---> mHandleData
         System.arraycopy(
                 wrapper.mData1, 0,
                 wrapper.mData2, 0, wrapper.readDataSize);
@@ -1179,7 +1179,7 @@ public class SampleVideoPlayer5 {
                     }
                     MLog.i(TAG, showInfo);
 
-                    // 处理剩余的数据 wrapper.mData2 ---> frameData
+                    // 处理剩余的数据 wrapper.mHandleData ---> frameData
                     if (restOfDataSize > 0) {
                         System.arraycopy(
                                 wrapper.mData2, wrapper.lastOffsetIndex,
@@ -1257,7 +1257,7 @@ public class SampleVideoPlayer5 {
                                 frameData, 0,
                                 wrapper.mData2, 0, restOfDataSize);
                         // 此时的wrapper.readDataSize是再一次读取到的数据大小
-                        // mData1 ---> mData2
+                        // mReadData1 ---> mHandleData
                         if (wrapper.readDataSize + restOfDataSize <= wrapper.CACHE) {
                             System.arraycopy(wrapper.mData1, 0,
                                     wrapper.mData2, restOfDataSize, wrapper.readDataSize);
