@@ -826,6 +826,8 @@ public class SampleVideoPlayer6 {
         wrapper.mIsReading = true;
         // Test
         Map<Long, Integer> arrayMap = new ArrayMap<>();
+        StringBuilder tempSB = new StringBuilder();
+        byte preBufferLastByte = 0;
         while (wrapper.mIsReading) {
             try {
                 room.clear();
@@ -895,13 +897,17 @@ public class SampleVideoPlayer6 {
                 readTotalSize += readSize + HEADER_FLAG_LENGTH;
                 if (readTotalSize <= wrapper.CACHE) {
                     wrapper.mReadStatus = READ_STARTED;
-                    if (buffer[readSize - 1] != 88) {
+                    wrapper.mReadFrameCounts++;
+                    if (preBufferLastByte == 0
+                            || preBufferLastByte != 88) {
                         System.arraycopy(HEADER_FLAG1, 0,
                                 wrapper.mData1, wrapper.readDataSize, HEADER_FLAG_LENGTH);
                     } else {
                         System.arraycopy(HEADER_FLAG2, 0,
                                 wrapper.mData1, wrapper.readDataSize, HEADER_FLAG_LENGTH);
                     }
+                    preBufferLastByte = buffer[readSize - 1];
+
                     // buffer ---> mData1
                     System.arraycopy(buffer, 0,
                             wrapper.mData1,
@@ -909,13 +915,33 @@ public class SampleVideoPlayer6 {
                             readSize);
                     wrapper.readDataSize += readSize + HEADER_FLAG_LENGTH;
 
-                    wrapper.mReadFrameCounts++;
                     // 一帧对应一个时间戳
                     wrapper.mTime1.put(
                             wrapper.mReadFrameCounts, wrapper.mExtractor.getSampleTime());
                     /*MLog.d(TAG, "Test wrapper.mReadFrameCounts: " + wrapper.mReadFrameCounts+
                     " readSize: "+readSize);*/
-                    arrayMap.put(wrapper.mReadFrameCounts,readSize);
+                    arrayMap.put(wrapper.mReadFrameCounts, readSize);
+                    if (wrapper.mReadFrameCounts == 365) {
+                        StringBuilder sb = new StringBuilder();
+                        for (byte bt : buffer) {
+                            sb.append(" ");
+                            sb.append(bt);
+                        }
+                        showInfo = "handleData() 365 video: " + sb.toString();
+                        MLog.i(TAG, showInfo);
+                        showInfo = "handleData() buffer[readSize - 1]: " + buffer[readSize - 1];
+                        MLog.i(TAG, showInfo);
+                    } else if (wrapper.mReadFrameCounts == 366) {
+                        StringBuilder sb = new StringBuilder();
+                        for (byte bt : buffer) {
+                            sb.append(" ");
+                            sb.append(bt);
+                        }
+                        showInfo = "handleData() 366 video: " + sb.toString();
+                        MLog.i(TAG, showInfo);
+                        showInfo = "handleData() buffer[readSize - 1]: " + buffer[readSize - 1];
+                        MLog.i(TAG, showInfo);
+                    }
                 } else {
                     /***
                      在某些帧上多读或者少读了几个字节,造成花屏
@@ -960,10 +986,38 @@ public class SampleVideoPlayer6 {
                                 wrapper.mIsHandling = false;
                                 break;
                             }
+                            /*MLog.d(TAG, "handleData() offset: " + offsetList.get(i) +
+                                    "    " + frameData[0] +
+                                    " " + frameData[1] +
+                                    " " + frameData[2] +
+                                    " " + frameData[3] +
+                                    " " + frameData[4] +
+                                    " " + frameData[5] +
+                                    " " + frameData[6]);
+                            MLog.d(TAG, "handleData() frameDataLength: " + frameDataLength);*/
+                            if (wrapper.mReadFrameCounts == 365) {
+                                StringBuilder sb = new StringBuilder();
+                                for (byte bt : frameData) {
+                                    sb.append(" ");
+                                    sb.append(bt);
+                                }
+                                showInfo = "handleData() 365 video: " + sb.toString();
+                                MLog.i(TAG, showInfo);
+                            } else if (wrapper.mReadFrameCounts == 366) {
+                                StringBuilder sb = new StringBuilder();
+                                for (byte bt : frameData) {
+                                    sb.append(" ");
+                                    sb.append(bt);
+                                }
+                                showInfo = "handleData() 366 video: " + sb.toString();
+                                MLog.i(TAG, showInfo);
+                            }
                             if(readSize!=frameDataLength){
-                                MLog.e(TAG, "Test        wrapper.mReadFrameCounts: " + wrapper.mReadFrameCounts);
+                                MLog.e(TAG, "Test        wrapper.mReadFrameCounts: " + wrapper
+                                .mReadFrameCounts);
                                 MLog.e(TAG, "Test                    src readSize: " + readSize);
-                                MLog.e(TAG, "Test                 frameDataLength: " + frameDataLength);
+                                MLog.e(TAG, "Test                 frameDataLength: " +
+                                frameDataLength);
                             }
                             continue;
                         }
@@ -1035,13 +1089,15 @@ public class SampleVideoPlayer6 {
                     Arrays.fill(wrapper.mData1, (byte) 0);
                     wrapper.readDataSize = readSize + HEADER_FLAG_LENGTH;
                     readTotalSize = wrapper.readDataSize;
-                    if (buffer[readSize - 1] != 88) {
+                    if (preBufferLastByte == 0
+                            || preBufferLastByte != 88) {
                         System.arraycopy(HEADER_FLAG1, 0,
                                 wrapper.mData1, 0, HEADER_FLAG_LENGTH);
                     } else {
                         System.arraycopy(HEADER_FLAG2, 0,
                                 wrapper.mData1, 0, HEADER_FLAG_LENGTH);
                     }
+                    preBufferLastByte = buffer[readSize - 1];
                     // 此时buffer中还有readSize个byte
                     System.arraycopy(buffer, 0,
                             wrapper.mData1, HEADER_FLAG_LENGTH, readSize);
