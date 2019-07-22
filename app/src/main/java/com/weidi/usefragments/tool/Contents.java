@@ -44,11 +44,17 @@ public class Contents {
         mPath = "http://okxxzy.xzokzyzy.com/20190721/23773_0455e097/%E9%BB%91%E8%A1%A3%E4%BA%BA4%E9%9F%A9%E7%89%88%E4%B8%AD%E5%AD%97.mp4";
         // 生死狙击
         mPath = "http://xunlei.jingpin88.com/20171026/0L4MjcwA/mp4/0L4MjcwA.mp4";
-        // 谍影重重4
-        mPath = "http://xunlei.jingpin88.com/20171027/ZkYVjDJC/mp4/ZkYVjDJC.mp4";
-        mPath = "/storage/2430-1702/BaiduNetdisk/video/05.mp4";
+        // 极速复仇
+        mPath = "http://xz3-13.okzyxz.com/20190527/1282_5a7f1f18/%E6%9E%81%E9%80%9F%E5%A4%8D%E4%BB%87.mp4";
+        // 哈利波特1：神秘的魔法石
+        mPath = "http://ying.zuidaziyuan.com/1708/%E5%93%88%E5%88%A9%E6%B3%A2%E7%89%B91%EF%BC%9A%E7%A5%9E%E7%A7%98%E7%9A%84%E9%AD%94%E6%B3%95%E7%9F%B3.BD1024%E9%AB%98%E6%B8%85%E4%B8%AD%E8%8B%B1%E5%8F%8C%E5%AD%97%E7%89%88.mp4";
+        // 死侍2
+        mPath = "http://xunleib.zuida360.com/1808/%E6%AD%BBshi2.BD1280%E9%AB%98%E6%B8%85%E4%B8%AD%E8%8B%B1%E5%8F%8C%E5%AD%97%E7%89%88.mp4";
         mPath = "/storage/2430-1702/BaiduNetdisk/video/08_mm-MP4-H264_720x400_2997_AAC-LC_192_48.mp4";
         mPath = "/storage/2430-1702/BaiduNetdisk/video/shape_of_my_heart.mp4";
+        mPath = "/storage/2430-1702/BaiduNetdisk/video/05.mp4";
+        // 谍影重重4
+        mPath = "http://xunlei.jingpin88.com/20171027/ZkYVjDJC/mp4/ZkYVjDJC.mp4";
         return mPath;
     }
 

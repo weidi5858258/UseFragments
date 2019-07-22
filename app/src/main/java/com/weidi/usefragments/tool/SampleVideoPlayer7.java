@@ -1113,6 +1113,12 @@ public class SampleVideoPlayer7 {
                             } else {
                                 wrapper.first = FIRST_READ_DATA2;
                             }
+                            if (wrapper.mType == TYPE_AUDIO) {
+                                showInfo = "  readData() audio wrapper.mReadData1还有数据";
+                            } else {
+                                showInfo = "  readData() video wrapper.mReadData1还有数据";
+                            }
+                            MLog.i(TAG, showInfo);
                         } else if (wrapper.mReadStatus == STATUS_READ_DATA2_STARTED) {
                             wrapper.mIsReadData2Full = true;
                             if (!wrapper.mIsReadData1Full) {
@@ -1120,6 +1126,12 @@ public class SampleVideoPlayer7 {
                             } else {
                                 wrapper.first = FIRST_READ_DATA1;
                             }
+                            if (wrapper.mType == TYPE_AUDIO) {
+                                showInfo = "  readData() audio wrapper.mReadData2还有数据";
+                            } else {
+                                showInfo = "  readData() video wrapper.mReadData2还有数据";
+                            }
+                            MLog.i(TAG, showInfo);
                         }
                         wrapper.mReadStatus = STATUS_READ_FINISHED;
                         wrapper.mIsReading = false;
@@ -1167,9 +1179,7 @@ public class SampleVideoPlayer7 {
                     }
                 }
 
-                if (wrapper.mReadStatus == STATUS_READ_DATA1_STARTED
-                        && (!wrapper.mIsReadData1Full && !wrapper.mIsReadData2Full
-                        || !wrapper.mIsReadData1Full && wrapper.mIsReadData2Full)) {
+                if (wrapper.mReadStatus == STATUS_READ_DATA1_STARTED) {
                     /***
                      mReadData1未满,mReadData2未满
                      mReadData1未满,mReadData2满
@@ -1198,16 +1208,13 @@ public class SampleVideoPlayer7 {
 
                         wrapper.mReadFrameCounts++;
                         // 一帧对应一个时间戳
-                        /*wrapper.mTime1.put(
-                                wrapper.mReadFrameCounts, wrapper.mExtractor.getSampleTime());*/
+                        wrapper.mTime1.put(
+                                wrapper.mReadFrameCounts, wrapper.mExtractor.getSampleTime());
 
                         wrapper.testMap.put(wrapper.mReadFrameCounts, readSize);
                     } else {
                         // wrapper.mReadData1满了
                         wrapper.mIsReadData1Full = true;
-                        if (wrapper.readData2Size == 0) {
-                            wrapper.mIsReadData2Full = false;
-                        }
                         if (wrapper.mType == TYPE_AUDIO) {
                             showInfo = "  readData() audio mReadData1满了";
                             MLog.i(TAG, showInfo);
@@ -1241,9 +1248,7 @@ public class SampleVideoPlayer7 {
                         readData1TotalSize = 0;
                         continue;
                     }
-                } else if (wrapper.mReadStatus == STATUS_READ_DATA2_STARTED
-                        && wrapper.mIsReadData1Full
-                        && !wrapper.mIsReadData2Full) {
+                } else if (wrapper.mReadStatus == STATUS_READ_DATA2_STARTED) {
                     /***
                      mReadData1满,mReadData2未满
                      */
@@ -1274,9 +1279,6 @@ public class SampleVideoPlayer7 {
                     } else {
                         // wrapper.mReadData2满了
                         wrapper.mIsReadData2Full = true;
-                        if (wrapper.readData1Size == 0) {
-                            wrapper.mIsReadData1Full = false;
-                        }
                         if (wrapper.mType == TYPE_AUDIO) {
                             showInfo = "  readData() audio mReadData2满了";
                             MLog.i(TAG, showInfo);
@@ -1302,12 +1304,11 @@ public class SampleVideoPlayer7 {
                         readData2TotalSize = 0;
                         continue;
                     }
-                } else if (wrapper.mReadStatus == STATUS_READ_DATA_PAUSED
-                        && wrapper.mIsReadData1Full
-                        && wrapper.mIsReadData2Full) {
+                } else if (wrapper.mReadStatus == STATUS_READ_DATA_PAUSED) {
                     /***
                      mReadData1满,mReadData2满
                      */
+                    needToRead = true;
                     long presentationTimeUs = wrapper.mExtractor.getSampleTime();
                     if (wrapper.mType == TYPE_AUDIO) {
                         showInfo = "  readData() audio mReadData1和mReadData2都满了";
@@ -1343,25 +1344,6 @@ public class SampleVideoPlayer7 {
                         MLog.w(TAG, showInfo);
                     }
 
-                    if (wrapper.readData1Size == 0) {
-                        wrapper.mIsReadData1Full = false;
-                        if (wrapper.mType == TYPE_AUDIO) {
-                            showInfo = "  readData() audio  wrapper.mReadData1空了";
-                        } else {
-                            showInfo = "  readData() video  wrapper.mReadData1空了";
-                        }
-                        MLog.i(TAG, showInfo);
-                    } else if (wrapper.readData2Size == 0) {
-                        wrapper.mIsReadData2Full = false;
-                        if (wrapper.mType == TYPE_AUDIO) {
-                            showInfo = "  readData() audio  wrapper.mReadData2空了";
-                        } else {
-                            showInfo = "  readData() video  wrapper.mReadData2空了";
-                        }
-                        MLog.i(TAG, showInfo);
-                    }
-
-                    needToRead = true;
                     if (!wrapper.mIsReadData1Full) {
                         wrapper.mReadStatus = STATUS_READ_DATA1_STARTED;
                         Arrays.fill(wrapper.mReadData1, (byte) 0);
@@ -1802,19 +1784,22 @@ public class SampleVideoPlayer7 {
         int frameDataLength = 0;
         // 放一帧音频或者视频的容器
         byte[] frameData = new byte[wrapper.frameMaxLength];
+
         wrapper.readDataSize = wrapper.readData1Size;
+        wrapper.readData1Size = 0;
         MLog.i(TAG, "handleData() wrapper.readDataSize: " + wrapper.readDataSize);
         // mReadData1 ---> mHandleData
         System.arraycopy(
                 wrapper.mReadData1, 0,
                 wrapper.mHandleData, 0, wrapper.readDataSize);
-        wrapper.readData1Size = 0;
         Arrays.fill(wrapper.mReadData1, (byte) 0);
+        wrapper.mIsReadData1Full = false;
         if (wrapper.mType == TYPE_AUDIO) {
             showInfo = "handleData() audio wrapper.mReadData1空了";
         } else {
             showInfo = "handleData() video wrapper.mReadData1空了";
         }
+
         MLog.i(TAG, showInfo);
         wrapper.mTime2.clear();
         wrapper.mTime2.putAll(wrapper.mTime1);
@@ -1957,17 +1942,17 @@ public class SampleVideoPlayer7 {
                     }*/
 
                     // Test
-                    /*if ((Long) wrapper.mHandleFrameCounts != null
+                    if ((Long) wrapper.mHandleFrameCounts != null
                             && wrapper.testMap.containsKey((Long) wrapper.mHandleFrameCounts)) {
                         int readSize = wrapper.testMap.get(wrapper.mHandleFrameCounts);
                         if (readSize != frameDataLength) {
                             if (wrapper.mType == TYPE_AUDIO) {
-                                *//*MLog.e(TAG, "handleData() audio wrapper.mHandleFrameCounts: " +
+                                MLog.e(TAG, "handleData() audio wrapper.mHandleFrameCounts: " +
                                         wrapper.mHandleFrameCounts);
                                 MLog.e(TAG, "handleData() audio               src readSize: " +
                                         readSize);
                                 MLog.e(TAG, "handleData() audio            frameDataLength: " +
-                                        frameDataLength);*//*
+                                        frameDataLength);
                             } else {
                                 MLog.e(TAG, "handleData() video wrapper.mHandleFrameCounts: " +
                                         wrapper.mHandleFrameCounts);
@@ -1977,7 +1962,7 @@ public class SampleVideoPlayer7 {
                                         frameDataLength);
                             }
                         }
-                    }*/
+                    }
 
                     continue;
                 } else {
@@ -2037,17 +2022,17 @@ public class SampleVideoPlayer7 {
                         }
 
                         // Test
-                        /*if ((Long) wrapper.mHandleFrameCounts != null
+                        if ((Long) wrapper.mHandleFrameCounts != null
                                 && wrapper.testMap.containsKey((Long) wrapper.mHandleFrameCounts)) {
                             int readSize = wrapper.testMap.get(wrapper.mHandleFrameCounts);
                             if (readSize != frameDataLength) {
                                 if (wrapper.mType == TYPE_AUDIO) {
-                                *//*MLog.e(TAG, "handleData() audio wrapper.mHandleFrameCounts: " +
+                                MLog.e(TAG, "handleData() audio wrapper.mHandleFrameCounts: " +
                                         wrapper.mHandleFrameCounts);
                                 MLog.e(TAG, "handleData() audio               src readSize: " +
                                         readSize);
                                 MLog.e(TAG, "handleData() audio            frameDataLength: " +
-                                        frameDataLength);*//*
+                                        frameDataLength);
                                 } else {
                                     MLog.e(TAG,
                                             "handleData() video wrapper.mHandleFrameCounts: " +
@@ -2060,7 +2045,7 @@ public class SampleVideoPlayer7 {
                                                     frameDataLength);
                                 }
                             }
-                        }*/
+                        }
                     }// 处理剩余数据 end
 
                     if (wrapper.readDataSize != wrapper.CACHE
@@ -2087,11 +2072,12 @@ public class SampleVideoPlayer7 {
                         if (wrapper.mIsReadData1Full
                                 && !wrapper.mIsReadData2Full) {
                             wrapper.readDataSize = wrapper.readData1Size;
+                            wrapper.readData1Size = 0;
                             System.arraycopy(
                                     wrapper.mReadData1, 0,
                                     wrapper.mHandleData, 0, wrapper.readDataSize);
-                            wrapper.readData1Size = 0;
                             Arrays.fill(wrapper.mReadData1, (byte) 0);
+                            wrapper.mIsReadData1Full = false;
                             if (wrapper.mType == TYPE_AUDIO) {
                                 showInfo = "handleData() audio  wrapper.mReadData1空了";
                             } else {
@@ -2101,11 +2087,12 @@ public class SampleVideoPlayer7 {
                         } else if (!wrapper.mIsReadData1Full
                                 && wrapper.mIsReadData2Full) {
                             wrapper.readDataSize = wrapper.readData2Size;
+                            wrapper.readData2Size = 0;
                             System.arraycopy(
                                     wrapper.mReadData2, 0,
                                     wrapper.mHandleData, 0, wrapper.readDataSize);
-                            wrapper.readData2Size = 0;
                             Arrays.fill(wrapper.mReadData2, (byte) 0);
+                            wrapper.mIsReadData2Full = false;
                             if (wrapper.mType == TYPE_AUDIO) {
                                 showInfo = "handleData() audio  wrapper.mReadData2空了";
                             } else {
@@ -2116,11 +2103,12 @@ public class SampleVideoPlayer7 {
                                 && wrapper.mIsReadData2Full) {
                             if (wrapper.first == FIRST_READ_DATA1) {
                                 wrapper.readDataSize = wrapper.readData1Size;
+                                wrapper.readData1Size = 0;
                                 System.arraycopy(
                                         wrapper.mReadData1, 0,
                                         wrapper.mHandleData, 0, wrapper.readDataSize);
-                                wrapper.readData1Size = 0;
                                 Arrays.fill(wrapper.mReadData1, (byte) 0);
+                                wrapper.mIsReadData1Full = false;
                                 if (wrapper.mType == TYPE_AUDIO) {
                                     showInfo = "handleData() audio  wrapper.mReadData1空了";
                                 } else {
@@ -2129,11 +2117,12 @@ public class SampleVideoPlayer7 {
                                 MLog.i(TAG, showInfo);
                             } else {
                                 wrapper.readDataSize = wrapper.readData2Size;
+                                wrapper.readData2Size = 0;
                                 System.arraycopy(
                                         wrapper.mReadData2, 0,
                                         wrapper.mHandleData, 0, wrapper.readDataSize);
-                                wrapper.readData2Size = 0;
                                 Arrays.fill(wrapper.mReadData2, (byte) 0);
+                                wrapper.mIsReadData2Full = false;
                                 if (wrapper.mType == TYPE_AUDIO) {
                                     showInfo = "handleData() audio  wrapper.mReadData2空了";
                                 } else {
