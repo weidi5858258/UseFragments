@@ -293,7 +293,7 @@ public class H264Player {
         while (mIsReading) {
             try {
                 Arrays.fill(buffer, (byte) 0);
-                // httpAccessor ---> mReadData1
+                // httpAccessor ---> readData1
                 int readSize = mInputStream.read(buffer, 0, bufferLength);
                 if (readSize < 0) {
                     mReadStatus = READ_FINISHED;
@@ -311,7 +311,7 @@ public class H264Player {
                 readTotalSize += readSize;
                 if (readTotalSize <= CACHE) {
                     mReadStatus = READ_STARTED;
-                    // buffer ---> mReadData1
+                    // buffer ---> readData1
                     System.arraycopy(buffer, 0,
                             mData1, readDataSize, readSize);
                     readDataSize += readSize;
@@ -330,13 +330,13 @@ public class H264Player {
                     }
                     // wait
                     synchronized (mReadDataLock) {
-                        MLog.i(TAG, "readData() mReadDataLock.wait() start");
+                        MLog.i(TAG, "readData() readDataLock.wait() start");
                         try {
                             mReadDataLock.wait();
                         } catch (InterruptedException e) {
                             e.printStackTrace();
                         }
-                        MLog.i(TAG, "readData() mReadDataLock.wait() end");
+                        MLog.i(TAG, "readData() readDataLock.wait() end");
                     }
                     MLog.d(TAG, "readData() 饿了,继续吃 mData1HasData: " + mData1HasData);
                     if (!mData1HasData) {
@@ -387,7 +387,7 @@ public class H264Player {
         int restOfDataSize = 0;
         int frameDataLength = 1024 * 100;
         byte[] frameData = new byte[frameDataLength];
-        // mReadData1 ---> mHandleData
+        // readData1 ---> handleData
         System.arraycopy(
                 mData1, 0,
                 mData2, 0, readDataSize);
@@ -441,7 +441,7 @@ public class H264Player {
             if (mIsReading) {
                 // 此处发送消息后,readDataSize的大小可能会变化
                 synchronized (mReadDataLock) {
-                    MLog.i(TAG, "handleData() findHead mReadDataLock.notify()");
+                    MLog.i(TAG, "handleData() findHead readDataLock.notify()");
                     mReadDataLock.notify();
                 }
             }
@@ -523,7 +523,7 @@ public class H264Player {
                         System.arraycopy(
                                 frameData, 0,
                                 mData2, 0, restOfDataSize);
-                        // mReadData1 ---> mHandleData
+                        // readData1 ---> handleData
                         if (readDataSize + restOfDataSize <= CACHE) {
                             System.arraycopy(mData1, 0,
                                     mData2, restOfDataSize, readDataSize);

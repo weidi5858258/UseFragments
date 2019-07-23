@@ -385,7 +385,7 @@ public class SampleVideoPlayer4 {
 
         MLog.d(TAG, "internalPrepare()                mAudioWrapper.mime: " +
                 mAudioWrapper.mime);
-        MLog.d(TAG, "internalPrepare() mAudioWrapper.mDecoderMediaFormat: " +
+        MLog.d(TAG, "internalPrepare() mAudioWrapper.decoderMediaFormat: " +
                 mAudioWrapper.mDecoderMediaFormat.toString());
         try {
             mAudioWrapper.mExtractor.selectTrack(mAudioWrapper.mTrackIndex);
@@ -488,7 +488,7 @@ public class SampleVideoPlayer4 {
                 MediaFormat.KEY_BITRATE_MODE, MediaCodecInfo.EncoderCapabilities.BITRATE_MODE_CQ);
         MLog.d(TAG, "internalPrepare()                        video mime: " +
                 mVideoWrapper.mime);
-        MLog.d(TAG, "internalPrepare() mVideoWrapper.mDecoderMediaFormat: " +
+        MLog.d(TAG, "internalPrepare() mVideoWrapper.decoderMediaFormat: " +
                 mVideoWrapper.mDecoderMediaFormat.toString());
         try {
             mVideoWrapper.mExtractor.selectTrack(mVideoWrapper.mTrackIndex);
@@ -757,7 +757,7 @@ public class SampleVideoPlayer4 {
         while (wrapper.mIsReading) {
             try {
                 room.clear();
-                // wrapper.mExtractor ---> room
+                // wrapper.extractor ---> room
                 // readSize为实际读到的大小,其值可能远远小于room的大小
                 int readSize = wrapper.mExtractor.readSampleData(room, 0);
                 // 没有数据可读了,结束
@@ -801,7 +801,7 @@ public class SampleVideoPlayer4 {
                     wrapper.mReadStatus = READ_STARTED;
                     System.arraycopy(HEADER_FLAG, 0,
                             wrapper.mData1, wrapper.readDataSize, HEADER_FLAG_LENGTH);
-                    // buffer ---> mReadData1
+                    // buffer ---> readData1
                     System.arraycopy(buffer, 0,
                             wrapper.mData1,
                             wrapper.readDataSize + HEADER_FLAG_LENGTH,
@@ -836,9 +836,9 @@ public class SampleVideoPlayer4 {
                     // wait
                     synchronized (wrapper.mReadDataLock) {
                         if (wrapper.mType == TYPE_AUDIO) {
-                            showInfo = "  readData() audio mReadDataLock.wait() start";
+                            showInfo = "  readData() audio readDataLock.wait() start";
                         } else {
-                            showInfo = "  readData() video mReadDataLock.wait() start";
+                            showInfo = "  readData() video readDataLock.wait() start";
                         }
                         MLog.w(TAG, showInfo);
                         try {
@@ -847,9 +847,9 @@ public class SampleVideoPlayer4 {
                             e.printStackTrace();
                         }
                         if (wrapper.mType == TYPE_AUDIO) {
-                            showInfo = "  readData() audio mReadDataLock.wait() end";
+                            showInfo = "  readData() audio readDataLock.wait() end";
                         } else {
-                            showInfo = "  readData() video mReadDataLock.wait() end";
+                            showInfo = "  readData() video readDataLock.wait() end";
                         }
                         MLog.w(TAG, showInfo);
                     }
@@ -936,7 +936,7 @@ public class SampleVideoPlayer4 {
         int frameDataLength = 1024 * 100;
         // 音频或者视频一帧的大小(视频某一帧的大小可能超过frameDataLength这个值)
         byte[] frameData = new byte[frameDataLength];
-        // mReadData1 ---> mHandleData
+        // readData1 ---> handleData
         System.arraycopy(
                 wrapper.mData1, 0,
                 wrapper.mData2, 0, wrapper.readDataSize);
@@ -1018,9 +1018,9 @@ public class SampleVideoPlayer4 {
                 // 此处发送消息后,readDataSize的大小可能会变化
                 synchronized (wrapper.mReadDataLock) {
                     if (wrapper.mType == TYPE_AUDIO) {
-                        showInfo = "handleData() audio findHead mReadDataLock.notify()";
+                        showInfo = "handleData() audio findHead readDataLock.notify()";
                     } else {
-                        showInfo = "handleData() video findHead mReadDataLock.notify()";
+                        showInfo = "handleData() video findHead readDataLock.notify()";
                     }
                     MLog.w(TAG, showInfo);
                     wrapper.mReadDataLock.notify();
@@ -1055,7 +1055,7 @@ public class SampleVideoPlayer4 {
                     System.arraycopy(
                             wrapper.mData2, offsetList.get(i) + HEADER_FLAG_LENGTH,
                             frameData, 0, frameLength);
-                    /*if (wrapper.mType == TYPE_AUDIO) {
+                    /*if (wrapper.type == TYPE_AUDIO) {
                         MLog.d(TAG, "handleData() offset: " + offsetList.get(i) +
                                 "    " + frameData[0] +
                                 " " + frameData[1] +
@@ -1173,7 +1173,7 @@ public class SampleVideoPlayer4 {
                         System.arraycopy(
                                 frameData, 0,
                                 wrapper.mData2, 0, restOfDataSize);
-                        // mReadData1 ---> mHandleData
+                        // readData1 ---> handleData
                         if (wrapper.readDataSize + restOfDataSize <= wrapper.CACHE) {
                             System.arraycopy(wrapper.mData1, 0,
                                     wrapper.mData2, restOfDataSize, wrapper.readDataSize);

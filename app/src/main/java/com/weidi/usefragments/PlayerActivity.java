@@ -1,8 +1,11 @@
 package com.weidi.usefragments;
 
+import android.content.Context;
 import android.content.Intent;
 import android.content.res.Configuration;
+import android.media.AudioManager;
 import android.os.Bundle;
+import android.os.PowerManager;
 import android.util.Log;
 import android.view.Surface;
 import android.view.SurfaceHolder;
@@ -43,6 +46,7 @@ public class PlayerActivity extends BaseActivity {
         super.onStart();
         if (DEBUG)
             MLog.d(TAG, "onStart(): " + printThis());
+        internalStart();
     }
 
     @Override
@@ -64,10 +68,12 @@ public class PlayerActivity extends BaseActivity {
         super.onStop();
         if (DEBUG)
             MLog.d(TAG, "onStop(): " + printThis());
+        internalStop();
     }
 
     @Override
     public void onDestroy() {
+        internalDestroy();
         super.onDestroy();
         if (DEBUG)
             MLog.d(TAG, "onDestroy(): " + printThis());
@@ -135,8 +141,12 @@ public class PlayerActivity extends BaseActivity {
 
     private SurfaceView mSurfaceView;
     private Surface mSurface;
+    private PowerManager.WakeLock mPowerWakeLock;
 
     private void initData() {
+        // Volume change should always affect media volume
+        setVolumeControlStream(AudioManager.STREAM_MUSIC);
+
         mSurfaceView = findViewById(R.id.surfaceView);
         mSurfaceView.getHolder().addCallback(new SurfaceHolder.Callback() {
             @Override
@@ -171,6 +181,24 @@ public class PlayerActivity extends BaseActivity {
                     SurfaceHolder holder) {
             }
         });
+    }
+
+    private void internalStart() {
+        // When player view started,wake the lock.
+        PowerManager powerManager = (PowerManager) getSystemService(Context.POWER_SERVICE);
+        mPowerWakeLock = powerManager.newWakeLock(PowerManager.SCREEN_BRIGHT_WAKE_LOCK, TAG);
+        mPowerWakeLock.acquire();
+    }
+
+    private void internalStop() {
+        if (mPowerWakeLock != null) {
+            mPowerWakeLock.release();
+            mPowerWakeLock = null;
+        }
+    }
+
+    private void internalDestroy() {
+
     }
 
 }

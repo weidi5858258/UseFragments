@@ -270,7 +270,7 @@ public class AACPlayer {
         while (mIsReading) {
             try {
                 Arrays.fill(buffer, (byte) 0);
-                // httpAccessor ---> mReadData1
+                // httpAccessor ---> readData1
                 int readSize = mInputStream.read(buffer, 0, bufferLength);
                 if (readSize < 0) {
                     MLog.i(TAG, "readData()     readSize: " + readSize);
@@ -285,7 +285,7 @@ public class AACPlayer {
                 }
                 readTotalSize += readSize;
                 if (readTotalSize <= CACHE) {
-                    // buffer ---> mReadData1
+                    // buffer ---> readData1
                     System.arraycopy(buffer, 0,
                             mData1, readDataSize, readSize);
                     readDataSize += readSize;
@@ -343,7 +343,7 @@ public class AACPlayer {
         int restOfDataSize = 0;
         int frameDataLength = 1024;
         byte[] frameData = new byte[frameDataLength];
-        // mReadData1 ---> mHandleData
+        // readData1 ---> handleData
         System.arraycopy(
                 mData1, 0,
                 mData2, 0, readDataSize);
@@ -381,7 +381,7 @@ public class AACPlayer {
             if (mIsReading) {
                 // 此处发送消息后,readDataSize的大小可能会变化
                 synchronized (mReadDataLock) {
-                    MLog.i(TAG, "handleData() findHead mReadDataLock.notify()");
+                    MLog.i(TAG, "handleData() findHead readDataLock.notify()");
                     mReadDataLock.notify();
                 }
             }
@@ -437,7 +437,7 @@ public class AACPlayer {
                         System.arraycopy(
                                 frameData, 0,
                                 mData2, 0, restOfDataSize);
-                        // mReadData1 ---> mHandleData
+                        // readData1 ---> handleData
                         System.arraycopy(mData1, 0,
                                 mData2, restOfDataSize, readDataSize);
                         break;

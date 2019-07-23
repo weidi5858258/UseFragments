@@ -405,7 +405,7 @@ public class SampleVideoPlayer2 {
         }
 
         MLog.d(TAG, "internalPrepare() audio mime: " + audioMime);
-        MLog.d(TAG, "internalPrepare() mAudioWrapper.mDecoderMediaFormat: " +
+        MLog.d(TAG, "internalPrepare() mAudioWrapper.decoderMediaFormat: " +
                 mAudioWrapper.mDecoderMediaFormat.toString());
         try {
             mAudioWrapper.mExtractor.selectTrack(mAudioWrapper.mTrackIndex);
@@ -473,7 +473,7 @@ public class SampleVideoPlayer2 {
         mVideoWrapper.mDecoderMediaFormat.setInteger(
                 MediaFormat.KEY_BITRATE_MODE, MediaCodecInfo.EncoderCapabilities.BITRATE_MODE_CQ);
         MLog.d(TAG, "internalPrepare() video mime: " + videoMime);
-        MLog.d(TAG, "internalPrepare() mVideoWrapper.mDecoderMediaFormat: " +
+        MLog.d(TAG, "internalPrepare() mVideoWrapper.decoderMediaFormat: " +
                 mVideoWrapper.mDecoderMediaFormat.toString());
         try {
             mVideoWrapper.mExtractor.selectTrack(mVideoWrapper.mTrackIndex);
@@ -864,7 +864,7 @@ public class SampleVideoPlayer2 {
             try {
                 Arrays.fill(buffer, (byte) 0);
                 byteBuffer.clear();
-                // httpAccessor ---> mReadData1
+                // httpAccessor ---> readData1
                 int readSize = wrapper.mExtractor.readSampleData(byteBuffer, 0);
                 if (readSize < 0) {
                     wrapper.mReadStatus = READ_FINISHED;
@@ -890,7 +890,7 @@ public class SampleVideoPlayer2 {
                 readTotalSize += readSize;
                 if (readTotalSize <= wrapper.CACHE) {
                     wrapper.mReadStatus = READ_STARTED;
-                    // buffer ---> mReadData1
+                    // buffer ---> readData1
                     System.arraycopy(buffer, 0,
                             wrapper.mData1, wrapper.readDataSize, readSize);
                     wrapper.readDataSize += readSize;
@@ -913,13 +913,13 @@ public class SampleVideoPlayer2 {
                     }
                     // wait
                     synchronized (wrapper.mReadDataLock) {
-                        MLog.i(TAG, "readData() mReadDataLock.wait() start");
+                        MLog.i(TAG, "readData() readDataLock.wait() start");
                         try {
                             wrapper.mReadDataLock.wait();
                         } catch (InterruptedException e) {
                             e.printStackTrace();
                         }
-                        MLog.i(TAG, "readData() mReadDataLock.wait() end");
+                        MLog.i(TAG, "readData() readDataLock.wait() end");
                     }
                     MLog.d(TAG, "readData() 饿了,继续吃 mData1HasData: " + wrapper
                             .mData1HasData);
@@ -971,7 +971,7 @@ public class SampleVideoPlayer2 {
         int restOfDataSize = 0;
         int frameDataLength = 1024 * 100;
         byte[] frameData = new byte[frameDataLength];
-        // mReadData1 ---> mHandleData
+        // readData1 ---> handleData
         System.arraycopy(
                 wrapper.mData1, 0,
                 wrapper.mData2, 0, wrapper.readDataSize);
@@ -1021,7 +1021,7 @@ public class SampleVideoPlayer2 {
             if (wrapper.mIsReading) {
                 // 此处发送消息后,readDataSize的大小可能会变化
                 synchronized (wrapper.mReadDataLock) {
-                    MLog.i(TAG, "handleData() findHead mReadDataLock.notify()");
+                    MLog.i(TAG, "handleData() findHead readDataLock.notify()");
                     wrapper.mReadDataLock.notify();
                 }
             }
@@ -1046,7 +1046,7 @@ public class SampleVideoPlayer2 {
                     System.arraycopy(
                             wrapper.mData2, offsetList.get(i),
                             frameData, 0, frameLength);
-                    /*if (wrapper.mType == TYPE_AUDIO) {
+                    /*if (wrapper.type == TYPE_AUDIO) {
                         MLog.d(TAG, "handleData() offset: " + offsetList.get(i) +
                                 "    " + frameData[0] +
                                 " " + frameData[1] +
@@ -1118,7 +1118,7 @@ public class SampleVideoPlayer2 {
                         System.arraycopy(
                                 frameData, 0,
                                 wrapper.mData2, 0, restOfDataSize);
-                        // mReadData1 ---> mHandleData
+                        // readData1 ---> handleData
                         if (wrapper.readDataSize + restOfDataSize <= wrapper.CACHE) {
                             System.arraycopy(wrapper.mData1, 0,
                                     wrapper.mData2, restOfDataSize, wrapper.readDataSize);

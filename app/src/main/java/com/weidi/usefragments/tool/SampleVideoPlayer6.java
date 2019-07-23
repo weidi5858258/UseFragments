@@ -440,11 +440,11 @@ public class SampleVideoPlayer6 {
             mAudioWrapper.frameMaxLength =
                     mAudioWrapper.mDecoderMediaFormat.getInteger(MediaFormat.KEY_MAX_INPUT_SIZE);
         }
-        /*mAudioWrapper.mDecoderMediaFormat.setInteger(
+        /*mAudioWrapper.decoderMediaFormat.setInteger(
                 MediaFormat.KEY_MAX_INPUT_SIZE, mAudioWrapper.frameMaxLength);*/
         MLog.d(TAG, "internalPrepare()                mAudioWrapper.mime: " +
                 mAudioWrapper.mime);
-        MLog.d(TAG, "internalPrepare() mAudioWrapper.mDecoderMediaFormat: " +
+        MLog.d(TAG, "internalPrepare() mAudioWrapper.decoderMediaFormat: " +
                 mAudioWrapper.mDecoderMediaFormat.toString());
         try {
             mAudioWrapper.mExtractor.selectTrack(mAudioWrapper.mTrackIndex);
@@ -547,7 +547,7 @@ public class SampleVideoPlayer6 {
             mVideoWrapper.frameMaxLength =
                     mVideoWrapper.mDecoderMediaFormat.getInteger(MediaFormat.KEY_MAX_INPUT_SIZE);
         }
-        /*mVideoWrapper.mDecoderMediaFormat.setInteger(
+        /*mVideoWrapper.decoderMediaFormat.setInteger(
                 MediaFormat.KEY_MAX_INPUT_SIZE, mVideoWrapper.frameMaxLength);*/
         /***
          BITRATE_MODE_CQ:  表示完全不控制码率，尽最大可能保证图像质量
@@ -559,7 +559,7 @@ public class SampleVideoPlayer6 {
                 MediaFormat.KEY_BITRATE_MODE, MediaCodecInfo.EncoderCapabilities.BITRATE_MODE_CQ);
         MLog.d(TAG, "internalPrepare()                        video mime: " +
                 mVideoWrapper.mime);
-        MLog.d(TAG, "internalPrepare() mVideoWrapper.mDecoderMediaFormat: " +
+        MLog.d(TAG, "internalPrepare() mVideoWrapper.decoderMediaFormat: " +
                 mVideoWrapper.mDecoderMediaFormat.toString());
         try {
             mVideoWrapper.mExtractor.selectTrack(mVideoWrapper.mTrackIndex);
@@ -834,7 +834,7 @@ public class SampleVideoPlayer6 {
         while (wrapper.mIsReading) {
             try {
                 room.clear();
-                // wrapper.mExtractor ---> room
+                // wrapper.extractor ---> room
                 // readSize为实际读到的大小(音视频一帧的大小),其值可能远远小于room的大小
                 int readSize = wrapper.mExtractor.readSampleData(room, 0);
                 // 没有数据可读了,结束
@@ -898,7 +898,7 @@ public class SampleVideoPlayer6 {
                     }
                     wrapper.preBufferLastByte = buffer[readSize - 1];
 
-                    // buffer ---> mReadData1
+                    // buffer ---> readData1
                     System.arraycopy(buffer, 0,
                             wrapper.mData1,
                             wrapper.readDataSize + HEADER_FLAG_LENGTH,
@@ -943,9 +943,9 @@ public class SampleVideoPlayer6 {
                     // wait
                     synchronized (wrapper.mReadDataLock) {
                         if (wrapper.mType == TYPE_AUDIO) {
-                            showInfo = "  readData() audio mReadDataLock.wait() start";
+                            showInfo = "  readData() audio readDataLock.wait() start";
                         } else {
-                            showInfo = "  readData() video mReadDataLock.wait() start";
+                            showInfo = "  readData() video readDataLock.wait() start";
                         }
                         MLog.w(TAG, showInfo);
                         try {
@@ -954,9 +954,9 @@ public class SampleVideoPlayer6 {
                             e.printStackTrace();
                         }
                         if (wrapper.mType == TYPE_AUDIO) {
-                            showInfo = "  readData() audio mReadDataLock.wait() end";
+                            showInfo = "  readData() audio readDataLock.wait() end";
                         } else {
-                            showInfo = "  readData() video mReadDataLock.wait() end";
+                            showInfo = "  readData() video readDataLock.wait() end";
                         }
                         MLog.w(TAG, showInfo);
                     }
@@ -1037,7 +1037,7 @@ public class SampleVideoPlayer6 {
         int frameDataLength = 0;
         // 放一帧音频或者视频的容器
         byte[] frameData = new byte[wrapper.frameMaxLength];
-        // mReadData1 ---> mHandleData
+        // readData1 ---> handleData
         System.arraycopy(
                 wrapper.mData1, 0,
                 wrapper.mData2, 0, wrapper.readDataSize);
@@ -1118,9 +1118,9 @@ public class SampleVideoPlayer6 {
                 // 此处发送消息后,readDataSize的大小可能会变化
                 synchronized (wrapper.mReadDataLock) {
                     if (wrapper.mType == TYPE_AUDIO) {
-                        showInfo = "handleData() audio findHead mReadDataLock.notify()";
+                        showInfo = "handleData() audio findHead readDataLock.notify()";
                     } else {
-                        showInfo = "handleData() video findHead mReadDataLock.notify()";
+                        showInfo = "handleData() video findHead readDataLock.notify()";
                     }
                     MLog.w(TAG, showInfo);
                     wrapper.mReadDataLock.notify();
@@ -1151,9 +1151,9 @@ public class SampleVideoPlayer6 {
                         MediaUtils.startTimeMs = System.nanoTime();
                     }
                     long presentationTimeUs = 0;
-                    /*if ((Long) wrapper.mHandleFrameCounts != null
-                            && wrapper.mTime2.containsKey((Long) wrapper.mHandleFrameCounts)) {
-                        presentationTimeUs = wrapper.mTime2.get((Long) wrapper.mHandleFrameCounts);
+                    /*if ((Long) wrapper.handleFrameCounts != null
+                            && wrapper.time2.containsKey((Long) wrapper.handleFrameCounts)) {
+                        presentationTimeUs = wrapper.time2.get((Long) wrapper.handleFrameCounts);
                     } else {
                         presentationTimeUs = System.nanoTime();
                     }*/
@@ -1169,7 +1169,7 @@ public class SampleVideoPlayer6 {
                         break;
                     }
 
-                    /*if (wrapper.mType == TYPE_AUDIO) {
+                    /*if (wrapper.type == TYPE_AUDIO) {
                         MLog.d(TAG, "handleData() offset: " + offsetList.get(i) +
                                 "    " + frameData[0] +
                                 " " + frameData[1] +
@@ -1187,14 +1187,14 @@ public class SampleVideoPlayer6 {
                         int readSize = wrapper.testMap.get(wrapper.mHandleFrameCounts);
                         if (readSize != frameDataLength) {
                             if (wrapper.mType == TYPE_AUDIO) {
-                                /*MLog.e(TAG, "handleData() audio wrapper.mHandleFrameCounts: " +
-                                        wrapper.mHandleFrameCounts);
+                                /*MLog.e(TAG, "handleData() audio wrapper.handleFrameCounts: " +
+                                        wrapper.handleFrameCounts);
                                 MLog.e(TAG, "handleData() audio               src readSize: " +
                                         readSize);
                                 MLog.e(TAG, "handleData() audio            frameDataLength: " +
                                         frameDataLength);*/
                             } else {
-                                MLog.e(TAG, "handleData() video wrapper.mHandleFrameCounts: " +
+                                MLog.e(TAG, "handleData() video wrapper.handleFrameCounts: " +
                                         wrapper.mHandleFrameCounts);
                                 MLog.e(TAG, "handleData() video               src readSize: " +
                                         readSize);
@@ -1242,10 +1242,10 @@ public class SampleVideoPlayer6 {
                                 frameData, 0, frameDataLength);
 
                         long presentationTimeUs = 0;
-                        /*if ((Long) wrapper.mHandleFrameCounts != null
-                                && wrapper.mTime2.containsKey((Long) wrapper.mHandleFrameCounts)) {
-                            presentationTimeUs = wrapper.mTime2.get((Long) wrapper
-                                    .mHandleFrameCounts);
+                        /*if ((Long) wrapper.handleFrameCounts != null
+                                && wrapper.time2.containsKey((Long) wrapper.handleFrameCounts)) {
+                            presentationTimeUs = wrapper.time2.get((Long) wrapper
+                                    .handleFrameCounts);
                         } else {
                             presentationTimeUs = System.nanoTime();
                         }*/
@@ -1263,7 +1263,7 @@ public class SampleVideoPlayer6 {
 
                         int readSize = wrapper.testMap.get(wrapper.mHandleFrameCounts);
                         if (readSize != frameDataLength) {
-                            MLog.e(TAG, "handleData() wrapper.mHandleFrameCounts: " +
+                            MLog.e(TAG, "handleData() wrapper.handleFrameCounts: " +
                                     wrapper.mHandleFrameCounts);
                             MLog.e(TAG, "handleData()               src readSize: " +
                                     readSize);
@@ -1302,29 +1302,29 @@ public class SampleVideoPlayer6 {
         }// while(true) end
 
         if (wrapper.mType == TYPE_AUDIO) {
-            showInfo = "handleData() audio        wrapper.mReadFrameCounts: " +
+            showInfo = "handleData() audio        wrapper.readFrameCounts: " +
                     wrapper.mReadFrameCounts;
             MLog.d(TAG, showInfo);
-            showInfo = "handleData() audio      wrapper.mHandleFrameCounts: " +
+            showInfo = "handleData() audio      wrapper.handleFrameCounts: " +
                     wrapper.mHandleFrameCounts;
             MLog.d(TAG, showInfo);
-            showInfo = "handleData() audio   wrapper.mReadFrameLengthTotal: " +
+            showInfo = "handleData() audio   wrapper.readFrameLengthTotal: " +
                     wrapper.mReadFrameLengthTotal;
             MLog.d(TAG, showInfo);
-            showInfo = "handleData() audio wrapper.mHandleFrameLengthTotal: " +
+            showInfo = "handleData() audio wrapper.handleFrameLengthTotal: " +
                     wrapper.mHandleFrameLengthTotal;
             MLog.d(TAG, showInfo);
         } else {
-            showInfo = "handleData() video        wrapper.mReadFrameCounts: " +
+            showInfo = "handleData() video        wrapper.readFrameCounts: " +
                     wrapper.mReadFrameCounts;
             MLog.d(TAG, showInfo);
-            showInfo = "handleData() video      wrapper.mHandleFrameCounts: " +
+            showInfo = "handleData() video      wrapper.handleFrameCounts: " +
                     wrapper.mHandleFrameCounts;
             MLog.d(TAG, showInfo);
-            showInfo = "handleData() video   wrapper.mReadFrameLengthTotal: " +
+            showInfo = "handleData() video   wrapper.readFrameLengthTotal: " +
                     wrapper.mReadFrameLengthTotal;
             MLog.d(TAG, showInfo);
-            showInfo = "handleData() video wrapper.mHandleFrameLengthTotal: " +
+            showInfo = "handleData() video wrapper.handleFrameLengthTotal: " +
                     wrapper.mHandleFrameLengthTotal;
             MLog.d(TAG, showInfo);
         }
@@ -1346,8 +1346,8 @@ public class SampleVideoPlayer6 {
         }
         MLog.w(TAG, showInfo);
 
-        /*if (!mAudioWrapper.mIsHandling
-                && !mVideoWrapper.mIsHandling) {
+        /*if (!mAudioWrapper.isHandling
+                && !mVideoWrapper.isHandling) {
             play();
         }*/
     }
