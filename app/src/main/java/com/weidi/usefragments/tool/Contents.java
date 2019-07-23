@@ -72,6 +72,8 @@ public class Contents {
         mPath = "/storage/2430-1702/BaiduNetdisk/video/08_mm-MP4-H264_720x400_2997_AAC-LC_192_48.mp4";
         mPath = "/storage/2430-1702/BaiduNetdisk/video/05.mp4";
         mPath = "/storage/2430-1702/BaiduNetdisk/video/流浪的地球.mp4";
+        // 追龙Ⅱ
+        mPath = "http://xunlei.xiazai-zuida.com/1906/Zhuilong2%EF%BC%9A%E8%B4%BC%E7%8E%8B.HD1280%E9%AB%98%E6%B8%85%E5%9B%BD%E8%AF%AD%E4%B8%AD%E5%AD%97%E7%89%88.mp4";
         // 破冰行动18
         mPath = "http://download.xunleizuida.com/1905/P%E5%86%B0%E8%A1%8C%E5%8A%A8-18.mp4";
         // 地狱男爵：血皇后崛起
