@@ -312,6 +312,7 @@ public class DecodeVideoFragment extends BaseFragment {
     /*"/storage/2430-1702/Android/data/com.weidi.usefragments/files/" +
             "output.mp4";*/
     private Surface mSurface;
+    private SampleVideoPlayer7 mSampleVideoPlayer;
     private H264Player mH264Player;
 
     private List<File> videoFiles;
@@ -393,6 +394,7 @@ public class DecodeVideoFragment extends BaseFragment {
             @Override
             public void surfaceCreated(
                     SurfaceHolder holder) {
+                MLog.d(TAG, "surfaceCreated()");
                 mSurface = holder.getSurface();
 
                 /*mSampleVideoPlayer.setSurface(mSurface);
@@ -405,11 +407,11 @@ public class DecodeVideoFragment extends BaseFragment {
                 mSampleVideoPlayer.setSurface(mSurface);
                 mSampleVideoPlayer.play();*/
 
-                SampleVideoPlayer7 mSampleVideoPlayer7 = new SampleVideoPlayer7();
-                mSampleVideoPlayer7.setContext(getContext());
-                mSampleVideoPlayer7.setPath(null);
-                mSampleVideoPlayer7.setSurface(mSurface);
-                mSampleVideoPlayer7.play();
+                mSampleVideoPlayer = new SampleVideoPlayer7();
+                mSampleVideoPlayer.setContext(getContext());
+                mSampleVideoPlayer.setPath(null);
+                mSampleVideoPlayer.setSurface(mSurface);
+                mSampleVideoPlayer.play();
 
                 /*mH264Player = new H264Player();
                 mH264Player.setPath(null);
@@ -420,11 +422,13 @@ public class DecodeVideoFragment extends BaseFragment {
             @Override
             public void surfaceChanged(
                     SurfaceHolder holder, int format, int width, int height) {
+
             }
 
             @Override
             public void surfaceDestroyed(
                     SurfaceHolder holder) {
+                MLog.d(TAG, "surfaceDestroyed()");
             }
         });
     }
@@ -434,7 +438,9 @@ public class DecodeVideoFragment extends BaseFragment {
     }
 
     private void destroy() {
-
+        if (mSampleVideoPlayer != null) {
+            mSampleVideoPlayer.release();
+        }
     }
 
     @InjectOnClick({R.id.jump_btn})

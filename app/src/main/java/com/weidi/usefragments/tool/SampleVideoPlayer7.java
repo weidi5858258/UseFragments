@@ -159,6 +159,7 @@ public class SampleVideoPlayer7 {
         public int readStatus = STATUS_READ_DATA1_STARTED;
         public byte preBufferLastByte = 0;
         public long durationUs = 0;
+        public long presentationTimeUs = 0;
         // "块"的概念,一"块"有N个字节.
         // 编码时接收的数据就是一"块"的大小,少一个字节或者多一个字节都会出现异常
         public long readFrameCounts = 0;
@@ -187,9 +188,6 @@ public class SampleVideoPlayer7 {
         // 放一帧音频或者视频的容器
         public byte[] frameData = null;
 
-        // Test
-        public Map<Long, Integer> testMap = new ArrayMap<Long, Integer>();
-
         public SimpleWrapper(int type) {
             switch (type) {
                 case TYPE_AUDIO:
@@ -215,7 +213,7 @@ public class SampleVideoPlayer7 {
 
         public void clear() {
             mime = null;
-            extractor = null;
+            // extractor = null;
             decoderMediaCodec = null;
             decoderMediaFormat = null;
             render = false;
@@ -230,6 +228,7 @@ public class SampleVideoPlayer7 {
             first = FIRST_READ_DATA1;
             preBufferLastByte = 0;
             durationUs = 0;
+            presentationTimeUs = 0;
             time1.clear();
             time2.clear();
             readData1Size = 0;
@@ -256,9 +255,6 @@ public class SampleVideoPlayer7 {
             lastOffsetIndex = 0;
             restOfDataSize = 0;
             frameDataLength = 0;
-
-            // Test
-            testMap.clear();
         }
     }
 
@@ -301,7 +297,7 @@ public class SampleVideoPlayer7 {
 
     public void setContext(Context context) {
         mContext = context;
-        //registerHeadsetPlugReceiver();
+        registerHeadsetPlugReceiver();
     }
 
     public void setPath(String path) {
@@ -348,20 +344,8 @@ public class SampleVideoPlayer7 {
     }
 
     public void release() {
-        /*mThreadHandler.removeMessages(RELEASE);
-        mThreadHandler.sendEmptyMessage(RELEASE);*/
-    }
-
-    public void destroy() {
-        if (mHandlerThread != null
-                && mAudioWrapper.decoderMediaCodec == null
-                && mVideoWrapper.decoderMediaCodec == null) {
-            mHandlerThread.quit();
-            mHandlerThread = null;
-        }
-
-        unregisterHeadsetPlugReceiver();
-        EventBusUtils.unregister(this);
+        mThreadHandler.removeMessages(MSG_RELEASE);
+        mThreadHandler.sendEmptyMessage(MSG_RELEASE);
     }
 
     public boolean isRunning() {
@@ -414,6 +398,9 @@ public class SampleVideoPlayer7 {
                 break;
             case MSG_DO_SOME_WORK:
                 doSomeWork();
+                break;
+            case MSG_RELEASE:
+                internalRelease();
                 break;
             /*case PLAY:
                 internalPlay();
@@ -477,6 +464,9 @@ public class SampleVideoPlayer7 {
                 firstFlag = false;
                 secondFlag = false;
                 threeFlag = false;
+                break;
+            case MSG_RELEASE:
+                internalRelease();
                 break;
             /*case PLAY:
                 internalPlay();
@@ -577,9 +567,9 @@ public class SampleVideoPlayer7 {
                     mAudioWrapper.decoderMediaFormat.getInteger(MediaFormat.KEY_MAX_INPUT_SIZE);
         }
         mAudioWrapper.frameData = new byte[mAudioWrapper.frameMaxLength];
-        MLog.d(TAG, "internalPrepare()                mAudioWrapper.mime: " +
+        MLog.d(TAG, "internalPrepare()               audio mime: " +
                 mAudioWrapper.mime);
-        MLog.d(TAG, "internalPrepare() mAudioWrapper.decoderMediaFormat: " +
+        MLog.d(TAG, "internalPrepare() audio decoderMediaFormat: " +
                 mAudioWrapper.decoderMediaFormat.toString());
         try {
             mAudioWrapper.extractor.selectTrack(mAudioWrapper.trackIndex);
@@ -691,9 +681,9 @@ public class SampleVideoPlayer7 {
          */
         mVideoWrapper.decoderMediaFormat.setInteger(
                 MediaFormat.KEY_BITRATE_MODE, MediaCodecInfo.EncoderCapabilities.BITRATE_MODE_CQ);
-        MLog.d(TAG, "internalPrepare()                        video mime: " +
+        MLog.d(TAG, "internalPrepare()               video mime: " +
                 mVideoWrapper.mime);
-        MLog.d(TAG, "internalPrepare() mVideoWrapper.decoderMediaFormat: " +
+        MLog.d(TAG, "internalPrepare() video decoderMediaFormat: " +
                 mVideoWrapper.decoderMediaFormat.toString());
         try {
             mVideoWrapper.extractor.selectTrack(mVideoWrapper.trackIndex);
@@ -779,10 +769,32 @@ public class SampleVideoPlayer7 {
     private void internalStop() {
     }
 
-    private void internalAudioRelease() {
-    }
+    private void internalRelease() {
+        mAudioWrapper.isReading = false;
+        mAudioWrapper.isHandling = false;
+        synchronized (mAudioWrapper.readDataLock) {
+            mAudioWrapper.readDataLock.notify();
+        }
+        synchronized (mAudioWrapper.handleDataLock) {
+            mAudioWrapper.handleDataLock.notify();
+        }
 
-    private void internalVideoRelease() {
+        mVideoWrapper.isReading = false;
+        mVideoWrapper.isHandling = false;
+        synchronized (mVideoWrapper.readDataLock) {
+            mVideoWrapper.readDataLock.notify();
+        }
+        synchronized (mVideoWrapper.handleDataLock) {
+            mVideoWrapper.handleDataLock.notify();
+        }
+
+        if (mHandlerThread != null) {
+            mHandlerThread.quit();
+            mHandlerThread = null;
+        }
+
+        unregisterHeadsetPlugReceiver();
+        EventBusUtils.unregister(this);
     }
 
     private void internalPrev() {
@@ -834,78 +846,6 @@ public class SampleVideoPlayer7 {
         return false;
     }
 
-    /***
-     * 寻找指定buffer中H264帧头的开始位置
-     *
-     * @param offset 开始的位置
-     * @param data   数据
-     * @param size   需要检测的最大值
-     * @return
-     */
-    private void findH264Head(byte[] data, int offset, int size, List<Integer> list) {
-        list.clear();
-        int i = 0;
-        for (i = offset; i < size; ) {
-            // 发现帧头
-            if (isH264Head(data, i, size)) {
-                list.add(i);
-                i += 3;
-            } else {
-                i++;
-            }
-        }
-    }
-
-    /***
-     判断h264帧头
-     00 00 00 01 65        (I帧)
-     00 00 00 01 61 / 41   (P帧)
-     */
-    private boolean isH264Head(byte[] buffer, int offset, int size) {
-        /*if (offset + 3 < size
-                && buffer[offset] == 0x00
-                && buffer[offset + 1] == 0x00
-                && buffer[offset + 2] == 0x00
-                && buffer[offset + 3] == 0x01) {
-            // 00 00 00 01
-            return true;
-        } else if (offset + 2 < size
-                && buffer[offset] == 0x00
-                && buffer[offset + 1] == 0x00
-                && buffer[offset + 2] == 0x01) {
-            // 00 00 01
-            return true;
-        }*/
-
-        if (offset + 3 < size
-                && buffer[offset] == 0x00
-                && buffer[offset + 1] == 0x00
-                && buffer[offset + 2] == 0x00
-                && buffer[3] == 0x01
-                && isVideoFrameHeadType(buffer[offset + 4])) {
-            // 00 00 00 01 x
-            return true;
-        } else if (offset + 2 < size
-                && buffer[offset] == 0x00
-                && buffer[offset + 1] == 0x00
-                && buffer[offset + 2] == 0x01
-                && isVideoFrameHeadType(buffer[offset + 3])) {
-            // 00 00 01 x
-            return true;
-        }
-
-        return false;
-    }
-
-    /***
-     I帧或者P帧
-     */
-    private boolean isVideoFrameHeadType(byte head) {
-        return head == (byte) 0x65
-                || head == (byte) 0x61
-                || head == (byte) 0x41;
-    }
-
     private void setVolume() {
         if (mAudioWrapper.mAudioTrack == null) {
             return;
@@ -917,23 +857,26 @@ public class SampleVideoPlayer7 {
         }
     }
 
-    private boolean feedInputBufferAndDrainOutputBuffer(
-            MediaCodec mediaCodec,
-            byte[] data, int offset, int size,
-            long presentationTimeUs,
-            boolean render,
-            boolean needToSleep,
-            MediaUtils.Callback callback) {
-        if (needToSleep) {
+    private boolean feedInputBufferAndDrainOutputBuffer(SimpleWrapper wrapper) {
+        if (wrapper.type == TYPE_AUDIO ? false : true) {
             SystemClock.sleep(24);
+        }
+        if (!wrapper.isHandling) {
+            return false;
         }
         // Input
         boolean feedInputBufferResult = MediaUtils.feedInputBuffer(
-                mediaCodec, data, offset, size,
-                presentationTimeUs);
+                wrapper.decoderMediaCodec,
+                wrapper.frameData,
+                0,
+                wrapper.frameDataLength,
+                wrapper.presentationTimeUs);
         // Output
         boolean drainOutputBufferResult = MediaUtils.drainOutputBuffer(
-                mediaCodec, render, needToSleep, callback);
+                wrapper.decoderMediaCodec,
+                wrapper.render,
+                wrapper.type == TYPE_AUDIO ? false : true,
+                wrapper.callback);
 
         return feedInputBufferResult && drainOutputBufferResult;
 
@@ -987,6 +930,7 @@ public class SampleVideoPlayer7 {
             try {
                 if (needToRead) {
 
+                    // seekTo(没有完成)
                     if (mProgressUs != -1
                             && mProgressUs <= wrapper.durationUs) {
                         wrapper.first = FIRST_READ_DATA1;
@@ -1122,22 +1066,20 @@ public class SampleVideoPlayer7 {
                             // 一帧对应一个时间戳
                             wrapper.time1.put(
                                     wrapper.readFrameCounts, wrapper.extractor.getSampleTime());
-
-                            wrapper.testMap.put(wrapper.readFrameCounts, readSize);
                         } else {
                             // wrapper.mReadData1满了
                             wrapper.isReadData1Full = true;
                             if (wrapper.type == TYPE_AUDIO) {
                                 showInfo = "  readData() audio mReadData1满了";
                                 MLog.i(TAG, showInfo);
-                                showInfo = "  readData() audio readData1Size: " + wrapper
-                                        .readData1Size;
+                                showInfo = "  readData() audio readData1Size: " +
+                                        wrapper.readData1Size;
                                 MLog.i(TAG, showInfo);
                             } else {
                                 showInfo = "  readData() video mReadData1满了";
                                 MLog.i(TAG, showInfo);
-                                showInfo = "  readData() video readData1Size: " + wrapper
-                                        .readData1Size;
+                                showInfo = "  readData() video readData1Size: " +
+                                        wrapper.readData1Size;
                                 MLog.i(TAG, showInfo);
                             }
                             if (!wrapper.isHandling) {
@@ -1197,22 +1139,20 @@ public class SampleVideoPlayer7 {
                             wrapper.readFrameCounts++;
                             wrapper.time1.put(
                                     wrapper.readFrameCounts, wrapper.extractor.getSampleTime());
-
-                            wrapper.testMap.put(wrapper.readFrameCounts, readSize);
                         } else {
                             // wrapper.mReadData2满了
                             wrapper.isReadData2Full = true;
                             if (wrapper.type == TYPE_AUDIO) {
                                 showInfo = "  readData() audio mReadData2满了";
                                 MLog.i(TAG, showInfo);
-                                showInfo = "  readData() audio readData2Size: " + wrapper
-                                        .readData2Size;
+                                showInfo = "  readData() audio readData2Size: " +
+                                        wrapper.readData2Size;
                                 MLog.i(TAG, showInfo);
                             } else {
                                 showInfo = "  readData() video mReadData2满了";
                                 MLog.i(TAG, showInfo);
-                                showInfo = "  readData() video readData2Size: " + wrapper
-                                        .readData2Size;
+                                showInfo = "  readData() video readData2Size: " +
+                                        wrapper.readData2Size;
                                 MLog.i(TAG, showInfo);
                             }
                             synchronized (wrapper.handleDataLock) {
@@ -1325,8 +1265,6 @@ public class SampleVideoPlayer7 {
                         // 一帧对应一个时间戳
                         wrapper.time1.put(
                                 wrapper.readFrameCounts, presentationTimeUs);
-
-                        wrapper.testMap.put(wrapper.readFrameCounts, readSize);
                         break;
                     default:
                         break;
@@ -1367,54 +1305,26 @@ public class SampleVideoPlayer7 {
         }
         MLog.w(TAG, showInfo);
 
-        // mData2中剩下的数据大小
-        ArrayList<Integer> offsetList = new ArrayList<Integer>();
-        int preReadDataSize = 0;
-        int lastOffsetIndex = 0;
-        int restOfDataSize = 0;
-        // 音频或者视频一帧的实际大小
-        int frameDataLength = 0;
-        // 放一帧音频或者视频的容器
-        byte[] frameData = new byte[wrapper.frameMaxLength];
-
-        wrapper.readDataSize = wrapper.readData1Size;
-        wrapper.readData1Size = 0;
-        // readData1 ---> handleData
-        System.arraycopy(
-                wrapper.readData1, 0,
-                wrapper.handleData, 0, wrapper.readDataSize);
-        Arrays.fill(wrapper.readData1, (byte) 0);
-        wrapper.isReadData1Full = false;
-        if (wrapper.type == TYPE_AUDIO) {
-            showInfo = "handleData() audio mReadData1空了";
-            MLog.i(TAG, showInfo);
-            showInfo = "handleData() audio 正在处理mReadData1数据...";
-            MLog.i(TAG, showInfo);
-        } else {
-            showInfo = "handleData() video mReadData1空了";
-            MLog.i(TAG, showInfo);
-            showInfo = "handleData() video 正在处理mReadData1数据...";
-            MLog.i(TAG, showInfo);
-        }
+        readData1ToHandleData(wrapper);
 
         wrapper.time2.clear();
         wrapper.time2.putAll(wrapper.time1);
 
         boolean onlyOne = true;
         while (wrapper.isHandling) {
-            findHead(wrapper.handleData, 0, wrapper.readDataSize, offsetList);
-            int offsetCounts = offsetList.size();
+            findHead(wrapper.handleData, 0, wrapper.readDataSize, wrapper.offsetList);
+            wrapper.offsetCounts = wrapper.offsetList.size();
             if (wrapper.type == TYPE_AUDIO) {
-                showInfo = "handleData() audio findHead    offsetCounts: " + offsetCounts;
+                showInfo = "handleData() audio findHead    offsetCounts: " + wrapper.offsetCounts;
             } else {
-                showInfo = "handleData() video findHead    offsetCounts: " + offsetCounts;
+                showInfo = "handleData() video findHead    offsetCounts: " + wrapper.offsetCounts;
             }
             MLog.i(TAG, showInfo);
-            if (offsetCounts > 1) {
-                preReadDataSize = wrapper.readDataSize;
-                lastOffsetIndex = offsetList.get(offsetCounts - 1);
+            if (wrapper.offsetCounts > 1) {
+                wrapper.preReadDataSize = wrapper.readDataSize;
+                wrapper.lastOffsetIndex = wrapper.offsetList.get(wrapper.offsetCounts - 1);
                 // 实际读取到的数据大小 - 最后一个offsetIndex = 剩余的数据(一帧完整的数据)
-                restOfDataSize = wrapper.readDataSize - lastOffsetIndex;
+                wrapper.restOfDataSize = wrapper.readDataSize - wrapper.lastOffsetIndex;
 
                 if (wrapper.type == TYPE_AUDIO) {
                     showInfo = "handleData() audio findHead    readDataSize: " +
@@ -1426,18 +1336,18 @@ public class SampleVideoPlayer7 {
                 MLog.i(TAG, showInfo);
                 if (wrapper.type == TYPE_AUDIO) {
                     showInfo = "handleData() audio findHead lastOffsetIndex: " +
-                            lastOffsetIndex;
+                            wrapper.lastOffsetIndex;
                 } else {
                     showInfo = "handleData() video findHead lastOffsetIndex: " +
-                            lastOffsetIndex;
+                            wrapper.lastOffsetIndex;
                 }
                 MLog.i(TAG, showInfo);
                 if (wrapper.type == TYPE_AUDIO) {
                     showInfo = "handleData() audio findHead  restOfDataSize: " +
-                            restOfDataSize;
+                            wrapper.restOfDataSize;
                 } else {
                     showInfo = "handleData() video findHead  restOfDataSize: " +
-                            restOfDataSize;
+                            wrapper.restOfDataSize;
                 }
                 MLog.i(TAG, showInfo);
             } else {
@@ -1470,48 +1380,45 @@ public class SampleVideoPlayer7 {
                 }
             }
 
-            for (int i = 0; i < offsetCounts; i++) {
-                Arrays.fill(frameData, (byte) 0);
-                if (i + 1 < offsetCounts) {
+            for (int i = 0; i < wrapper.offsetCounts; i++) {
+                if (!wrapper.isHandling) {
+                    break;
+                }
+                Arrays.fill(wrapper.frameData, (byte) 0);
+                if (i + 1 < wrapper.offsetCounts) {
                     /***
                      集合中至少有两个offset才有一帧输出
                      各帧之间的offset很重要,比如有:0, 519, 1038, 1585, 2147 ...
                      知道了offset,那么就知道了要"喂"多少数据了.
                      两个offset的位置一减就是一帧的长度
                      */
-                    frameDataLength = offsetList.get(i + 1)
-                            - offsetList.get(i)
+                    wrapper.frameDataLength = wrapper.offsetList.get(i + 1)
+                            - wrapper.offsetList.get(i)
                             - HEADER_FLAG_LENGTH;
-                    wrapper.handleFrameLengthTotal += frameDataLength;
+                    wrapper.handleFrameLengthTotal += wrapper.frameDataLength;
                     wrapper.handleFrameCounts++;
                     System.arraycopy(
-                            wrapper.handleData, offsetList.get(i) + HEADER_FLAG_LENGTH,
-                            frameData, 0, frameDataLength);
+                            wrapper.handleData, wrapper.offsetList.get(i) + HEADER_FLAG_LENGTH,
+                            wrapper.frameData, 0, wrapper.frameDataLength);
 
                     if (onlyOne) {
                         onlyOne = false;
                         MediaUtils.startTimeMs = System.currentTimeMillis();
                         MediaUtils.startTimeMs = System.nanoTime();
                     }
-                    long presentationTimeUs = 0;
-                    /*if ((Long) wrapper.handleFrameCounts != null
+                    if ((Long) wrapper.handleFrameCounts != null
                             && wrapper.time2.containsKey((Long) wrapper.handleFrameCounts)) {
-                        presentationTimeUs = wrapper.time2.get((Long) wrapper.handleFrameCounts);
+                        wrapper.presentationTimeUs =
+                                wrapper.time2.get((Long) wrapper.handleFrameCounts);
                     } else {
-                        presentationTimeUs = System.nanoTime();
-                    }*/
-                    presentationTimeUs = (System.nanoTime() - MediaUtils.startTimeMs) * 1000;
-                    if (!feedInputBufferAndDrainOutputBuffer(
-                            wrapper.decoderMediaCodec,
-                            frameData, 0, frameDataLength,
-                            presentationTimeUs,
-                            wrapper.render,
-                            wrapper.type == TYPE_AUDIO ? false : true,
-                            wrapper.callback)) {
+                        wrapper.presentationTimeUs = System.nanoTime();
+                    }
+                    if (!feedInputBufferAndDrainOutputBuffer(wrapper)) {
                         wrapper.isHandling = false;
-                        break;
+                        break;// for(...) end
                     }
 
+                    // 这个日志是需要的
                     /*if (wrapper.type == TYPE_AUDIO) {
                         MLog.d(TAG, "handleData() offset: " + offsetList.get(i) +
                                 "    " + frameData[0] +
@@ -1523,117 +1430,34 @@ public class SampleVideoPlayer7 {
                                 " " + frameData[6]);
                         MLog.d(TAG, "handleData() frameDataLength: " + frameDataLength);
                     }*/
-
-                    // Test
-                    /*if ((Long) wrapper.handleFrameCounts != null
-                            && wrapper.testMap.containsKey((Long) wrapper.handleFrameCounts)) {
-                        int readSize = wrapper.testMap.get(wrapper.handleFrameCounts);
-                        if (readSize != frameDataLength) {
-                            if (wrapper.type == TYPE_AUDIO) {
-                                MLog.e(TAG, "handleData() audio wrapper.handleFrameCounts: " +
-                                        wrapper.handleFrameCounts);
-                                MLog.e(TAG, "handleData() audio               src readSize: " +
-                                        readSize);
-                                MLog.e(TAG, "handleData() audio            frameDataLength: " +
-                                        frameDataLength);
-                            } else {
-                                MLog.e(TAG, "handleData() video wrapper.handleFrameCounts: " +
-                                        wrapper.handleFrameCounts);
-                                MLog.e(TAG, "handleData() video               src readSize: " +
-                                        readSize);
-                                MLog.e(TAG, "handleData() video            frameDataLength: " +
-                                        frameDataLength);
-                            }
-                        }
-                    }*/
-
                     continue;
                 } else {
                     // 处理集合中最后一个offset的位置
-                    /*if (wrapper.type == TYPE_AUDIO) {
-                        showInfo = "handleData() audio preReadDataSize: " + preReadDataSize;
-                    } else {
-                        showInfo = "handleData() video preReadDataSize: " + preReadDataSize;
-                    }
-                    MLog.i(TAG, showInfo);
-                    if (wrapper.type == TYPE_AUDIO) {
-                        showInfo = "handleData() audio    readDataSize: " + wrapper.readDataSize;
-                    } else {
-                        showInfo = "handleData() video    readDataSize: " + wrapper.readDataSize;
-                    }
-                    MLog.i(TAG, showInfo);
-                    if (wrapper.type == TYPE_AUDIO) {
-                        showInfo = "handleData() audio lastOffsetIndex: " + lastOffsetIndex;
-                    } else {
-                        showInfo = "handleData() video lastOffsetIndex: " + lastOffsetIndex;
-                    }
-                    MLog.i(TAG, showInfo);
-                    if (wrapper.type == TYPE_AUDIO) {
-                        showInfo = "handleData() audio  restOfDataSize: " + restOfDataSize;
-                    } else {
-                        showInfo = "handleData() video  restOfDataSize: " + restOfDataSize;
-                    }
-                    MLog.i(TAG, showInfo);*/
-
                     // 处理剩余的数据(集合中的最后一帧)
-                    if (restOfDataSize > 0) {
-                        frameDataLength = restOfDataSize - HEADER_FLAG_LENGTH;
-                        wrapper.handleFrameLengthTotal += frameDataLength;
+                    if (wrapper.restOfDataSize > 0) {
+                        wrapper.frameDataLength = wrapper.restOfDataSize - HEADER_FLAG_LENGTH;
+                        wrapper.handleFrameLengthTotal += wrapper.frameDataLength;
                         wrapper.handleFrameCounts++;
                         System.arraycopy(
-                                wrapper.handleData, lastOffsetIndex + HEADER_FLAG_LENGTH,
-                                frameData, 0, frameDataLength);
+                                wrapper.handleData, wrapper.lastOffsetIndex + HEADER_FLAG_LENGTH,
+                                wrapper.frameData, 0, wrapper.frameDataLength);
 
-                        long presentationTimeUs = 0;
-                        /*if ((Long) wrapper.handleFrameCounts != null
+                        if ((Long) wrapper.handleFrameCounts != null
                                 && wrapper.time2.containsKey((Long) wrapper.handleFrameCounts)) {
-                            presentationTimeUs = wrapper.time2.get((Long) wrapper
-                                    .handleFrameCounts);
+                            wrapper.presentationTimeUs =
+                                    wrapper.time2.get((Long) wrapper.handleFrameCounts);
                         } else {
-                            presentationTimeUs = System.nanoTime();
-                        }*/
-                        presentationTimeUs = (System.nanoTime() - MediaUtils.startTimeMs) / 1000;
-                        if (!feedInputBufferAndDrainOutputBuffer(
-                                wrapper.decoderMediaCodec,
-                                frameData, 0, frameDataLength,
-                                presentationTimeUs,
-                                wrapper.render,
-                                wrapper.type == TYPE_AUDIO ? false : true,
-                                wrapper.callback)) {
-                            wrapper.isHandling = false;
-                            break;
+                            wrapper.presentationTimeUs = System.nanoTime();
                         }
-
-                        // Test
-                        /*if ((Long) wrapper.handleFrameCounts != null
-                                && wrapper.testMap.containsKey((Long) wrapper.handleFrameCounts)) {
-                            int readSize = wrapper.testMap.get(wrapper.handleFrameCounts);
-                            if (readSize != frameDataLength) {
-                                if (wrapper.type == TYPE_AUDIO) {
-                                    MLog.e(TAG, "handleData() audio         handleFrameCounts: " +
-                                            wrapper.handleFrameCounts);
-                                    MLog.e(TAG, "handleData() audio               src readSize: " +
-                                            readSize);
-                                    MLog.e(TAG, "handleData() audio            frameDataLength: " +
-                                            frameDataLength);
-                                } else {
-                                    MLog.e(TAG,
-                                            "handleData() video         handleFrameCounts: " +
-                                                    wrapper.handleFrameCounts);
-                                    MLog.e(TAG,
-                                            "handleData() video               src readSize: " +
-                                                    readSize);
-                                    MLog.e(TAG,
-                                            "handleData() video            frameDataLength: " +
-                                                    frameDataLength);
-                                }
-                            }
-                        }*/
+                        if (!feedInputBufferAndDrainOutputBuffer(wrapper)) {
+                            wrapper.isHandling = false;
+                            break;// for(...) end
+                        }
 
                     }// 处理剩余数据 end
 
                     if (wrapper.readDataSize != wrapper.CACHE
-                            && preReadDataSize == wrapper.readDataSize
+                            && wrapper.preReadDataSize == wrapper.readDataSize
                             && wrapper.readStatus == STATUS_READ_FINISHED
                             && wrapper.readData1Size == 0
                             && wrapper.readData2Size == 0) {
@@ -1653,12 +1477,6 @@ public class SampleVideoPlayer7 {
                             }
                         }
 
-                        for (int j = 1; j < wrapper.handleFrameCounts; j++) {
-                            if (wrapper.testMap.containsKey(j)) {
-                                wrapper.testMap.remove(j);
-                            }
-                        }
-
                         // 向mReadData1或者mReadData2缓存中取数据
                         Arrays.fill(wrapper.handleData, (byte) 0);
                         if (wrapper.isReadData1Full
@@ -1666,96 +1484,28 @@ public class SampleVideoPlayer7 {
                             /***
                              mReadData1满,mReadData2未满
                              */
-                            wrapper.readDataSize = wrapper.readData1Size;
-                            wrapper.readData1Size = 0;
-                            System.arraycopy(
-                                    wrapper.readData1, 0,
-                                    wrapper.handleData, 0, wrapper.readDataSize);
-                            Arrays.fill(wrapper.readData1, (byte) 0);
-                            wrapper.isReadData1Full = false;
-                            if (wrapper.type == TYPE_AUDIO) {
-                                showInfo = "handleData() audio mReadData1空了";
-                                MLog.i(TAG, showInfo);
-                                showInfo = "handleData() audio 正在处理mReadData1数据...";
-                                MLog.i(TAG, showInfo);
-                            } else {
-                                showInfo = "handleData() video mReadData1空了";
-                                MLog.i(TAG, showInfo);
-                                showInfo = "handleData() video 正在处理mReadData1数据...";
-                                MLog.i(TAG, showInfo);
-                            }
+                            readData1ToHandleData(wrapper);
                         } else if (!wrapper.isReadData1Full
                                 && wrapper.isReadData2Full) {
                             /***
                              mReadData1未满,mReadData2满
                              */
-                            wrapper.readDataSize = wrapper.readData2Size;
-                            wrapper.readData2Size = 0;
-                            System.arraycopy(
-                                    wrapper.readData2, 0,
-                                    wrapper.handleData, 0, wrapper.readDataSize);
-                            Arrays.fill(wrapper.readData2, (byte) 0);
-                            wrapper.isReadData2Full = false;
-                            if (wrapper.type == TYPE_AUDIO) {
-                                showInfo = "handleData() audio mReadData2空了";
-                                MLog.i(TAG, showInfo);
-                                showInfo = "handleData() audio 正在处理mReadData2数据...";
-                                MLog.i(TAG, showInfo);
-                            } else {
-                                showInfo = "handleData() video mReadData2空了";
-                                MLog.i(TAG, showInfo);
-                                showInfo = "handleData() video 正在处理mReadData2数据...";
-                                MLog.i(TAG, showInfo);
-                            }
+                            readData2ToHandleData(wrapper);
                         } else if (wrapper.isReadData1Full
                                 && wrapper.isReadData2Full) {
                             /***
                              mReadData1满,mReadData2满
                              */
                             if (wrapper.first == FIRST_READ_DATA1) {
-                                wrapper.readDataSize = wrapper.readData1Size;
-                                wrapper.readData1Size = 0;
-                                System.arraycopy(
-                                        wrapper.readData1, 0,
-                                        wrapper.handleData, 0, wrapper.readDataSize);
-                                Arrays.fill(wrapper.readData1, (byte) 0);
-                                wrapper.isReadData1Full = false;
-                                if (wrapper.type == TYPE_AUDIO) {
-                                    showInfo = "handleData() audio mReadData1空了";
-                                    MLog.i(TAG, showInfo);
-                                    showInfo = "handleData() audio 正在处理mReadData1数据...";
-                                    MLog.i(TAG, showInfo);
-                                } else {
-                                    showInfo = "handleData() video mReadData1空了";
-                                    MLog.i(TAG, showInfo);
-                                    showInfo = "handleData() video 正在处理mReadData1数据...";
-                                    MLog.i(TAG, showInfo);
-                                }
+                                readData1ToHandleData(wrapper);
                             } else {
-                                wrapper.readDataSize = wrapper.readData2Size;
-                                wrapper.readData2Size = 0;
-                                System.arraycopy(
-                                        wrapper.readData2, 0,
-                                        wrapper.handleData, 0, wrapper.readDataSize);
-                                Arrays.fill(wrapper.readData2, (byte) 0);
-                                wrapper.isReadData2Full = false;
-                                if (wrapper.type == TYPE_AUDIO) {
-                                    showInfo = "handleData() audio mReadData2空了";
-                                    MLog.i(TAG, showInfo);
-                                    showInfo = "handleData() audio 正在处理mReadData2数据...";
-                                    MLog.i(TAG, showInfo);
-                                } else {
-                                    showInfo = "handleData() video mReadData2空了";
-                                    MLog.i(TAG, showInfo);
-                                    showInfo = "handleData() video 正在处理mReadData2数据...";
-                                    MLog.i(TAG, showInfo);
-                                }
+                                readData2ToHandleData(wrapper);
                             }
                         }
 
                         wrapper.time2.clear();
                         wrapper.time2.putAll(wrapper.time1);
-                        break;
+                        break;// for(...) end
                     }
                 }
             }// for(...) end
@@ -1813,13 +1563,53 @@ public class SampleVideoPlayer7 {
         }*/
     }
 
-    private void copyData(SimpleWrapper wrapper) {
-        for (int j = 1; j < wrapper.handleFrameCounts; j++) {
-            if (wrapper.testMap.containsKey(j)) {
-                wrapper.testMap.remove(j);
-            }
-        }
+    private void readData1ToHandleData(SimpleWrapper wrapper) {
+        wrapper.readDataSize = wrapper.readData1Size;
+        wrapper.readData1Size = 0;
+        System.arraycopy(
+                wrapper.readData1, 0,
+                wrapper.handleData, 0, wrapper.readDataSize);
+        Arrays.fill(wrapper.readData1, (byte) 0);
+        wrapper.isReadData1Full = false;
 
+        String showInfo = null;
+        if (wrapper.type == TYPE_AUDIO) {
+            showInfo = "handleData() audio mReadData1空了";
+            MLog.i(TAG, showInfo);
+            showInfo = "handleData() audio 正在处理mReadData1数据...";
+            MLog.i(TAG, showInfo);
+        } else {
+            showInfo = "handleData() video mReadData1空了";
+            MLog.i(TAG, showInfo);
+            showInfo = "handleData() video 正在处理mReadData1数据...";
+            MLog.i(TAG, showInfo);
+        }
+    }
+
+    private void readData2ToHandleData(SimpleWrapper wrapper) {
+        wrapper.readDataSize = wrapper.readData2Size;
+        wrapper.readData2Size = 0;
+        System.arraycopy(
+                wrapper.readData2, 0,
+                wrapper.handleData, 0, wrapper.readDataSize);
+        Arrays.fill(wrapper.readData2, (byte) 0);
+        wrapper.isReadData2Full = false;
+
+        String showInfo = null;
+        if (wrapper.type == TYPE_AUDIO) {
+            showInfo = "handleData() audio mReadData2空了";
+            MLog.i(TAG, showInfo);
+            showInfo = "handleData() audio 正在处理mReadData2数据...";
+            MLog.i(TAG, showInfo);
+        } else {
+            showInfo = "handleData() video mReadData2空了";
+            MLog.i(TAG, showInfo);
+            showInfo = "handleData() video 正在处理mReadData2数据...";
+            MLog.i(TAG, showInfo);
+        }
+    }
+
+    private void copyData(SimpleWrapper wrapper) {
         String showInfo = null;
         // 向mReadData1或者mReadData2缓存中取数据
         Arrays.fill(wrapper.handleData, (byte) 0);
@@ -1828,90 +1618,22 @@ public class SampleVideoPlayer7 {
             /***
              mReadData1满,mReadData2未满
              */
-            wrapper.readDataSize = wrapper.readData1Size;
-            wrapper.readData1Size = 0;
-            System.arraycopy(
-                    wrapper.readData1, 0,
-                    wrapper.handleData, 0, wrapper.readDataSize);
-            Arrays.fill(wrapper.readData1, (byte) 0);
-            wrapper.isReadData1Full = false;
-            if (wrapper.type == TYPE_AUDIO) {
-                showInfo = "  copyData() audio mReadData1空了";
-                MLog.i(TAG, showInfo);
-                showInfo = "  copyData() audio 正在处理mReadData1数据...";
-                MLog.i(TAG, showInfo);
-            } else {
-                showInfo = "  copyData() video mReadData1空了";
-                MLog.i(TAG, showInfo);
-                showInfo = "  copyData() video 正在处理mReadData1数据...";
-                MLog.i(TAG, showInfo);
-            }
+            readData1ToHandleData(wrapper);
         } else if (!wrapper.isReadData1Full
                 && wrapper.isReadData2Full) {
             /***
              mReadData1未满,mReadData2满
              */
-            wrapper.readDataSize = wrapper.readData2Size;
-            wrapper.readData2Size = 0;
-            System.arraycopy(
-                    wrapper.readData2, 0,
-                    wrapper.handleData, 0, wrapper.readDataSize);
-            Arrays.fill(wrapper.readData2, (byte) 0);
-            wrapper.isReadData2Full = false;
-            if (wrapper.type == TYPE_AUDIO) {
-                showInfo = "  copyData() audio mReadData2空了";
-                MLog.i(TAG, showInfo);
-                showInfo = "  copyData() audio 正在处理mReadData2数据...";
-                MLog.i(TAG, showInfo);
-            } else {
-                showInfo = "  copyData() video mReadData2空了";
-                MLog.i(TAG, showInfo);
-                showInfo = "  copyData() video 正在处理mReadData2数据...";
-                MLog.i(TAG, showInfo);
-            }
+            readData2ToHandleData(wrapper);
         } else if (wrapper.isReadData1Full
                 && wrapper.isReadData2Full) {
             /***
              mReadData1满,mReadData2满
              */
             if (wrapper.first == FIRST_READ_DATA1) {
-                wrapper.readDataSize = wrapper.readData1Size;
-                wrapper.readData1Size = 0;
-                System.arraycopy(
-                        wrapper.readData1, 0,
-                        wrapper.handleData, 0, wrapper.readDataSize);
-                Arrays.fill(wrapper.readData1, (byte) 0);
-                wrapper.isReadData1Full = false;
-                if (wrapper.type == TYPE_AUDIO) {
-                    showInfo = "  copyData() audio mReadData1空了";
-                    MLog.i(TAG, showInfo);
-                    showInfo = "  copyData() audio 正在处理mReadData1数据...";
-                    MLog.i(TAG, showInfo);
-                } else {
-                    showInfo = "  copyData() video mReadData1空了";
-                    MLog.i(TAG, showInfo);
-                    showInfo = "  copyData() video 正在处理mReadData1数据...";
-                    MLog.i(TAG, showInfo);
-                }
+                readData1ToHandleData(wrapper);
             } else {
-                wrapper.readDataSize = wrapper.readData2Size;
-                wrapper.readData2Size = 0;
-                System.arraycopy(
-                        wrapper.readData2, 0,
-                        wrapper.handleData, 0, wrapper.readDataSize);
-                Arrays.fill(wrapper.readData2, (byte) 0);
-                wrapper.isReadData2Full = false;
-                if (wrapper.type == TYPE_AUDIO) {
-                    showInfo = "  copyData() audio mReadData2空了";
-                    MLog.i(TAG, showInfo);
-                    showInfo = "  copyData() audio 正在处理mReadData2数据...";
-                    MLog.i(TAG, showInfo);
-                } else {
-                    showInfo = "  copyData() video mReadData2空了";
-                    MLog.i(TAG, showInfo);
-                    showInfo = "  copyData() video 正在处理mReadData2数据...";
-                    MLog.i(TAG, showInfo);
-                }
+                readData2ToHandleData(wrapper);
             }
         } else {
             /***
@@ -2018,22 +1740,15 @@ public class SampleVideoPlayer7 {
                     wrapper.offsetList.get(wrapper.offsetIndex) + HEADER_FLAG_LENGTH,
                     wrapper.frameData, 0, wrapper.frameDataLength);
 
-            long presentationTimeUs = 0;
             if ((Long) wrapper.handleFrameCounts != null
                     && wrapper.time2.containsKey((Long) wrapper
                     .handleFrameCounts)) {
-                presentationTimeUs = wrapper.time2.get((Long) wrapper
-                        .handleFrameCounts);
+                wrapper.presentationTimeUs =
+                        wrapper.time2.get((Long) wrapper.handleFrameCounts);
             } else {
-                presentationTimeUs = System.nanoTime();
+                wrapper.presentationTimeUs = System.nanoTime();
             }
-            if (!feedInputBufferAndDrainOutputBuffer(
-                    wrapper.decoderMediaCodec,
-                    wrapper.frameData, 0, wrapper.frameDataLength,
-                    presentationTimeUs,
-                    wrapper.render,
-                    wrapper.type == TYPE_AUDIO ? false : true,
-                    wrapper.callback)) {
+            if (!feedInputBufferAndDrainOutputBuffer(wrapper)) {
                 // game over
 
                 return;
@@ -2051,22 +1766,15 @@ public class SampleVideoPlayer7 {
                                 HEADER_FLAG_LENGTH,
                         wrapper.frameData, 0, wrapper.frameDataLength);
 
-                long presentationTimeUs = 0;
                 if ((Long) wrapper.handleFrameCounts != null
                         && wrapper.time2.containsKey((Long) wrapper
                         .handleFrameCounts)) {
-                    presentationTimeUs = wrapper.time2.get((Long) wrapper
-                            .handleFrameCounts);
+                    wrapper.presentationTimeUs =
+                            wrapper.time2.get((Long) wrapper.handleFrameCounts);
                 } else {
-                    presentationTimeUs = System.nanoTime();
+                    wrapper.presentationTimeUs = System.nanoTime();
                 }
-                if (!feedInputBufferAndDrainOutputBuffer(
-                        wrapper.decoderMediaCodec,
-                        wrapper.frameData, 0, wrapper.frameDataLength,
-                        presentationTimeUs,
-                        wrapper.render,
-                        wrapper.type == TYPE_AUDIO ? false : true,
-                        wrapper.callback)) {
+                if (!feedInputBufferAndDrainOutputBuffer(wrapper)) {
                     // game over
 
                     return;
@@ -2107,13 +1815,13 @@ public class SampleVideoPlayer7 {
     }
 
     private void doSomeWork() {
-        /*if (mAudioWrapper.isHandling) {
+        if (mAudioWrapper.isHandling) {
             if (mAudioWrapper.offsetList.isEmpty()) {
                 copyData(mAudioWrapper);
                 pickData(mAudioWrapper);
             }
             render(mAudioWrapper);
-        }*/
+        }
 
         if (mVideoWrapper.isHandling) {
             if (mVideoWrapper.offsetList.isEmpty()) {
@@ -2265,7 +1973,7 @@ public class SampleVideoPlayer7 {
     }
 
     private void unregisterHeadsetPlugReceiver() {
-        if (mContext == null) {
+        if (mContext == null || mHeadsetPlugReceiver == null) {
             return;
         }
 

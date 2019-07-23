@@ -33,8 +33,6 @@ public class Contents {
         mPath = "/storage/2430-1702/BaiduNetdisk/video/test.mp4";
         // 少年当自强
         mPath = "http://okxxxzy.xzokzyzy.com/20190718/27_08326ade/%E5%B0%91%E5%B9%B4%E5%BD%93%E8%87%AA%E5%BC%BA.mp4";
-        // 黑衣人：全球追缉
-        mPath = "http://okxxzy.xzokzyzy.com/20190721/23773_0455e097/%E9%BB%91%E8%A1%A3%E4%BA%BA4%E9%9F%A9%E7%89%88%E4%B8%AD%E5%AD%97.mp4";
         // 极速复仇
         mPath = "http://xz3-13.okzyxz.com/20190527/1282_5a7f1f18/%E6%9E%81%E9%80%9F%E5%A4%8D%E4%BB%87.mp4";
         // 死侍2
@@ -70,12 +68,16 @@ public class Contents {
         // csd-0: {0, 0, 0, 1, 103, 77, 64, 31, -24, -128, 40, 2, -35, -128, -87, 1, 1, 1, 64, 0, 0, -6, 64, 0, 46, -32, 56, 24, 0, 21, 92, -64, 1, 83, -38, 76, 48, 15, -116, 24, -119}
         // csd-1: {0, 0, 0, 1, 104, -21, -20, -78}
         mPath = "http://vip.zuiku8.com/1808/%E5%86%9B%E6%83%85%E4%BA%94%E5%A4%84%EF%BC%9A%E5%88%A9%E7%9B%8A%E4%B9%8B%E4%BA%89.BD1280%E9%AB%98%E6%B8%85%E4%B8%AD%E8%8B%B1%E5%8F%8C%E5%AD%97%E7%89%88.mp4";
-        // 地狱男爵：血皇后崛起
-        mPath = "http://anning.luanniao-zuida.com/1907/%E5%9C%B0%E7%8B%B1%E7%94%B7%E7%88%B5%EF%BC%9A%E8%A1%80%E7%9A%87%E5%90%8E%E5%B4%9B%E8%B5%B7.BD1280%E9%AB%98%E6%B8%85%E4%B8%AD%E8%8B%B1%E5%8F%8C%E5%AD%97%E7%89%88.mp4";
         mPath = "/storage/2430-1702/BaiduNetdisk/video/shape_of_my_heart.mp4";
         mPath = "/storage/2430-1702/BaiduNetdisk/video/08_mm-MP4-H264_720x400_2997_AAC-LC_192_48.mp4";
         mPath = "/storage/2430-1702/BaiduNetdisk/video/05.mp4";
         mPath = "/storage/2430-1702/BaiduNetdisk/video/流浪的地球.mp4";
+        // 破冰行动18
+        mPath = "http://download.xunleizuida.com/1905/P%E5%86%B0%E8%A1%8C%E5%8A%A8-18.mp4";
+        // 地狱男爵：血皇后崛起
+        mPath = "http://anning.luanniao-zuida.com/1907/%E5%9C%B0%E7%8B%B1%E7%94%B7%E7%88%B5%EF%BC%9A%E8%A1%80%E7%9A%87%E5%90%8E%E5%B4%9B%E8%B5%B7.BD1280%E9%AB%98%E6%B8%85%E4%B8%AD%E8%8B%B1%E5%8F%8C%E5%AD%97%E7%89%88.mp4";
+        // 黑衣人：全球追缉
+        mPath = "http://okxxzy.xzokzyzy.com/20190721/23773_0455e097/%E9%BB%91%E8%A1%A3%E4%BA%BA4%E9%9F%A9%E7%89%88%E4%B8%AD%E5%AD%97.mp4";
 
 
 

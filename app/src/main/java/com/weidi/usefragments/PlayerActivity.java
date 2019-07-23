@@ -127,6 +127,8 @@ public class PlayerActivity extends BaseActivity {
         super.onBackPressed();
         if (DEBUG)
             MLog.d(TAG, "onBackPressed(): " + printThis());
+        finish();
+        exitActivity();
     }
 
     @Override
@@ -142,6 +144,7 @@ public class PlayerActivity extends BaseActivity {
     private SurfaceView mSurfaceView;
     private Surface mSurface;
     private PowerManager.WakeLock mPowerWakeLock;
+    private SampleVideoPlayer7 mSampleVideoPlayer;
 
     private void initData() {
         // Volume change should always affect media volume
@@ -152,6 +155,7 @@ public class PlayerActivity extends BaseActivity {
             @Override
             public void surfaceCreated(
                     SurfaceHolder holder) {
+                MLog.d(TAG, "surfaceCreated()");
                 mSurface = holder.getSurface();
 
                 /*mSampleVideoPlayer.setSurface(mSurface);
@@ -164,11 +168,11 @@ public class PlayerActivity extends BaseActivity {
                 mSampleVideoPlayer.setSurface(mSurface);
                 mSampleVideoPlayer.play();*/
 
-                SampleVideoPlayer7 mSampleVideoPlayer7 = new SampleVideoPlayer7();
-                mSampleVideoPlayer7.setContext(getContext());
-                mSampleVideoPlayer7.setPath(null);
-                mSampleVideoPlayer7.setSurface(mSurface);
-                mSampleVideoPlayer7.play();
+                mSampleVideoPlayer = new SampleVideoPlayer7();
+                mSampleVideoPlayer.setContext(getContext());
+                mSampleVideoPlayer.setPath(null);
+                mSampleVideoPlayer.setSurface(mSurface);
+                mSampleVideoPlayer.play();
             }
 
             @Override
@@ -179,6 +183,7 @@ public class PlayerActivity extends BaseActivity {
             @Override
             public void surfaceDestroyed(
                     SurfaceHolder holder) {
+                MLog.d(TAG, "surfaceDestroyed()");
             }
         });
     }
@@ -198,7 +203,9 @@ public class PlayerActivity extends BaseActivity {
     }
 
     private void internalDestroy() {
-
+        if (mSampleVideoPlayer != null) {
+            mSampleVideoPlayer.release();
+        }
     }
 
 }

@@ -11,6 +11,7 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.TextView;
 
+import com.weidi.usefragments.BaseActivity;
 import com.weidi.usefragments.PlayerActivity;
 import com.weidi.usefragments.R;
 import com.weidi.usefragments.fragment.FragOperManager;
@@ -84,8 +85,10 @@ public class Main1Fragment extends BaseFragment {
                 //FragOperManager.getInstance().enter3(new TestMotionEventFragment());
                 //FragOperManager.getInstance().enter3(new ThrowingScreenFragment());
                 //FragOperManager.getInstance().enter3(new DecodeVideoFragment());
+
                 getAttachedActivity().startActivity(
                         new Intent(getContext(), PlayerActivity.class));
+                ((BaseActivity) getAttachedActivity()).enterActivity();
             }
         });
     }
