@@ -10,7 +10,6 @@ public class Contents {
 
     public static String getUri() {
         mPath = "/storage/37C8-3904/myfiles/video/Silent_Movie_321_AC4_H265_MP4_50fps.mp4";
-        mPath = "/storage/2430-1702/BaiduNetdisk/video/流浪的地球.mp4";
         mPath = "http://192.168.0.112:8080/tomcat_video/test.mp4";
         mPath = "http://192.168.0.112:8080/tomcat_video/game_of_thrones_5_01.mp4";
         // 突袭
@@ -76,6 +75,7 @@ public class Contents {
         mPath = "/storage/2430-1702/BaiduNetdisk/video/shape_of_my_heart.mp4";
         mPath = "/storage/2430-1702/BaiduNetdisk/video/08_mm-MP4-H264_720x400_2997_AAC-LC_192_48.mp4";
         mPath = "/storage/2430-1702/BaiduNetdisk/video/05.mp4";
+        mPath = "/storage/2430-1702/BaiduNetdisk/video/流浪的地球.mp4";
 
 
 

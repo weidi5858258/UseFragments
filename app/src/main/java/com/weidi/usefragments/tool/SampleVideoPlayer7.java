@@ -924,6 +924,9 @@ public class SampleVideoPlayer7 {
             boolean render,
             boolean needToSleep,
             MediaUtils.Callback callback) {
+        if (needToSleep) {
+            SystemClock.sleep(24);
+        }
         // Input
         boolean feedInputBufferResult = MediaUtils.feedInputBuffer(
                 mediaCodec, data, offset, size,
@@ -2098,19 +2101,19 @@ public class SampleVideoPlayer7 {
         }
 
         // next
-        mThreadHandler.sendEmptyMessage(MSG_DO_SOME_WORK);
+        // mThreadHandler.sendEmptyMessage(MSG_DO_SOME_WORK);
         // long operationStartTimeMs = SystemClock.uptimeMillis();
-        //scheduleNextWork(SystemClock.uptimeMillis(), 20);
+        scheduleNextWork(SystemClock.uptimeMillis(), 20);
     }
 
     private void doSomeWork() {
-        if (mAudioWrapper.isHandling) {
+        /*if (mAudioWrapper.isHandling) {
             if (mAudioWrapper.offsetList.isEmpty()) {
                 copyData(mAudioWrapper);
                 pickData(mAudioWrapper);
             }
             render(mAudioWrapper);
-        }
+        }*/
 
         if (mVideoWrapper.isHandling) {
             if (mVideoWrapper.offsetList.isEmpty()) {
