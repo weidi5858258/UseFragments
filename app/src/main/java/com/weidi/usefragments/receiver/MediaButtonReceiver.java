@@ -7,9 +7,8 @@ import android.media.AudioManager;
 import android.view.KeyEvent;
 
 import com.weidi.eventbus.EventBusUtils;
-import com.weidi.usefragments.tool.MLog;
 import com.weidi.usefragments.tool.SampleAudioPlayer;
-import com.weidi.usefragments.tool.SampleVideoPlayer2;
+import com.weidi.usefragments.tool.SampleVideoPlayer7;
 
 /***
  Created by root on 19-7-2.
@@ -41,7 +40,7 @@ public class MediaButtonReceiver extends BroadcastReceiver {
                         EventBusUtils.post(
                                 SampleAudioPlayer.class, KeyEvent.KEYCODE_HEADSETHOOK, null);
                         EventBusUtils.post(
-                                SampleVideoPlayer2.class, KeyEvent.KEYCODE_HEADSETHOOK, null);
+                                SampleVideoPlayer7.class, KeyEvent.KEYCODE_HEADSETHOOK, null);
                     }
                     break;
                 case KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE:

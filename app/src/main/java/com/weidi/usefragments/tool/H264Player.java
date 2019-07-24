@@ -698,13 +698,13 @@ public class H264Player {
 
         @Override
         public void onInputBuffer(
-                ByteBuffer room, MediaUtils.InputBufferInfo info) {
+                int roomIndex, ByteBuffer room, MediaUtils.InputBufferInfo info) {
 
         }
 
         @Override
         public void onOutputBuffer(
-                ByteBuffer room, MediaCodec.BufferInfo roomInfo, int roomSize) {
+                int roomIndex, ByteBuffer room, MediaCodec.BufferInfo roomInfo, int roomSize) {
 
         }
     };

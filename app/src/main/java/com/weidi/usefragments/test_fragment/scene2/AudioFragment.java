@@ -726,13 +726,13 @@ public class AudioFragment extends BaseFragment {
                     }
 
                     @Override
-                    public void onInputBuffer(ByteBuffer room, MediaUtils.InputBufferInfo info) {
+                    public void onInputBuffer(int roomIndex, ByteBuffer room, MediaUtils.InputBufferInfo info) {
 
                     }
 
                     @Override
                     public void onOutputBuffer(
-                            ByteBuffer room, MediaCodec.BufferInfo roomInfo, int roomSize) {
+                            int roomIndex, ByteBuffer room, MediaCodec.BufferInfo roomInfo, int roomSize) {
                         byte[] pcmData = new byte[roomSize];
                         room.get(pcmData, 0, pcmData.length);
                         if (mAudioTrack != null) {

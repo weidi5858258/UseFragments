@@ -1410,7 +1410,7 @@ public class MediaUtils {
                 if (room != null) {
                     room.clear();
                     if (callback != null) {
-                        callback.onInputBuffer(room, info);
+                        callback.onInputBuffer(roomIndex, room, info);
                     }
                 }
                 int flags = 0;
@@ -1445,9 +1445,10 @@ public class MediaUtils {
     public interface Callback {
         void onFormatChanged(MediaFormat newMediaFormat);
 
-        void onInputBuffer(ByteBuffer room, InputBufferInfo info);
+        void onInputBuffer(int roomIndex, ByteBuffer room, InputBufferInfo info);
 
-        void onOutputBuffer(ByteBuffer room, MediaCodec.BufferInfo roomInfo, int roomSize);
+        void onOutputBuffer(int roomIndex, ByteBuffer room,
+                            MediaCodec.BufferInfo roomInfo, int roomSize);
     }
 
     public static boolean drainOutputBuffer(
@@ -1544,7 +1545,7 @@ public class MediaUtils {
                         room.position(roomInfo.offset);
                         room.limit(roomInfo.offset + roomSize);
                         if (callback != null) {
-                            callback.onOutputBuffer(room, roomInfo, roomSize);
+                            callback.onOutputBuffer(roomIndex, room, roomInfo, roomSize);
                         }
                     }
                 }

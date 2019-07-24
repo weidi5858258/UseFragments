@@ -1390,12 +1390,12 @@ public class SampleVideoPlayer3 {
         }
 
         @Override
-        public void onInputBuffer(ByteBuffer room, MediaUtils.InputBufferInfo info) {
+        public void onInputBuffer(int roomIndex, ByteBuffer room, MediaUtils.InputBufferInfo info) {
 
         }
 
         @Override
-        public void onOutputBuffer(ByteBuffer room, MediaCodec.BufferInfo roomInfo, int roomSize) {
+        public void onOutputBuffer(int roomIndex, ByteBuffer room, MediaCodec.BufferInfo roomInfo, int roomSize) {
             byte[] audioData = new byte[roomSize];
             room.get(audioData, 0, audioData.length);
             // MLog.d(TAG, "mAudioCallback audioData.length: " + audioData.length);
@@ -1412,12 +1412,12 @@ public class SampleVideoPlayer3 {
         }
 
         @Override
-        public void onInputBuffer(ByteBuffer room, MediaUtils.InputBufferInfo info) {
+        public void onInputBuffer(int roomIndex, ByteBuffer room, MediaUtils.InputBufferInfo info) {
 
         }
 
         @Override
-        public void onOutputBuffer(ByteBuffer room, MediaCodec.BufferInfo roomInfo, int roomSize) {
+        public void onOutputBuffer(int roomIndex, ByteBuffer room, MediaCodec.BufferInfo roomInfo, int roomSize) {
             /*byte[] videoData = new byte[roomSize];
             room.get(videoData, 0, videoData.length);
             MLog.d(TAG, "mVideoCallback videoData.length: " + videoData.length);*/
