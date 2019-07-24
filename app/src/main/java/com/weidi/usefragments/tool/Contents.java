@@ -61,8 +61,6 @@ public class Contents {
         mPath = "http://xunleib.zuida360.com/1804/%E7%A2%9F%E4%B8%AD%E8%B0%8D2.BD1280%E9%AB%98%E6%B8%85%E4%B8%AD%E8%8B%B1%E5%8F%8C%E5%AD%97%E7%89%88.mp4";
         // 碟中谍1
         mPath = "http://xunleib.zuida360.com/1804/%E7%A2%9F%E4%B8%AD%E8%B0%8D1.BD1280%E9%AB%98%E6%B8%85%E4%B8%AD%E8%8B%B1%E5%8F%8C%E5%AD%97%E7%89%88.mp4";
-        // 忍者刺客(老是网络不给力)
-        mPath = "http://download.xunleizuida.com/1904/%E5%BF%8D%E8%80%85%E5%88%BA%E5%AE%A2.HD1280%E9%AB%98%E6%B8%85%E4%B8%AD%E8%8B%B1%E5%8F%8C%E5%AD%97%E7%89%88.mp4";
         // 军情五处：利益之争
         // {csd-1=java.nio.HeapByteBuffer[pos=0 lim=8 cap=8], mime=video/avc, frame-rate=24, track-id=2, profile=2, width=1280, height=720, max-input-size=151238, durationUs=6227930041, csd-0=java.nio.HeapByteBuffer[pos=0 lim=41 cap=41], bitrate-mode=0, level=512}
         // csd-0: {0, 0, 0, 1, 103, 77, 64, 31, -24, -128, 40, 2, -35, -128, -87, 1, 1, 1, 64, 0, 0, -6, 64, 0, 46, -32, 56, 24, 0, 21, 92, -64, 1, 83, -38, 76, 48, 15, -116, 24, -119}
@@ -76,7 +74,6 @@ public class Contents {
         mPath = "http://okxxzy.xzokzyzy.com/20190721/23773_0455e097/%E9%BB%91%E8%A1%A3%E4%BA%BA4%E9%9F%A9%E7%89%88%E4%B8%AD%E5%AD%97.mp4";
         mPath = "/storage/2430-1702/BaiduNetdisk/video/流浪的地球.mp4";
         mPath = "/storage/2430-1702/BaiduNetdisk/video/08_mm-MP4-H264_720x400_2997_AAC-LC_192_48.mp4";
-        mPath = "/storage/2430-1702/BaiduNetdisk/video/shape_of_my_heart.mp4";
         // 地狱男爵：血皇后崛起
         // {csd-1=java.nio.HeapByteBuffer[pos=0 lim=9 cap=9], mime=video/avc, frame-rate=60, track-id=1, profile=8, width=1280, height=720, max-input-size=148263, durationUs=7247083333, csd-0=java.nio.HeapByteBuffer[pos=0 lim=33 cap=33], bitrate-mode=0, level=1024}
         // {0, 0, 0, 1, 103, 100, 0, 32, -84, -39, 64, 80, 5, -69, -1, 3, 27, 3, 26, 16, 0, 0, 3, 0, 16, 0, 0, 7, -128, -15, -125, 25, 96}
@@ -90,6 +87,9 @@ public class Contents {
         mPath = "/storage/2430-1702/BaiduNetdisk/video/05.mp4";
         // 重案六组第四季01
         mPath = "http://okzy.xzokzyzy.com/20190629/9876_8b3388bf/%E9%87%8D%E6%A1%88%E5%85%AD%E7%BB%844%E7%AC%AC01%E9%9B%86.mp4";
+        mPath = "/storage/2430-1702/BaiduNetdisk/video/shape_of_my_heart.mp4";
+        // 忍者刺客(老是网络不给力)
+        mPath = "http://download.xunleizuida.com/1904/%E5%BF%8D%E8%80%85%E5%88%BA%E5%AE%A2.HD1280%E9%AB%98%E6%B8%85%E4%B8%AD%E8%8B%B1%E5%8F%8C%E5%AD%97%E7%89%88.mp4";
 
 
 

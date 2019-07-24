@@ -241,6 +241,7 @@ public class SampleVideoPlayer7 {
             preBufferLastByte = 0;
             durationUs = 0;
             presentationTimeUs = 0;
+            startTimeUs = 0;
             time1.clear();
             time2.clear();
             readData1Size = 0;
@@ -928,6 +929,9 @@ public class SampleVideoPlayer7 {
         }
     }
 
+    private String prevElapsedTime = null;
+    private String curElapsedTime = null;
+
     private boolean feedInputBufferAndDrainOutputBuffer(SimpleWrapper wrapper) {
         /*if (wrapper.type == TYPE_AUDIO ? false : true) {
             SystemClock.sleep(24);
@@ -940,24 +944,31 @@ public class SampleVideoPlayer7 {
         wrapper.handleFrameLengthTotal += wrapper.frameDataLength;
 
         // 得到wrapper.presentationTimeUs时间戳
-        if ((Long) wrapper.handleFrameCounts != null
+        /*if ((Long) wrapper.handleFrameCounts != null
                 && wrapper.time2.containsKey((Long) wrapper.handleFrameCounts)) {
             wrapper.presentationTimeUs =
                     wrapper.time2.get((Long) wrapper.handleFrameCounts);
         } else {
             wrapper.presentationTimeUs = System.nanoTime();
-        }
+        }*/
 
+        wrapper.presentationTimeUs = wrapper.extractor.getSampleTime();
         if (wrapper instanceof VideoWrapper
                 && wrapper.presentationTimeUs != -1
                 // 过一秒才更新
                 && wrapper.presentationTimeUs - wrapper.startTimeUs >= 1000000) {
             // 如果退出,那么seekTo到这个位置就行了
             wrapper.startTimeUs = wrapper.presentationTimeUs;
-            /*String curElapsedTime = DateUtils.formatElapsedTime(
+            curElapsedTime = DateUtils.formatElapsedTime(
                     (wrapper.presentationTimeUs / 1000) / 1000);
-            MLog.i(TAG, "handleData() presentationTimeUs: " + wrapper.presentationTimeUs);
+            /*MLog.i(TAG, "handleData() presentationTimeUs: " + wrapper.presentationTimeUs);
             MLog.i(TAG, "handleData()     curElapsedTime: " + curElapsedTime);*/
+            if (mCallback != null
+                    // 防止重复更新
+                    && !TextUtils.equals(curElapsedTime, prevElapsedTime)) {
+                prevElapsedTime = curElapsedTime;
+                mCallback.onProgressUpdated(wrapper.presentationTimeUs);
+            }
         }
 
         // Input
@@ -991,6 +1002,10 @@ public class SampleVideoPlayer7 {
     }
 
     private void readData(SimpleWrapper wrapper) {
+        if (mCallback != null) {
+            mCallback.onReady();
+        }
+
         String showInfo = null;
         if (wrapper.type == TYPE_AUDIO) {
             showInfo = "  readData() audio start";
@@ -1517,6 +1532,9 @@ public class SampleVideoPlayer7 {
                         onlyOne = false;
                         MediaUtils.startTimeMs = System.currentTimeMillis();
                         MediaUtils.startTimeMs = System.nanoTime();
+                        if (mCallback != null) {
+                            mCallback.onStarted();
+                        }
                     }
 
                     if (!feedInputBufferAndDrainOutputBuffer(wrapper)) {
@@ -1681,10 +1699,10 @@ public class SampleVideoPlayer7 {
         }
         MLog.w(TAG, showInfo);
 
-        /*if (!mAudioWrapper.isHandling
+        if (!mAudioWrapper.isHandling
                 && !mVideoWrapper.isHandling) {
             play();
-        }*/
+        }
     }
 
     private void copyReadData1ToHandleData(SimpleWrapper wrapper) {

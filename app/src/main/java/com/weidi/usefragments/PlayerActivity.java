@@ -5,12 +5,18 @@ import android.content.Intent;
 import android.content.res.Configuration;
 import android.media.AudioManager;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
+import android.os.Message;
 import android.os.PowerManager;
+import android.text.format.DateUtils;
 import android.util.Log;
 import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
+import android.widget.TextView;
 
+import com.weidi.usefragments.tool.Callback;
 import com.weidi.usefragments.tool.MLog;
 import com.weidi.usefragments.tool.PermissionsUtils;
 import com.weidi.usefragments.tool.SampleVideoPlayer7;
@@ -141,15 +147,31 @@ public class PlayerActivity extends BaseActivity {
 
     ///////////////////////////////////////////////////////////////////////
 
+    private static final int PLAYBACK_INFO = 0x001;
+    private static final int PLAYBACK_PROGRESS_UPDATED = 0x002;
+    private static final int PLAYBACK_PROGRESS_CHANGED = 0x003;
+
     private SurfaceView mSurfaceView;
     private Surface mSurface;
     private PowerManager.WakeLock mPowerWakeLock;
     private SampleVideoPlayer7 mSampleVideoPlayer;
+    private TextView mShowInfoTV;
+    private long mPresentationTimeUs;
+
+    private Handler mUiHandler;
 
     private void initData() {
         // Volume change should always affect media volume
         setVolumeControlStream(AudioManager.STREAM_MUSIC);
 
+        mUiHandler = new Handler(Looper.getMainLooper()) {
+            @Override
+            public void handleMessage(Message msg) {
+                PlayerActivity.this.uiHandleMessage(msg);
+            }
+        };
+
+        mShowInfoTV = findViewById(R.id.show_info);
         mSurfaceView = findViewById(R.id.surfaceView);
         mSurfaceView.getHolder().addCallback(new SurfaceHolder.Callback() {
             @Override
@@ -172,6 +194,7 @@ public class PlayerActivity extends BaseActivity {
                 mSampleVideoPlayer.setContext(getContext());
                 mSampleVideoPlayer.setPath(null);
                 mSampleVideoPlayer.setSurface(mSurface);
+                mSampleVideoPlayer.setCallback(mCallback);
                 mSampleVideoPlayer.play();
             }
 
@@ -207,5 +230,65 @@ public class PlayerActivity extends BaseActivity {
             mSampleVideoPlayer.release();
         }
     }
+
+    private void uiHandleMessage(Message msg) {
+        if (msg == null) {
+            return;
+        }
+
+        switch (msg.what) {
+            case PLAYBACK_PROGRESS_UPDATED:
+                String curElapsedTime = DateUtils.formatElapsedTime(
+                        (mPresentationTimeUs / 1000) / 1000);
+                mShowInfoTV.setText(curElapsedTime);
+                break;
+            default:
+                break;
+        }
+    }
+
+    private Callback mCallback = new Callback() {
+        @Override
+        public void onReady() {
+            mUiHandler.post(new Runnable() {
+                @Override
+                public void run() {
+                    mShowInfoTV.setText("00:00");
+                }
+            });
+        }
+
+        @Override
+        public void onPaused() {
+
+        }
+
+        @Override
+        public void onStarted() {
+
+        }
+
+        @Override
+        public void onFinished() {
+
+        }
+
+        @Override
+        public void onProgressUpdated(long presentationTimeUs) {
+            mPresentationTimeUs = presentationTimeUs;
+            mUiHandler.removeMessages(PLAYBACK_PROGRESS_UPDATED);
+            mUiHandler.sendEmptyMessage(PLAYBACK_PROGRESS_UPDATED);
+        }
+
+        @Override
+        public void onError() {
+
+        }
+
+        @Override
+        public void onInfo(String info) {
+
+        }
+    };
 
 }
