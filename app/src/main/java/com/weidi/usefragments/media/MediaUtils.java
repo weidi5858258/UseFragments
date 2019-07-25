@@ -545,6 +545,7 @@ public class MediaUtils {
         return encoder;
     }
 
+    // 只用于录屏,因为MediaFormat是录屏的参数
     public static MediaCodec getVideoEncoderMediaCodec() {
         MediaCodec encoder = null;
         MediaCodecInfo[] mediaCodecInfos = findAllEncodersByMime(VIDEO_MIME);
