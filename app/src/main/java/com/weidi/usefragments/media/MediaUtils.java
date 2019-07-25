@@ -1,11 +1,15 @@
 package com.weidi.usefragments.media;
 
 import android.graphics.Bitmap;
+import android.graphics.ImageFormat;
+import android.graphics.Rect;
+import android.graphics.YuvImage;
 import android.media.AudioAttributes;
 import android.media.AudioFormat;
 import android.media.AudioManager;
 import android.media.AudioRecord;
 import android.media.AudioTrack;
+import android.media.Image;
 import android.media.MediaCodec;
 import android.media.MediaCodecInfo;
 import android.media.MediaCodecList;
@@ -16,6 +20,7 @@ import android.media.ThumbnailUtils;
 import android.os.Build;
 import android.os.SystemClock;
 import android.text.TextUtils;
+import android.text.format.DateUtils;
 import android.util.Log;
 import android.util.Range;
 import android.util.SparseArray;
@@ -33,8 +38,10 @@ import java.lang.reflect.Modifier;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 import androidx.annotation.NonNull;
 
@@ -98,6 +105,74 @@ public class MediaUtils {
         } else {
             ENCODING_AC4 = AudioFormat.ENCODING_AAC_ELD;
         }
+    }
+
+    public static final Map<Integer, String> colorFormatMap;
+
+    static {
+        colorFormatMap = new HashMap<Integer, String>();
+        colorFormatMap.put(1, "COLOR_FormatMonochrome");
+        colorFormatMap.put(2, "COLOR_Format8bitRGB332");
+        colorFormatMap.put(3, "COLOR_Format12bitRGB444");
+        colorFormatMap.put(4, "COLOR_Format16bitARGB4444");
+        colorFormatMap.put(5, "COLOR_Format16bitARGB1555");
+        colorFormatMap.put(6, "COLOR_Format16bitRGB565");
+        colorFormatMap.put(7, "COLOR_Format16bitBGR565");
+        colorFormatMap.put(8, "COLOR_Format18bitRGB666");
+        colorFormatMap.put(9, "COLOR_Format18bitARGB1665");
+        colorFormatMap.put(10, "COLOR_Format19bitARGB1666");
+        colorFormatMap.put(11, "COLOR_Format24bitRGB888");
+        colorFormatMap.put(12, "COLOR_Format24bitBGR888");
+        colorFormatMap.put(13, "COLOR_Format24bitARGB1887");
+        colorFormatMap.put(14, "COLOR_Format25bitARGB1888");
+        colorFormatMap.put(15, "COLOR_Format32bitBGRA8888");
+        colorFormatMap.put(16, "COLOR_Format32bitARGB8888");
+        colorFormatMap.put(17, "COLOR_FormatYUV411Planar");
+        colorFormatMap.put(18, "COLOR_FormatYUV411PackedPlanar");
+        colorFormatMap.put(19, "COLOR_FormatYUV420Planar");
+        colorFormatMap.put(20, "COLOR_FormatYUV420PackedPlanar");
+        colorFormatMap.put(21, "COLOR_FormatYUV420SemiPlanar");
+        colorFormatMap.put(22, "COLOR_FormatYUV422Planar");
+        colorFormatMap.put(23, "COLOR_FormatYUV422PackedPlanar");
+        colorFormatMap.put(24, "COLOR_FormatYUV422SemiPlanar");
+        colorFormatMap.put(25, "COLOR_FormatYCbYCr");
+        colorFormatMap.put(26, "COLOR_FormatYCrYCb");
+        colorFormatMap.put(27, "COLOR_FormatCbYCrY");
+        colorFormatMap.put(28, "COLOR_FormatCrYCbY");
+        colorFormatMap.put(29, "COLOR_FormatYUV444Interleaved");
+        colorFormatMap.put(30, "COLOR_FormatRawBayer8bit");
+        colorFormatMap.put(31, "COLOR_FormatRawBayer10bit");
+        colorFormatMap.put(32, "COLOR_FormatRawBayer8bitcompressed");
+        colorFormatMap.put(33, "COLOR_FormatL2");
+        colorFormatMap.put(34, "COLOR_FormatL4");
+        colorFormatMap.put(35, "COLOR_FormatL8");
+        colorFormatMap.put(36, "COLOR_FormatL16");
+        colorFormatMap.put(37, "COLOR_FormatL24");
+        colorFormatMap.put(38, "COLOR_FormatL32");
+        colorFormatMap.put(39, "COLOR_FormatYUV420PackedSemiPlanar");
+        colorFormatMap.put(40, "COLOR_FormatYUV422PackedSemiPlanar");
+        colorFormatMap.put(41, "COLOR_Format18BitBGR666");
+        colorFormatMap.put(42, "COLOR_Format24BitARGB6666");
+        colorFormatMap.put(43, "COLOR_Format24BitABGR6666");
+        colorFormatMap.put(0x7f000100, "COLOR_TI_FormatYUV420PackedSemiPlanar");// 2130706688
+        colorFormatMap.put(0x7F000789, "COLOR_FormatSurface");// 2130708361
+        colorFormatMap.put(0x7F00A000, "COLOR_Format32bitABGR8888");// 2130747392
+        colorFormatMap.put(0x7F420888, "COLOR_FormatYUV420Flexible");// 2135033992
+        colorFormatMap.put(0x7F422888, "COLOR_FormatYUV422Flexible");// 2135042184
+        colorFormatMap.put(0x7F444888, "COLOR_FormatYUV444Flexible");// 2135181448
+        colorFormatMap.put(0x7F36B888, "COLOR_FormatRGBFlexible");// 2134292616
+        colorFormatMap.put(0x7F36A888, "COLOR_FormatRGBAFlexible");// 2134288520
+        colorFormatMap.put(0x7fa30c00, "COLOR_QCOM_FormatYUV420SemiPlanar");// 2141391872
+        /***
+         COLOR_FormatYUV420Flexible不是一种确定的YUV420格式,
+         而是包含
+         COLOR_FormatYUV411Planar
+         COLOR_FormatYUV411PackedPlanar
+         COLOR_FormatYUV420Planar
+         COLOR_FormatYUV420PackedPlanar
+         COLOR_FormatYUV420SemiPlanar
+         COLOR_FormatYUV420PackedSemiPlanar
+         */
     }
 
     /***
@@ -249,6 +324,18 @@ public class MediaUtils {
                 if (codecCapabilities == null) {
                     continue;
                 }
+                if (codecCapabilities.getVideoCapabilities() != null) {
+                    MLog.d(TAG, "findAllEncodersByMime() codecName: " +
+                            mediaCodecInfo.getName() +
+                            " 编码时支持的colorFormat start");
+                    for (int colorFormat : codecCapabilities.colorFormats) {
+                        MLog.d(TAG, "findAllEncodersByMime() " + colorFormat +
+                                " : " + colorFormatMap.get(colorFormat));
+                    }
+                    MLog.d(TAG, "findAllEncodersByMime() codecName: " +
+                            mediaCodecInfo.getName() +
+                            " 编码时支持的colorFormat end");
+                }
             } catch (IllegalArgumentException e) {
                 // unsupported
                 continue;
@@ -273,6 +360,18 @@ public class MediaUtils {
                         mediaCodecInfo.getCapabilitiesForType(mime);
                 if (codecCapabilities == null) {
                     continue;
+                }
+                if (codecCapabilities.getVideoCapabilities() != null) {
+                    MLog.d(TAG, "findAllDecodersByMime() codecName: " +
+                            mediaCodecInfo.getName() +
+                            " 解码时支持的colorFormat start");
+                    for (int colorFormat : codecCapabilities.colorFormats) {
+                        MLog.d(TAG, "findAllDecodersByMime() " + colorFormat +
+                                " : " + colorFormatMap.get(colorFormat));
+                    }
+                    MLog.d(TAG, "findAllDecodersByMime() codecName: " +
+                            mediaCodecInfo.getName() +
+                            " 解码时支持的colorFormat end");
                 }
             } catch (IllegalArgumentException e) {
                 // unsupported
@@ -338,7 +437,7 @@ public class MediaUtils {
                 if (type.equalsIgnoreCase(mime)) {
                     if (DEBUG)
                         MLog.d(TAG,
-                                "getEncoderMediaCodecInfo() the selected encoder is : " +
+                                "getDecoderMediaCodecInfo() the selected decoder is : " +
                                         mediaCodecInfo.getName());
                     return mediaCodecInfo;
                 }
@@ -1472,15 +1571,13 @@ public class MediaUtils {
         for (; ; ) {
             try {
                 // 房间号
-                int roomIndex = codec.dequeueOutputBuffer(
-                        roomInfo, TIME_OUT);
+                int roomIndex = codec.dequeueOutputBuffer(roomInfo, TIME_OUT);
                 switch (roomIndex) {
                     case MediaCodec.INFO_TRY_AGAIN_LATER:
                         break;
                     case MediaCodec.INFO_OUTPUT_FORMAT_CHANGED:
-                        MLog.d(TAG, "drainOutputBuffer() " +
-                                "Output MediaCodec.INFO_OUTPUT_FORMAT_CHANGED");
-                        MLog.d(TAG, "drainOutputBuffer() " + codec.getOutputFormat());
+                        /*MLog.d(TAG, "drainOutputBuffer() " +
+                                "Output MediaCodec.INFO_OUTPUT_FORMAT_CHANGED");*/
                         if (callback != null) {
                             callback.onFormatChanged(codec.getOutputFormat());
                         }
@@ -1496,6 +1593,46 @@ public class MediaUtils {
                     break;
                 }
 
+                // 房间
+                ByteBuffer room = null;
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                    room = codec.getOutputBuffer(roomIndex);
+                } else {
+                    room = codec.getOutputBuffers()[roomIndex];
+                }
+                // 房间大小
+                int roomSize = roomInfo.size;
+                if (room != null) {
+                    room.position(roomInfo.offset);
+                    room.limit(roomInfo.offset + roomSize);
+                    if (callback != null) {
+                        callback.onOutputBuffer(roomIndex, room, roomInfo, roomSize);
+                    }
+                }
+                /*if (roomSize != 0) {
+                    Image image = codec.getOutputImage(roomIndex);
+                    // 需要输出什么类型
+                    int outputImageFileType = FILE_TypeI420;
+                    if (outputImageFileType != -1) {
+                        switch (outputImageFileType) {
+                            case FILE_TypeI420:
+                                // *.yuv
+                                // 需要保存的数据,把它写到输入流就行了
+                                // getDataFromImage(image, COLOR_FormatI420);
+                                break;
+                            case FILE_TypeNV21:
+                                // *.yuv
+                                // getDataFromImage(image, COLOR_FormatNV21);
+                                break;
+                            case FILE_TypeJPEG:
+                                // *.jpg
+                                // compressToJpeg(fileName, image);
+                                break;
+                        }
+                    }
+                    image.close();
+                }*/
+
                 if ((roomInfo.flags & MediaCodec.BUFFER_FLAG_CODEC_CONFIG) != 0) {
                     MLog.d(TAG, "drainOutputBuffer() " +
                             "Output MediaCodec.BUFFER_FLAG_CODEC_CONFIG");
@@ -1508,15 +1645,11 @@ public class MediaUtils {
                     return false;
                 }
 
-                // 房间
-                ByteBuffer room = null;
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                    room = codec.getOutputBuffer(roomIndex);
-                } else {
-                    room = codec.getOutputBuffers()[roomIndex];
-                }
-
                 if (needToSleep) {
+                    String elapsedTime = DateUtils.formatElapsedTime(
+                            (roomInfo.presentationTimeUs / 1000) / 1000);
+                    MLog.d(TAG, "drainOutputBuffer() presentationTimeUs: " +roomInfo.presentationTimeUs);
+                    MLog.d(TAG, "drainOutputBuffer()        elapsedTime: " +elapsedTime);
                     /*long tempTime = (roomInfo.presentationTimeUs / 1000)
                             - (System.currentTimeMillis() - MediaUtils.startTimeMs);
                     MLog.i(TAG, "drainOutputBuffer() tempTime: " + tempTime);
@@ -1534,19 +1667,9 @@ public class MediaUtils {
                         continue;
                     }*/
 
-                    /*while (roomInfo.presentationTimeUs / 1000
+                    while (roomInfo.presentationTimeUs / 1000
                             > System.currentTimeMillis() - MediaUtils.startTimeMs) {
                         SystemClock.sleep(10);
-                    }*/
-                } else {
-                    if (room != null) {
-                        // 房间大小
-                        int roomSize = roomInfo.size;
-                        room.position(roomInfo.offset);
-                        room.limit(roomInfo.offset + roomSize);
-                        if (callback != null) {
-                            callback.onOutputBuffer(roomIndex, room, roomInfo, roomSize);
-                        }
                     }
                 }
 
@@ -1561,6 +1684,139 @@ public class MediaUtils {
         }// for(;;) end
 
         return true;
+    }
+
+    private static boolean isImageFormatSupported(Image image) {
+        if (image == null) {
+            return false;
+        }
+        switch (image.getFormat()) {
+            case ImageFormat.NV21:
+            case ImageFormat.YV12:
+            case ImageFormat.YUV_420_888:
+                return true;
+            default:
+                break;
+        }
+        return false;
+    }
+
+    private static final int COLOR_FormatI420 = 1;
+    private static final int COLOR_FormatNV21 = 2;
+    public static final int FILE_TypeI420 = 1;
+    public static final int FILE_TypeNV21 = 2;
+    public static final int FILE_TypeJPEG = 3;
+
+    // 对绝大多数设备和绝大多数视频编码格式，都可以解码得到NV21或I420格式帧数据
+    private static byte[] getDataFromImage(Image image, int colorFormat) {
+        if (image == null) {
+            return null;
+        }
+        if (colorFormat != COLOR_FormatI420
+                && colorFormat != COLOR_FormatNV21) {
+            throw new IllegalArgumentException(
+                    "only support COLOR_FormatI420 and COLOR_FormatNV21");
+        }
+        if (!isImageFormatSupported(image)) {
+            throw new RuntimeException("Can't convert Image to byte array, format " +
+                    image.getFormat());
+        }
+        Rect crop = image.getCropRect();
+        int format = image.getFormat();
+        int width = crop.width();
+        int height = crop.height();
+        Image.Plane[] planes = image.getPlanes();
+        byte[] data = new byte[width * height * ImageFormat.getBitsPerPixel(format) / 8];
+        byte[] rowData = new byte[planes[0].getRowStride()];
+        MLog.i(TAG, "get data from " + planes.length + " planes");
+        int channelOffset = 0;
+        int outputStride = 1;
+        for (int i = 0; i < planes.length; i++) {
+            switch (i) {
+                case 0:
+                    channelOffset = 0;
+                    outputStride = 1;
+                    break;
+                case 1:
+                    if (colorFormat == COLOR_FormatI420) {
+                        channelOffset = width * height;
+                        outputStride = 1;
+                    } else if (colorFormat == COLOR_FormatNV21) {
+                        channelOffset = width * height + 1;
+                        outputStride = 2;
+                    }
+                    break;
+                case 2:
+                    if (colorFormat == COLOR_FormatI420) {
+                        channelOffset = (int) (width * height * 1.25);
+                        outputStride = 1;
+                    } else if (colorFormat == COLOR_FormatNV21) {
+                        channelOffset = width * height;
+                        outputStride = 2;
+                    }
+                    break;
+            }
+            ByteBuffer buffer = planes[i].getBuffer();
+            int rowStride = planes[i].getRowStride();
+            int pixelStride = planes[i].getPixelStride();
+            if (DEBUG) {
+                Log.v(TAG, "pixelStride " + pixelStride);
+                Log.v(TAG, "rowStride " + rowStride);
+                Log.v(TAG, "width " + width);
+                Log.v(TAG, "height " + height);
+                Log.v(TAG, "buffer size " + buffer.remaining());
+            }
+            int shift = (i == 0) ? 0 : 1;
+            int w = width >> shift;
+            int h = height >> shift;
+            buffer.position(rowStride * (crop.top >> shift) + pixelStride * (crop.left >> shift));
+            for (int row = 0; row < h; row++) {
+                int length;
+                if (pixelStride == 1 && outputStride == 1) {
+                    length = w;
+                    buffer.get(data, channelOffset, length);
+                    channelOffset += length;
+                } else {
+                    length = (w - 1) * pixelStride + 1;
+                    buffer.get(rowData, 0, length);
+                    for (int col = 0; col < w; col++) {
+                        data[channelOffset] = rowData[col * pixelStride];
+                        channelOffset += outputStride;
+                    }
+                }
+                if (row < h - 1) {
+                    buffer.position(buffer.position() + rowStride - length);
+                }
+            }
+            MLog.v(TAG, "Finished reading data from plane " + i);
+        }
+        return data;
+    }
+
+    private static void compressToJpeg(String fileName, Image image) {
+        if (TextUtils.isEmpty(fileName) || image == null) {
+            return;
+        }
+        FileOutputStream outStream;
+        try {
+            outStream = new FileOutputStream(fileName);
+        } catch (IOException ioe) {
+            throw new RuntimeException("Unable to create output file " + fileName, ioe);
+        }
+        Rect rect = image.getCropRect();
+        YuvImage yuvImage = new YuvImage(
+                getDataFromImage(image, COLOR_FormatNV21),
+                ImageFormat.NV21,
+                rect.width(),
+                rect.height(),
+                null);
+        yuvImage.compressToJpeg(rect, 100, outStream);
+        try {
+            outStream.flush();
+            outStream.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     private static boolean isEncodingLinearPcm(int encoding) {

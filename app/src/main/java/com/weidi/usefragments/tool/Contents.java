@@ -84,12 +84,12 @@ public class Contents {
         mPath = "http://okzy.xzokzyzy.com/20190629/9878_697082ae/%E9%87%8D%E6%A1%88%E5%85%AD%E7%BB%844%E7%AC%AC03%E9%9B%86.mp4";
         // 重案六组第四季03
         mPath = "http://okzy.xzokzyzy.com/20190629/9877_1ffc17e6/%E9%87%8D%E6%A1%88%E5%85%AD%E7%BB%844%E7%AC%AC02%E9%9B%86.mp4";
-        mPath = "/storage/2430-1702/BaiduNetdisk/video/05.mp4";
         // 重案六组第四季01
         mPath = "http://okzy.xzokzyzy.com/20190629/9876_8b3388bf/%E9%87%8D%E6%A1%88%E5%85%AD%E7%BB%844%E7%AC%AC01%E9%9B%86.mp4";
         mPath = "/storage/2430-1702/BaiduNetdisk/video/shape_of_my_heart.mp4";
         // 忍者刺客(老是网络不给力)
         mPath = "http://download.xunleizuida.com/1904/%E5%BF%8D%E8%80%85%E5%88%BA%E5%AE%A2.HD1280%E9%AB%98%E6%B8%85%E4%B8%AD%E8%8B%B1%E5%8F%8C%E5%AD%97%E7%89%88.mp4";
+        mPath = "/storage/2430-1702/BaiduNetdisk/video/05.mp4";
 
 
 

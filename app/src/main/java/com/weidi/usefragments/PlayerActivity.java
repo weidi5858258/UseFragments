@@ -14,6 +14,9 @@ import android.util.Log;
 import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
+import android.view.View;
+import android.widget.ImageButton;
+import android.widget.SeekBar;
 import android.widget.TextView;
 
 import com.weidi.usefragments.tool.Callback;
@@ -155,8 +158,15 @@ public class PlayerActivity extends BaseActivity {
     private Surface mSurface;
     private PowerManager.WakeLock mPowerWakeLock;
     private SampleVideoPlayer7 mSampleVideoPlayer;
-    private TextView mShowInfoTV;
+    private int mProgress;
     private long mPresentationTimeUs;
+    private TextView mFileNameTV;
+    private TextView mProgressTimeTV;
+    private TextView mDurationTimeTV;
+    private SeekBar mProgressBar;
+    private ImageButton mPreviousIB;
+    private ImageButton mPlayPauseIB;
+    private ImageButton mNextIB;
 
     private Handler mUiHandler;
 
@@ -171,7 +181,16 @@ public class PlayerActivity extends BaseActivity {
             }
         };
 
-        mShowInfoTV = findViewById(R.id.show_info);
+        mFileNameTV = findViewById(R.id.file_name_tv);
+        mProgressTimeTV = findViewById(R.id.progress_time_tv);
+        mDurationTimeTV = findViewById(R.id.duration_time_tv);
+        mProgressBar = findViewById(R.id.progress_bar);
+        mPreviousIB = findViewById(R.id.button_prev);
+        mPlayPauseIB = findViewById(R.id.button_play_pause);
+        mNextIB = findViewById(R.id.button_next);
+        mPreviousIB.setOnClickListener(mOnClickListener);
+        mPlayPauseIB.setOnClickListener(mOnClickListener);
+        mNextIB.setOnClickListener(mOnClickListener);
         mSurfaceView = findViewById(R.id.surfaceView);
         mSurfaceView.getHolder().addCallback(new SurfaceHolder.Callback() {
             @Override
@@ -190,7 +209,6 @@ public class PlayerActivity extends BaseActivity {
                 mSampleVideoPlayer.setSurface(mSurface);
                 mSampleVideoPlayer.play();*/
 
-                mSampleVideoPlayer = new SampleVideoPlayer7();
                 mSampleVideoPlayer.setContext(getContext());
                 mSampleVideoPlayer.setPath(null);
                 mSampleVideoPlayer.setSurface(mSurface);
@@ -207,6 +225,36 @@ public class PlayerActivity extends BaseActivity {
             public void surfaceDestroyed(
                     SurfaceHolder holder) {
                 MLog.d(TAG, "surfaceDestroyed()");
+            }
+        });
+
+        mSampleVideoPlayer = new SampleVideoPlayer7();
+
+        int duration = (int) mSampleVideoPlayer.getDurationUs() / 1000;
+        int currentPosition = (int) mPresentationTimeUs / 1000;
+        float pos = (float) currentPosition / duration;
+        int target = Math.round(pos * mProgressBar.getMax());
+        mProgressBar.setProgress(target);
+        mProgressBar.setSecondaryProgress(0);
+        mProgressBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            // Tracking start
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {
+            }
+
+            // Tracking
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromTouch) {
+                if (fromTouch) {
+                    mProgress = progress;
+                    mUiHandler.removeMessages(PLAYBACK_PROGRESS_CHANGED);
+                    mUiHandler.sendEmptyMessageDelayed(PLAYBACK_PROGRESS_CHANGED, 50);
+                }
+            }
+
+            // Tracking end
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {
             }
         });
     }
@@ -240,7 +288,19 @@ public class PlayerActivity extends BaseActivity {
             case PLAYBACK_PROGRESS_UPDATED:
                 String curElapsedTime = DateUtils.formatElapsedTime(
                         (mPresentationTimeUs / 1000) / 1000);
-                mShowInfoTV.setText(curElapsedTime);
+                mProgressTimeTV.setText(curElapsedTime);
+
+                int duration = (int) mSampleVideoPlayer.getDurationUs() / 1000;
+                int currentPosition = (int) mPresentationTimeUs / 1000;
+                float pos = (float) currentPosition / duration;
+                int target = Math.round(pos * mProgressBar.getMax());
+                mProgressBar.setProgress(target);
+                break;
+            case PLAYBACK_PROGRESS_CHANGED:
+                long process = (long) ((mProgress / 3840.00) * mSampleVideoPlayer.getDurationUs());
+                mSampleVideoPlayer.setProgressUs(process);
+                MLog.d(TAG, "uiHandleMessage() process: " + process +
+                        " " + DateUtils.formatElapsedTime(process / 1000 / 1000));
                 break;
             default:
                 break;
@@ -253,7 +313,15 @@ public class PlayerActivity extends BaseActivity {
             mUiHandler.post(new Runnable() {
                 @Override
                 public void run() {
-                    mShowInfoTV.setText("00:00");
+                    String durationTime = DateUtils.formatElapsedTime(
+                            (mSampleVideoPlayer.getDurationUs() / 1000) / 1000);
+                    mDurationTimeTV.setText(durationTime);
+                    if (durationTime.length() > 5) {
+                        mProgressTimeTV.setText("00:00");
+                    } else {
+                        mProgressTimeTV.setText("00:00:00");
+                    }
+                    mProgressBar.setProgress(0);
                 }
             });
         }
@@ -288,6 +356,22 @@ public class PlayerActivity extends BaseActivity {
         @Override
         public void onInfo(String info) {
 
+        }
+    };
+
+    private View.OnClickListener mOnClickListener = new View.OnClickListener() {
+        @Override
+        public void onClick(View v) {
+            switch (v.getId()) {
+                case R.id.button_prev:
+                    break;
+                case R.id.button_play_pause:
+                    break;
+                case R.id.button_next:
+                    break;
+                default:
+                    break;
+            }
         }
     };
 
