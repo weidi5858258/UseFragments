@@ -455,7 +455,7 @@ public class SampleVideoPlayer7 {
         switch (msg.what) {
             case MSG_PREPARE:
                 if (internalPrepare()) {
-                    new Thread(mAudioReadData).start();
+                    //new Thread(mAudioReadData).start();
                     new Thread(mVideoReadData).start();
                 }
                 break;
@@ -1725,13 +1725,6 @@ public class SampleVideoPlayer7 {
             MLog.d(TAG, showInfo);
         }
 
-        if (!mAudioWrapper.isHandling
-                && !mVideoWrapper.isHandling) {
-            if (mCallback != null) {
-                mCallback.onFinished();
-            }
-        }
-
         if (wrapper instanceof AudioWrapper
                 && mAudioWrapper.mAudioTrack != null) {
             mAudioWrapper.mAudioTrack.release();
@@ -1752,6 +1745,9 @@ public class SampleVideoPlayer7 {
 
         if (!mAudioWrapper.isHandling
                 && !mVideoWrapper.isHandling) {
+            if (mCallback != null) {
+                mCallback.onFinished();
+            }
             play();
         }
     }
