@@ -1662,34 +1662,23 @@ public class MediaUtils {
                 }
 
                 if (needToSleep) {
-                    /*long tempTime = (roomInfo.presentationTimeUs / 1000)
-                            - (System.currentTimeMillis() - MediaUtils.startTimeMs);
-                    MLog.i(TAG, "drainOutputBuffer() tempTime: " + tempTime);
-                    if (tempTime > 0) {
-                        for (; ; ) {
-                            SystemClock.sleep(10);
-                            tempTime = (roomInfo.presentationTimeUs / 1000)
-                                    - (System.currentTimeMillis() - MediaUtils.startTimeMs);
-                            if (tempTime <= 0) {
-                                break;
-                            }
-                        }
-                    } else {
-                        codec.releaseOutputBuffer(roomIndex, false);
-                        continue;
-                    }*/
-
-                    String elapsedTime = DateUtils.formatElapsedTime(
+                    /*String elapsedTime = DateUtils.formatElapsedTime(
                             (roomInfo.presentationTimeUs / 1000) / 1000);
-                    MLog.d(TAG, "drainOutputBuffer() presentationTimeUs: " +
-                            roomInfo.presentationTimeUs);
-                    MLog.d(TAG, "drainOutputBuffer()        elapsedTime: " +
+                    MLog.d(TAG, "drainOutputBuffer() presentationTimeUs1: " +
+                            roomInfo.presentationTimeUs / 1000);
+                    MLog.d(TAG, "drainOutputBuffer()        elapsedTime1: " +
                             elapsedTime);
+                    long temp = System.currentTimeMillis() - startTimeMs2;
+                    elapsedTime = DateUtils.formatElapsedTime(temp / 1000);
+                    MLog.d(TAG, "drainOutputBuffer() presentationTimeUs2: " +
+                            temp);
+                    MLog.d(TAG, "drainOutputBuffer()        elapsedTime2: " +
+                            elapsedTime);*/
 
-                    /*while (roomInfo.presentationTimeUs / 1000
+                    while (roomInfo.presentationTimeUs / 1000
                             > System.currentTimeMillis() - MediaUtils.startTimeMs2) {
-                        SystemClock.sleep(10);
-                    }*/
+                        SystemClock.sleep(1);
+                    }
                 }
 
                 codec.releaseOutputBuffer(roomIndex, render);

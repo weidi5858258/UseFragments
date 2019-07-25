@@ -89,7 +89,7 @@ public class SampleVideoPlayer {
 
     private Callback mCallback;
 
-    public interface Callback {
+    /*public interface Callback {
         void onPlaybackReady();
 
         void onPlaybackPaused();
@@ -103,7 +103,7 @@ public class SampleVideoPlayer {
         void onPlaybackError();
 
         void onPlaybackInfo(String info);
-    }
+    }*/
 
     public void setCallback(Callback callback) {
         mCallback = callback;
@@ -127,9 +127,10 @@ public class SampleVideoPlayer {
         mPath = path;
         mPath = "/storage/37C8-3904/myfiles/video/Silent_Movie_321_AC4_H265_MP4_50fps.mp4";
         mPath = "/storage/2430-1702/BaiduNetdisk/video/流浪的地球.mp4";
-        mPath = "/storage/2430-1702/BaiduNetdisk/video/05.mp4";
-        mPath = "/storage/2430-1702/BaiduNetdisk/video/08_mm-MP4-H264_720x400_2997_AA-LC_192_48.mp4";
+        mPath = "/storage/2430-1702/BaiduNetdisk/video/08_mm-MP4-H264_720x400_2997_AA" +
+                "-LC_192_48.mp4";
         mPath = "/storage/2430-1702/BaiduNetdisk/video/shape_of_my_heart.mp4";
+        mPath = "/storage/2430-1702/BaiduNetdisk/video/05.mp4";
         if (DEBUG)
             MLog.d(TAG, "setPath() mPath: " + mPath);
     }
@@ -253,7 +254,7 @@ public class SampleVideoPlayer {
         }
 
         if (mCallback != null) {
-            mCallback.onPlaybackReady();
+            mCallback.onReady();
         }
         if (DEBUG)
             MLog.d(TAG, "internalPrepare() start");
@@ -457,7 +458,7 @@ public class SampleVideoPlayer {
         }
 
         if (mCallback != null) {
-            mCallback.onPlaybackStarted();
+            mCallback.onStarted();
         }
         if (DEBUG)
             MLog.d(TAG, "internalStart() start");
@@ -787,13 +788,13 @@ public class SampleVideoPlayer {
                     if (DEBUG)
                         Log.d(TAG, "onKeyDown() 3");
                     if (mCallback != null) {
-                        mCallback.onPlaybackFinished();
+                        mCallback.onFinished();
                     }
                 } else if (firstFlag && secondFlag) {
                     if (DEBUG)
                         Log.d(TAG, "onKeyDown() 2");
                     if (mCallback != null) {
-                        mCallback.onPlaybackFinished();
+                        mCallback.onFinished();
                     }
                 } else {
                     if (DEBUG)
@@ -1096,7 +1097,7 @@ public class SampleVideoPlayer {
 
             if (hasPlaybackFinished) {
                 if (mCallback != null) {
-                    mCallback.onPlaybackFinished();
+                    mCallback.onFinished();
                 }
             }
 
@@ -1243,7 +1244,8 @@ public class SampleVideoPlayer {
                                 readSize,
                                 presentationTimeUs,
                                 flags);
-                        MLog.i(TAG, "mVideoPlayRunnable 时间相差: "+(System.currentTimeMillis()-startTimeTest));
+                        MLog.i(TAG, "mVideoPlayRunnable 时间相差: " +
+                                (System.currentTimeMillis() - startTimeTest));
 
                         if (!hasPlaybackFinished) {
                             mVideoExtractor.advance();
@@ -1313,6 +1315,18 @@ public class SampleVideoPlayer {
                         } else {
                             room = outputBuffers[roomIndex];
                         }
+                        String elapsedTime = DateUtils.formatElapsedTime(
+                                (roomInfo.presentationTimeUs / 1000) / 1000);
+                        MLog.d(TAG, "mVideoPlayRunnable() presentationTimeUs1: " +
+                                roomInfo.presentationTimeUs / 1000);
+                        MLog.d(TAG, "mVideoPlayRunnable()        elapsedTime1: " +
+                                elapsedTime);
+                        long temp = System.currentTimeMillis() - startTimeMs;
+                        elapsedTime = DateUtils.formatElapsedTime(temp / 1000);
+                        MLog.d(TAG, "mVideoPlayRunnable() presentationTimeUs2: " +
+                                temp);
+                        MLog.d(TAG, "mVideoPlayRunnable()        elapsedTime2: " +
+                                elapsedTime);
                         /***
                          roomInfo.presentationTimeUs        ---> 微妙
                          roomInfo.presentationTimeUs / 1000 ---> 毫秒
@@ -1326,10 +1340,10 @@ public class SampleVideoPlayer {
                          "某帧将要显示的时间点"比"当前的时间点"大,
                          说明显示过早了,应该等一等再显示.
                          */
-                        while (roomInfo.presentationTimeUs / 1000
+                        /*while (roomInfo.presentationTimeUs / 1000
                                 > System.currentTimeMillis() - startTimeMs) {
                             SystemClock.sleep(10);
-                        }
+                        }*/
 
                         mVideoDncoderMediaCodec.releaseOutputBuffer(roomIndex, true);
                     } catch (IllegalStateException
@@ -1358,7 +1372,7 @@ public class SampleVideoPlayer {
 
             if (hasPlaybackFinished) {
                 if (mCallback != null) {
-                    mCallback.onPlaybackFinished();
+                    mCallback.onFinished();
                 }
             }
 

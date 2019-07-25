@@ -16,12 +16,14 @@ import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
 import android.widget.ImageButton;
+import android.widget.LinearLayout;
 import android.widget.SeekBar;
 import android.widget.TextView;
 
 import com.weidi.usefragments.tool.Callback;
 import com.weidi.usefragments.tool.MLog;
 import com.weidi.usefragments.tool.PermissionsUtils;
+import com.weidi.usefragments.tool.SampleVideoPlayer;
 import com.weidi.usefragments.tool.SampleVideoPlayer7;
 
 /***
@@ -157,9 +159,11 @@ public class PlayerActivity extends BaseActivity {
     private SurfaceView mSurfaceView;
     private Surface mSurface;
     private PowerManager.WakeLock mPowerWakeLock;
+    //    private SampleVideoPlayer mSampleVideoPlayer;
     private SampleVideoPlayer7 mSampleVideoPlayer;
     private int mProgress;
     private long mPresentationTimeUs;
+    private LinearLayout mControllerPanelLayout;
     private TextView mFileNameTV;
     private TextView mProgressTimeTV;
     private TextView mDurationTimeTV;
@@ -181,6 +185,7 @@ public class PlayerActivity extends BaseActivity {
             }
         };
 
+        mControllerPanelLayout = findViewById(R.id.controller_panel_layout);
         mFileNameTV = findViewById(R.id.file_name_tv);
         mProgressTimeTV = findViewById(R.id.progress_time_tv);
         mDurationTimeTV = findViewById(R.id.duration_time_tv);
@@ -188,10 +193,11 @@ public class PlayerActivity extends BaseActivity {
         mPreviousIB = findViewById(R.id.button_prev);
         mPlayPauseIB = findViewById(R.id.button_play_pause);
         mNextIB = findViewById(R.id.button_next);
+        mSurfaceView = findViewById(R.id.surfaceView);
         mPreviousIB.setOnClickListener(mOnClickListener);
         mPlayPauseIB.setOnClickListener(mOnClickListener);
         mNextIB.setOnClickListener(mOnClickListener);
-        mSurfaceView = findViewById(R.id.surfaceView);
+        mSurfaceView.setOnClickListener(mOnClickListener);
         mSurfaceView.getHolder().addCallback(new SurfaceHolder.Callback() {
             @Override
             public void surfaceCreated(
@@ -228,6 +234,7 @@ public class PlayerActivity extends BaseActivity {
             }
         });
 
+        //        mSampleVideoPlayer = new SampleVideoPlayer();
         mSampleVideoPlayer = new SampleVideoPlayer7();
 
         int duration = (int) mSampleVideoPlayer.getDurationUs() / 1000;
@@ -290,8 +297,8 @@ public class PlayerActivity extends BaseActivity {
                         (mPresentationTimeUs / 1000) / 1000);
                 mProgressTimeTV.setText(curElapsedTime);
 
-                int duration = (int) mSampleVideoPlayer.getDurationUs() / 1000;
-                int currentPosition = (int) mPresentationTimeUs / 1000;
+                int duration = (int) (mSampleVideoPlayer.getDurationUs() / 1000);
+                int currentPosition = (int) (mPresentationTimeUs / 1000);
                 float pos = (float) currentPosition / duration;
                 int target = Math.round(pos * mProgressBar.getMax());
                 mProgressBar.setProgress(target);
@@ -317,9 +324,9 @@ public class PlayerActivity extends BaseActivity {
                             (mSampleVideoPlayer.getDurationUs() / 1000) / 1000);
                     mDurationTimeTV.setText(durationTime);
                     if (durationTime.length() > 5) {
-                        mProgressTimeTV.setText("00:00");
-                    } else {
                         mProgressTimeTV.setText("00:00:00");
+                    } else {
+                        mProgressTimeTV.setText("00:00");
                     }
                     mProgressBar.setProgress(0);
                 }
@@ -368,6 +375,13 @@ public class PlayerActivity extends BaseActivity {
                 case R.id.button_play_pause:
                     break;
                 case R.id.button_next:
+                    break;
+                case R.id.surfaceView:
+                    if (mControllerPanelLayout.getVisibility() == View.VISIBLE) {
+                        mControllerPanelLayout.setVisibility(View.INVISIBLE);
+                    } else {
+                        mControllerPanelLayout.setVisibility(View.VISIBLE);
+                    }
                     break;
                 default:
                     break;

@@ -1152,8 +1152,8 @@ public class SampleVideoPlayer6 {
                     }
                     long presentationTimeUs = 0;
                     /*if ((Long) wrapper.handleFrameCounts != null
-                            && wrapper.time2.containsKey((Long) wrapper.handleFrameCounts)) {
-                        presentationTimeUs = wrapper.time2.get((Long) wrapper.handleFrameCounts);
+                            && wrapper.getTime.containsKey((Long) wrapper.handleFrameCounts)) {
+                        presentationTimeUs = wrapper.getTime.get((Long) wrapper.handleFrameCounts);
                     } else {
                         presentationTimeUs = System.nanoTime();
                     }*/
@@ -1243,8 +1243,8 @@ public class SampleVideoPlayer6 {
 
                         long presentationTimeUs = 0;
                         /*if ((Long) wrapper.handleFrameCounts != null
-                                && wrapper.time2.containsKey((Long) wrapper.handleFrameCounts)) {
-                            presentationTimeUs = wrapper.time2.get((Long) wrapper
+                                && wrapper.getTime.containsKey((Long) wrapper.handleFrameCounts)) {
+                            presentationTimeUs = wrapper.getTime.get((Long) wrapper
                                     .handleFrameCounts);
                         } else {
                             presentationTimeUs = System.nanoTime();

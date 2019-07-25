@@ -13,15 +13,12 @@ import android.media.MediaCodec;
 import android.media.MediaCodecInfo;
 import android.media.MediaExtractor;
 import android.media.MediaFormat;
-import android.media.MediaSync;
-import android.media.PlaybackParams;
 import android.os.Build;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Looper;
 import android.os.Message;
 import android.os.SystemClock;
-import android.support.annotation.NonNull;
 import android.text.TextUtils;
 import android.text.format.DateUtils;
 import android.util.ArrayMap;
@@ -153,8 +150,11 @@ public class SampleVideoPlayer7 {
         // readData1和readData2都装满的情况下,先读取哪一个数据
         public int first = FIRST_READ_DATA1;
 
-        public ArrayMap<Long, Long> time1 = new ArrayMap<Long, Long>();
-        public ArrayMap<Long, Long> time2 = new ArrayMap<Long, Long>();
+        // 保存时间戳
+        public ArrayMap<Long, Long> setTime1 = new ArrayMap<Long, Long>();
+        public ArrayMap<Long, Long> setTime2 = new ArrayMap<Long, Long>();
+        public ArrayMap<Long, Long> getTime = new ArrayMap<Long, Long>();
+
         public int CACHE;
         // 用于标识音频还是视频
         public int type;
@@ -254,8 +254,9 @@ public class SampleVideoPlayer7 {
             durationUs = 0;
             presentationTimeUs = 0;
             startTimeUs = 0;
-            time1.clear();
-            time2.clear();
+            setTime1.clear();
+            setTime2.clear();
+            getTime.clear();
             readData1Size = 0;
             readData2Size = 0;
             readDataSize = 0;
@@ -454,7 +455,7 @@ public class SampleVideoPlayer7 {
         switch (msg.what) {
             case MSG_PREPARE:
                 if (internalPrepare()) {
-                    //new Thread(mAudioReadData).start();
+                    new Thread(mAudioReadData).start();
                     new Thread(mVideoReadData).start();
                 }
                 break;
@@ -959,29 +960,24 @@ public class SampleVideoPlayer7 {
     private String curElapsedTime = null;
 
     private boolean feedInputBufferAndDrainOutputBuffer(SimpleWrapper wrapper) {
-        /*if (wrapper.type == TYPE_AUDIO ? false : true) {
-            SystemClock.sleep(24);
-        }*/
         if (!wrapper.isHandling) {
             return false;
         }
 
-        wrapper.handleFrameCounts++;
+        ++wrapper.handleFrameCounts;
         wrapper.handleFrameLengthTotal += wrapper.frameDataLength;
 
         // 得到wrapper.presentationTimeUs时间戳
-        /*if ((Long) wrapper.handleFrameCounts != null
-                && wrapper.time2.containsKey((Long) wrapper.handleFrameCounts)) {
+        if ((Long) wrapper.handleFrameCounts != null
+                && wrapper.getTime.containsKey((Long) wrapper.handleFrameCounts)) {
             wrapper.presentationTimeUs =
-                    wrapper.time2.get((Long) wrapper.handleFrameCounts);
-        } else {
-            wrapper.presentationTimeUs = System.nanoTime();
-        }*/
+                    wrapper.getTime.get((Long) wrapper.handleFrameCounts);
+        }
 
-        wrapper.presentationTimeUs = (System.nanoTime() - MediaUtils.startTimeMs) / 1000;
         /*String elapsedTime = DateUtils.formatElapsedTime(
                 (wrapper.presentationTimeUs / 1000) / 1000);
-        MLog.i(TAG, "drainOutputBuffer() presentationTimeUs: " + wrapper.presentationTimeUs);
+        MLog.i(TAG, "drainOutputBuffer()  handleFrameCounts: " + wrapper.handleFrameCounts);
+        MLog.i(TAG, "drainOutputBuffer() presentationTimeUs: " + wrapper.presentationTimeUs / 1000);
         MLog.i(TAG, "drainOutputBuffer()        elapsedTime: " + elapsedTime);*/
         if (wrapper instanceof VideoWrapper
                 && wrapper.presentationTimeUs != -1
@@ -1082,6 +1078,8 @@ public class SampleVideoPlayer7 {
                     wrapper.readFrameLengthTotal = 0;
                     wrapper.handleFrameLengthTotal = 0;
                     wrapper.startTimeUs = 0;
+                    wrapper.setTime1.clear();
+                    wrapper.setTime2.clear();
                     Arrays.fill(wrapper.readData1, (byte) 0);
                     Arrays.fill(wrapper.readData2, (byte) 0);
                     readData1TotalSize = 0;
@@ -1345,13 +1343,14 @@ public class SampleVideoPlayer7 {
                         }
 
                         if (wrapper.progressUs == -1) {
-                            wrapper.time1.clear();
                             if (!wrapper.isReadData1Full) {
+                                wrapper.setTime1.clear();
                                 copyHeaderFlagToReadData1(
                                         wrapper, buffer, readSize, presentationTimeUs);
 
                                 readData1TotalSize = wrapper.readData1Size;
                             } else if (!wrapper.isReadData2Full) {
+                                wrapper.setTime2.clear();
                                 copyHeaderFlagToReadData2(
                                         wrapper, buffer, readSize, presentationTimeUs);
 
@@ -1405,11 +1404,18 @@ public class SampleVideoPlayer7 {
         System.arraycopy(buffer, 0,
                 wrapper.readData1, wrapper.readData1Size + HEADER_FLAG_LENGTH, size);
         wrapper.readData1Size += size + HEADER_FLAG_LENGTH;
-        wrapper.readFrameCounts++;
+        ++wrapper.readFrameCounts;
 
         // 一帧对应一个时间戳
-        wrapper.time1.put(
+        wrapper.setTime1.put(
                 wrapper.readFrameCounts, presentationTimeUs);
+
+        /*String elapsedTime = DateUtils.formatElapsedTime(
+                (presentationTimeUs / 1000) / 1000);
+        MLog.i(TAG, "drainOutputBuffer()      readData1Size1: " + wrapper.readData1Size);
+        MLog.i(TAG, "drainOutputBuffer()    readFrameCounts1: " + wrapper.readFrameCounts);
+        MLog.i(TAG, "drainOutputBuffer() presentationTimeUs1: " + presentationTimeUs / 1000);
+        MLog.i(TAG, "drainOutputBuffer()        elapsedTime1: " + elapsedTime);*/
     }
 
     private void copyHeaderFlagToReadData2(
@@ -1435,11 +1441,18 @@ public class SampleVideoPlayer7 {
         System.arraycopy(buffer, 0,
                 wrapper.readData2, wrapper.readData2Size + HEADER_FLAG_LENGTH, size);
         wrapper.readData2Size += size + HEADER_FLAG_LENGTH;
-        wrapper.readFrameCounts++;
+        ++wrapper.readFrameCounts;
 
         // 一帧对应一个时间戳
-        wrapper.time1.put(
+        wrapper.setTime2.put(
                 wrapper.readFrameCounts, presentationTimeUs);
+
+        /*String elapsedTime = DateUtils.formatElapsedTime(
+                (presentationTimeUs / 1000) / 1000);
+        MLog.i(TAG, "drainOutputBuffer()      readData2Size2: " + wrapper.readData2Size);
+        MLog.i(TAG, "drainOutputBuffer()    readFrameCounts2: " + wrapper.readFrameCounts);
+        MLog.i(TAG, "drainOutputBuffer() presentationTimeUs2: " + presentationTimeUs / 1000);
+        MLog.i(TAG, "drainOutputBuffer()        elapsedTime2: " + elapsedTime);*/
     }
 
     private void audioHandleData() {
@@ -1465,6 +1478,7 @@ public class SampleVideoPlayer7 {
             wrapper.readData1 = new byte[CACHE_VIDEO];
         }
 
+        MediaUtils.startTimeMs2 = System.currentTimeMillis();
         boolean onlyOne = true;
         while (wrapper.isHandling) {
             // 从wrapper.handleData数组中挑选出音视频帧
@@ -1566,7 +1580,7 @@ public class SampleVideoPlayer7 {
                         MediaUtils.startTimeMs = SystemClock.elapsedRealtime();
                         MediaUtils.startTimeMs = System.currentTimeMillis();
                         MediaUtils.startTimeMs = System.nanoTime();
-                        MediaUtils.startTimeMs2 = System.currentTimeMillis();
+
                         if (mCallback != null) {
                             mCallback.onStarted();
                         }
@@ -1713,7 +1727,9 @@ public class SampleVideoPlayer7 {
 
         if (!mAudioWrapper.isHandling
                 && !mVideoWrapper.isHandling) {
-
+            if (mCallback != null) {
+                mCallback.onFinished();
+            }
         }
 
         if (wrapper instanceof AudioWrapper
@@ -1750,8 +1766,8 @@ public class SampleVideoPlayer7 {
         wrapper.readData1Size = 0;
         wrapper.isReadData1Full = false;
 
-        wrapper.time2.clear();
-        wrapper.time2.putAll(wrapper.time1);
+        wrapper.getTime.clear();
+        wrapper.getTime.putAll(wrapper.setTime1);
 
         String showInfo = null;
         if (wrapper.type == TYPE_AUDIO) {
@@ -1776,8 +1792,8 @@ public class SampleVideoPlayer7 {
         wrapper.readData2Size = 0;
         wrapper.isReadData2Full = false;
 
-        wrapper.time2.clear();
-        wrapper.time2.putAll(wrapper.time1);
+        wrapper.getTime.clear();
+        wrapper.getTime.putAll(wrapper.setTime2);
 
         String showInfo = null;
         if (wrapper.type == TYPE_AUDIO) {
@@ -1833,8 +1849,8 @@ public class SampleVideoPlayer7 {
             }
         }
 
-        wrapper.time2.clear();
-        wrapper.time2.putAll(wrapper.time1);
+        wrapper.getTime.clear();
+        wrapper.getTime.putAll(wrapper.setTime1);
     }
 
     private void pickData(SimpleWrapper wrapper) {

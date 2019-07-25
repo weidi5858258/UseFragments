@@ -1142,7 +1142,7 @@ public class SampleVideoPlayer5 {
                     if (!feedInputBufferAndDrainOutputBuffer(
                             wrapper.mDecoderMediaCodec,
                             frameData, 0, frameLength,
-                            //wrapper.time2.get(wrapper.handleFrameCounts),
+                            //wrapper.getTime.get(wrapper.handleFrameCounts),
                             System.nanoTime(),
                             wrapper.render,
                             wrapper.mType == TYPE_AUDIO ? false : true,
