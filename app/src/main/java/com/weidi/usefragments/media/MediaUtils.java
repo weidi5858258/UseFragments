@@ -747,12 +747,26 @@ public class MediaUtils {
         format.setInteger(MediaFormat.KEY_MAX_WIDTH, width);
         format.setInteger(MediaFormat.KEY_MAX_HEIGHT, height);
         // 必须设置为COLOR_FormatSurface，因为是用surface作为输入源
-        int colorFormat = MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface;
-        format.setInteger(MediaFormat.KEY_COLOR_FORMAT, colorFormat);
+        format.setInteger(
+                MediaFormat.KEY_COLOR_FORMAT,
+                MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface);
         // 设置比特率
-        format.setInteger(MediaFormat.KEY_BIT_RATE, VIDEO_BIT_RATE);
+        format.setInteger(
+                MediaFormat.KEY_BIT_RATE,
+                VIDEO_BIT_RATE);
+        /***
+         BITRATE_MODE_CQ:  表示完全不控制码率，尽最大可能保证图像质量
+         BITRATE_MODE_CBR: 表示编码器会尽量把输出码率控制为设定值
+         BITRATE_MODE_VBR: 表示编码器会根据图像内容的复杂度（实际上是帧间变化量的大小）来动态调整输出码率，
+         图像复杂则码率高，图像简单则码率低
+         */
+        format.setInteger(
+                MediaFormat.KEY_BITRATE_MODE,
+                MediaCodecInfo.EncoderCapabilities.BITRATE_MODE_CQ);
         // 设置帧率
-        format.setInteger(MediaFormat.KEY_FRAME_RATE, FRAME_RATE);
+        format.setInteger(
+                MediaFormat.KEY_FRAME_RATE,
+                FRAME_RATE);
         // 设置抽取关键帧的间隔，以s为单位，负数或者0表示不抽取关键帧
         // i-frame iinterval
         format.setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, IFRAME_INTERVAL);
@@ -1559,7 +1573,8 @@ public class MediaUtils {
 
     public static int SLEEP_TIME = 90;
 
-    public static long startTimeMs;
+    public static long startTimeMs = 0;
+    public static long startTimeMs2 = 0;
 
     public static boolean drainOutputBuffer(
             MediaCodec codec,
@@ -1646,10 +1661,6 @@ public class MediaUtils {
                 }
 
                 if (needToSleep) {
-                    String elapsedTime = DateUtils.formatElapsedTime(
-                            (roomInfo.presentationTimeUs / 1000) / 1000);
-                    MLog.d(TAG, "drainOutputBuffer() presentationTimeUs: " +roomInfo.presentationTimeUs);
-                    MLog.d(TAG, "drainOutputBuffer()        elapsedTime: " +elapsedTime);
                     /*long tempTime = (roomInfo.presentationTimeUs / 1000)
                             - (System.currentTimeMillis() - MediaUtils.startTimeMs);
                     MLog.i(TAG, "drainOutputBuffer() tempTime: " + tempTime);
@@ -1667,10 +1678,17 @@ public class MediaUtils {
                         continue;
                     }*/
 
-                    while (roomInfo.presentationTimeUs / 1000
-                            > System.currentTimeMillis() - MediaUtils.startTimeMs) {
+                    String elapsedTime = DateUtils.formatElapsedTime(
+                            (roomInfo.presentationTimeUs / 1000) / 1000);
+                    MLog.d(TAG, "drainOutputBuffer() presentationTimeUs: " +
+                            roomInfo.presentationTimeUs);
+                    MLog.d(TAG, "drainOutputBuffer()        elapsedTime: " +
+                            elapsedTime);
+
+                    /*while (roomInfo.presentationTimeUs / 1000
+                            > System.currentTimeMillis() - MediaUtils.startTimeMs2) {
                         SystemClock.sleep(10);
-                    }
+                    }*/
                 }
 
                 codec.releaseOutputBuffer(roomIndex, render);

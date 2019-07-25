@@ -957,7 +957,6 @@ public class SampleVideoPlayer7 {
 
     private String prevElapsedTime = null;
     private String curElapsedTime = null;
-    private long startTimeMs = 0;
 
     private boolean feedInputBufferAndDrainOutputBuffer(SimpleWrapper wrapper) {
         /*if (wrapper.type == TYPE_AUDIO ? false : true) {
@@ -979,12 +978,11 @@ public class SampleVideoPlayer7 {
             wrapper.presentationTimeUs = System.nanoTime();
         }*/
 
-        //wrapper.presentationTimeUs = System.currentTimeMillis() - MediaUtils.startTimeMs;
-        wrapper.presentationTimeUs = wrapper.extractor.getSampleTime() - startTimeMs;
-        String elapsedTime = DateUtils.formatElapsedTime(
+        wrapper.presentationTimeUs = (System.nanoTime() - MediaUtils.startTimeMs) / 1000;
+        /*String elapsedTime = DateUtils.formatElapsedTime(
                 (wrapper.presentationTimeUs / 1000) / 1000);
         MLog.i(TAG, "drainOutputBuffer() presentationTimeUs: " + wrapper.presentationTimeUs);
-        MLog.i(TAG, "drainOutputBuffer()        elapsedTime: " + elapsedTime);
+        MLog.i(TAG, "drainOutputBuffer()        elapsedTime: " + elapsedTime);*/
         if (wrapper instanceof VideoWrapper
                 && wrapper.presentationTimeUs != -1
                 // 过一秒才更新
@@ -1046,7 +1044,6 @@ public class SampleVideoPlayer7 {
         }
         MLog.w(TAG, showInfo);
 
-        startTimeMs = wrapper.extractor.getSampleTime();
         /***
          数据先读到room,再从room复制到buffer
          */
@@ -1566,9 +1563,10 @@ public class SampleVideoPlayer7 {
 
                     if (onlyOne) {
                         onlyOne = false;
-                        MediaUtils.startTimeMs = System.nanoTime();
                         MediaUtils.startTimeMs = SystemClock.elapsedRealtime();
                         MediaUtils.startTimeMs = System.currentTimeMillis();
+                        MediaUtils.startTimeMs = System.nanoTime();
+                        MediaUtils.startTimeMs2 = System.currentTimeMillis();
                         if (mCallback != null) {
                             mCallback.onStarted();
                         }
