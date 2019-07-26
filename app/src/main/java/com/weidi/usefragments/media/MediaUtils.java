@@ -1575,7 +1575,7 @@ public class MediaUtils {
     public static int SLEEP_TIME = 90;
 
     public static long startTimeMs = 0;
-    public static long startTimeMs2 = 0;
+    public static long paustTimeMs = 0;
 
     public static boolean drainOutputBuffer(
             MediaCodec codec,
@@ -1668,7 +1668,9 @@ public class MediaUtils {
                             roomInfo.presentationTimeUs / 1000);
                     MLog.d(TAG, "drainOutputBuffer()        elapsedTime1: " +
                             elapsedTime);
-                    long temp = System.currentTimeMillis() - startTimeMs2;
+                    long temp = System.currentTimeMillis()
+                            - MediaUtils.startTimeMs
+                            - MediaUtils.paustTimeMs;
                     elapsedTime = DateUtils.formatElapsedTime(temp / 1000);
                     MLog.d(TAG, "drainOutputBuffer() presentationTimeUs2: " +
                             temp);
@@ -1676,7 +1678,9 @@ public class MediaUtils {
                             elapsedTime);*/
 
                     while (roomInfo.presentationTimeUs / 1000
-                            > System.currentTimeMillis() - MediaUtils.startTimeMs2) {
+                            > System.currentTimeMillis()
+                            - MediaUtils.startTimeMs
+                            - MediaUtils.paustTimeMs) {
                         SystemClock.sleep(1);
                     }
                 }

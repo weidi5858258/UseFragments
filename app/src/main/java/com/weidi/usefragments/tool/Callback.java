@@ -9,7 +9,7 @@ public interface Callback {
 
     void onPaused();
 
-    void onStarted();
+    void onPlayed();
 
     void onFinished();
 

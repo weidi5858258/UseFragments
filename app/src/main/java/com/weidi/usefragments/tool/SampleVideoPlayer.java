@@ -458,7 +458,7 @@ public class SampleVideoPlayer {
         }
 
         if (mCallback != null) {
-            mCallback.onStarted();
+            mCallback.onPlayed();
         }
         if (DEBUG)
             MLog.d(TAG, "internalStart() start");

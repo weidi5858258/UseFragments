@@ -23,7 +23,6 @@ import android.widget.TextView;
 import com.weidi.usefragments.tool.Callback;
 import com.weidi.usefragments.tool.MLog;
 import com.weidi.usefragments.tool.PermissionsUtils;
-import com.weidi.usefragments.tool.SampleVideoPlayer;
 import com.weidi.usefragments.tool.SampleVideoPlayer7;
 
 /***
@@ -169,7 +168,8 @@ public class PlayerActivity extends BaseActivity {
     private TextView mDurationTimeTV;
     private SeekBar mProgressBar;
     private ImageButton mPreviousIB;
-    private ImageButton mPlayPauseIB;
+    private ImageButton mPlayIB;
+    private ImageButton mPauseIB;
     private ImageButton mNextIB;
 
     private Handler mUiHandler;
@@ -191,11 +191,13 @@ public class PlayerActivity extends BaseActivity {
         mDurationTimeTV = findViewById(R.id.duration_time_tv);
         mProgressBar = findViewById(R.id.progress_bar);
         mPreviousIB = findViewById(R.id.button_prev);
-        mPlayPauseIB = findViewById(R.id.button_play_pause);
+        mPlayIB = findViewById(R.id.button_play);
+        mPauseIB = findViewById(R.id.button_pause);
         mNextIB = findViewById(R.id.button_next);
         mSurfaceView = findViewById(R.id.surfaceView);
         mPreviousIB.setOnClickListener(mOnClickListener);
-        mPlayPauseIB.setOnClickListener(mOnClickListener);
+        mPlayIB.setOnClickListener(mOnClickListener);
+        mPauseIB.setOnClickListener(mOnClickListener);
         mNextIB.setOnClickListener(mOnClickListener);
         mSurfaceView.setOnClickListener(mOnClickListener);
         mSurfaceView.getHolder().addCallback(new SurfaceHolder.Callback() {
@@ -339,7 +341,7 @@ public class PlayerActivity extends BaseActivity {
         }
 
         @Override
-        public void onStarted() {
+        public void onPlayed() {
 
         }
 
@@ -372,7 +374,23 @@ public class PlayerActivity extends BaseActivity {
             switch (v.getId()) {
                 case R.id.button_prev:
                     break;
-                case R.id.button_play_pause:
+                case R.id.button_play:
+                    if (mSampleVideoPlayer.isRunning()) {
+                        if (mSampleVideoPlayer.isPlaying()) {
+                            mPlayIB.setVisibility(View.GONE);
+                            mPauseIB.setVisibility(View.VISIBLE);
+                            mSampleVideoPlayer.pause();
+                        }
+                    }
+                    break;
+                case R.id.button_pause:
+                    if (mSampleVideoPlayer.isRunning()) {
+                        if (!mSampleVideoPlayer.isPlaying()) {
+                            mPlayIB.setVisibility(View.VISIBLE);
+                            mPauseIB.setVisibility(View.GONE);
+                            mSampleVideoPlayer.play();
+                        }
+                    }
                     break;
                 case R.id.button_next:
                     break;

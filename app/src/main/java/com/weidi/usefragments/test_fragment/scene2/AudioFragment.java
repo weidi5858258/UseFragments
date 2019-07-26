@@ -495,7 +495,7 @@ public class AudioFragment extends BaseFragment {
         }
         if (DEBUG)
             if (mAudioTrack != null) {
-                MLog.d(TAG, "onStarted() state: " + mAudioTrack.getState() +
+                MLog.d(TAG, "onPlayed() state: " + mAudioTrack.getState() +
                         " AudioTrackSessionId:  " + mAudioTrack.getAudioSessionId());
             }
 
@@ -954,7 +954,7 @@ public class AudioFragment extends BaseFragment {
         }
 
         @Override
-        public void onStarted() {
+        public void onPlayed() {
             if (mSimpleAudioRecorder.getAudioRecord() != null) {
                 if (mAudioTrack == null) {
                     mAudioTrack = MediaUtils.createAudioTrack(
@@ -967,7 +967,7 @@ public class AudioFragment extends BaseFragment {
             }
             if (DEBUG)
                 if (mAudioTrack != null) {
-                    MLog.d(TAG, "onStarted() state: " + mAudioTrack.getState() +
+                    MLog.d(TAG, "onPlayed() state: " + mAudioTrack.getState() +
                             " AudioTrackSessionId:  " + mAudioTrack.getAudioSessionId());
                 }
             mUiHandler.post(new Runnable() {

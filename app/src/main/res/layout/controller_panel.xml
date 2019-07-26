@@ -62,17 +62,28 @@
             android:layout_marginRight="@dimen/dimen_16_dp"
             android:layout_alignParentStart="true"
             android:contentDescription="Previous"
-            android:src="@drawable/media_ic_prev_normal"/>
+            android:src="@drawable/media_ic_prev"/>
 
         <ImageButton
-            android:id="@+id/button_play_pause"
+            android:id="@+id/button_play"
             style="@style/StyleImageButton"
             android:layout_width="@dimen/dimen_32_dp"
             android:layout_height="@dimen/dimen_32_dp"
             android:layout_centerInParent="true"
             android:layout_margin="0dp"
             android:contentDescription="Play"
-            android:src="@drawable/media_ic_pause_normal"/>
+            android:src="@drawable/media_ic_pause"/>
+
+        <ImageButton
+            android:id="@+id/button_pause"
+            style="@style/StyleImageButton"
+            android:layout_width="@dimen/dimen_32_dp"
+            android:layout_height="@dimen/dimen_32_dp"
+            android:layout_centerInParent="true"
+            android:layout_margin="0dp"
+            android:contentDescription="Play"
+            android:src="@drawable/media_ic_play"
+            android:visibility="gone"/>
 
         <ImageButton
             android:id="@+id/button_next"
@@ -80,7 +91,7 @@
             android:layout_marginLeft="@dimen/dimen_16_dp"
             android:layout_alignParentEnd="true"
             android:contentDescription="Next"
-            android:src="@drawable/media_ic_next_normal"/>
+            android:src="@drawable/media_ic_next"/>
 
     </RelativeLayout>
 

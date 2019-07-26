@@ -253,7 +253,7 @@ public class SimpleAudioRecorder {
         }
         long startTime = SystemClock.uptimeMillis();
         if (mCallback != null) {
-            mCallback.onStarted();
+            mCallback.onPlayed();
         }
         while (true) {
             if (mIsPaused) {
@@ -270,7 +270,7 @@ public class SimpleAudioRecorder {
                     }
                     startTime = SystemClock.uptimeMillis();
                     if (mCallback != null) {
-                        mCallback.onStarted();
+                        mCallback.onPlayed();
                     }
                     if (DEBUG)
                         MLog.i(TAG, "internalStart() mPauseLock.wait() end");
