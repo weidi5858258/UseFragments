@@ -357,33 +357,35 @@ public class SampleVideoPlayer7 {
     }
 
     public void setProgressUs(long progressUs) {
+        MLog.d(TAG, "setProgressUs() progressUs: " + progressUs);
         //setProgressUs(mAudioWrapper, progressUs);
         setProgressUs(mVideoWrapper, progressUs);
     }
 
+    private long mProgressUs = 0;
+
     private void setProgressUs(SimpleWrapper wrapper, long progressUs) {
-        wrapper.progressUs = progressUs;
         if (progressUs < 0) {
             return;
         }
-        // 两个缓存都满了,正在等待中,因此需要发送notify
-        synchronized (wrapper.readDataLock) {
-            wrapper.readDataLock.notify();
-        }
+
+        mProgressUs = progressUs;
+        wrapper.progressUs = progressUs;
+        wrapper.needToSeek = true;
+        MediaUtils.progressTimeMs = progressUs / 1000;
 
         String showInfo = null;
-        if (wrapper.type == TYPE_AUDIO) {
-            showInfo = "setProgressUs() audio progressUs: " + progressUs;
-        } else {
-            showInfo = "setProgressUs() video progressUs: " + progressUs;
-        }
-        MLog.i(TAG, showInfo);
         if (wrapper.type == TYPE_AUDIO) {
             showInfo = "setProgressUs() audio readDataLock.notify()";
         } else {
             showInfo = "setProgressUs() video readDataLock.notify()";
         }
         MLog.i(TAG, showInfo);
+
+        // 两个缓存都满了,正在等待中,因此需要发送notify
+        synchronized (wrapper.readDataLock) {
+            wrapper.readDataLock.notify();
+        }
     }
 
     public long getDurationUs() {
@@ -1034,6 +1036,10 @@ public class SampleVideoPlayer7 {
             return false;
         }
 
+        if (wrapper.needToSeek) {
+            return true;
+        }
+
         if (wrapper.isPausedForCache
                 || wrapper.isPausedForUser) {
             boolean isPausedForCache = wrapper.isPausedForCache;
@@ -1067,6 +1073,7 @@ public class SampleVideoPlayer7 {
             if (isPausedForCache) {
                 MediaUtils.paustTimeMs += (endTimeMs - startTimeMs);
             } else if (isPausedForUser) {
+                // 使用差值最大的那个
                 if (wrapper.type == TYPE_AUDIO) {
                     audioTimeDifference = (endTimeMs - startTimeMs);
                 } else {
@@ -1180,7 +1187,6 @@ public class SampleVideoPlayer7 {
          */
         int readSize = -1;
         boolean needToRead = true;
-        boolean needToSeek = false;
         if (wrapper instanceof VideoWrapper) {
             wrapper.CACHE = 1024 * 1024 * 2;
             wrapper.readData1 = new byte[wrapper.CACHE];
@@ -1210,11 +1216,16 @@ public class SampleVideoPlayer7 {
                     readData1TotalSize = 0;
                     readData2TotalSize = 0;
                     needToRead = true;
-                    needToSeek = true;
 
                     if (wrapper.progressUs <= wrapper.durationUs) {
+                        if (wrapper.type == TYPE_AUDIO) {
+                            showInfo = "  readData() audio seekTo: " + wrapper.progressUs;
+                        } else {
+                            showInfo = "  readData() video seekTo: " + wrapper.progressUs;
+                        }
+                        MLog.d(TAG, showInfo);
                         wrapper.extractor.seekTo(
-                                wrapper.progressUs, MediaExtractor.SEEK_TO_PREVIOUS_SYNC);
+                                wrapper.progressUs, MediaExtractor.SEEK_TO_NEXT_SYNC);
                     }
                     wrapper.progressUs = -1;
                 }
@@ -1327,16 +1338,13 @@ public class SampleVideoPlayer7 {
                         } else {
                             // wrapper.readData1满了
                             wrapper.isReadData1Full = true;
-                            if (needToSeek) {
-                                needToSeek = false;
-                                wrapper.needToSeek = true;
-                                MLog.i(TAG, "  readData() video needToSeek: " +
-                                        wrapper.needToSeek);
+                            /*if (wrapper.needToSeek) {
                                 mThreadHandler.removeMessages(MSG_SEEK_TO_NOTIFY);
                                 mThreadHandler.sendEmptyMessageDelayed(MSG_SEEK_TO_NOTIFY, 1000);
-                            }
+                            }*/
                             if (!wrapper.isHandling) {
                                 wrapper.isHandling = true;
+                                wrapper.needToSeek = false;
                                 if (wrapper.type == TYPE_AUDIO) {
                                     new Thread(mAudioHandleData).start();
                                 } else {
@@ -1344,8 +1352,10 @@ public class SampleVideoPlayer7 {
                                 }
                                 //mThreadHandler.sendEmptyMessage(MSG_DO_SOME_WORK);
                             } else {
-                                synchronized (wrapper.handleDataLock) {
-                                    wrapper.handleDataLock.notify();
+                                if (wrapper.progressUs == -1) {
+                                    synchronized (wrapper.handleDataLock) {
+                                        wrapper.handleDataLock.notify();
+                                    }
                                 }
                             }
                             if (!wrapper.isReadData2Full) {
@@ -1392,8 +1402,10 @@ public class SampleVideoPlayer7 {
                         } else {
                             // wrapper.readData2满了
                             wrapper.isReadData2Full = true;
-                            synchronized (wrapper.handleDataLock) {
-                                wrapper.handleDataLock.notify();
+                            if (wrapper.progressUs == -1) {
+                                synchronized (wrapper.handleDataLock) {
+                                    wrapper.handleDataLock.notify();
+                                }
                             }
                             if (!wrapper.isReadData1Full) {
                                 wrapper.first = FIRST_READ_DATA2;
@@ -1531,6 +1543,9 @@ public class SampleVideoPlayer7 {
         boolean onlyOne = true;
         MediaUtils.startTimeMs = System.currentTimeMillis();
         MediaUtils.paustTimeMs = 0;
+        if (!wrapper.needToSeek) {
+            MediaUtils.progressTimeMs = 0;
+        }
         while (wrapper.isHandling) {
             // 从wrapper.handleData数组中挑选出音视频帧
             findHead(wrapper.handleData, 0, wrapper.readDataSize, wrapper.offsetList);
@@ -1677,16 +1692,19 @@ public class SampleVideoPlayer7 {
                     } else {
                         // 两个缓存都未满,那么等待
                         if (!wrapper.isReadData1Full
-                                && !wrapper.isReadData2Full) {
-                            // 自身状态的设置
-                            wrapper.isPausedForCache = true;
+                                && !wrapper.isReadData2Full
+                                || wrapper.needToSeek) {
+                            if (!wrapper.needToSeek) {
+                                // 自身状态的设置
+                                wrapper.isPausedForCache = true;
 
-                            // 如果当前是视频,那么通知音频pause
-                            // 如果当前是音频,那么通知视频pause
-                            if (wrapper.type == TYPE_AUDIO) {
-                                mVideoWrapper.isPausedForCache = true;
-                            } else {
-                                mAudioWrapper.isPausedForCache = true;
+                                // 如果当前是视频,那么通知音频pause
+                                // 如果当前是音频,那么通知视频pause
+                                if (wrapper.type == TYPE_AUDIO) {
+                                    mVideoWrapper.isPausedForCache = true;
+                                } else {
+                                    mAudioWrapper.isPausedForCache = true;
+                                }
                             }
 
                             if (!wrapper.needToSeek) {
@@ -1697,9 +1715,9 @@ public class SampleVideoPlayer7 {
                                 }
                             } else {
                                 if (wrapper.type == TYPE_AUDIO) {
-                                    MLog.e(TAG, "             audio seekTo");
+                                    MLog.e(TAG, "             audio handleDataLock.wait()");
                                 } else {
-                                    MLog.e(TAG, "             video seekTo");
+                                    MLog.e(TAG, "             video handleDataLock.wait()");
                                 }
                             }
 
@@ -1715,19 +1733,21 @@ public class SampleVideoPlayer7 {
                                     e.printStackTrace();
                                 }
                             }
-                            wrapper.isPausedForCache = false;
+                            if (!wrapper.needToSeek) {
+                                wrapper.isPausedForCache = false;
 
-                            // 如果当前是视频,那么通知音频play
-                            // 如果当前是音频,那么通知视频play
-                            if (wrapper.type == TYPE_AUDIO) {
-                                mVideoWrapper.isPausedForCache = false;
-                                synchronized (mVideoWrapper.handleDataLock) {
-                                    mVideoWrapper.handleDataLock.notify();
-                                }
-                            } else {
-                                mAudioWrapper.isPausedForCache = false;
-                                synchronized (mAudioWrapper.handleDataLock) {
-                                    mAudioWrapper.handleDataLock.notify();
+                                // 如果当前是视频,那么通知音频play
+                                // 如果当前是音频,那么通知视频play
+                                if (wrapper.type == TYPE_AUDIO) {
+                                    mVideoWrapper.isPausedForCache = false;
+                                    synchronized (mVideoWrapper.handleDataLock) {
+                                        mVideoWrapper.handleDataLock.notify();
+                                    }
+                                } else {
+                                    mAudioWrapper.isPausedForCache = false;
+                                    synchronized (mAudioWrapper.handleDataLock) {
+                                        mAudioWrapper.handleDataLock.notify();
+                                    }
                                 }
                             }
 
@@ -1737,9 +1757,9 @@ public class SampleVideoPlayer7 {
                         if (wrapper.needToSeek) {
                             wrapper.needToSeek = false;
                             if (wrapper.type == TYPE_AUDIO) {
-                                MLog.e(TAG, "             audio seekTo end");
+                                MLog.e(TAG, "             audio seekTo end handleData开始取数据");
                             } else {
-                                MLog.e(TAG, "             video seekTo end");
+                                MLog.e(TAG, "             video seekTo end handleData开始取数据");
                             }
                         }
 

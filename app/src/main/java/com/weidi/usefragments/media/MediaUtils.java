@@ -1576,6 +1576,7 @@ public class MediaUtils {
 
     public static long startTimeMs = 0;
     public static long paustTimeMs = 0;
+    public static long progressTimeMs = 0;
 
     public static boolean drainOutputBuffer(
             MediaCodec codec,
