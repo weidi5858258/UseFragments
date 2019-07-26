@@ -1026,6 +1026,8 @@ public class SampleVideoPlayer7 {
 
     private String preElapsedTime = null;
     private String curElapsedTime = null;
+    private long audioTimeDifference = 0;
+    private long videoTimeDifference = 0;
 
     private boolean feedInputBufferAndDrainOutputBuffer(SimpleWrapper wrapper) {
         if (!wrapper.isHandling) {
@@ -1065,8 +1067,18 @@ public class SampleVideoPlayer7 {
             if (isPausedForCache) {
                 MediaUtils.paustTimeMs += (endTimeMs - startTimeMs);
             } else if (isPausedForUser) {
-                if (wrapper.type == TYPE_VIDEO) {
-                    MediaUtils.paustTimeMs += (endTimeMs - startTimeMs);
+                if (wrapper.type == TYPE_AUDIO) {
+                    audioTimeDifference = (endTimeMs - startTimeMs);
+                } else {
+                    videoTimeDifference = (endTimeMs - startTimeMs);
+                }
+                if (audioTimeDifference != 0
+                        && videoTimeDifference != 0) {
+                    MediaUtils.paustTimeMs +=
+                            audioTimeDifference >= videoTimeDifference
+                                    ? audioTimeDifference : videoTimeDifference;
+                    audioTimeDifference = 0;
+                    videoTimeDifference = 0;
                 }
             }
             if (wrapper.type == TYPE_AUDIO) {
