@@ -277,7 +277,7 @@ public class AudioEncoder extends BaseEncoder {
             flags = BUFFER_FLAG_END_OF_STREAM;
         }
         // feed frame to encoder
-        if (DEBUG) Log.d(TAG, "Feed codec index=" + index + ", presentationTimeUs="
+        if (DEBUG) Log.d(TAG, "Feed codec index=" + index + ", presentationTimeUs1="
                 + pstTs + ", flags=" + flags);
         getEncoder().queueInputBuffer(index, offset, read, pstTs, flags);
     }

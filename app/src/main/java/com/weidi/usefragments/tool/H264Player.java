@@ -569,7 +569,7 @@ public class H264Player {
             byte[] data, int offset, int size, long startTimeUs) {
         long presentationTimeUs =
                 (System.nanoTime() - startTimeUs) / 1000;
-        //long presentationTimeUs = mFrameCounts * TIME_INTERNAL;
+        //long presentationTimeUs1 = mFrameCounts * TIME_INTERNAL;
         // Input
         MediaUtils.feedInputBuffer(
                 mVideoDecoderMediaCodec, data, offset, size,

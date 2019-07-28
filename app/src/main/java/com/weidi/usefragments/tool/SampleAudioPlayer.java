@@ -380,7 +380,7 @@ public class SampleAudioPlayer {
         onPlaybackInfo("mIsRunning: " + mIsRunning + " mIsPaused: " + mIsPaused);
         onPlaybackInfo("internalStart() start");
 
-        // long presentationTimeUs = System.nanoTime() / 1000;
+        // long presentationTimeUs1 = System.nanoTime() / 1000;
         long startTimeUs = 0;
         String prevElapsedTime = null;
         String curElapsedTime = null;

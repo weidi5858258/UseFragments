@@ -1153,9 +1153,9 @@ public class SampleVideoPlayer6 {
                     long presentationTimeUs = 0;
                     /*if ((Long) wrapper.handleFrameCounts != null
                             && wrapper.getTime.containsKey((Long) wrapper.handleFrameCounts)) {
-                        presentationTimeUs = wrapper.getTime.get((Long) wrapper.handleFrameCounts);
+                        presentationTimeUs1 = wrapper.getTime.get((Long) wrapper.handleFrameCounts);
                     } else {
-                        presentationTimeUs = System.nanoTime();
+                        presentationTimeUs1 = System.nanoTime();
                     }*/
                     presentationTimeUs = (System.nanoTime() - MediaUtils.startTimeMs) * 1000;
                     if (!feedInputBufferAndDrainOutputBuffer(
@@ -1244,10 +1244,10 @@ public class SampleVideoPlayer6 {
                         long presentationTimeUs = 0;
                         /*if ((Long) wrapper.handleFrameCounts != null
                                 && wrapper.getTime.containsKey((Long) wrapper.handleFrameCounts)) {
-                            presentationTimeUs = wrapper.getTime.get((Long) wrapper
+                            presentationTimeUs1 = wrapper.getTime.get((Long) wrapper
                                     .handleFrameCounts);
                         } else {
-                            presentationTimeUs = System.nanoTime();
+                            presentationTimeUs1 = System.nanoTime();
                         }*/
                         presentationTimeUs = (System.nanoTime() - MediaUtils.startTimeMs) / 1000;
                         if (!feedInputBufferAndDrainOutputBuffer(

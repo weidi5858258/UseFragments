@@ -98,7 +98,7 @@ public class SampleVideoPlayer {
 
         void onPlaybackFinished();
 
-        void onProgressUpdated(long presentationTimeUs);
+        void onProgressUpdated(long presentationTimeUs1);
 
         void onPlaybackError();
 
@@ -827,7 +827,7 @@ public class SampleVideoPlayer {
 
             int frameDataLength = 1024 * 100;
             byte[] frameData = new byte[frameDataLength];
-            // long presentationTimeUs = System.nanoTime() / 1000;
+            // long presentationTimeUs1 = System.nanoTime() / 1000;
             long startTimeUs = 0;
             String prevElapsedTime = null;
             String curElapsedTime = null;
@@ -1114,7 +1114,7 @@ public class SampleVideoPlayer {
             if (DEBUG)
                 MLog.d(TAG, "mVideoPlayRunnable start");
 
-            // long presentationTimeUs = System.nanoTime() / 1000;
+            // long presentationTimeUs1 = System.nanoTime() / 1000;
             long startTimeMs = System.currentTimeMillis();
             long startTimeUs = 0;
             String prevElapsedTime = null;
@@ -1328,9 +1328,9 @@ public class SampleVideoPlayer {
                         MLog.d(TAG, "mVideoPlayRunnable()        elapsedTime2: " +
                                 elapsedTime);
                         /***
-                         roomInfo.presentationTimeUs        ---> 微妙
-                         roomInfo.presentationTimeUs / 1000 ---> 毫秒
-                         roomInfo.presentationTimeUs / 1000 某帧将要显示的时间点
+                         roomInfo.presentationTimeUs1        ---> 微妙
+                         roomInfo.presentationTimeUs1 / 1000 ---> 毫秒
+                         roomInfo.presentationTimeUs1 / 1000 某帧将要显示的时间点
                          System.currentTimeMillis()         当前的时间点
                          这样去理解:
                          某个产品只需要在明天的某个时间点完成就行了,
@@ -1340,7 +1340,7 @@ public class SampleVideoPlayer {
                          "某帧将要显示的时间点"比"当前的时间点"大,
                          说明显示过早了,应该等一等再显示.
                          */
-                        /*while (roomInfo.presentationTimeUs / 1000
+                        /*while (roomInfo.presentationTimeUs1 / 1000
                                 > System.currentTimeMillis() - startTimeMs) {
                             SystemClock.sleep(10);
                         }*/

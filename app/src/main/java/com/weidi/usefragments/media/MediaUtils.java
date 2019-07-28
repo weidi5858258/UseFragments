@@ -28,6 +28,7 @@ import android.view.Surface;
 
 import com.weidi.usefragments.tool.MLog;
 import com.weidi.usefragments.tool.MimeTypes;
+import com.weidi.usefragments.tool.SampleVideoPlayer7;
 
 import java.io.ByteArrayOutputStream;
 import java.io.FileOutputStream;
@@ -1577,6 +1578,8 @@ public class MediaUtils {
     public static long startTimeMs = 0;
     public static long paustTimeMs = 0;
     public static long progressTimeMs = 0;
+    public static long variableValues = 0;
+    public static int COUNT = 10;
 
     public static boolean drainOutputBuffer(
             MediaCodec codec,
@@ -1620,12 +1623,22 @@ public class MediaUtils {
                 // 房间大小
                 int roomSize = roomInfo.size;
                 if (room != null) {
+                    // audio时room不为null
                     room.position(roomInfo.offset);
                     room.limit(roomInfo.offset + roomSize);
                     if (callback != null) {
                         callback.onOutputBuffer(roomIndex, room, roomInfo, roomSize);
                     }
+                } else {
+                    // video时room为null
+                    if (needToSleep) {
+                        if (callback != null) {
+                            callback.onOutputBuffer(roomIndex, null, roomInfo, roomSize);
+                        }
+                    }
                 }
+
+                // 不要删除
                 /*if (roomSize != 0) {
                     Image image = codec.getOutputImage(roomIndex);
                     // 需要输出什么类型
@@ -1650,6 +1663,37 @@ public class MediaUtils {
                     image.close();
                 }*/
 
+                /*if (needToSleep) {
+                    String elapsedTime = DateUtils.formatElapsedTime(
+                            (roomInfo.presentationTimeUs1 / 1000) / 1000);
+                    // roomInfo.presentationTimeUs1 / 1000(ms)
+                    MLog.d(TAG, "drainOutputBuffer() presentationTimeUs1: " +
+                            roomInfo.presentationTimeUs1 / 1000);
+                    MLog.d(TAG, "drainOutputBuffer()        elapsedTime1: " +
+                            elapsedTime);
+                    // timeDifference(ms)
+                    long timeDifference = System.currentTimeMillis()
+                            - MediaUtils.startTimeMs
+                            - MediaUtils.paustTimeMs
+                            + MediaUtils.progressTimeMs
+                            - MediaUtils.variableValues;
+                    elapsedTime = DateUtils.formatElapsedTime(
+                            timeDifference / 1000);
+                    MLog.i(TAG, "drainOutputBuffer() presentationTimeUs2: " +
+                            timeDifference);
+                    MLog.i(TAG, "drainOutputBuffer()        elapsedTime2: " +
+                            elapsedTime);
+
+                    while (roomInfo.presentationTimeUs1 / 1000
+                            > System.currentTimeMillis()
+                            - MediaUtils.startTimeMs
+                            - MediaUtils.paustTimeMs
+                            + MediaUtils.progressTimeMs
+                            - MediaUtils.variableValues) {
+                        SystemClock.sleep(1);
+                    }
+                }*/
+
                 if ((roomInfo.flags & MediaCodec.BUFFER_FLAG_CODEC_CONFIG) != 0) {
                     MLog.d(TAG, "drainOutputBuffer() " +
                             "Output MediaCodec.BUFFER_FLAG_CODEC_CONFIG");
@@ -1660,30 +1704,6 @@ public class MediaUtils {
                     MLog.d(TAG, "drainOutputBuffer() " +
                             "Output MediaCodec.BUFFER_FLAG_END_OF_STREAM");
                     return false;
-                }
-
-                if (needToSleep) {
-                    /*String elapsedTime = DateUtils.formatElapsedTime(
-                            (roomInfo.presentationTimeUs / 1000) / 1000);
-                    MLog.d(TAG, "drainOutputBuffer() presentationTimeUs1: " +
-                            roomInfo.presentationTimeUs / 1000);
-                    MLog.d(TAG, "drainOutputBuffer()        elapsedTime1: " +
-                            elapsedTime);
-                    long temp = System.currentTimeMillis()
-                            - MediaUtils.startTimeMs
-                            - MediaUtils.paustTimeMs;
-                    elapsedTime = DateUtils.formatElapsedTime(temp / 1000);
-                    MLog.d(TAG, "drainOutputBuffer() presentationTimeUs2: " +
-                            temp);
-                    MLog.d(TAG, "drainOutputBuffer()        elapsedTime2: " +
-                            elapsedTime);*/
-
-                    while (roomInfo.presentationTimeUs / 1000
-                            > System.currentTimeMillis()
-                            - MediaUtils.startTimeMs
-                            - MediaUtils.paustTimeMs) {
-                        SystemClock.sleep(1);
-                    }
                 }
 
                 codec.releaseOutputBuffer(roomIndex, render);

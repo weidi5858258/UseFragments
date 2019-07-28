@@ -215,9 +215,9 @@ public abstract class BaseEncoder implements IEncoder {
             int index,
             int offset,
             int size,
-            long presentationTimeUs,
+            long presentationTimeUs1,
             int flags) {
-        getEncoder().queueInputBuffer(index, offset, size, presentationTimeUs, flags);
+        getEncoder().queueInputBuffer(index, offset, size, presentationTimeUs1, flags);
     }*/
 
     /**

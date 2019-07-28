@@ -17,10 +17,13 @@ import android.view.SurfaceView;
 import android.view.View;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
+import android.widget.ProgressBar;
 import android.widget.SeekBar;
 import android.widget.TextView;
 
+import com.weidi.usefragments.media.MediaUtils;
 import com.weidi.usefragments.tool.Callback;
+import com.weidi.usefragments.tool.Contents;
 import com.weidi.usefragments.tool.MLog;
 import com.weidi.usefragments.tool.PermissionsUtils;
 import com.weidi.usefragments.tool.SampleVideoPlayer7;
@@ -154,6 +157,9 @@ public class PlayerActivity extends BaseActivity {
     private static final int PLAYBACK_INFO = 0x001;
     private static final int PLAYBACK_PROGRESS_UPDATED = 0x002;
     private static final int PLAYBACK_PROGRESS_CHANGED = 0x003;
+    private static final int MSG_ON_READY = 0x004;
+    private static final int MSG_LOADING_SHOW = 0x005;
+    private static final int MSG_LOADING_HIDE = 0x006;
 
     private SurfaceView mSurfaceView;
     private Surface mSurface;
@@ -162,6 +168,7 @@ public class PlayerActivity extends BaseActivity {
     private SampleVideoPlayer7 mSampleVideoPlayer;
     private int mProgress;
     private long mPresentationTimeUs;
+    private ProgressBar mLoadingView;
     private LinearLayout mControllerPanelLayout;
     private TextView mFileNameTV;
     private TextView mProgressTimeTV;
@@ -185,6 +192,7 @@ public class PlayerActivity extends BaseActivity {
             }
         };
 
+        mLoadingView = findViewById(R.id.loading_view);
         mControllerPanelLayout = findViewById(R.id.controller_panel_layout);
         mFileNameTV = findViewById(R.id.file_name_tv);
         mProgressTimeTV = findViewById(R.id.progress_time_tv);
@@ -221,6 +229,7 @@ public class PlayerActivity extends BaseActivity {
                 mSampleVideoPlayer.setPath(null);
                 mSampleVideoPlayer.setSurface(mSurface);
                 mSampleVideoPlayer.setCallback(mCallback);
+                mSampleVideoPlayer.setProgressUs(95160000L);
                 mSampleVideoPlayer.play();
             }
 
@@ -311,6 +320,25 @@ public class PlayerActivity extends BaseActivity {
                 MLog.d(TAG, "uiHandleMessage() process: " + process +
                         " " + DateUtils.formatElapsedTime(process / 1000 / 1000));
                 break;
+            case MSG_ON_READY:
+                String durationTime = DateUtils.formatElapsedTime(
+                        (mSampleVideoPlayer.getDurationUs() / 1000) / 1000);
+                mDurationTimeTV.setText(durationTime);
+                if (durationTime.length() > 5) {
+                    mProgressTimeTV.setText("00:00:00");
+                } else {
+                    mProgressTimeTV.setText("00:00");
+                }
+                mProgressBar.setProgress(0);
+                mFileNameTV.setText(Contents.getTitle());
+                mLoadingView.setVisibility(View.VISIBLE);
+                break;
+            case MSG_LOADING_SHOW:
+                mLoadingView.setVisibility(View.VISIBLE);
+                break;
+            case MSG_LOADING_HIDE:
+                mLoadingView.setVisibility(View.GONE);
+                break;
             default:
                 break;
         }
@@ -319,35 +347,25 @@ public class PlayerActivity extends BaseActivity {
     private Callback mCallback = new Callback() {
         @Override
         public void onReady() {
-            mUiHandler.post(new Runnable() {
-                @Override
-                public void run() {
-                    String durationTime = DateUtils.formatElapsedTime(
-                            (mSampleVideoPlayer.getDurationUs() / 1000) / 1000);
-                    mDurationTimeTV.setText(durationTime);
-                    if (durationTime.length() > 5) {
-                        mProgressTimeTV.setText("00:00:00");
-                    } else {
-                        mProgressTimeTV.setText("00:00");
-                    }
-                    mProgressBar.setProgress(0);
-                }
-            });
+            mUiHandler.removeMessages(MSG_ON_READY);
+            mUiHandler.sendEmptyMessage(MSG_ON_READY);
         }
 
         @Override
         public void onPaused() {
-
+            mUiHandler.removeMessages(MSG_LOADING_SHOW);
+            mUiHandler.sendEmptyMessage(MSG_LOADING_SHOW);
         }
 
         @Override
         public void onPlayed() {
-
+            mUiHandler.removeMessages(MSG_LOADING_HIDE);
+            mUiHandler.sendEmptyMessage(MSG_LOADING_HIDE);
         }
 
         @Override
         public void onFinished() {
-
+            mSampleVideoPlayer.play();
         }
 
         @Override
@@ -368,11 +386,16 @@ public class PlayerActivity extends BaseActivity {
         }
     };
 
+    private static final int STEP = 1000;
+
     private View.OnClickListener mOnClickListener = new View.OnClickListener() {
         @Override
         public void onClick(View v) {
             switch (v.getId()) {
                 case R.id.button_prev:
+                    // 声音太快执行这里
+                    MediaUtils.variableValues -= STEP;
+                    MLog.i(TAG, "MediaUtils.variableValues: " + MediaUtils.variableValues);
                     break;
                 case R.id.button_play:
                     if (mSampleVideoPlayer.isRunning()) {
@@ -393,6 +416,9 @@ public class PlayerActivity extends BaseActivity {
                     }
                     break;
                 case R.id.button_next:
+                    // 声音太慢执行这里
+                    MediaUtils.variableValues += STEP;
+                    MLog.i(TAG, "MediaUtils.variableValues: " + MediaUtils.variableValues);
                     break;
                 case R.id.surfaceView:
                     if (mControllerPanelLayout.getVisibility() == View.VISIBLE) {

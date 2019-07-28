@@ -264,7 +264,7 @@ public class CustomAudioRecord {
         }
 
         // feed frame to encoder
-        if (DEBUG) Log.d(TAG, "Feed codec index=" + index + ", presentationTimeUs="
+        if (DEBUG) Log.d(TAG, "Feed codec index=" + index + ", presentationTimeUs1="
                 + pstTs + ", flags=" + flags);
         mAudioEncoder.queueInputBuffer(index, offset, read, pstTs, flags);
     }
