@@ -365,7 +365,7 @@ public class PlayerActivity extends BaseActivity {
 
         @Override
         public void onFinished() {
-            mSampleVideoPlayer.play();
+            //mSampleVideoPlayer.play();
         }
 
         @Override

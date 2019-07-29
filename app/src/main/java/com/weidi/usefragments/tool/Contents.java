@@ -304,12 +304,45 @@ public class Contents {
                 "");
     }
 
-    private static String mTitle = "test";// 重案六组第四季31
+    private static String mTitle = "重案六组第四季32";// 重案六组第四季31
 
     public static String getUri() {
         mPath = "http://192.168.0.112:8080/tomcat_video/game_of_thrones_5_01.mp4";
         mPath = "http://192.168.0.112:8080/tomcat_video/test.mp4";
+        mPath = "/storage/37C8-3904/myfiles/video/moumoon_tomodachi-koibito_RV10_cook.rmvb";
+        mPath = "/storage/37C8-3904/myfiles/video/kingsman.mp4";
+        mPath = "/storage/37C8-3904/myfiles/video/fragment.flv";
+        mPath = "/storage/37C8-3904/myfiles/video/aaaaa.rmvb";
+        mPath = "/storage/37C8-3904/myfiles/video/[HDR]4K_HDR_Technology_English.mp4";// 播放有点问题
+        mPath = "/storage/37C8-3904/myfiles/video/Surfing.mp4";
+        // {sample-rate=48000, track-id=2, durationUs=30080000, mime=audio/ac4, channel-count=6, language=eng, max-input-size=2582}
+        // {sample-rate=48000, pcm-encoding=2, mime=audio/raw, channel-count=6}
+        mPath = "/storage/37C8-3904/myfiles/video/Silent_Movie_Short_321_AC4_h264_MP4_25fps.mp4";
+        // {sample-rate=48000, track-id=2, durationUs=159120000, mime=audio/ac4, channel-count=5, language=eng, max-input-size=1393}
+        // {sample-rate=48000, pcm-encoding=2, mime=audio/raw, channel-count=5}
         mPath = "/storage/37C8-3904/myfiles/video/Silent_Movie_321_AC4_H265_MP4_50fps.mp4";
+        // {sample-rate=48000, track-id=2, durationUs=159120000, mime=audio/ac4, channel-count=5, language=eng, max-input-size=1393}
+        // {sample-rate=48000, pcm-encoding=2, mime=audio/raw, channel-count=5}
+        mPath = "/storage/37C8-3904/myfiles/video/Silent_Movie_321_AC4_H264_MP4_50fps.mp4";
+        mPath = "/storage/37C8-3904/myfiles/video/Ref_997_200_48k_20dB_ddp.mp4";
+        // {sample-rate=48000, track-id=2, durationUs=30130100, mime=audio/ac4, channel-count=6, language=eng, max-input-size=682}
+        // {sample-rate=48000, pcm-encoding=2, mime=audio/raw, channel-count=6}
+        mPath = "/storage/37C8-3904/myfiles/video/FrameRate_321_AC4_H265_MP4_29fps97.mp4";
+
+        mPath = "/storage/37C8-3904/myfiles/video/01_APITest_MPEG1.mpg";
+        mPath = "/storage/37C8-3904/myfiles/video/02_APITest_MPEG2PS.mpg";
+        mPath = "/storage/37C8-3904/myfiles/video/03_APItest_MPEG2TS.ts";
+        mPath = "/storage/37C8-3904/myfiles/video/04_APITest_MPEG4-AVC.mp4";
+        mPath = "/storage/37C8-3904/myfiles/video/06_APITest_3GPP-MPEG4V.3g2";
+        mPath = "/storage/37C8-3904/myfiles/video/07_APITest_AVI-xvid.avi";
+        mPath = "/storage/37C8-3904/myfiles/video/08_APITest_ASF-VC1.wmv";
+        mPath = "/storage/37C8-3904/myfiles/video/09_APITest_MOV-MJPEG.mov";
+        mPath = "/storage/37C8-3904/myfiles/video/10_APITest_MKV-HEVC.mkv";
+        mPath = "/storage/37C8-3904/myfiles/video/11_APITest_WebM-VP8.webm";
+        mPath = "/storage/37C8-3904/myfiles/video/11_MPEG4_H265MP@L5.1_AAC-LC.mp4";
+        mPath = "/storage/37C8-3904/myfiles/video/12_APITest_WebM-VP9.webm";
+        mPath = "/storage/37C8-3904/myfiles/video/AC3Plus_mountainbike-cyberlink_1920_1080.mp4";
+        mPath = "/storage/37C8-3904/myfiles/video/Escape.Plan.2.mp4";
         mPath = movieMap.get(mTitle);
         return mPath;
     }
