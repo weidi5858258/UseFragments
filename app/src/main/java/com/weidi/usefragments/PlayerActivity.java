@@ -26,7 +26,7 @@ import com.weidi.usefragments.tool.Callback;
 import com.weidi.usefragments.tool.Contents;
 import com.weidi.usefragments.tool.MLog;
 import com.weidi.usefragments.tool.PermissionsUtils;
-import com.weidi.usefragments.tool.SampleVideoPlayer7;
+import com.weidi.usefragments.tool.SimpleVideoPlayer7;
 
 /***
 
@@ -164,8 +164,8 @@ public class PlayerActivity extends BaseActivity {
     private SurfaceView mSurfaceView;
     private Surface mSurface;
     private PowerManager.WakeLock mPowerWakeLock;
-    //    private SampleVideoPlayer mSampleVideoPlayer;
-    private SampleVideoPlayer7 mSampleVideoPlayer;
+    //    private SimpleVideoPlayer mSampleVideoPlayer;
+    private SimpleVideoPlayer7 mSampleVideoPlayer;
     private int mProgress;
     private long mPresentationTimeUs;
     private ProgressBar mLoadingView;
@@ -219,7 +219,7 @@ public class PlayerActivity extends BaseActivity {
                 mSampleVideoPlayer.play();*/
                 //next();
 
-                /*SampleVideoPlayer mSampleVideoPlayer = new SampleVideoPlayer();
+                /*SimpleVideoPlayer mSampleVideoPlayer = new SimpleVideoPlayer();
                 mSampleVideoPlayer.setContext(getContext());
                 mSampleVideoPlayer.setPath(mVideoPath);
                 mSampleVideoPlayer.setSurface(mSurface);
@@ -229,7 +229,7 @@ public class PlayerActivity extends BaseActivity {
                 mSampleVideoPlayer.setPath(null);
                 mSampleVideoPlayer.setSurface(mSurface);
                 mSampleVideoPlayer.setCallback(mCallback);
-                mSampleVideoPlayer.setProgressUs(95160000L);
+                //mSampleVideoPlayer.setProgressUs(95160000L);
                 mSampleVideoPlayer.play();
             }
 
@@ -245,8 +245,8 @@ public class PlayerActivity extends BaseActivity {
             }
         });
 
-        //        mSampleVideoPlayer = new SampleVideoPlayer();
-        mSampleVideoPlayer = new SampleVideoPlayer7();
+        //        mSampleVideoPlayer = new SimpleVideoPlayer();
+        mSampleVideoPlayer = new SimpleVideoPlayer7();
 
         int duration = (int) mSampleVideoPlayer.getDurationUs() / 1000;
         int currentPosition = (int) mPresentationTimeUs / 1000;

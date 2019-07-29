@@ -38,10 +38,10 @@ import java.nio.ByteBuffer;
  Created by weidi on 2019/7/10.
  */
 
-public class SampleVideoPlayer {
+public class SimpleVideoPlayer {
 
     private static final String TAG =
-            SampleVideoPlayer.class.getSimpleName();
+            SimpleVideoPlayer.class.getSimpleName();
     private static final boolean DEBUG = true;
 
     private static final int TIME_OUT = 10000;
@@ -109,12 +109,12 @@ public class SampleVideoPlayer {
         mCallback = callback;
     }
 
-    public SampleVideoPlayer(String path) {
+    public SimpleVideoPlayer(String path) {
         mPath = path;
         init();
     }
 
-    public SampleVideoPlayer() {
+    public SimpleVideoPlayer() {
         init();
     }
 
@@ -237,13 +237,13 @@ public class SampleVideoPlayer {
         mThreadHandler = new Handler(mHandlerThread.getLooper()) {
             @Override
             public void handleMessage(Message msg) {
-                SampleVideoPlayer.this.threadHandleMessage(msg);
+                SimpleVideoPlayer.this.threadHandleMessage(msg);
             }
         };
         mUiHandler = new Handler(Looper.getMainLooper()) {
             @Override
             public void handleMessage(Message msg) {
-                SampleVideoPlayer.this.uiHandleMessage(msg);
+                SimpleVideoPlayer.this.uiHandleMessage(msg);
             }
         };
     }

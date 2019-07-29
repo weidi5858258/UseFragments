@@ -43,10 +43,10 @@ import java.util.List;
 
  */
 
-public class SampleVideoPlayer2 {
+public class SimpleVideoPlayer2 {
 
     private static final String TAG =
-            SampleVideoPlayer2.class.getSimpleName();
+            SimpleVideoPlayer2.class.getSimpleName();
     private static final boolean DEBUG = true;
 
     private static final int AUDIO_CACHE = 1024 * 1024 * 1;
@@ -147,7 +147,7 @@ public class SampleVideoPlayer2 {
         mCallback = callback;
     }
 
-    public SampleVideoPlayer2() {
+    public SimpleVideoPlayer2() {
         init();
     }
 
@@ -346,13 +346,13 @@ public class SampleVideoPlayer2 {
         mThreadHandler = new Handler(mHandlerThread.getLooper()) {
             @Override
             public void handleMessage(Message msg) {
-                SampleVideoPlayer2.this.threadHandleMessage(msg);
+                SimpleVideoPlayer2.this.threadHandleMessage(msg);
             }
         };
         mUiHandler = new Handler(Looper.getMainLooper()) {
             @Override
             public void handleMessage(Message msg) {
-                SampleVideoPlayer2.this.uiHandleMessage(msg);
+                SimpleVideoPlayer2.this.uiHandleMessage(msg);
             }
         };
     }

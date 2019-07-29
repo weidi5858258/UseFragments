@@ -6,7 +6,6 @@ import android.content.Intent;
 import android.content.res.Configuration;
 import android.os.Bundle;
 import android.os.Handler;
-import android.os.HandlerThread;
 import android.os.Looper;
 import android.os.Message;
 import android.support.annotation.NonNull;
@@ -28,7 +27,7 @@ import com.weidi.usefragments.inject.InjectOnClick;
 import com.weidi.usefragments.inject.InjectView;
 import com.weidi.usefragments.media.MediaUtils;
 import com.weidi.usefragments.tool.MLog;
-import com.weidi.usefragments.tool.SampleAudioPlayer;
+import com.weidi.usefragments.tool.SimpleAudioPlayer;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -323,7 +322,7 @@ public class DecodeAudioFragment extends BaseFragment {
     @InjectView(R.id.jump_btn)
     private Button mJumpBtn;
 
-    private SampleAudioPlayer mSampleAudioPlayer;
+    private SimpleAudioPlayer mSimpleAudioPlayer;
 
     private List<File> musicFiles;
     private int mCurMusicIndex;
@@ -381,10 +380,10 @@ public class DecodeAudioFragment extends BaseFragment {
             }*/
         }
 
-        mSampleAudioPlayer = new SampleAudioPlayer();
-        mSampleAudioPlayer.setContext(getContext());
-        mSampleAudioPlayer.setCallback(
-                new SampleAudioPlayer.Callback() {
+        mSimpleAudioPlayer = new SimpleAudioPlayer();
+        mSimpleAudioPlayer.setContext(getContext());
+        mSimpleAudioPlayer.setCallback(
+                new SimpleAudioPlayer.Callback() {
                     @Override
                     public void onPlaybackReady() {
                         mUiHandler.post(new Runnable() {
@@ -404,7 +403,7 @@ public class DecodeAudioFragment extends BaseFragment {
 
                     @Override
                     public void onPlaybackStarted() {
-                        long durationUs = mSampleAudioPlayer.getDurationUs();
+                        long durationUs = mSimpleAudioPlayer.getDurationUs();
                         String elapsedTime =
                                 DateUtils.formatElapsedTime(
                                         (durationUs / 1000) / 1000);
@@ -462,7 +461,7 @@ public class DecodeAudioFragment extends BaseFragment {
         if (activity != null
                 && activity instanceof MainActivity1) {
             MainActivity1 mainActivity1 = (MainActivity1) activity;
-            mainActivity1.setSampleAudioPlayer(mSampleAudioPlayer);
+            mainActivity1.setSampleAudioPlayer(mSimpleAudioPlayer);
         }
 
         MediaUtils.lookAtMe();
@@ -474,7 +473,7 @@ public class DecodeAudioFragment extends BaseFragment {
                     " savedInstanceState: " + savedInstanceState);
         // 刚进入时,横竖屏切换时,都会调用该方法
         if (musicFiles != null
-                && !mSampleAudioPlayer.isRunning()) {
+                && !mSimpleAudioPlayer.isRunning()) {
             next();
             mShowInoSB.append(getName());
             mShowInoSB.append("\n");
@@ -489,14 +488,14 @@ public class DecodeAudioFragment extends BaseFragment {
 
         String curElapsedTime = DateUtils.formatElapsedTime(
                 (mPresentationTimeUs / 1000) / 1000);
-        long durationUs = mSampleAudioPlayer.getDurationUs();
+        long durationUs = mSimpleAudioPlayer.getDurationUs();
         String elapsedTime =
                 DateUtils.formatElapsedTime(
                         (durationUs / 1000) / 1000);
         mShowProcessTimeTv.setText(curElapsedTime);
         mShowDurationTimeTv.setText(elapsedTime);
 
-        int duration = (int) mSampleAudioPlayer.getDurationUs() / 1000;
+        int duration = (int) mSimpleAudioPlayer.getDurationUs() / 1000;
         int currentPosition = (int) mPresentationTimeUs / 1000;
         float pos = (float) currentPosition / duration;
         int target = Math.round(pos * mPlayPositionSB.getMax());
@@ -530,8 +529,8 @@ public class DecodeAudioFragment extends BaseFragment {
     }
 
     private void destroy() {
-        mSampleAudioPlayer.release();
-        mSampleAudioPlayer.destroy();
+        mSimpleAudioPlayer.release();
+        mSimpleAudioPlayer.destroy();
     }
 
     @InjectOnClick({R.id.play_btn, R.id.pause_btn, R.id.stop_btn,
@@ -540,13 +539,13 @@ public class DecodeAudioFragment extends BaseFragment {
     private void onClick(View v) {
         switch (v.getId()) {
             case R.id.play_btn:
-                mSampleAudioPlayer.play();
+                mSimpleAudioPlayer.play();
                 break;
             case R.id.pause_btn:
-                mSampleAudioPlayer.pause();
+                mSimpleAudioPlayer.pause();
                 break;
             case R.id.stop_btn:
-                mSampleAudioPlayer.stop();
+                mSimpleAudioPlayer.stop();
                 mShowProcessTimeTv.setText("00:00");
                 mShowDurationTimeTv.setText("00:00");
                 mPlayPositionSB.setProgress(0);
@@ -608,11 +607,11 @@ public class DecodeAudioFragment extends BaseFragment {
             default:
                 break;
         }
-        mSampleAudioPlayer.setPath(mCurMusicFile.getAbsolutePath());
+        mSimpleAudioPlayer.setPath(mCurMusicFile.getAbsolutePath());
         if (DEBUG)
             MLog.d(TAG, "prev() mCurMusicIndex: " + mCurMusicIndex +
                     " " + mCurMusicFile.getAbsolutePath());
-        mSampleAudioPlayer.prev();
+        mSimpleAudioPlayer.prev();
     }
 
     private void next() {
@@ -650,11 +649,11 @@ public class DecodeAudioFragment extends BaseFragment {
             default:
                 break;
         }
-        mSampleAudioPlayer.setPath(mCurMusicFile.getAbsolutePath());
+        mSimpleAudioPlayer.setPath(mCurMusicFile.getAbsolutePath());
         if (DEBUG)
             MLog.d(TAG, "next() mCurMusicIndex: " + mCurMusicIndex +
                     " " + mCurMusicFile.getAbsolutePath());
-        mSampleAudioPlayer.next();
+        mSimpleAudioPlayer.next();
     }
 
     private void uiHandleMessage(Message msg) {
@@ -676,14 +675,14 @@ public class DecodeAudioFragment extends BaseFragment {
                 break;
             case PLAYBACK_PROGRESS_UPDATED:
                 /*int progress =
-                        (int) (mPresentationTimeUs * 3840 / mSampleAudioPlayer.getDurationUs());*/
+                        (int) (mPresentationTimeUs * 3840 / mSimpleAudioPlayer.getDurationUs());*/
                 // MLog.d(TAG, "threadHandleMessage() progress: " + progress);
 
                 String curElapsedTime = DateUtils.formatElapsedTime(
                         (mPresentationTimeUs / 1000) / 1000);
                 mShowProcessTimeTv.setText(curElapsedTime);
 
-                int duration = (int) mSampleAudioPlayer.getDurationUs() / 1000;
+                int duration = (int) mSimpleAudioPlayer.getDurationUs() / 1000;
                 int currentPosition = (int) mPresentationTimeUs / 1000;
                 float pos = (float) currentPosition / duration;
                 int target = Math.round(pos * mPlayPositionSB.getMax());
@@ -693,8 +692,8 @@ public class DecodeAudioFragment extends BaseFragment {
                 }
                 break;
             case PLAYBACK_PROGRESS_CHANGED:
-                long process = (long) ((mProgress / 3840.00) * mSampleAudioPlayer.getDurationUs());
-                mSampleAudioPlayer.setProgressUs(process);
+                long process = (long) ((mProgress / 3840.00) * mSimpleAudioPlayer.getDurationUs());
+                mSimpleAudioPlayer.setProgressUs(process);
                 MLog.d(TAG, "threadHandleMessage() process: " + process +
                         " " + DateUtils.formatElapsedTime(process / 1000 / 1000));
                 break;

@@ -17,19 +17,13 @@ import android.widget.Button;
 
 import com.weidi.usefragments.R;
 import com.weidi.usefragments.tool.H264Player;
-import com.weidi.usefragments.tool.SampleVideoPlayer;
-import com.weidi.usefragments.tool.SampleVideoPlayer2;
+import com.weidi.usefragments.tool.SimpleVideoPlayer2;
 import com.weidi.usefragments.fragment.FragOperManager;
 import com.weidi.usefragments.fragment.base.BaseFragment;
 import com.weidi.usefragments.inject.InjectOnClick;
 import com.weidi.usefragments.inject.InjectView;
-import com.weidi.usefragments.media.MediaUtils;
 import com.weidi.usefragments.tool.MLog;
-import com.weidi.usefragments.tool.SampleVideoPlayer3;
-import com.weidi.usefragments.tool.SampleVideoPlayer4;
-import com.weidi.usefragments.tool.SampleVideoPlayer5;
-import com.weidi.usefragments.tool.SampleVideoPlayer6;
-import com.weidi.usefragments.tool.SampleVideoPlayer7;
+import com.weidi.usefragments.tool.SimpleVideoPlayer7;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -312,7 +306,7 @@ public class DecodeVideoFragment extends BaseFragment {
     /*"/storage/2430-1702/Android/data/com.weidi.usefragments/files/" +
             "output.mp4";*/
     private Surface mSurface;
-    private SampleVideoPlayer7 mSampleVideoPlayer;
+    private SimpleVideoPlayer7 mSampleVideoPlayer;
     private H264Player mH264Player;
 
     private List<File> videoFiles;
@@ -401,13 +395,13 @@ public class DecodeVideoFragment extends BaseFragment {
                 mSampleVideoPlayer.play();*/
                 //next();
 
-                /*SampleVideoPlayer mSampleVideoPlayer = new SampleVideoPlayer();
+                /*SimpleVideoPlayer mSampleVideoPlayer = new SimpleVideoPlayer();
                 mSampleVideoPlayer.setContext(getContext());
                 mSampleVideoPlayer.setPath(mVideoPath);
                 mSampleVideoPlayer.setSurface(mSurface);
                 mSampleVideoPlayer.play();*/
 
-                mSampleVideoPlayer = new SampleVideoPlayer7();
+                mSampleVideoPlayer = new SimpleVideoPlayer7();
                 mSampleVideoPlayer.setContext(getContext());
                 mSampleVideoPlayer.setPath(null);
                 mSampleVideoPlayer.setSurface(mSurface);
@@ -514,7 +508,7 @@ public class DecodeVideoFragment extends BaseFragment {
         return false;
     }
 
-    private SampleVideoPlayer2.Callback mCallback = new SampleVideoPlayer2.Callback() {
+    private SimpleVideoPlayer2.Callback mCallback = new SimpleVideoPlayer2.Callback() {
         @Override
         public void onPlaybackReady() {
 

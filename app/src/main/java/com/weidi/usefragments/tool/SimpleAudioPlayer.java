@@ -43,10 +43,10 @@ import java.util.concurrent.Executors;
  因为MediaExtractor已经把这些工作给做了.
  */
 
-public class SampleAudioPlayer {
+public class SimpleAudioPlayer {
 
     private static final String TAG =
-            SampleAudioPlayer.class.getSimpleName();
+            SimpleAudioPlayer.class.getSimpleName();
     private static final boolean DEBUG = true;
 
     private static final int TIME_OUT = 10000;
@@ -103,12 +103,12 @@ public class SampleAudioPlayer {
         mCallback = callback;
     }
 
-    public SampleAudioPlayer(String path) {
+    public SimpleAudioPlayer(String path) {
         mPath = path;
         init();
     }
 
-    public SampleAudioPlayer() {
+    public SimpleAudioPlayer() {
         init();
     }
 
@@ -209,7 +209,7 @@ public class SampleAudioPlayer {
 
     private static ExecutorService getSingleThreadPool() {
         if (singleService == null) {
-            synchronized (SampleAudioPlayer.class) {
+            synchronized (SimpleAudioPlayer.class) {
                 if (singleService == null) {
                     singleService = Executors.newSingleThreadExecutor();
                 }
@@ -227,13 +227,13 @@ public class SampleAudioPlayer {
         mThreadHandler = new Handler(mHandlerThread.getLooper()) {
             @Override
             public void handleMessage(Message msg) {
-                SampleAudioPlayer.this.threadHandleMessage(msg);
+                SimpleAudioPlayer.this.threadHandleMessage(msg);
             }
         };
         mUiHandler = new Handler(Looper.getMainLooper()) {
             @Override
             public void handleMessage(Message msg) {
-                SampleAudioPlayer.this.uiHandleMessage(msg);
+                SimpleAudioPlayer.this.uiHandleMessage(msg);
             }
         };
     }

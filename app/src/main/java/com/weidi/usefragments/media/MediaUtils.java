@@ -18,9 +18,7 @@ import android.media.MediaMetadataRetriever;
 import android.media.MediaRecorder;
 import android.media.ThumbnailUtils;
 import android.os.Build;
-import android.os.SystemClock;
 import android.text.TextUtils;
-import android.text.format.DateUtils;
 import android.util.Log;
 import android.util.Range;
 import android.util.SparseArray;
@@ -28,7 +26,6 @@ import android.view.Surface;
 
 import com.weidi.usefragments.tool.MLog;
 import com.weidi.usefragments.tool.MimeTypes;
-import com.weidi.usefragments.tool.SampleVideoPlayer7;
 
 import java.io.ByteArrayOutputStream;
 import java.io.FileOutputStream;

@@ -176,6 +176,32 @@ public class Contents {
                 "美国队长3:内战",
                 "http://xunlei.jingpin88.com/20171026/cQ7hsCrN/mp4/cQ7hsCrN.mp4");
 
+        movieMap.put(
+                "超凡蜘蛛侠1",
+                "http://ying.zuidaziyuan.com/1707/CF%E8%9C%98%E8%9B%9B%E4%BE%A01.BD1280%E9%AB%98%E6%B8%85%E4%B8%AD%E8%8B%B1%E5%8F%8C%E5%AD%97%E7%89%88.mp4");
+        movieMap.put(
+                "超凡蜘蛛侠2",
+                "http://ying.zuidaziyuan.com/1707/CF%E8%9C%98%E8%9B%9B%E4%BE%A02.BD1280%E9%AB%98%E6%B8%85%E4%B8%AD%E8%8B%B1%E5%8F%8C%E5%AD%97%E7%89%88.mp4");
+
+        movieMap.put(
+                "变形金刚1",
+                "http://ying.zuidaziyuan.com/1706/bx%E9%87%91%E5%88%9A1.BD1280%E9%AB%98%E6%B8%85%E4%B8%AD%E8%8B%B1%E5%8F%8C%E5%AD%97%E7%89%88.mp4");
+        movieMap.put(
+                "变形金刚2",
+                "http://ying.zuidaziyuan.com/1706/bx%E9%87%91%E5%88%9A2%EF%BC%9A%E5%A0%95%E8%90%BD%E8%80%85%E7%9A%84%E5%A4%8D%E4%BB%87.BD1280%E9%AB%98%E6%B8%85%E7%89%B9%E6%95%88%E4%B8%AD%E8%8B%B1%E5%8F%8C%E5%AD%97%E7%89%88.mp4");
+        movieMap.put(
+                "变形金刚3",
+                "http://ying.zuidaziyuan.com/1706/bx%E9%87%91%E5%88%9A3%EF%BC%9A%E9%BB%91%E6%9C%88%E9%99%8D%E4%B8%B4.BD1280%E9%AB%98%E6%B8%85%E7%89%B9%E6%95%88%E4%B8%AD%E8%8B%B1%E5%8F%8C%E5%AD%97%E7%89%88.mp4");
+        movieMap.put(
+                "变形金刚4",
+                "http://ying.zuidaziyuan.com/1706/bx%E9%87%91%E5%88%9A4%EF%BC%9A%E7%BB%9D%E8%BF%B9%E9%87%8D%E7%94%9F.BD1280%E9%AB%98%E6%B8%85%E4%B8%AD%E8%8B%B1%E5%8F%8C%E5%AD%97%E7%89%88.mp4");
+        movieMap.put(
+                "变形金刚5",
+                "");
+        movieMap.put(
+                "",
+                "");
+
         // {csd-1=java.nio.HeapByteBuffer[pos=0 lim=8 cap=8], mime=video/avc, frame-rate=24, track-id=2, profile=2, width=1280, height=720, max-input-size=151238, durationUs=6227930041, csd-0=java.nio.HeapByteBuffer[pos=0 lim=41 cap=41], bitrate-mode=0, level=512}
         // csd-0: {0, 0, 0, 1, 103, 77, 64, 31, -24, -128, 40, 2, -35, -128, -87, 1, 1, 1, 64, 0, 0, -6, 64, 0, 46, -32, 56, 24, 0, 21, 92, -64, 1, 83, -38, 76, 48, 15, -116, 24, -119}
         // csd-1: {0, 0, 0, 1, 104, -21, -20, -78}
@@ -278,7 +304,7 @@ public class Contents {
                 "");
     }
 
-    private static String mTitle = "重案六组第四季31";//
+    private static String mTitle = "test";// 重案六组第四季31
 
     public static String getUri() {
         mPath = "http://192.168.0.112:8080/tomcat_video/game_of_thrones_5_01.mp4";

@@ -38,8 +38,8 @@ import com.weidi.usefragments.test_fragment.scene2.ThrowingScreenFragment;
 import com.weidi.usefragments.test_fragment.scene2.VideoLiveBroadcastingFragment;
 import com.weidi.usefragments.test_fragment.scene2.ViewPagerFragment;
 import com.weidi.usefragments.tool.MLog;
-import com.weidi.usefragments.tool.SampleAudioPlayer;
-import com.weidi.usefragments.tool.SampleVideoPlayer;
+import com.weidi.usefragments.tool.SimpleAudioPlayer;
+import com.weidi.usefragments.tool.SimpleVideoPlayer;
 
 import java.util.HashMap;
 import java.util.List;
@@ -597,15 +597,15 @@ public class MainActivity1 extends BaseActivity
         return super.dispatchKeyEvent(event);
     }*/
 
-    private SampleAudioPlayer mSampleAudioPlayer;
-    private SampleVideoPlayer mSampleVideoPlayer;
+    private SimpleAudioPlayer mSimpleAudioPlayer;
+    private SimpleVideoPlayer mSimpleVideoPlayer;
 
-    public void setSampleAudioPlayer(SampleAudioPlayer sampleAudioPlayer) {
-        mSampleAudioPlayer = sampleAudioPlayer;
+    public void setSampleAudioPlayer(SimpleAudioPlayer simpleAudioPlayer) {
+        mSimpleAudioPlayer = simpleAudioPlayer;
     }
 
-    public void setSampleVideoPlayer(SampleVideoPlayer sampleVideoPlayer) {
-        mSampleVideoPlayer = sampleVideoPlayer;
+    public void setSampleVideoPlayer(SimpleVideoPlayer simpleVideoPlayer) {
+        mSimpleVideoPlayer = simpleVideoPlayer;
     }
 
     /***
@@ -613,8 +613,8 @@ public class MainActivity1 extends BaseActivity
      */
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
-        /*if (mSampleVideoPlayer != null) {
-            return mSampleVideoPlayer.onKeyDown(keyCode, event);
+        /*if (mSimpleVideoPlayer != null) {
+            return mSimpleVideoPlayer.onKeyDown(keyCode, event);
         }*/
         if (mBaseFragment != null
                 && mBaseFragment instanceof DecodeVideoFragment) {

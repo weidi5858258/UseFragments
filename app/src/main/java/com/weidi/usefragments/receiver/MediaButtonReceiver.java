@@ -7,14 +7,14 @@ import android.media.AudioManager;
 import android.view.KeyEvent;
 
 import com.weidi.eventbus.EventBusUtils;
-import com.weidi.usefragments.tool.SampleAudioPlayer;
-import com.weidi.usefragments.tool.SampleVideoPlayer7;
+import com.weidi.usefragments.tool.SimpleAudioPlayer;
+import com.weidi.usefragments.tool.SimpleVideoPlayer7;
 
 /***
  Created by root on 19-7-2.
  这个广播需要两个地方注册才有效
  1.AndroidManifest.xml
- 2.SampleAudioPlayer(AudioManager)
+ 2.SimpleAudioPlayer(AudioManager)
  */
 
 public class MediaButtonReceiver extends BroadcastReceiver {
@@ -38,9 +38,9 @@ public class MediaButtonReceiver extends BroadcastReceiver {
                 case KeyEvent.KEYCODE_HEADSETHOOK:
                     if (event.getAction() == KeyEvent.ACTION_DOWN) {
                         EventBusUtils.post(
-                                SampleAudioPlayer.class, KeyEvent.KEYCODE_HEADSETHOOK, null);
+                                SimpleAudioPlayer.class, KeyEvent.KEYCODE_HEADSETHOOK, null);
                         EventBusUtils.post(
-                                SampleVideoPlayer7.class, KeyEvent.KEYCODE_HEADSETHOOK, null);
+                                SimpleVideoPlayer7.class, KeyEvent.KEYCODE_HEADSETHOOK, null);
                     }
                     break;
                 case KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE:
