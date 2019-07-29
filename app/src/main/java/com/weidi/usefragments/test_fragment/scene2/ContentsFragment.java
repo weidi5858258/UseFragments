@@ -328,9 +328,13 @@ public class ContentsFragment extends BaseFragment {
                     public void onItemClick(String name, int position) {
                         MLog.d(TAG, "onItemClick(): " + name);
 
+                        String path = Contents.movieMap.get(name);
+                        if (TextUtils.isEmpty(path)) {
+                            return;
+                        }
                         Intent intent = new Intent();
                         intent.setClass(getContext(), PlayerActivity.class);
-                        intent.putExtra(PlayerActivity.CONTENT_PATH, Contents.movieMap.get(name));
+                        intent.putExtra(PlayerActivity.CONTENT_PATH, path);
                         getAttachedActivity().startActivity(intent);
                         ((BaseActivity) getAttachedActivity()).enterActivity();
                     }
