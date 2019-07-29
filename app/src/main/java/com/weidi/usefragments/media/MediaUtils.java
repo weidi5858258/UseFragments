@@ -1198,8 +1198,10 @@ public class MediaUtils {
 
     public static AudioTrack createAudioTrack(
             int streamType,
-            int sampleRateInHz, int channelCount,
-            int audioFormat, int mode) {
+            int sampleRateInHz,
+            int channelCount,
+            int audioFormat,
+            int mode) {
         if (DEBUG)
             MLog.d(TAG, "createAudioTrack(...) start");
         // 在我的手机上使用AudioFormat.CHANNEL_OUT_MONO创建不了AudioTrack
@@ -1849,6 +1851,11 @@ public class MediaUtils {
         }
     }
 
+    /***
+     *
+     * @param encoding MediaFormat改变后就能得到这个值,一般为2(pcm-encoding=2)
+     * @return 一般为true
+     */
     private static boolean isEncodingLinearPcm(int encoding) {
         return encoding == AudioFormat.ENCODING_PCM_8BIT
                 || encoding == AudioFormat.ENCODING_PCM_16BIT
@@ -1857,6 +1864,12 @@ public class MediaUtils {
                 || encoding == AudioFormat.ENCODING_PCM_FLOAT;
     }
 
+    /***
+     * ExoPlayer中的代码
+     * @param channelCount
+     * @param isInputPcm
+     * @return
+     */
     private static int getChannelConfig(int channelCount, boolean isInputPcm) {
         if (Build.VERSION.SDK_INT <= 28 && !isInputPcm) {
             // In passthrough mode the channel count used to configure the audio track doesn't
@@ -1922,7 +1935,7 @@ public class MediaUtils {
     }
 
     private static int decideChannelConfig(
-            final int channelCount, final boolean passthrough, String mimeType) {
+            int channelCount, boolean passthrough, String mimeType) {
         int channelConfig;
         switch (channelCount) {
             case 1:
@@ -1932,8 +1945,8 @@ public class MediaUtils {
                 channelConfig = AudioFormat.CHANNEL_OUT_STEREO;
                 break;
             case 3:
-                channelConfig = AudioFormat.CHANNEL_OUT_STEREO | AudioFormat
-                        .CHANNEL_OUT_FRONT_CENTER;
+                channelConfig = AudioFormat.CHANNEL_OUT_STEREO
+                        | AudioFormat.CHANNEL_OUT_FRONT_CENTER;
                 break;
             case 4:
                 channelConfig = AudioFormat.CHANNEL_OUT_QUAD;
@@ -1965,6 +1978,7 @@ public class MediaUtils {
             default:
                 throw new IllegalArgumentException("Unsupported channel count: " + channelCount);
         }
+
         // Workaround for overly strict channel configuration checks on nVidia Shield.
         if (Build.VERSION.SDK_INT <= 23
                 && "foster".equals(Build.DEVICE)
@@ -1992,6 +2006,7 @@ public class MediaUtils {
                 && channelCount == 1) {
             channelConfig = AudioFormat.CHANNEL_OUT_STEREO;
         }
+
         return channelConfig;
     }
 
