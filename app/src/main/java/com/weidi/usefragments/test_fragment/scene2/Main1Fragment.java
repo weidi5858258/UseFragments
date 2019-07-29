@@ -86,9 +86,11 @@ public class Main1Fragment extends BaseFragment {
                 //FragOperManager.getInstance().enter3(new ThrowingScreenFragment());
                 //FragOperManager.getInstance().enter3(new DecodeVideoFragment());
 
-                getAttachedActivity().startActivity(
+                /*getAttachedActivity().startActivity(
                         new Intent(getContext(), PlayerActivity.class));
-                ((BaseActivity) getAttachedActivity()).enterActivity();
+                ((BaseActivity) getAttachedActivity()).enterActivity();*/
+
+                FragOperManager.getInstance().enter3(new ContentsFragment());
             }
         });
     }

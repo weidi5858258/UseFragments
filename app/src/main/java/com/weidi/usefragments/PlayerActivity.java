@@ -154,6 +154,8 @@ public class PlayerActivity extends BaseActivity {
 
     ///////////////////////////////////////////////////////////////////////
 
+    public static final String CONTENT_PATH = "content_path";
+
     private static final int PLAYBACK_INFO = 0x001;
     private static final int PLAYBACK_PROGRESS_UPDATED = 0x002;
     private static final int PLAYBACK_PROGRESS_CHANGED = 0x003;
@@ -166,6 +168,7 @@ public class PlayerActivity extends BaseActivity {
     private PowerManager.WakeLock mPowerWakeLock;
     //    private SimpleVideoPlayer mSampleVideoPlayer;
     private SimpleVideoPlayer7 mSampleVideoPlayer;
+    private String mPath;
     private int mProgress;
     private long mPresentationTimeUs;
     private ProgressBar mLoadingView;
@@ -191,6 +194,8 @@ public class PlayerActivity extends BaseActivity {
                 PlayerActivity.this.uiHandleMessage(msg);
             }
         };
+
+        mPath = getIntent().getStringExtra(CONTENT_PATH);
 
         mLoadingView = findViewById(R.id.loading_view);
         mControllerPanelLayout = findViewById(R.id.controller_panel_layout);
@@ -226,7 +231,7 @@ public class PlayerActivity extends BaseActivity {
                 mSampleVideoPlayer.play();*/
 
                 mSampleVideoPlayer.setContext(getContext());
-                mSampleVideoPlayer.setPath(null);
+                mSampleVideoPlayer.setPath(mPath);
                 mSampleVideoPlayer.setSurface(mSurface);
                 mSampleVideoPlayer.setCallback(mCallback);
                 //mSampleVideoPlayer.setProgressUs(95160000L);

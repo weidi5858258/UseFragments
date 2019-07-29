@@ -1,5 +1,7 @@
 package com.weidi.usefragments.tool;
 
+import android.util.ArrayMap;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -9,7 +11,7 @@ import java.util.Map;
 
 public class Contents {
 
-    private static Map<String, String> movieMap = new HashMap<>();
+    public static Map<String, String> movieMap = new ArrayMap<>();
     private static String mPath;
 
     static {
@@ -282,6 +284,12 @@ public class Contents {
                 "魔精攻击",
                 "http://anning.luanniao-zuida.com/1907/%E9%AD%94%E7%B2%BE%E6%94%BB%E5%87%BB.BD1280%E9%AB%98%E6%B8%85%E4%B8%AD%E8%8B%B1%E5%8F%8C%E5%AD%97%E7%89%88.mp4");
         movieMap.put(
+                "哥斯拉2:怪兽之王",
+                "http://okxxzy.xzokzyzy.com/20190726/23836_8f001b98/%E5%93%A5%E6%96%AF%E6%8B%892%E9%9F%A9%E7%89%88.mp4");
+        movieMap.put(
+                "城市猎人2019",
+                "http://xunlei.zuidaxunlei.com/1907/%E5%9F%8E%E5%B8%82%E7%8C%8E%E4%BA%BA2019.BD1280%E9%AB%98%E6%B8%85%E4%B8%AD%E5%AD%97%E7%89%88.mp4");
+        movieMap.put(
                 "08_mm-MP4-H264_720x400_2997_AAC-LC_192_48",
                 "/storage/2430-1702/BaiduNetdisk/video/08_mm-MP4-H264_720x400_2997_AAC-LC_192_48.mp4");
         movieMap.put(
@@ -304,7 +312,7 @@ public class Contents {
                 "");
     }
 
-    private static String mTitle = "重案六组第四季32";// 重案六组第四季31
+    private static String mTitle = "重案六组第四季36";// 重案六组第四季35
 
     public static String getUri() {
         mPath = "http://192.168.0.112:8080/tomcat_video/game_of_thrones_5_01.mp4";
