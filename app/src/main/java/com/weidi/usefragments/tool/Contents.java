@@ -102,8 +102,8 @@ public class Contents {
                 "城市猎人2019",
                 "http://xunlei.zuidaxunlei.com/1907/%E5%9F%8E%E5%B8%82%E7%8C%8E%E4%BA%BA2019.BD1280%E9%AB%98%E6%B8%85%E4%B8%AD%E5%AD%97%E7%89%88.mp4");
         movieMap.put(
-                "",
-                "");
+                "机器人病毒危机",
+                "http://vip.zuiku8.com/1809/%E6%9C%BA%E5%99%A8%E4%BA%BA%E7%97%85%E6%AF%92%E5%8D%B1%E6%9C%BA.BD1280%E9%AB%98%E6%B8%85%E4%B8%AD%E8%8B%B1%E5%8F%8C%E5%AD%97%E7%89%88.mp4");
         movieMap.put(
                 "",
                 "");
@@ -119,6 +119,16 @@ public class Contents {
         movieMap.put(
                 "",
                 "");
+        movieMap.put(
+                "",
+                "");
+
+        movieMap.put(
+                "伸冤人",
+                "http://xunleib.zuida360.com/1805/%E4%BC%B8%E5%86%A4%E4%BA%BA.BD1280%E9%AB%98%E6%B8%85%E4%B8%AD%E8%8B%B1%E5%8F%8C%E5%AD%97%E7%89%88.mp4");
+        movieMap.put(
+                "伸冤人2",
+                "http://vip.zuiku8.com/1810/%E4%BC%B8%E5%86%A4%E4%BA%BA2.BD1280%E9%AB%98%E6%B8%85%E4%B8%AD%E5%AD%97%E7%89%88.mp4");
 
         movieMap.put(
                 "碟中谍1",
@@ -235,7 +245,7 @@ public class Contents {
                 "");
     }
 
-    private static String mTitle = "重案六组第四季36";// 重案六组第四季35
+    private static String mTitle = "";
 
     public static String getUri() {
         mPath = "http://192.168.0.112:8080/tomcat_video/game_of_thrones_5_01.mp4";
@@ -276,6 +286,10 @@ public class Contents {
         mPath = "/storage/37C8-3904/myfiles/video/Escape.Plan.2.mp4";
         mPath = movieMap.get(mTitle);
         return mPath;
+    }
+
+    public static void setTitle(String title) {
+        mTitle = title;
     }
 
     public static String getTitle(){

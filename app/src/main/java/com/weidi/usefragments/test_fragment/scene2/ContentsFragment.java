@@ -336,6 +336,8 @@ public class ContentsFragment extends BaseFragment {
                             return;
                         }
 
+                        Contents.setTitle(name);
+
                         Intent intent = new Intent();
                         intent.setClass(getContext(), PlayerActivity.class);
                         intent.putExtra(PlayerActivity.CONTENT_PATH, path);

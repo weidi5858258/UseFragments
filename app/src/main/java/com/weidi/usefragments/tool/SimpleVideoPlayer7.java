@@ -1442,10 +1442,10 @@ public class SimpleVideoPlayer7 {
          */
         int readSize = -1;
         boolean needToRead = true;
-        if (wrapper instanceof VideoWrapper) {
+        /*if (wrapper instanceof VideoWrapper) {
             wrapper.CACHE = 1024 * 1024 * 2;
             wrapper.readData1 = new byte[wrapper.CACHE];
-        }
+        }*/
         wrapper.extractor.selectTrack(wrapper.trackIndex);
         wrapper.isReading = true;
         while (wrapper.isReading) {
@@ -1596,8 +1596,12 @@ public class SimpleVideoPlayer7 {
                                 wrapper.isHandling = true;
                                 wrapper.needToSeek = false;
                                 if (wrapper.type == TYPE_AUDIO) {
+                                    showInfo = "  readData() audio start()";
+                                    MLog.i(TAG, showInfo);
                                     new Thread(mAudioHandleData).start();
                                 } else {
+                                    showInfo = "  readData() video start()";
+                                    MLog.i(TAG, showInfo);
                                     new Thread(mVideoHandleData).start();
                                 }
                             } else {
@@ -1623,9 +1627,9 @@ public class SimpleVideoPlayer7 {
                             }
                             needToRead = false;
                             readData1TotalSize = 0;
-                            if (wrapper instanceof VideoWrapper) {
+                            /*if (wrapper instanceof VideoWrapper) {
                                 wrapper.CACHE = CACHE_VIDEO;
-                            }
+                            }*/
 
                             if (wrapper.type == TYPE_AUDIO) {
                                 showInfo = "  readData() audio readData1满了";
@@ -1797,9 +1801,9 @@ public class SimpleVideoPlayer7 {
         MLog.w(TAG, showInfo);
 
         copyReadData1ToHandleData(wrapper);
-        if (wrapper instanceof VideoWrapper) {
+        /*if (wrapper instanceof VideoWrapper) {
             wrapper.readData1 = new byte[CACHE_VIDEO];
-        }
+        }*/
 
         onlyOneStart = true;
         MediaUtils.startTimeMs = System.currentTimeMillis();
@@ -1810,12 +1814,12 @@ public class SimpleVideoPlayer7 {
             // 从wrapper.handleData数组中挑选出音视频帧
             findHead(wrapper.handleData, 0, wrapper.readDataSize, wrapper.offsetList);
             wrapper.offsetCounts = wrapper.offsetList.size();
-            /*if (wrapper.type == TYPE_AUDIO) {
+            if (wrapper.type == TYPE_AUDIO) {
                 showInfo = "handleData() audio findHead    offsetCounts: " + wrapper.offsetCounts;
             } else {
                 showInfo = "handleData() video findHead    offsetCounts: " + wrapper.offsetCounts;
             }
-            MLog.i(TAG, showInfo);*/
+            MLog.i(TAG, showInfo);
 
             if (wrapper.offsetCounts > 1) {
                 wrapper.preReadDataSize = wrapper.readDataSize;
@@ -1850,6 +1854,13 @@ public class SimpleVideoPlayer7 {
             } else {
                 // exit
                 wrapper.isHandling = false;
+
+                if (wrapper.type == TYPE_AUDIO) {
+                    showInfo = "handleData() audio exit";
+                } else {
+                    showInfo = "handleData() video exit";
+                }
+                MLog.e(TAG, showInfo);
 
                 StringBuilder sb = new StringBuilder();
                 for (byte bt : wrapper.handleData) {
@@ -1949,15 +1960,17 @@ public class SimpleVideoPlayer7 {
                         if (!wrapper.isReadData1Full
                                 && !wrapper.isReadData2Full
                                 || wrapper.needToSeek) {
-                            // 自身状态的设置
-                            wrapper.isPausedForCache = true;
+                            if (!wrapper.needToSeek) {
+                                // 自身状态的设置
+                                wrapper.isPausedForCache = true;
 
-                            // 如果当前是视频,那么通知音频pause
-                            // 如果当前是音频,那么通知视频pause
-                            if (wrapper.type == TYPE_AUDIO) {
-                                mVideoWrapper.isPausedForCache = true;
-                            } else {
-                                mAudioWrapper.isPausedForCache = true;
+                                // 如果当前是视频,那么通知音频pause
+                                // 如果当前是音频,那么通知视频pause
+                                if (wrapper.type == TYPE_AUDIO) {
+                                    mVideoWrapper.isPausedForCache = true;
+                                } else {
+                                    mAudioWrapper.isPausedForCache = true;
+                                }
                             }
 
                             if (!wrapper.needToSeek) {
@@ -2004,21 +2017,23 @@ public class SimpleVideoPlayer7 {
 
                             mThreadHandler.removeMessages(MSG_HANDLE_DATA_LOCK_WAIT);
 
-                            wrapper.isPausedForCache = false;
+                            if (!wrapper.needToSeek) {
+                                wrapper.isPausedForCache = false;
 
-                            // 如果当前是视频,那么通知音频play
-                            // 如果当前是音频,那么通知视频play
-                            if (wrapper.type == TYPE_AUDIO) {
-                                MLog.e(TAG, "             video handleDataLock.notify()");
-                                mVideoWrapper.isPausedForCache = false;
-                                synchronized (mVideoWrapper.handleDataLock) {
-                                    mVideoWrapper.handleDataLock.notify();
-                                }
-                            } else {
-                                MLog.e(TAG, "             audio handleDataLock.notify()");
-                                mAudioWrapper.isPausedForCache = false;
-                                synchronized (mAudioWrapper.handleDataLock) {
-                                    mAudioWrapper.handleDataLock.notify();
+                                // 如果当前是视频,那么通知音频play
+                                // 如果当前是音频,那么通知视频play
+                                if (wrapper.type == TYPE_AUDIO) {
+                                    MLog.e(TAG, "             video handleDataLock.notify()");
+                                    mVideoWrapper.isPausedForCache = false;
+                                    synchronized (mVideoWrapper.handleDataLock) {
+                                        mVideoWrapper.handleDataLock.notify();
+                                    }
+                                } else {
+                                    MLog.e(TAG, "             audio handleDataLock.notify()");
+                                    mAudioWrapper.isPausedForCache = false;
+                                    synchronized (mAudioWrapper.handleDataLock) {
+                                        mAudioWrapper.handleDataLock.notify();
+                                    }
                                 }
                             }
 
