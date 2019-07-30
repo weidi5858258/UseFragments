@@ -14,6 +14,7 @@ import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Toast;
 
 import com.weidi.usefragments.BaseActivity;
 import com.weidi.usefragments.PlayerActivity;
@@ -330,8 +331,11 @@ public class ContentsFragment extends BaseFragment {
 
                         String path = Contents.movieMap.get(name);
                         if (TextUtils.isEmpty(path)) {
+                            Toast.makeText(
+                                    getContext(), "播放地址为null", Toast.LENGTH_SHORT).show();
                             return;
                         }
+
                         Intent intent = new Intent();
                         intent.setClass(getContext(), PlayerActivity.class);
                         intent.putExtra(PlayerActivity.CONTENT_PATH, path);
