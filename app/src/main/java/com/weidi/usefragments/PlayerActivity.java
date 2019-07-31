@@ -11,6 +11,7 @@ import android.os.Message;
 import android.os.PowerManager;
 import android.text.format.DateUtils;
 import android.util.Log;
+import android.view.MotionEvent;
 import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
@@ -278,6 +279,22 @@ public class PlayerActivity extends BaseActivity {
             // Tracking end
             @Override
             public void onStopTrackingTouch(SeekBar seekBar) {
+            }
+        });
+        mProgressBar.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                switch (event.getAction()) {
+                    case MotionEvent.ACTION_DOWN:
+                        break;
+                    case MotionEvent.ACTION_UP:
+                        break;
+                    case MotionEvent.ACTION_MOVE:
+                        break;
+                    default:
+                        break;
+                }
+                return false;
             }
         });
     }

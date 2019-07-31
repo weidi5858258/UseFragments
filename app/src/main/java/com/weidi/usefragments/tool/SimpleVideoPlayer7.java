@@ -80,8 +80,10 @@ public class SimpleVideoPlayer7 {
             SimpleVideoPlayer7.class.getSimpleName();
     private static final boolean DEBUG = true;
 
-    private static final int CACHE_AUDIO = 1024 * 1024 * 2;
-    private static final int CACHE_VIDEO = 1024 * 1024 * 8;
+    private static final int CACHE_AUDIO_LOCAL = 1024 * 512;
+    private static final int CACHE_VIDEO_LOCAL = 1024 * 1024;
+    private static final int CACHE_AUDIO_HTTP = 1024 * 1024 * 2;
+    private static final int CACHE_VIDEO_HTTP = 1024 * 1024 * 8;
     // 音频一帧的大小不能超过这个值,不然出错(如果设成1024 * 1024会有杂音,不能过大,调查了好久才发现跟这个有关)
     private static final int AUDIO_FRAME_MAX_LENGTH = 1024 * 100;
     // 视频一帧的大小不能超过这个值,不然出错
@@ -251,19 +253,19 @@ public class SimpleVideoPlayer7 {
             switch (type) {
                 case TYPE_AUDIO:
                     this.type = TYPE_AUDIO;
-                    CACHE = CACHE_AUDIO;
+                    CACHE = CACHE_AUDIO_HTTP;
                     frameMaxLength = AUDIO_FRAME_MAX_LENGTH;
-                    readData1 = new byte[CACHE_AUDIO];
-                    readData2 = new byte[CACHE_AUDIO];
-                    handleData = new byte[CACHE_AUDIO];
+                    readData1 = new byte[CACHE_AUDIO_HTTP];
+                    readData2 = new byte[CACHE_AUDIO_HTTP];
+                    handleData = new byte[CACHE_AUDIO_HTTP];
                     break;
                 case TYPE_VIDEO:
                     this.type = TYPE_VIDEO;
-                    CACHE = CACHE_VIDEO;
+                    CACHE = CACHE_VIDEO_HTTP;
                     frameMaxLength = VIDEO_FRAME_MAX_LENGTH;
-                    readData1 = new byte[CACHE_VIDEO];
-                    readData2 = new byte[CACHE_VIDEO];
-                    handleData = new byte[CACHE_VIDEO];
+                    readData1 = new byte[CACHE_VIDEO_HTTP];
+                    readData2 = new byte[CACHE_VIDEO_HTTP];
+                    handleData = new byte[CACHE_VIDEO_HTTP];
                     break;
                 default:
                     break;
@@ -708,6 +710,17 @@ public class SimpleVideoPlayer7 {
             long fileSize = file.length();
             if (DEBUG)
                 MLog.d(TAG, "internalPrepare() fileSize: " + fileSize);
+
+            // 如果是本地文件,重新初始化空间大小
+            mAudioWrapper.CACHE = CACHE_AUDIO_LOCAL;
+            mAudioWrapper.readData1 = new byte[CACHE_AUDIO_LOCAL];
+            mAudioWrapper.readData2 = new byte[CACHE_AUDIO_LOCAL];
+            mAudioWrapper.handleData = new byte[CACHE_AUDIO_LOCAL];
+
+            mVideoWrapper.CACHE = CACHE_VIDEO_LOCAL;
+            mVideoWrapper.readData1 = new byte[CACHE_VIDEO_LOCAL];
+            mVideoWrapper.readData2 = new byte[CACHE_VIDEO_LOCAL];
+            mVideoWrapper.handleData = new byte[CACHE_VIDEO_LOCAL];
         }
 
         String PATH = null;
@@ -1628,7 +1641,7 @@ public class SimpleVideoPlayer7 {
                             needToRead = false;
                             readData1TotalSize = 0;
                             /*if (wrapper instanceof VideoWrapper) {
-                                wrapper.CACHE = CACHE_VIDEO;
+                                wrapper.CACHE = CACHE_VIDEO_HTTP;
                             }*/
 
                             if (wrapper.type == TYPE_AUDIO) {
@@ -1802,7 +1815,7 @@ public class SimpleVideoPlayer7 {
 
         copyReadData1ToHandleData(wrapper);
         /*if (wrapper instanceof VideoWrapper) {
-            wrapper.readData1 = new byte[CACHE_VIDEO];
+            wrapper.readData1 = new byte[CACHE_VIDEO_HTTP];
         }*/
 
         onlyOneStart = true;
