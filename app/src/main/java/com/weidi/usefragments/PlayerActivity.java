@@ -11,6 +11,7 @@ import android.os.Message;
 import android.os.PowerManager;
 import android.text.format.DateUtils;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.Surface;
 import android.view.SurfaceHolder;
@@ -23,6 +24,7 @@ import android.widget.SeekBar;
 import android.widget.TextView;
 
 import com.weidi.usefragments.media.MediaUtils;
+import com.weidi.usefragments.test_view.BubblePopupWindow;
 import com.weidi.usefragments.tool.Callback;
 import com.weidi.usefragments.tool.Contents;
 import com.weidi.usefragments.tool.MLog;
@@ -170,8 +172,9 @@ public class PlayerActivity extends BaseActivity {
     //    private SimpleVideoPlayer mSampleVideoPlayer;
     private SimpleVideoPlayer7 mSampleVideoPlayer;
     private String mPath;
-    private int mProgress;
+    private long mProgress;
     private long mPresentationTimeUs;
+    private boolean mNeedToSyncProgressBar = true;
     private ProgressBar mLoadingView;
     private LinearLayout mControllerPanelLayout;
     private TextView mFileNameTV;
@@ -182,6 +185,12 @@ public class PlayerActivity extends BaseActivity {
     private ImageButton mPlayIB;
     private ImageButton mPauseIB;
     private ImageButton mNextIB;
+    // 跟气泡相关
+    LayoutInflater mLayoutInflater;
+    View mBubbleView;
+    // 气泡上显示时间
+    TextView mShowTimeTV;
+    BubblePopupWindow mBubblePopupWindow;
 
     private Handler mUiHandler;
 
@@ -195,6 +204,13 @@ public class PlayerActivity extends BaseActivity {
                 PlayerActivity.this.uiHandleMessage(msg);
             }
         };
+
+        mLayoutInflater = LayoutInflater.from(this);
+        mBubbleView = mLayoutInflater.inflate(R.layout.layout_popup_view, null);
+        mShowTimeTV = mBubbleView.findViewById(R.id.content_tv);
+        mBubblePopupWindow = new BubblePopupWindow(this);
+        mBubblePopupWindow.setBubbleView(mBubbleView);
+        mShowTimeTV.setOnClickListener(mOnClickListener);
 
         mPath = getIntent().getStringExtra(CONTENT_PATH);
 
@@ -270,9 +286,14 @@ public class PlayerActivity extends BaseActivity {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromTouch) {
                 if (fromTouch) {
-                    mProgress = progress;
-                    mUiHandler.removeMessages(PLAYBACK_PROGRESS_CHANGED);
-                    mUiHandler.sendEmptyMessageDelayed(PLAYBACK_PROGRESS_CHANGED, 50);
+                    long tempProgress =
+                            (long) ((progress / 3840.00) * mSampleVideoPlayer.getDurationUs());
+                    mProgress = tempProgress;
+                    String elapsedTime =
+                            DateUtils.formatElapsedTime(tempProgress / 1000 / 1000);
+                    mShowTimeTV.setText(elapsedTime);
+                    /*mUiHandler.removeMessages(PLAYBACK_PROGRESS_CHANGED);
+                    mUiHandler.sendEmptyMessageDelayed(PLAYBACK_PROGRESS_CHANGED, 50);*/
                 }
             }
 
@@ -286,6 +307,8 @@ public class PlayerActivity extends BaseActivity {
             public boolean onTouch(View v, MotionEvent event) {
                 switch (event.getAction()) {
                     case MotionEvent.ACTION_DOWN:
+                        mNeedToSyncProgressBar = false;
+                        showBubbleView("", mProgressBar);
                         break;
                     case MotionEvent.ACTION_UP:
                         break;
@@ -319,6 +342,11 @@ public class PlayerActivity extends BaseActivity {
         }
     }
 
+    private void showBubbleView(String time, View view) {
+        mShowTimeTV.setText(time);
+        mBubblePopupWindow.show(view);
+    }
+
     private void uiHandleMessage(Message msg) {
         if (msg == null) {
             return;
@@ -330,11 +358,13 @@ public class PlayerActivity extends BaseActivity {
                         (mPresentationTimeUs / 1000) / 1000);
                 mProgressTimeTV.setText(curElapsedTime);
 
-                int duration = (int) (mSampleVideoPlayer.getDurationUs() / 1000);
-                int currentPosition = (int) (mPresentationTimeUs / 1000);
-                float pos = (float) currentPosition / duration;
-                int target = Math.round(pos * mProgressBar.getMax());
-                mProgressBar.setProgress(target);
+                if (mNeedToSyncProgressBar) {
+                    int duration = (int) (mSampleVideoPlayer.getDurationUs() / 1000);
+                    int currentPosition = (int) (mPresentationTimeUs / 1000);
+                    float pos = (float) currentPosition / duration;
+                    int target = Math.round(pos * mProgressBar.getMax());
+                    mProgressBar.setProgress(target);
+                }
                 break;
             case PLAYBACK_PROGRESS_CHANGED:
                 long process = (long) ((mProgress / 3840.00) * mSampleVideoPlayer.getDurationUs());
@@ -448,6 +478,11 @@ public class PlayerActivity extends BaseActivity {
                     } else {
                         mControllerPanelLayout.setVisibility(View.VISIBLE);
                     }
+                    break;
+                case R.id.content_tv:
+                    mNeedToSyncProgressBar = true;
+                    mSampleVideoPlayer.setProgressUs(mProgress);
+                    mBubblePopupWindow.dismiss();
                     break;
                 default:
                     break;
