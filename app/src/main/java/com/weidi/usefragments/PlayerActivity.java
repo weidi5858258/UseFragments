@@ -251,7 +251,7 @@ public class PlayerActivity extends BaseActivity {
                 mSampleVideoPlayer.setPath(mPath);
                 mSampleVideoPlayer.setSurface(mSurface);
                 mSampleVideoPlayer.setCallback(mCallback);
-                //mSampleVideoPlayer.setProgressUs(95160000L);
+                //mSampleVideoPlayer.setProgressUs(300160000L);
                 mSampleVideoPlayer.play();
             }
 
@@ -474,6 +474,7 @@ public class PlayerActivity extends BaseActivity {
                     break;
                 case R.id.surfaceView:
                     if (mControllerPanelLayout.getVisibility() == View.VISIBLE) {
+                        mNeedToSyncProgressBar = true;
                         mControllerPanelLayout.setVisibility(View.INVISIBLE);
                     } else {
                         mControllerPanelLayout.setVisibility(View.VISIBLE);

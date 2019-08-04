@@ -323,8 +323,8 @@ public class SimpleVideoPlayer7 {
             restOfDataSize = 0;
             frameDataLength = 0;
 
-            progressUs = -1;
-            needToSeek = false;
+            /*progressUs = -1;
+            needToSeek = false;*/
         }
     }
 
@@ -389,7 +389,11 @@ public class SimpleVideoPlayer7 {
 
     // 95160000
     public void setProgressUs(long progressUs) {
+        MLog.i(TAG, "----------------------------------------------------------");
         MLog.d(TAG, "setProgressUs() progressUs: " + progressUs);
+        String elapsedTime =
+                DateUtils.formatElapsedTime(progressUs / 1000 / 1000);
+        MLog.i(TAG, "setProgressUs() elapsedTime: " + elapsedTime);
         setProgressUs(mAudioWrapper, progressUs);
         setProgressUs(mVideoWrapper, progressUs);
     }
@@ -1740,7 +1744,8 @@ public class SimpleVideoPlayer7 {
 
                         System.gc();
 
-                        if (wrapper.progressUs == -1) {
+                        if (wrapper.progressUs == -1
+                                && !wrapper.needToSeek) {
                             // wait
                             synchronized (wrapper.readDataLock) {
                                 if (wrapper.type == TYPE_AUDIO) {
@@ -1763,7 +1768,8 @@ public class SimpleVideoPlayer7 {
                             }
                         }
 
-                        if (wrapper.progressUs == -1) {
+                        if (wrapper.progressUs == -1
+                                && !wrapper.needToSeek) {
                             if (!wrapper.isReadData1Full) {
                                 wrapper.setTime1.clear();
                                 copyBufferToReadData1(

@@ -30,11 +30,11 @@ public class Contents {
                 "地狱男爵:血皇后崛起",
                 "http://anning.luanniao-zuida.com/1907/%E5%9C%B0%E7%8B%B1%E7%94%B7%E7%88%B5%EF%BC%9A%E8%A1%80%E7%9A%87%E5%90%8E%E5%B4%9B%E8%B5%B7.BD1280%E9%AB%98%E6%B8%85%E4%B8%AD%E8%8B%B1%E5%8F%8C%E5%AD%97%E7%89%88.mp4");
         movieMap.put(
-                "突袭",
-                "http://xunleib.zuida360.com/1806/%E7%AA%81%E8%A2%AD.BD1280%E9%AB%98%E6%B8%85%E4%B8%AD%E5%AD%97%E7%89%88.mp4");
-        movieMap.put(
                 "生死时速",
                 "http://xunlei.jingpin88.com/20171028/6WQ5SFS2/mp4/6WQ5SFS2.mp4");
+        movieMap.put(
+                "生死时速2:海上惊情",
+                "http://xunlei.jingpin88.com/20171028/2JJsfDHh/mp4/2JJsfDHh.mp4");
         movieMap.put(
                 "阿丽塔:战斗天使",
                 "http://xunlei.xiazai-zuida.com/1906/AL%E5%A1%94%EF%BC%9A%E6%88%98%E6%96%97%E5%A4%A9%E4%BD%BF.BD1280%E9%AB%98%E6%B8%85%E4%B8%AD%E5%AD%97%E7%89%88.mp4");
@@ -108,8 +108,8 @@ public class Contents {
                 "哥斯拉2:怪兽之王",
                 "http://okxxzy.xzokzyzy.com/20190726/23836_8f001b98/%E5%93%A5%E6%96%AF%E6%8B%892%E9%9F%A9%E7%89%88.mp4");
         movieMap.put(
-                "",
-                "");
+                "惊奇队长",
+                "http://anning.luanniao-zuida.com/1907/%E6%83%8A%E5%A5%87%E9%98%9F%E9%95%BF.BD1280%E9%AB%98%E6%B8%85%E5%9B%BD%E8%AF%AD%E4%B8%AD%E8%8B%B1%E5%8F%8C%E5%AD%97%E7%89%88.mp4");
         movieMap.put(
                 "",
                 "");
@@ -124,7 +124,14 @@ public class Contents {
                 "");
 
         movieMap.put(
-                "伸冤人",
+                "突袭1",
+                "http://xunleib.zuida360.com/1806/%E7%AA%81%E8%A2%AD.BD1280%E9%AB%98%E6%B8%85%E4%B8%AD%E5%AD%97%E7%89%88.mp4");
+        movieMap.put(
+                "突袭2",
+                "http://xunleib.zuida360.com/1806/%E7%AA%81%E8%A2%AD2%EF%BC%9A%E6%9A%B4%E5%BE%92.BD1280%E9%AB%98%E6%B8%85%E4%B8%AD%E8%8B%B1%E5%8F%8C%E5%AD%97%E7%89%88.mp4");
+
+        movieMap.put(
+                "伸冤人1",
                 "http://xunleib.zuida360.com/1805/%E4%BC%B8%E5%86%A4%E4%BA%BA.BD1280%E9%AB%98%E6%B8%85%E4%B8%AD%E8%8B%B1%E5%8F%8C%E5%AD%97%E7%89%88.mp4");
         movieMap.put(
                 "伸冤人2",
@@ -208,20 +215,111 @@ public class Contents {
                 "");
 
         movieMap.put(
-                "",
+                "盗墓笔记之怒海潜沙&秦岭神树01",
+                "http://ok.xzokzyzy.com/20190606/1940_094739d9/%E6%80%92%E6%B5%B7%E6%BD%9C%E6%B2%99&%E7%A7%A6%E5%B2%AD%E7%A5%9E%E6%A0%91%E7%AC%AC01%E9%9B%86.mp4");
+        movieMap.put(
+                "盗墓笔记之怒海潜沙&秦岭神树02",
+                "http://ok.xzokzyzy.com/20190606/1941_69388e66/%E6%80%92%E6%B5%B7%E6%BD%9C%E6%B2%99&%E7%A7%A6%E5%B2%AD%E7%A5%9E%E6%A0%91%E7%AC%AC02%E9%9B%86.mp4");
+        movieMap.put(
+                "盗墓笔记之怒海潜沙&秦岭神树03",
+                "http://ok.xzokzyzy.com/20190606/1942_7c9b7db0/%E6%80%92%E6%B5%B7%E6%BD%9C%E6%B2%99&%E7%A7%A6%E5%B2%AD%E7%A5%9E%E6%A0%91%E7%AC%AC03%E9%9B%86.mp4");
+        movieMap.put(
+                "盗墓笔记之怒海潜沙&秦岭神树04",
+                "http://ok.xzokzyzy.com/20190606/1943_5eeae07a/%E6%80%92%E6%B5%B7%E6%BD%9C%E6%B2%99&%E7%A7%A6%E5%B2%AD%E7%A5%9E%E6%A0%91%E7%AC%AC04%E9%9B%86.mp4");
+        movieMap.put(
+                "盗墓笔记之怒海潜沙&秦岭神树05",
+                "http://ok.xzokzyzy.com/20190606/1944_5875130d/%E6%80%92%E6%B5%B7%E6%BD%9C%E6%B2%99&%E7%A7%A6%E5%B2%AD%E7%A5%9E%E6%A0%91%E7%AC%AC05%E9%9B%86.mp4");
+        movieMap.put(
+                "盗墓笔记之怒海潜沙&秦岭神树06",
+                "http://ok.xzokzyzy.com/20190606/1945_853c6ac8/%E6%80%92%E6%B5%B7%E6%BD%9C%E6%B2%99&%E7%A7%A6%E5%B2%AD%E7%A5%9E%E6%A0%91%E7%AC%AC06%E9%9B%86.mp4");
+        movieMap.put(
+                "盗墓笔记之怒海潜沙&秦岭神树07",
+                "http://ok.xzokzyzy.com/20190606/1946_237c73a3/%E6%80%92%E6%B5%B7%E6%BD%9C%E6%B2%99&%E7%A7%A6%E5%B2%AD%E7%A5%9E%E6%A0%91%E7%AC%AC07%E9%9B%86.mp4");
+        movieMap.put(
+                "盗墓笔记之怒海潜沙&秦岭神树08",
+                "http://ok.xzokzyzy.com/20190606/1947_0b7060b7/%E6%80%92%E6%B5%B7%E6%BD%9C%E6%B2%99&%E7%A7%A6%E5%B2%AD%E7%A5%9E%E6%A0%91%E7%AC%AC08%E9%9B%86.mp4");
+        movieMap.put(
+                "盗墓笔记之怒海潜沙&秦岭神树09",
+                "http://ok.xzokzyzy.com/20190607/1997_e7f592db/%E6%80%92%E6%B5%B7%E6%BD%9C%E6%B2%99&%E7%A7%A6%E5%B2%AD%E7%A5%9E%E6%A0%91%E7%AC%AC09%E9%9B%86.mp4");
+        movieMap.put(
+                "盗墓笔记之怒海潜沙&秦岭神树10",
+                "http://ok.xzokzyzy.com/20190607/1998_92596ca6/%E6%80%92%E6%B5%B7%E6%BD%9C%E6%B2%99&%E7%A7%A6%E5%B2%AD%E7%A5%9E%E6%A0%91%E7%AC%AC10%E9%9B%86.mp4");
+        movieMap.put(
+                "盗墓笔记之怒海潜沙&秦岭神树11",
+                "http://ok.xzokzyzy.com/20190608/2023_2c3fb753/%E6%80%92%E6%B5%B7%E6%BD%9C%E6%B2%99&%E7%A7%A6%E5%B2%AD%E7%A5%9E%E6%A0%91%E7%AC%AC11%E9%9B%86.mp4");
+        movieMap.put(
+                "盗墓笔记之怒海潜沙&秦岭神树12",
+                "http://ok.xzokzyzy.com/20190608/2024_41230b24/%E6%80%92%E6%B5%B7%E6%BD%9C%E6%B2%99&%E7%A7%A6%E5%B2%AD%E7%A5%9E%E6%A0%91%E7%AC%AC12%E9%9B%86.mp4");
+        movieMap.put(
+                "盗墓笔记之怒海潜沙&秦岭神树13",
+                "http://okzy.xzokzyzy.com/20190613/9751_a5d894c5/%E6%80%92%E6%B5%B7%E6%BD%9C%E6%B2%99&%E7%A7%A6%E5%B2%AD%E7%A5%9E%E6%A0%91%E7%AC%AC13%E9%9B%86.mp4");
+        movieMap.put(
+                "盗墓笔记之怒海潜沙&秦岭神树14",
+                "http://okzy.xzokzyzy.com/20190613/9752_d98f0cef/%E6%80%92%E6%B5%B7%E6%BD%9C%E6%B2%99&%E7%A7%A6%E5%B2%AD%E7%A5%9E%E6%A0%91%E7%AC%AC14%E9%9B%86.mp4");
+        movieMap.put(
+                "盗墓笔记之怒海潜沙&秦岭神树15",
+                "http://ok.xzokzyzy.com/20190614/2270_68a94c08/%E6%80%92%E6%B5%B7%E6%BD%9C%E6%B2%99&%E7%A7%A6%E5%B2%AD%E7%A5%9E%E6%A0%91%E7%AC%AC15%E9%9B%86.mp4");
+        movieMap.put(
+                "盗墓笔记之怒海潜沙&秦岭神树16",
+                "http://ok.xzokzyzy.com/20190614/2271_5a0c3928/%E6%80%92%E6%B5%B7%E6%BD%9C%E6%B2%99&%E7%A7%A6%E5%B2%AD%E7%A5%9E%E6%A0%91%E7%AC%AC16%E9%9B%86.mp4");
+        movieMap.put(
+                "盗墓笔记之怒海潜沙&秦岭神树17",
+                "http://ok.xzokzyzy.com/20190615/2331_96421bd6/%E6%80%92%E6%B5%B7%E6%BD%9C%E6%B2%99&%E7%A7%A6%E5%B2%AD%E7%A5%9E%E6%A0%91%E7%AC%AC17%E9%9B%86.mp4");
+        movieMap.put(
+                "盗墓笔记之怒海潜沙&秦岭神树18",
+                "http://ok.xzokzyzy.com/20190615/2332_c27a2802/%E6%80%92%E6%B5%B7%E6%BD%9C%E6%B2%99&%E7%A7%A6%E5%B2%AD%E7%A5%9E%E6%A0%91%E7%AC%AC18%E9%9B%86.mp4");
+        movieMap.put(
+                "盗墓笔记之怒海潜沙&秦岭神树19",
+                "http://ok.xzokzyzy.com/20190620/2490_28cb251f/%E6%80%92%E6%B5%B7%E6%BD%9C%E6%B2%99&%E7%A7%A6%E5%B2%AD%E7%A5%9E%E6%A0%91%E7%AC%AC19%E9%9B%86.mp4");
+        movieMap.put(
+                "盗墓笔记之怒海潜沙&秦岭神树20",
+                "http://ok.xzokzyzy.com/20190620/2491_7a9ee929/%E6%80%92%E6%B5%B7%E6%BD%9C%E6%B2%99&%E7%A7%A6%E5%B2%AD%E7%A5%9E%E6%A0%91%E7%AC%AC20%E9%9B%86.mp4");
+        movieMap.put(
+                "盗墓笔记之怒海潜沙&秦岭神树21",
+                "http://ok.xzokzyzy.com/20190621/2555_75ff5778/%E6%80%92%E6%B5%B7%E6%BD%9C%E6%B2%99&%E7%A7%A6%E5%B2%AD%E7%A5%9E%E6%A0%91%E7%AC%AC21%E9%9B%86.mp4");
+        movieMap.put(
+                "盗墓笔记之怒海潜沙&秦岭神树22",
+                "http://ok.xzokzyzy.com/20190621/2556_4f58b93b/%E6%80%92%E6%B5%B7%E6%BD%9C%E6%B2%99&%E7%A7%A6%E5%B2%AD%E7%A5%9E%E6%A0%91%E7%AC%AC22%E9%9B%86.mp4");
+        movieMap.put(
+                "盗墓笔记之怒海潜沙&秦岭神树23",
                 "");
         movieMap.put(
-                "",
+                "盗墓笔记之怒海潜沙&秦岭神树24",
                 "");
         movieMap.put(
-                "",
+                "盗墓笔记之怒海潜沙&秦岭神树25",
                 "");
         movieMap.put(
-                "",
+                "盗墓笔记之怒海潜沙&秦岭神树26",
                 "");
         movieMap.put(
-                "",
+                "盗墓笔记之怒海潜沙&秦岭神树27",
                 "");
+        movieMap.put(
+                "盗墓笔记之怒海潜沙&秦岭神树28",
+                "");
+        movieMap.put(
+                "盗墓笔记之怒海潜沙&秦岭神树29",
+                "");
+        movieMap.put(
+                "盗墓笔记之怒海潜沙&秦岭神树30",
+                "");
+        movieMap.put(
+                "盗墓笔记之怒海潜沙&秦岭神树31",
+                "");
+        movieMap.put(
+                "盗墓笔记之怒海潜沙&秦岭神树32",
+                "");
+        movieMap.put(
+                "盗墓笔记之怒海潜沙&秦岭神树33",
+                "");
+        movieMap.put(
+                "盗墓笔记之怒海潜沙&秦岭神树34",
+                "");
+        movieMap.put(
+                "盗墓笔记之怒海潜沙&秦岭神树35",
+                "");
+
 
         // 本地视频
         movieMap.put(
