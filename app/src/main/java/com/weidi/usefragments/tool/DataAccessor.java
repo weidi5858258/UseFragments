@@ -103,15 +103,6 @@ public abstract class DataAccessor {
     }
 
     /**
-     * Get content length.
-     *
-     * @return Content length.
-     */
-    public long getSize() {
-        return contentLength;
-    }
-
-    /**
      * Get content format type.
      *
      * @return Content format type.
@@ -130,11 +121,20 @@ public abstract class DataAccessor {
     }
 
     /**
+     * Get content length.
+     *
+     * @return Content length.
+     */
+    public long getSize() {
+        return contentLength;
+    }
+
+    /**
      * Get Content Duration.
      *
      * @return Content Duration.
      */
-    public long getContentDuration() {
+    public long getDuration() {
         return -1;
     }
 

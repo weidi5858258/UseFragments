@@ -16,6 +16,7 @@ import android.widget.FrameLayout;
 
 import com.weidi.usefragments.fragment.FragOperManager;
 import com.weidi.usefragments.fragment.base.BaseFragment;
+import com.weidi.usefragments.service.DownloadFileService;
 import com.weidi.usefragments.test_fragment.dialog.ShowTitleDialogFragment;
 import com.weidi.usefragments.test_fragment.scene2.A2Fragment;
 import com.weidi.usefragments.test_fragment.scene2.AudioFragment;
@@ -165,6 +166,9 @@ public class MainActivity1 extends BaseActivity
         } else {
 
         }
+
+        // start service
+        // startService(new Intent(this, DownloadFileService.class));
 
         main1Fragment = new Main1Fragment();
         main2Fragment = new Main2Fragment();

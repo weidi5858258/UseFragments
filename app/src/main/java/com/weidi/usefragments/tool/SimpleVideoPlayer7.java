@@ -80,8 +80,8 @@ public class SimpleVideoPlayer7 {
             SimpleVideoPlayer7.class.getSimpleName();
     private static final boolean DEBUG = true;
 
-    private static final int CACHE_AUDIO_LOCAL = 1024 * 512;
-    private static final int CACHE_VIDEO_LOCAL = 1024 * 1024;
+    private static final int CACHE_AUDIO_LOCAL = 1024 * 100;// 1024 * 512
+    private static final int CACHE_VIDEO_LOCAL = 1024 * 512;// 1024 * 1024
     private static final int CACHE_AUDIO_HTTP = 1024 * 1024 * 2;
     private static final int CACHE_VIDEO_HTTP = 1024 * 1024 * 8;
     // 音频一帧的大小不能超过这个值,不然出错(如果设成1024 * 1024会有杂音,不能过大,调查了好久才发现跟这个有关)
@@ -97,7 +97,6 @@ public class SimpleVideoPlayer7 {
 
     private static final int BUFFER = 1024 * 1024 * 2;
 
-    private static final int TIME_OUT = 10000;
     /*private static final int PREPARE = 0x0001;
     private static final int PLAY = 0x0002;
     private static final int PAUSE = 0x0003;
@@ -425,10 +424,15 @@ public class SimpleVideoPlayer7 {
         }
         MLog.i(TAG, showInfo);
 
-        // 两个缓存都满了,正在等待中,因此需要发送notify
-        synchronized (wrapper.readDataLock) {
-            wrapper.readDataLock.notify();
+        if (!wrapper.isPausedForCache) {
+            // 两个缓存都满了,正在等待中,因此需要发送notify
+            synchronized (wrapper.readDataLock) {
+                wrapper.readDataLock.notify();
+            }
+        } else {
+            wrapper.isPausedForCache = false;
         }
+
     }
 
     public long getDurationUs() {
@@ -649,6 +653,7 @@ public class SimpleVideoPlayer7 {
                             internalPause();
                         }
                     }*/
+                    internalPause();
                 }
                 firstFlag = false;
                 secondFlag = false;

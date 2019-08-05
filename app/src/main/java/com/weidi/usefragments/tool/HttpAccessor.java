@@ -63,6 +63,10 @@ public class HttpAccessor extends DataAccessor {
             connection = requestConnection(REQUEST_METHOD_GET, null);
             responseCode = connection.getResponseCode();
             if (!isValidResponseCode(responseCode)) {
+                if (connection != null) {
+                    connection.disconnect();
+                    connection = null;
+                }
                 MLog.e(TAG, "Server died. response code = " + responseCode);
                 String errorMsg = "";
                 if (responseCode >= 500) {
@@ -79,7 +83,6 @@ public class HttpAccessor extends DataAccessor {
 
             // Call updateSourceInfo
             updateSourceInfo(connection);
-
         } catch (IOException e) {
             // EXOPLAYER_ERROR_IO
             throw new ExoPlaybackException(
@@ -164,7 +167,6 @@ public class HttpAccessor extends DataAccessor {
             if (contentLength < 0) {
                 updateContentLength(connection);
             }
-
         } catch (IOException e) {
             // EXOPLAYER_ERROR_IO
             throw new ExoPlaybackException(

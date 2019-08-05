@@ -16,6 +16,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Toast;
 
+import com.weidi.eventbus.EventBusUtils;
 import com.weidi.usefragments.BaseActivity;
 import com.weidi.usefragments.PlayerActivity;
 import com.weidi.usefragments.R;
@@ -25,6 +26,7 @@ import com.weidi.usefragments.fragment.FragOperManager;
 import com.weidi.usefragments.fragment.base.BaseFragment;
 import com.weidi.usefragments.inject.InjectOnClick;
 import com.weidi.usefragments.inject.InjectView;
+import com.weidi.usefragments.service.DownloadFileService;
 import com.weidi.usefragments.tool.Contents;
 import com.weidi.usefragments.tool.MLog;
 
@@ -337,6 +339,11 @@ public class ContentsFragment extends BaseFragment {
                         }
 
                         Contents.setTitle(name);
+
+                        /*EventBusUtils.post(
+                                DownloadFileService.class,
+                                DownloadFileService.MSG_DOWNLOAD_START,
+                                null);*/
 
                         Intent intent = new Intent();
                         intent.setClass(getContext(), PlayerActivity.class);

@@ -681,17 +681,18 @@ public abstract class BaseFragment extends Fragment {
 
     /***
      <external-path/>
-     Environment.getExternalStorageDirectory(): /storage/emulated/0
+     Environment.getExternalStorageDirectory():
+     /storage/emulated/0
 
      <external-files-path/>
-     getExternalFilesDir(null):   /storage/emulated/0/Android/data/io.github.jiyangg
-     .videoplayerdemo/files
-     getExternalFilesDir("test"): /storage/emulated/0/Android/data/io.github.jiyangg
-     .videoplayerdemo/files/test
+     getExternalFilesDir(null):
+     /storage/emulated/0/Android/data/io.github.jiyangg.videoplayerdemo/files
+     getExternalFilesDir("test"):
+     /storage/emulated/0/Android/data/io.github.jiyangg.videoplayerdemo/files/test
 
      <external-cache-path/>
-     getExternalCacheDir():       /storage/emulated/0/Android/data/io.github.jiyangg
-     .videoplayerdemo/cache
+     getExternalCacheDir():
+     /storage/emulated/0/Android/data/io.github.jiyangg.videoplayerdemo/cache
 
      <files-path/>
      getFilesDir(): /data/user/0/io.github.jiyangg.videoplayerdemo/files
