@@ -14,6 +14,8 @@ import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
+import android.widget.EditText;
 import android.widget.Toast;
 
 import com.weidi.eventbus.EventBusUtils;
@@ -285,6 +287,8 @@ public class ContentsFragment extends BaseFragment {
 
     /////////////////////////////////////////////////////////////////
 
+    @InjectView(R.id.address_et)
+    private EditText mAddressET;
     @InjectView(R.id.contents_rv)
     private RecyclerView mRecyclerView;
 
@@ -361,6 +365,8 @@ public class ContentsFragment extends BaseFragment {
                 };
         mRecyclerView.setLayoutManager(linearLayoutManager);
         mRecyclerView.setAdapter(adapter);
+
+        mAddressET.setText("http://xunlei.jingpin88.com/20171026/mVnlRJDm/mp4/mVnlRJDm.mp4");
     }
 
     private void handleBeforeOfConfigurationChangedEvent() {
@@ -371,10 +377,37 @@ public class ContentsFragment extends BaseFragment {
 
     }
 
-    @InjectOnClick({R.id.jump_btn})
+    @InjectOnClick({R.id.playback_btn, R.id.download_btn, R.id.jump_btn})
     private void onClick(View v) {
         switch (v.getId()) {
+            case R.id.playback_btn:
+                String address = mAddressET.getText().toString();
+                if (TextUtils.isEmpty(address)) {
+                    return;
+                }
+
+                Contents.setTitle("");
+
+                Intent intent = new Intent();
+                intent.setClass(getContext(), PlayerActivity.class);
+                intent.putExtra(PlayerActivity.CONTENT_PATH, address);
+                getAttachedActivity().startActivity(intent);
+                ((BaseActivity) getAttachedActivity()).enterActivity();
+                break;
+            case R.id.download_btn:
+                address = mAddressET.getText().toString();
+                if (TextUtils.isEmpty(address)) {
+                    return;
+                }
+
+                EventBusUtils.post(
+                        DownloadFileService.class,
+                        DownloadFileService.MSG_DOWNLOAD_START,
+                        new Object[]{address});
+                break;
             case R.id.jump_btn:
+                break;
+            default:
                 break;
         }
     }

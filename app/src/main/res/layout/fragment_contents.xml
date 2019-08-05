@@ -9,17 +9,47 @@
     android:gravity="center">
     <!--android:background="@drawable/han_clothes_00011"-->
 
+    <LinearLayout
+        android:id="@+id/address_layout"
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/dimen_40_dp"
+        android:layout_alignParentTop="true"
+        android:layout_marginTop="@dimen/dimen_24_dp"
+        android:orientation="horizontal">
+
+        <EditText
+            android:id="@+id/address_et"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:maxLines="1"
+            android:layout_weight="10"/>
+        <Button
+            android:id="@+id/playback_btn"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:maxLines="1"
+            android:text="P"
+            android:layout_weight="1"/>
+        <Button
+            android:id="@+id/download_btn"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:maxLines="1"
+            android:text="D"
+            android:layout_weight="1"/>
+    </LinearLayout>
+
     <android.support.v7.widget.RecyclerView
         android:id="@+id/contents_rv"
-        android:layout_marginTop="24dp"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"/>
+        android:layout_height="match_parent"
+        android:layout_below="@+id/address_layout"/>
 
     <Button
         android:id="@+id/jump_btn"
-        android:layout_alignParentBottom="true"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
         android:visibility="gone"/>
 
 </RelativeLayout>

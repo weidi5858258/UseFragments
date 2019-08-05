@@ -168,7 +168,7 @@ public class MainActivity1 extends BaseActivity
         }
 
         // start service
-        // startService(new Intent(this, DownloadFileService.class));
+        startService(new Intent(this, DownloadFileService.class));
 
         main1Fragment = new Main1Fragment();
         main2Fragment = new Main2Fragment();

@@ -91,6 +91,8 @@ public class DownloadFileService extends Service {
     private boolean mIsPaused = false;
     private Object readDataPauseLock = new Object();
 
+    private String mUri;
+
     private void initData() {
         EventBusUtils.register(this);
 
@@ -126,8 +128,21 @@ public class DownloadFileService extends Service {
         Object result = null;
         switch (what) {
             case MSG_DOWNLOAD_START:
-                mThreadHandler.removeMessages(MSG_DOWNLOAD_START);
-                mThreadHandler.sendEmptyMessage(MSG_DOWNLOAD_START);
+                mUri = null;
+                if (objArray != null && objArray.length > 0) {
+                    mUri = (String) objArray[0];
+                }
+
+                if (mIsDownloading) {
+                    mUiHandler.removeMessages(MSG_DOWNLOAD_STOP);
+                    mUiHandler.sendEmptyMessage(MSG_DOWNLOAD_STOP);
+
+                    mThreadHandler.removeMessages(MSG_DOWNLOAD_START);
+                    mThreadHandler.sendEmptyMessageDelayed(MSG_DOWNLOAD_START, 1000);
+                } else {
+                    mThreadHandler.removeMessages(MSG_DOWNLOAD_START);
+                    mThreadHandler.sendEmptyMessage(MSG_DOWNLOAD_START);
+                }
                 break;
             case MSG_DOWNLOAD_PAUSE_OR_START:
                 mUiHandler.removeMessages(MSG_DOWNLOAD_PAUSE_OR_START);
@@ -193,7 +208,13 @@ public class DownloadFileService extends Service {
         MLog.i(TAG, "downloadStart() start");
 
         mIsDownloading = true;
-        String httpPath = Contents.getUri();
+        String httpPath = null;
+        if (!TextUtils.isEmpty(mUri)) {
+            httpPath = mUri;
+        } else {
+            httpPath = Contents.getUri();
+        }
+
         MLog.i(TAG, "downloadStart() httpPath: " + httpPath);
         if (TextUtils.isEmpty(httpPath)) {
             mIsDownloading = false;
@@ -204,16 +225,6 @@ public class DownloadFileService extends Service {
                 && !httpPath.startsWith("https://")
                 && !httpPath.startsWith("HTTPS://")) {
             mIsDownloading = false;
-            return;
-        }
-
-        HttpAccessor httpAccessor = null;
-        try {
-            httpAccessor = new HttpAccessor(new URL(httpPath), null);
-        } catch (MalformedURLException e) {
-            httpAccessor = null;
-            mIsDownloading = false;
-            e.printStackTrace();
             return;
         }
 
@@ -230,36 +241,35 @@ public class DownloadFileService extends Service {
         if (TextUtils.isEmpty(suffixName)) {
             suffixName = ".mp4";
         }
-        String fileName = Contents.getTitle() + suffixName;
+        String fileName = null;
+        if (!TextUtils.isEmpty(mUri)) {
+            fileName = uri.getLastPathSegment();
+        } else {
+            fileName = Contents.getTitle() + suffixName;
+        }
+
+        // Test
+        fileName = "mylove" + suffixName;
 
         String PATH = null;
         PATH = "/data/data/com.weidi.usefragments/files/";
         PATH = "/storage/37C8-3904/Android/data/com.weidi.usefragments/files/Movies/";
         PATH = "/storage/2430-1702/Android/data/com.weidi.usefragments/files/Movies/";
 
-        LinkedList<String> list = new LinkedList<String>();
-        list.add("/storage/2430-1702/");
-        list = getUSBPathList(getApplicationContext(), list);
-        String filePath = list.get(0) + "/BaiduNetdisk/video/" + fileName;
-
-        File pathFile = new File(PATH);
-        if (!pathFile.canWrite()) {
-            mIsDownloading = false;
-            return;
-        }
-
-        filePath = pathFile.getAbsolutePath() + "/" + fileName;
+        String filePath = PATH + fileName;
         MLog.i(TAG, "downloadStart() filePath: " + filePath);
         File videoFile = new File(filePath);
         if (videoFile.exists()) {
             videoFile.delete();
         }
-        try {
-            videoFile.createNewFile();
-        } catch (IOException e) {
-            mIsDownloading = false;
-            e.printStackTrace();
-            return;
+        if (!videoFile.exists()) {
+            try {
+                videoFile.createNewFile();
+            } catch (IOException e) {
+                mIsDownloading = false;
+                e.printStackTrace();
+                return;
+            }
         }
         BufferedOutputStream outputStream = null;
         try {
@@ -267,6 +277,25 @@ public class DownloadFileService extends Service {
                     new FileOutputStream(videoFile), BUFFER);
         } catch (Exception e) {
             outputStream = null;
+            mIsDownloading = false;
+            e.printStackTrace();
+            return;
+        }
+
+        HttpAccessor httpAccessor = null;
+        try {
+            httpAccessor = new HttpAccessor(new URL(httpPath), null);
+            httpAccessor.open();
+        } catch (MalformedURLException
+                | ExoPlaybackException e) {
+            if (httpAccessor != null) {
+                try {
+                    httpAccessor.close();
+                } catch (ExoPlaybackException e1) {
+                    e1.printStackTrace();
+                }
+            }
+            httpAccessor = null;
             mIsDownloading = false;
             e.printStackTrace();
             return;
@@ -294,6 +323,7 @@ public class DownloadFileService extends Service {
 
             try {
                 readSize = httpAccessor.read(buffer, 0, BUFFER);
+                // MLog.i(TAG, "downloadStart() readSize: " + readSize);
             } catch (ExoPlaybackException e) {
                 e.printStackTrace();
                 mIsDownloading = false;

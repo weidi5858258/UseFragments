@@ -390,6 +390,11 @@ public class SimpleVideoPlayer7 {
     public void setProgressUs(long progressUs) {
         MLog.i(TAG, "----------------------------------------------------------");
         MLog.d(TAG, "setProgressUs() progressUs: " + progressUs);
+        if (progressUs < 0
+                || !mAudioWrapper.isReading
+                || !mVideoWrapper.isReading) {
+            return;
+        }
         String elapsedTime =
                 DateUtils.formatElapsedTime(progressUs / 1000 / 1000);
         MLog.i(TAG, "setProgressUs() elapsedTime: " + elapsedTime);
@@ -398,10 +403,6 @@ public class SimpleVideoPlayer7 {
     }
 
     private void setProgressUs(SimpleWrapper wrapper, long progressUs) {
-        if (progressUs < 0) {
-            return;
-        }
-
         mProgressUs = progressUs;
         wrapper.progressUs = progressUs;
         wrapper.needToSeek = true;
@@ -424,15 +425,22 @@ public class SimpleVideoPlayer7 {
         }
         MLog.i(TAG, showInfo);
 
-        if (!wrapper.isPausedForCache) {
-            // 两个缓存都满了,正在等待中,因此需要发送notify
-            synchronized (wrapper.readDataLock) {
-                wrapper.readDataLock.notify();
-            }
-        } else {
-            wrapper.isPausedForCache = false;
+        // 两个缓存都满了,正在等待中,因此需要发送notify
+        synchronized (wrapper.readDataLock) {
+            wrapper.readDataLock.notify();
         }
 
+        // 如果seek之前由于Cache问题已经在等待,那么需要把这个值设为false.
+        if (wrapper.isPausedForCache) {
+            wrapper.isPausedForCache = false;
+        }
+        // 如果seek之前由于用户暂停了,那么需要通知它一下,让它往下走,停到由于seek的原因而暂停的那个地方去
+        if (wrapper.isPausedForUser) {
+            wrapper.isPausedForUser = false;
+            synchronized (wrapper.handleDataLock) {
+                wrapper.handleDataLock.notify();
+            }
+        }
     }
 
     public long getDurationUs() {
@@ -640,20 +648,26 @@ public class SimpleVideoPlayer7 {
                     /*if (mCallback != null) {
                         mCallback.onPlaybackFinished();
                     }*/
-                    step += 200;
+                    if (mProgressUs == -1) {
+                        step = (int) ((mVideoWrapper.presentationTimeUs2
+                                / (mVideoWrapper.durationUs * 1.00)) * 3840.00);
+                        Log.d(TAG, "onKeuiHandleMessageyDown() step: " + step);
+                    }
+                    step += 100;
                     long progress = (long) (((step / 3840.00) * mVideoWrapper.durationUs));
                     setProgressUs(progress);
                 } else {
                     if (DEBUG)
                         Log.d(TAG, "onKeyDown() 1");
-                    /*if (mIsAudioRunning) {
-                        if (mIsAudioPaused) {
-                            internalPlay();
-                        } else {
+                    if (!mAudioWrapper.isPausedForCache
+                            && !mVideoWrapper.isPausedForCache) {
+                        if (!mAudioWrapper.isPausedForUser
+                                && !mAudioWrapper.isPausedForUser) {
                             internalPause();
+                        } else {
+                            internalPlay();
                         }
-                    }*/
-                    internalPause();
+                    }
                 }
                 firstFlag = false;
                 secondFlag = false;
