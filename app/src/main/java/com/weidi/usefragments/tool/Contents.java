@@ -282,7 +282,7 @@ public class Contents {
                 "http://ok.xzokzyzy.com/20190621/2556_4f58b93b/%E6%80%92%E6%B5%B7%E6%BD%9C%E6%B2%99&%E7%A7%A6%E5%B2%AD%E7%A5%9E%E6%A0%91%E7%AC%AC22%E9%9B%86.mp4");
         movieMap.put(
                 "盗墓笔记之怒海潜沙-秦岭神树23",
-                "");
+                "https://www.22tu.cc/play-32098-1-23/");
         movieMap.put(
                 "盗墓笔记之怒海潜沙-秦岭神树24",
                 "");
@@ -392,6 +392,14 @@ public class Contents {
 
     public static String getTitle(){
         return mTitle;
+    }
+
+    public static void setPath(String path) {
+        mPath = path;
+    }
+
+    public static String getPath() {
+        return mPath;
     }
 
     private void backup() {

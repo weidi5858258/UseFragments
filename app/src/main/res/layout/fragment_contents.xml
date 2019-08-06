@@ -12,7 +12,7 @@
     <LinearLayout
         android:id="@+id/address_layout"
         android:layout_width="match_parent"
-        android:layout_height="@dimen/dimen_40_dp"
+        android:layout_height="@dimen/dimen_45_dp"
         android:layout_alignParentTop="true"
         android:layout_marginTop="@dimen/dimen_24_dp"
         android:orientation="horizontal">

@@ -3,34 +3,38 @@ package com.weidi.usefragments.service;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.net.Uri;
-import android.os.Environment;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.IBinder;
 import android.os.Looper;
 import android.os.Message;
+import android.os.SystemClock;
 import android.os.storage.StorageManager;
 import android.support.annotation.Nullable;
 import android.text.TextUtils;
-import android.util.Log;
 
 import com.weidi.eventbus.EventBusUtils;
 import com.weidi.usefragments.tool.Contents;
+import com.weidi.usefragments.tool.DownloadCallback;
 import com.weidi.usefragments.tool.ExoPlaybackException;
 import com.weidi.usefragments.tool.HttpAccessor;
 import com.weidi.usefragments.tool.MLog;
 
 import java.io.BufferedOutputStream;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.Arrays;
 import java.util.LinkedList;
 
 /***
@@ -66,6 +70,7 @@ public class DownloadFileService extends Service {
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         MLog.i(TAG, "onStartCommand() intent: " + intent);
+        isVideoExist();
         return super.onStartCommand(intent, flags, startId);
     }
 
@@ -81,7 +86,22 @@ public class DownloadFileService extends Service {
     public static final int MSG_DOWNLOAD_START = 1;
     public static final int MSG_DOWNLOAD_PAUSE_OR_START = 2;
     public static final int MSG_DOWNLOAD_STOP = 3;
+    public static final int MSG_IS_DOWNLOADING = 4;
+    public static final int MSG_SET_CALLBACK = 5;
     private static final int BUFFER = 1024 * 1024 * 2;
+
+    public static final String PATH =
+            "/storage/2430-1702/Android/data/com.weidi.usefragments/files/Movies/";
+    /*PATH = "/data/data/com.weidi.usefragments/files/";
+    PATH = "/storage/37C8-3904/Android/data/com.weidi.usefragments/files/Movies/";
+    PATH = "/storage/2430-1702/Android/data/com.weidi.usefragments/files/Movies/";*/
+    public static final String PREFERENCES_NAME = "alexander_preferences";
+    public static final String VIDEO_NAME = "video_name";
+    public static final String VIDEO_PATH = "video_path";
+    private static final String VIDEO_LENGTH = "video_length";
+    private static final String VIDEO_POSITION = "video_position";
+    private static final String VIDEO_IS_FINISHED = "video_is_finished";
+    private SharedPreferences mPreferences;
 
     private HandlerThread mHandlerThread;
     private Handler mThreadHandler;
@@ -90,11 +110,14 @@ public class DownloadFileService extends Service {
     private boolean mIsDownloading = false;
     private boolean mIsPaused = false;
     private Object readDataPauseLock = new Object();
-
+    private long contentLength = -1;
     private String mUri;
+    private DownloadCallback mCallback;
 
     private void initData() {
         EventBusUtils.register(this);
+
+        mPreferences = getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE);
 
         mHandlerThread = new HandlerThread(TAG);
         mHandlerThread.start();
@@ -112,6 +135,23 @@ public class DownloadFileService extends Service {
         };
     }
 
+    private boolean isVideoExist() {
+        boolean isExist = false;
+        File moviesFile = new File(PATH);
+        for (File file : moviesFile.listFiles()) {
+            if (file == null) {
+                continue;
+            }
+            if (file.getName().contains("alexander_mylove.")) {
+                // 需要指向那个文件,然后打开时才能播放
+                Contents.setPath(file.getAbsolutePath());
+                isExist = true;
+                break;
+            }
+        }
+        return isExist;
+    }
+
     private void destroy() {
         EventBusUtils.unregister(this);
 
@@ -124,7 +164,7 @@ public class DownloadFileService extends Service {
         }
     }
 
-    public Object onEvent(int what, Object[] objArray) {
+    private Object onEvent(int what, Object[] objArray) {
         Object result = null;
         switch (what) {
             case MSG_DOWNLOAD_START:
@@ -151,6 +191,15 @@ public class DownloadFileService extends Service {
             case MSG_DOWNLOAD_STOP:
                 mUiHandler.removeMessages(MSG_DOWNLOAD_STOP);
                 mUiHandler.sendEmptyMessage(MSG_DOWNLOAD_STOP);
+                break;
+            case MSG_IS_DOWNLOADING:
+                return mIsDownloading;
+            case MSG_SET_CALLBACK:
+                if (objArray != null && objArray.length > 0) {
+                    mCallback = (DownloadCallback) objArray[0];
+                } else if (objArray == null) {
+                    mCallback = null;
+                }
                 break;
             default:
                 break;
@@ -206,7 +255,11 @@ public class DownloadFileService extends Service {
 
     private void downloadStart() {
         MLog.i(TAG, "downloadStart() start");
+        if (mCallback != null) {
+            mCallback.onReady();
+        }
 
+        contentLength = -1;
         mIsDownloading = true;
         String httpPath = null;
         if (!TextUtils.isEmpty(mUri)) {
@@ -214,6 +267,21 @@ public class DownloadFileService extends Service {
         } else {
             httpPath = Contents.getUri();
         }
+
+        long startPosition = 0;
+        String videoPath = mPreferences.getString(VIDEO_PATH, "");
+        if (TextUtils.equals(httpPath, videoPath)) {
+            startPosition = mPreferences.getLong(VIDEO_POSITION, 0);
+            boolean videoIsFinished = mPreferences.getBoolean(VIDEO_IS_FINISHED, false);
+            if (videoIsFinished && isVideoExist()) {
+                mIsDownloading = true;
+                MLog.i(TAG, "downloadStart() 文件已经下载好了,不需要再下载");
+                return;
+            }
+        }
+        // 虽然断点下载是可以了,但是下载的文件不能播放
+        startPosition = 0;
+        MLog.i(TAG, "downloadStart() startPosition: " + startPosition);
 
         MLog.i(TAG, "downloadStart() httpPath: " + httpPath);
         if (TextUtils.isEmpty(httpPath)) {
@@ -248,15 +316,15 @@ public class DownloadFileService extends Service {
             fileName = Contents.getTitle() + suffixName;
         }
 
-        // Test
-        fileName = "mylove" + suffixName;
+        SharedPreferences.Editor editor = mPreferences.edit();
+        editor.putString(VIDEO_NAME, fileName);
+        editor.commit();
 
-        String PATH = null;
-        PATH = "/data/data/com.weidi.usefragments/files/";
-        PATH = "/storage/37C8-3904/Android/data/com.weidi.usefragments/files/Movies/";
-        PATH = "/storage/2430-1702/Android/data/com.weidi.usefragments/files/Movies/";
+        // Test
+        fileName = "alexander_mylove" + suffixName;
 
         String filePath = PATH + fileName;
+        Contents.setPath(filePath);
         MLog.i(TAG, "downloadStart() filePath: " + filePath);
         File videoFile = new File(filePath);
         if (videoFile.exists()) {
@@ -271,21 +339,15 @@ public class DownloadFileService extends Service {
                 return;
             }
         }
-        BufferedOutputStream outputStream = null;
-        try {
-            outputStream = new BufferedOutputStream(
-                    new FileOutputStream(videoFile), BUFFER);
-        } catch (Exception e) {
-            outputStream = null;
-            mIsDownloading = false;
-            e.printStackTrace();
-            return;
-        }
-
         HttpAccessor httpAccessor = null;
         try {
             httpAccessor = new HttpAccessor(new URL(httpPath), null);
             httpAccessor.open();
+            httpAccessor.byteSeek(startPosition);
+            contentLength = httpAccessor.getSize();
+            if (mCallback != null && contentLength != -1) {
+                mCallback.onProgressUpdated(contentLength);
+            }
         } catch (MalformedURLException
                 | ExoPlaybackException e) {
             if (httpAccessor != null) {
@@ -301,15 +363,58 @@ public class DownloadFileService extends Service {
             return;
         }
 
+        RandomAccessFile randomAccessFile = null;
+        try {
+            randomAccessFile = new RandomAccessFile(videoFile, "rwd");
+            /*if (contentLength != -1) {
+                // 直接生成一个contentLength大小的文件
+                randomAccessFile.setLength(contentLength);
+            }*/
+            randomAccessFile.seek(startPosition);
+        } catch (IOException e) {
+            if (httpAccessor != null) {
+                try {
+                    httpAccessor.close();
+                } catch (ExoPlaybackException e1) {
+                    e1.printStackTrace();
+                }
+            }
+            httpAccessor = null;
+            if (randomAccessFile != null) {
+                try {
+                    randomAccessFile.close();
+                } catch (IOException e1) {
+                    e1.printStackTrace();
+                }
+            }
+            randomAccessFile = null;
+            mIsDownloading = false;
+            e.printStackTrace();
+            return;
+        }
+
+        editor = mPreferences.edit();
+        editor.putString(VIDEO_PATH, httpPath);
+        editor.putLong(VIDEO_LENGTH, contentLength);
+        editor.putLong(VIDEO_POSITION, 0);
+        editor.putBoolean(VIDEO_IS_FINISHED, false);
+        editor.commit();
+
         byte[] buffer = new byte[BUFFER];
         int readSize = -1;
+        long readDataSize = 0;
+        readDataSize += startPosition;
 
+        long startTime = SystemClock.elapsedRealtime();
         for (; ; ) {
             if (!mIsDownloading) {
                 break;
             }
 
             if (mIsPaused) {
+                if (mCallback != null) {
+                    mCallback.onPaused();
+                }
                 synchronized (readDataPauseLock) {
                     MLog.i(TAG, "downloadStart() readDataPauseLock.wait() start");
                     try {
@@ -319,9 +424,13 @@ public class DownloadFileService extends Service {
                     }
                     MLog.i(TAG, "downloadStart() readDataPauseLock.wait() end");
                 }
+                if (mCallback != null) {
+                    mCallback.onStarted();
+                }
             }
 
             try {
+                Arrays.fill(buffer, (byte) 0);
                 readSize = httpAccessor.read(buffer, 0, BUFFER);
                 // MLog.i(TAG, "downloadStart() readSize: " + readSize);
             } catch (ExoPlaybackException e) {
@@ -336,13 +445,26 @@ public class DownloadFileService extends Service {
             }
 
             try {
-                outputStream.write(buffer, 0, readSize);
+                randomAccessFile.write(buffer, 0, readSize);
             } catch (IOException e) {
                 e.printStackTrace();
                 mIsDownloading = false;
                 break;
             }
-        }
+
+            readDataSize += readSize;
+            if (mCallback != null) {
+                mCallback.onProgressUpdated(readDataSize);
+            }
+            long endTime = SystemClock.elapsedRealtime();
+            if (endTime - startTime >= 1000) {
+                // MLog.i(TAG, "downloadStart() readDataSize: " + readDataSize);
+                startTime = endTime;
+                editor = mPreferences.edit();
+                editor.putLong(VIDEO_POSITION, readDataSize);
+                editor.commit();
+            }
+        }// for(;;) end
 
         try {
             httpAccessor.close();
@@ -351,13 +473,25 @@ public class DownloadFileService extends Service {
         }
 
         try {
-            outputStream.flush();
-            outputStream.close();
+            randomAccessFile.close();
         } catch (IOException e) {
             e.printStackTrace();
         }
 
         mIsDownloading = false;
+
+        MLog.i(TAG, "downloadStart() contentLength: " + contentLength);
+        MLog.i(TAG, "downloadStart()  readDataSize: " + readDataSize);
+        if (mCallback != null
+                && contentLength != -1
+                && (contentLength == readDataSize
+                || contentLength <= readDataSize + 1024 * 1024)) {
+            editor = mPreferences.edit();
+            editor.putBoolean(VIDEO_IS_FINISHED, true);
+            editor.putLong(VIDEO_POSITION, contentLength);
+            editor.commit();
+            mCallback.onFinished();
+        }
 
         MLog.i(TAG, "downloadStart() end");
     }
@@ -409,7 +543,6 @@ public class DownloadFileService extends Service {
                     latestUsbPaths.remove(oldDevice);
                 }
             }
-
         } catch (InvocationTargetException e) {
             e.printStackTrace();
         } catch (NoSuchMethodException e) {

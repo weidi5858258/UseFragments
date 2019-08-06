@@ -6,6 +6,7 @@ import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.TextView;
 
 import com.weidi.usefragments.R;
@@ -71,7 +72,7 @@ public class ContentsAdapter extends RecyclerView.Adapter {
     }
 
     public interface OnItemClickListener {
-        void onItemClick(String name, int position);
+        void onItemClick(String name, int position, int viewId);
     }
 
     private OnItemClickListener mOnItemClickListener;
@@ -80,29 +81,52 @@ public class ContentsAdapter extends RecyclerView.Adapter {
         mOnItemClickListener = listener;
     }
 
+    private Button mDownloadBtn;
+
+    public void setProgress(String progress) {
+        if (mDownloadBtn != null) {
+            mDownloadBtn.setText(progress);
+        }
+    }
+
     private class TitleViewHolder extends RecyclerView.ViewHolder {
 
         private TextView title;
+        private Button downloadBtn;
         private String name;
 
         public TitleViewHolder(View itemView) {
             super(itemView);
             title = itemView.findViewById(R.id.content_title);
-            itemView.setOnClickListener(
-                    new View.OnClickListener() {
-                        @Override
-                        public void onClick(View view) {
-                            ContentsAdapter.TitleViewHolder.this.onClick(view);
-                        }
-                    });
+            downloadBtn = itemView.findViewById(R.id.item_download_btn);
+            itemView.setOnClickListener(onClickListener);
+            downloadBtn.setOnClickListener(onClickListener);
         }
 
         private void onClick(View view) {
             if (mOnItemClickListener != null) {
                 int position = mContents.indexOf(name);
-                mOnItemClickListener.onItemClick(name, position);
+                switch (view.getId()) {
+                    case R.id.item_root_layout:
+                        mOnItemClickListener.onItemClick(name, position, R.id.item_root_layout);
+                        break;
+                    case R.id.item_download_btn:
+                        mOnItemClickListener.onItemClick(name, position, R.id.item_download_btn);
+                        mDownloadBtn = downloadBtn;
+                        break;
+                    default:
+                        break;
+                }
             }
         }
+
+        private View.OnClickListener onClickListener =
+                new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
+                        ContentsAdapter.TitleViewHolder.this.onClick(view);
+                    }
+                };
     }
 
 }

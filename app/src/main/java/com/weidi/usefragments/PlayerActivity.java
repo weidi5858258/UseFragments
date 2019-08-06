@@ -30,6 +30,7 @@ import com.weidi.usefragments.tool.Contents;
 import com.weidi.usefragments.tool.MLog;
 import com.weidi.usefragments.tool.PermissionsUtils;
 import com.weidi.usefragments.tool.SimpleVideoPlayer7;
+import com.weidi.usefragments.tool.SimpleVideoPlayer8;
 
 /***
 
@@ -169,8 +170,9 @@ public class PlayerActivity extends BaseActivity {
     private SurfaceView mSurfaceView;
     private Surface mSurface;
     private PowerManager.WakeLock mPowerWakeLock;
-    //    private SimpleVideoPlayer mSampleVideoPlayer;
-    private SimpleVideoPlayer7 mSampleVideoPlayer;
+    // private SimpleVideoPlayer mSampleVideoPlayer;
+    // private SimpleVideoPlayer7 mSampleVideoPlayer;
+    private SimpleVideoPlayer8 mSampleVideoPlayer;
     private String mPath;
     private long mProgress;
     private long mPresentationTimeUs;
@@ -268,7 +270,7 @@ public class PlayerActivity extends BaseActivity {
         });
 
         //        mSampleVideoPlayer = new SimpleVideoPlayer();
-        mSampleVideoPlayer = new SimpleVideoPlayer7();
+        mSampleVideoPlayer = new SimpleVideoPlayer8();
 
         int duration = (int) mSampleVideoPlayer.getDurationUs() / 1000;
         int currentPosition = (int) mPresentationTimeUs / 1000;

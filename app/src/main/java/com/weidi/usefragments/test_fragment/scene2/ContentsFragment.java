@@ -4,8 +4,12 @@ import android.app.Activity;
 import android.app.Fragment;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
+import android.os.Message;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v7.widget.LinearLayoutManager;
@@ -30,8 +34,10 @@ import com.weidi.usefragments.inject.InjectOnClick;
 import com.weidi.usefragments.inject.InjectView;
 import com.weidi.usefragments.service.DownloadFileService;
 import com.weidi.usefragments.tool.Contents;
+import com.weidi.usefragments.tool.DownloadCallback;
 import com.weidi.usefragments.tool.MLog;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -292,6 +298,10 @@ public class ContentsFragment extends BaseFragment {
     @InjectView(R.id.contents_rv)
     private RecyclerView mRecyclerView;
 
+    private Handler mUiHandler;
+    private long contentLength = -1;
+    private ContentsAdapter mAdapter;
+
     /***
      代码执行的内容跟onStart(),onResume()一样,
      因此在某些情况下要么执行onStart(),onResume()方法,要么执行onShow()方法.
@@ -301,6 +311,20 @@ public class ContentsFragment extends BaseFragment {
         if (DEBUG)
             MLog.d(TAG, "onShow(): " + printThis());
 
+        EventBusUtils.post(
+                DownloadFileService.class,
+                DownloadFileService.MSG_SET_CALLBACK,
+                new Object[]{mCallback});
+
+        SharedPreferences preferences =
+                getContext().getSharedPreferences(
+                        DownloadFileService.PREFERENCES_NAME, Context.MODE_PRIVATE);
+        String videoName = preferences.getString(DownloadFileService.VIDEO_NAME, "");
+        if (!TextUtils.isEmpty(videoName)) {
+            if (mAddressET != null) {
+                mAddressET.setText(videoName);
+            }
+        }
     }
 
     /***
@@ -311,10 +335,20 @@ public class ContentsFragment extends BaseFragment {
     private void onHide() {
         if (DEBUG)
             MLog.d(TAG, "onHide(): " + printThis());
+
+        EventBusUtils.post(
+                DownloadFileService.class,
+                DownloadFileService.MSG_SET_CALLBACK,
+                null);
     }
 
     private void initData() {
-
+        mUiHandler = new Handler(Looper.getMainLooper()) {
+            @Override
+            public void handleMessage(Message msg) {
+                ContentsFragment.this.uiHandleMessage(msg);
+            }
+        };
     }
 
     private void initView(View view, Bundle savedInstanceState) {
@@ -327,12 +361,12 @@ public class ContentsFragment extends BaseFragment {
             list.add(name);
         }
 
-        ContentsAdapter adapter = new ContentsAdapter(getContext());
-        adapter.setData(list);
-        adapter.setOnItemClickListener(
+        mAdapter = new ContentsAdapter(getContext());
+        mAdapter.setData(list);
+        mAdapter.setOnItemClickListener(
                 new ContentsAdapter.OnItemClickListener() {
                     @Override
-                    public void onItemClick(String name, int position) {
+                    public void onItemClick(String name, int position, int viewId) {
                         MLog.d(TAG, "onItemClick(): " + name);
 
                         String path = Contents.movieMap.get(name);
@@ -344,16 +378,43 @@ public class ContentsFragment extends BaseFragment {
 
                         Contents.setTitle(name);
 
-                        /*EventBusUtils.post(
-                                DownloadFileService.class,
-                                DownloadFileService.MSG_DOWNLOAD_START,
-                                null);*/
+                        SharedPreferences preferences =
+                                getContext().getSharedPreferences(
+                                        DownloadFileService.PREFERENCES_NAME, Context.MODE_PRIVATE);
+                        String videoPath =
+                                preferences.getString(DownloadFileService.VIDEO_PATH, "");
+                        if (TextUtils.equals(videoPath, path)) {
+                            File moviesFile = new File(DownloadFileService.PATH);
+                            for (File file : moviesFile.listFiles()) {
+                                if (file == null) {
+                                    continue;
+                                }
+                                if (file.getName().contains("alexander_mylove.")) {
+                                    // 需要指向那个文件,然后打开时才能播放
+                                    Contents.setPath(file.getAbsolutePath());
+                                    path = file.getAbsolutePath();
+                                    break;
+                                }
+                            }
+                        }
 
-                        Intent intent = new Intent();
-                        intent.setClass(getContext(), PlayerActivity.class);
-                        intent.putExtra(PlayerActivity.CONTENT_PATH, path);
-                        getAttachedActivity().startActivity(intent);
-                        ((BaseActivity) getAttachedActivity()).enterActivity();
+                        switch (viewId) {
+                            case R.id.item_root_layout:
+                                Intent intent = new Intent();
+                                intent.setClass(getContext(), PlayerActivity.class);
+                                intent.putExtra(PlayerActivity.CONTENT_PATH, path);
+                                getAttachedActivity().startActivity(intent);
+                                ((BaseActivity) getAttachedActivity()).enterActivity();
+                                break;
+                            case R.id.item_download_btn:
+                                EventBusUtils.post(
+                                        DownloadFileService.class,
+                                        DownloadFileService.MSG_DOWNLOAD_START,
+                                        null);
+                                break;
+                            default:
+                                break;
+                        }
                     }
                 });
         LinearLayoutManager linearLayoutManager =
@@ -364,9 +425,15 @@ public class ContentsFragment extends BaseFragment {
                     }
                 };
         mRecyclerView.setLayoutManager(linearLayoutManager);
-        mRecyclerView.setAdapter(adapter);
+        mRecyclerView.setAdapter(mAdapter);
 
-        mAddressET.setText("http://xunlei.jingpin88.com/20171026/mVnlRJDm/mp4/mVnlRJDm.mp4");
+        SharedPreferences preferences =
+                getContext().getSharedPreferences(
+                        DownloadFileService.PREFERENCES_NAME, Context.MODE_PRIVATE);
+        String videoName = preferences.getString(DownloadFileService.VIDEO_NAME, "");
+        if (!TextUtils.isEmpty(videoName)) {
+            mAddressET.setText(videoName);
+        }
     }
 
     private void handleBeforeOfConfigurationChangedEvent() {
@@ -383,10 +450,26 @@ public class ContentsFragment extends BaseFragment {
             case R.id.playback_btn:
                 String address = mAddressET.getText().toString();
                 if (TextUtils.isEmpty(address)) {
-                    return;
+                    boolean isExist = false;
+                    File moviesFile = new File(DownloadFileService.PATH);
+                    for (File file : moviesFile.listFiles()) {
+                        if (file == null) {
+                            continue;
+                        }
+                        if (file.getName().contains("alexander_mylove.")) {
+                            // 需要指向那个文件,然后打开时才能播放
+                            Contents.setPath(file.getAbsolutePath());
+                            isExist = true;
+                            break;
+                        }
+                    }
+                    if (!isExist) {
+                        return;
+                    }
+                } else {
+                    Contents.setTitle("");
+                    Contents.setPath(address);
                 }
-
-                Contents.setTitle("");
 
                 Intent intent = new Intent();
                 intent.setClass(getContext(), PlayerActivity.class);
@@ -400,6 +483,8 @@ public class ContentsFragment extends BaseFragment {
                     return;
                 }
 
+                Contents.setPath(address);
+
                 EventBusUtils.post(
                         DownloadFileService.class,
                         DownloadFileService.MSG_DOWNLOAD_START,
@@ -411,5 +496,70 @@ public class ContentsFragment extends BaseFragment {
                 break;
         }
     }
+
+    private static final int MSG_ON_PROGRESS_UPDATED = 1;
+
+    private void uiHandleMessage(Message msg) {
+        if (msg == null) {
+            return;
+        }
+
+        switch (msg.what) {
+            case MSG_ON_PROGRESS_UPDATED:
+                mAdapter.setProgress(mProgress + "%");
+                break;
+            default:
+                break;
+        }
+    }
+
+    private int mProgress = -1;
+    private DownloadCallback mCallback = new DownloadCallback() {
+        @Override
+        public void onReady() {
+
+        }
+
+        @Override
+        public void onPaused() {
+
+        }
+
+        @Override
+        public void onStarted() {
+
+        }
+
+        @Override
+        public void onFinished() {
+
+        }
+
+        @Override
+        public void onProgressUpdated(long readDataSize) {
+            if (contentLength == -1) {
+                contentLength = readDataSize;
+                return;
+            }
+
+            int progress = (int) ((readDataSize / (contentLength * 1.00)) * 100);
+            if (progress > mProgress || progress == 100) {
+                mProgress = progress;
+                //MLog.i(TAG, "onProgressUpdated() progress: " + mProgress + "%");
+                mUiHandler.removeMessages(MSG_ON_PROGRESS_UPDATED);
+                mUiHandler.sendEmptyMessage(MSG_ON_PROGRESS_UPDATED);
+            }
+        }
+
+        @Override
+        public void onError() {
+
+        }
+
+        @Override
+        public void onInfo(String info) {
+
+        }
+    };
 
 }
