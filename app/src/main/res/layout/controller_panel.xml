@@ -23,10 +23,13 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:enabled="true"
+        android:text="SeekTo"
         android:max="3840"
         android:progress="1"
-        android:text="SeekTo"
+        android:secondaryProgress="1"
+        android:secondaryProgressTint="@color/red"
         android:progressBackgroundTint="@color/white"/>
+        <!--android:progressDrawable="@drawable/playback_progress_bar"-->
 
     <RelativeLayout
         android:layout_width="match_parent"

@@ -1527,6 +1527,14 @@ public class SimpleVideoPlayer8 {
                     // wrapper.extractor ---> room
                     // readSize为实际读到的大小(音视频一帧的大小),其值可能远远小于room的大小
                     readSize = wrapper.extractor.readSampleData(room, 0);
+
+                    if (wrapper.type == TYPE_AUDIO) {
+                        showInfo = "  readData() audio readSize: " + readSize;
+                    } else {
+                        showInfo = "  readData() video readSize: " + readSize;
+                    }
+                    MLog.e(TAG, showInfo);
+
                     boolean isDownloading = (Boolean) EventBusUtils.post(
                             DownloadFileService.class,
                             DownloadFileService.MSG_IS_DOWNLOADING,

@@ -23,13 +23,15 @@ import android.widget.ProgressBar;
 import android.widget.SeekBar;
 import android.widget.TextView;
 
+import com.weidi.eventbus.EventBusUtils;
 import com.weidi.usefragments.media.MediaUtils;
+import com.weidi.usefragments.service.DownloadFileService;
 import com.weidi.usefragments.test_view.BubblePopupWindow;
 import com.weidi.usefragments.tool.Callback;
 import com.weidi.usefragments.tool.Contents;
+import com.weidi.usefragments.tool.DownloadCallback;
 import com.weidi.usefragments.tool.MLog;
 import com.weidi.usefragments.tool.PermissionsUtils;
-import com.weidi.usefragments.tool.SimpleVideoPlayer7;
 import com.weidi.usefragments.tool.SimpleVideoPlayer8;
 
 /***
@@ -71,6 +73,7 @@ public class PlayerActivity extends BaseActivity {
         super.onResume();
         if (DEBUG)
             MLog.d(TAG, "onResume(): " + printThis());
+        internalResume();
     }
 
     @Override
@@ -166,6 +169,7 @@ public class PlayerActivity extends BaseActivity {
     private static final int MSG_ON_READY = 0x004;
     private static final int MSG_LOADING_SHOW = 0x005;
     private static final int MSG_LOADING_HIDE = 0x006;
+    private static final int MSG_ON_PROGRESS_UPDATED = 0x007;
 
     private SurfaceView mSurfaceView;
     private Surface mSurface;
@@ -176,6 +180,8 @@ public class PlayerActivity extends BaseActivity {
     private String mPath;
     private long mProgress;
     private long mPresentationTimeUs;
+    private int mDownloadProgress = -1;
+    private long contentLength = -1;
     private boolean mNeedToSyncProgressBar = true;
     private ProgressBar mLoadingView;
     private LinearLayout mControllerPanelLayout;
@@ -331,6 +337,17 @@ public class PlayerActivity extends BaseActivity {
         mPowerWakeLock.acquire();
     }
 
+    private void internalResume() {
+        contentLength = (Long) EventBusUtils.post(
+                DownloadFileService.class,
+                DownloadFileService.MSG_GET_CONTENT_LENGTH,
+                null);
+        EventBusUtils.post(
+                DownloadFileService.class,
+                DownloadFileService.MSG_SET_CALLBACK,
+                new Object[]{mDownloadCallback});
+    }
+
     private void internalStop() {
         if (mPowerWakeLock != null) {
             mPowerWakeLock.release();
@@ -393,6 +410,9 @@ public class PlayerActivity extends BaseActivity {
             case MSG_LOADING_HIDE:
                 mLoadingView.setVisibility(View.GONE);
                 break;
+            case MSG_ON_PROGRESS_UPDATED:
+                mProgressBar.setSecondaryProgress(mDownloadProgress);
+                break;
             default:
                 break;
         }
@@ -427,6 +447,54 @@ public class PlayerActivity extends BaseActivity {
             mPresentationTimeUs = presentationTimeUs;
             mUiHandler.removeMessages(PLAYBACK_PROGRESS_UPDATED);
             mUiHandler.sendEmptyMessage(PLAYBACK_PROGRESS_UPDATED);
+        }
+
+        @Override
+        public void onError() {
+
+        }
+
+        @Override
+        public void onInfo(String info) {
+
+        }
+    };
+
+    private DownloadCallback mDownloadCallback = new DownloadCallback() {
+        @Override
+        public void onReady() {
+
+        }
+
+        @Override
+        public void onPaused() {
+
+        }
+
+        @Override
+        public void onStarted() {
+
+        }
+
+        @Override
+        public void onFinished() {
+
+        }
+
+        @Override
+        public void onProgressUpdated(long readDataSize) {
+            if (contentLength == -1) {
+                contentLength = readDataSize;
+                return;
+            }
+
+            int progress = (int) ((readDataSize / (contentLength * 1.00)) * 3840);
+            if (progress > mDownloadProgress || progress == 3840) {
+                mDownloadProgress = progress;
+                // MLog.i(TAG, "onProgressUpdated() progress: " + progress);
+                mUiHandler.removeMessages(MSG_ON_PROGRESS_UPDATED);
+                mUiHandler.sendEmptyMessage(MSG_ON_PROGRESS_UPDATED);
+            }
         }
 
         @Override

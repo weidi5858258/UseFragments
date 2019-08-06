@@ -311,6 +311,10 @@ public class ContentsFragment extends BaseFragment {
         if (DEBUG)
             MLog.d(TAG, "onShow(): " + printThis());
 
+        contentLength = (Long) EventBusUtils.post(
+                DownloadFileService.class,
+                DownloadFileService.MSG_GET_CONTENT_LENGTH,
+                null);
         EventBusUtils.post(
                 DownloadFileService.class,
                 DownloadFileService.MSG_SET_CALLBACK,
@@ -335,11 +339,6 @@ public class ContentsFragment extends BaseFragment {
     private void onHide() {
         if (DEBUG)
             MLog.d(TAG, "onHide(): " + printThis());
-
-        EventBusUtils.post(
-                DownloadFileService.class,
-                DownloadFileService.MSG_SET_CALLBACK,
-                null);
     }
 
     private void initData() {

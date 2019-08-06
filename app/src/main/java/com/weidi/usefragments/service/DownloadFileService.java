@@ -88,6 +88,7 @@ public class DownloadFileService extends Service {
     public static final int MSG_DOWNLOAD_STOP = 3;
     public static final int MSG_IS_DOWNLOADING = 4;
     public static final int MSG_SET_CALLBACK = 5;
+    public static final int MSG_GET_CONTENT_LENGTH = 6;
     private static final int BUFFER = 1024 * 1024 * 2;
 
     public static final String PATH =
@@ -201,6 +202,8 @@ public class DownloadFileService extends Service {
                     mCallback = null;
                 }
                 break;
+            case MSG_GET_CONTENT_LENGTH:
+                return contentLength;
             default:
                 break;
         }
