@@ -392,6 +392,7 @@ public class DownloadFileService extends Service {
         editor.commit();
 
         byte[] buffer = new byte[BUFFER];
+        int mProgress = -1;
         int readSize = -1;
         long readDataSize = 0;
         mIsDownloading = true;
@@ -440,6 +441,12 @@ public class DownloadFileService extends Service {
             if (mCallback != null) {
                 mCallback.onProgressUpdated(readDataSize);
             }
+
+            /*int progress = (int) ((readDataSize / (contentLength * 1.00)) * 100);
+            if (progress > mProgress || progress == 100) {
+                mProgress = progress;
+                MLog.i(TAG, "downloadStart() progress: " + mProgress + "%");
+            }*/
         }// for(;;) end
         MLog.i(TAG, "downloadStart() for(;;) end");
 

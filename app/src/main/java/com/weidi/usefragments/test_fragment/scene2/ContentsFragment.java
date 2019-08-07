@@ -534,7 +534,10 @@ public class ContentsFragment extends BaseFragment {
     private DownloadCallback mCallback = new DownloadCallback() {
         @Override
         public void onReady() {
-
+            contentLength = -1;
+            mProgress = 0;
+            mUiHandler.removeMessages(MSG_ON_PROGRESS_UPDATED);
+            mUiHandler.sendEmptyMessage(MSG_ON_PROGRESS_UPDATED);
         }
 
         @Override
@@ -562,7 +565,7 @@ public class ContentsFragment extends BaseFragment {
             int progress = (int) ((readDataSize / (contentLength * 1.00)) * 100);
             if (progress > mProgress || progress == 100) {
                 mProgress = progress;
-                //MLog.i(TAG, "onProgressUpdated() progress: " + mProgress + "%");
+                MLog.i(TAG, "onProgressUpdated() progress: " + mProgress + "%");
                 mUiHandler.removeMessages(MSG_ON_PROGRESS_UPDATED);
                 mUiHandler.sendEmptyMessage(MSG_ON_PROGRESS_UPDATED);
             }
