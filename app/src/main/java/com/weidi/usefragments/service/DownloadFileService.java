@@ -178,13 +178,9 @@ public class DownloadFileService extends Service {
                 if (mIsDownloading) {
                     mUiHandler.removeMessages(MSG_DOWNLOAD_STOP);
                     mUiHandler.sendEmptyMessage(MSG_DOWNLOAD_STOP);
-
-                    mThreadHandler.removeMessages(MSG_DOWNLOAD_START);
-                    mThreadHandler.sendEmptyMessageDelayed(MSG_DOWNLOAD_START, 1000);
-                } else {
-                    mThreadHandler.removeMessages(MSG_DOWNLOAD_START);
-                    mThreadHandler.sendEmptyMessage(MSG_DOWNLOAD_START);
                 }
+                mThreadHandler.removeMessages(MSG_DOWNLOAD_START);
+                mThreadHandler.sendEmptyMessageDelayed(MSG_DOWNLOAD_START, 1000);
                 break;
             case MSG_DOWNLOAD_PAUSE_OR_START:
                 // 暂停或开始
@@ -264,39 +260,38 @@ public class DownloadFileService extends Service {
     private void downloadStart() {
         MLog.i(TAG, "downloadStart() start");
         if (mCallback != null) {
+            MLog.i(TAG, "downloadStart() mCallback.onReady()");
             mCallback.onReady();
         }
 
+        mIsDownloading = false;
         SharedPreferences.Editor editor = null;
         contentLength = -1;
-        mIsDownloading = true;
         String httpPath = null;
         if (!TextUtils.isEmpty(mUri)) {
             httpPath = mUri;
         } else {
             httpPath = Contents.getUri();
         }
+        MLog.i(TAG, "downloadStart() httpPath: " + httpPath);
+        if (TextUtils.isEmpty(httpPath)) {
+            return;
+        }
 
+        // 如果要下载的与下载好的地址相同,并且下载好的文件存在且
         String videoPath = mPreferences.getString(VIDEO_PATH, "");
         if (TextUtils.equals(httpPath, videoPath)) {
             boolean videoIsFinished = mPreferences.getBoolean(VIDEO_IS_FINISHED, false);
             if (videoIsFinished && isVideoExist()) {
-                mIsDownloading = true;
                 MLog.i(TAG, "downloadStart() 文件已经下载好了,不需要再下载");
                 return;
             }
         }
 
-        MLog.i(TAG, "downloadStart() httpPath: " + httpPath);
-        if (TextUtils.isEmpty(httpPath)) {
-            mIsDownloading = false;
-            return;
-        }
         if (!httpPath.startsWith("http://")
                 && !httpPath.startsWith("HTTP://")
                 && !httpPath.startsWith("https://")
                 && !httpPath.startsWith("HTTPS://")) {
-            mIsDownloading = false;
             return;
         }
 
@@ -337,18 +332,15 @@ public class DownloadFileService extends Service {
         Contents.setPath(filePath);
         MLog.i(TAG, "downloadStart() filePath: " + filePath);
         File videoFile = new File(filePath);
-        if (videoFile.exists()) {
-            videoFile.delete();
-        }
         if (!videoFile.exists()) {
             try {
                 videoFile.createNewFile();
             } catch (IOException e) {
-                mIsDownloading = false;
                 e.printStackTrace();
                 return;
             }
         }
+
         HttpAccessor httpAccessor = null;
         try {
             httpAccessor = new HttpAccessor(new URL(httpPath), null);
@@ -366,8 +358,6 @@ public class DownloadFileService extends Service {
                     e1.printStackTrace();
                 }
             }
-            httpAccessor = null;
-            mIsDownloading = false;
             e.printStackTrace();
             return;
         }
@@ -384,7 +374,6 @@ public class DownloadFileService extends Service {
                     e1.printStackTrace();
                 }
             }
-            httpAccessor = null;
             if (outputStream != null) {
                 try {
                     outputStream.close();
@@ -392,8 +381,6 @@ public class DownloadFileService extends Service {
                     e1.printStackTrace();
                 }
             }
-            outputStream = null;
-            mIsDownloading = false;
             e.printStackTrace();
             return;
         }
@@ -407,7 +394,9 @@ public class DownloadFileService extends Service {
         byte[] buffer = new byte[BUFFER];
         int readSize = -1;
         long readDataSize = 0;
+        mIsDownloading = true;
 
+        MLog.i(TAG, "downloadStart() for(;;) start");
         for (; ; ) {
             if (!mIsDownloading) {
                 break;
@@ -415,6 +404,7 @@ public class DownloadFileService extends Service {
 
             if (mIsPaused) {
                 if (mCallback != null) {
+                    MLog.i(TAG, "downloadStart() mCallback.onPaused()");
                     mCallback.onPaused();
                 }
                 synchronized (readDataPauseLock) {
@@ -427,6 +417,7 @@ public class DownloadFileService extends Service {
                     MLog.i(TAG, "downloadStart() readDataPauseLock.wait() end");
                 }
                 if (mCallback != null) {
+                    MLog.i(TAG, "downloadStart() mCallback.onStarted()");
                     mCallback.onStarted();
                 }
             }
@@ -435,22 +426,13 @@ public class DownloadFileService extends Service {
                 Arrays.fill(buffer, (byte) 0);
                 readSize = httpAccessor.read(buffer, 0, BUFFER);
                 // MLog.i(TAG, "downloadStart() readSize: " + readSize);
-            } catch (ExoPlaybackException e) {
-                e.printStackTrace();
-                mIsDownloading = false;
-                break;
-            }
-
-            if (readSize < 0) {
-                mIsDownloading = false;
-                break;
-            }
-
-            try {
+                if (readSize < 0) {
+                    break;
+                }
                 outputStream.write(buffer, 0, readSize);
-            } catch (IOException e) {
+            } catch (ExoPlaybackException
+                    | IOException e) {
                 e.printStackTrace();
-                mIsDownloading = false;
                 break;
             }
 
@@ -459,6 +441,9 @@ public class DownloadFileService extends Service {
                 mCallback.onProgressUpdated(readDataSize);
             }
         }// for(;;) end
+        MLog.i(TAG, "downloadStart() for(;;) end");
+
+        mIsDownloading = false;
 
         try {
             httpAccessor.close();
@@ -473,8 +458,6 @@ public class DownloadFileService extends Service {
             e.printStackTrace();
         }
 
-        mIsDownloading = false;
-
         MLog.i(TAG, "downloadStart() contentLength: " + contentLength);
         MLog.i(TAG, "downloadStart()  readDataSize: " + readDataSize);
         if (mCallback != null
@@ -484,6 +467,7 @@ public class DownloadFileService extends Service {
             editor = mPreferences.edit();
             editor.putBoolean(VIDEO_IS_FINISHED, true);
             editor.commit();
+            MLog.i(TAG, "downloadStart() mCallback.onFinished()");
             mCallback.onFinished();
         }
 
