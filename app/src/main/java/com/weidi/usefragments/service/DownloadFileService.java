@@ -262,6 +262,7 @@ public class DownloadFileService extends Service {
             mCallback.onReady();
         }
 
+        SharedPreferences.Editor editor = null;
         contentLength = -1;
         mIsDownloading = true;
         String httpPath = null;
@@ -319,7 +320,7 @@ public class DownloadFileService extends Service {
             fileName = Contents.getTitle() + suffixName;
         }
 
-        SharedPreferences.Editor editor = mPreferences.edit();
+        editor = mPreferences.edit();
         editor.putString(VIDEO_NAME, fileName);
         editor.commit();
 
@@ -366,13 +367,39 @@ public class DownloadFileService extends Service {
             return;
         }
 
-        RandomAccessFile randomAccessFile = null;
+        BufferedOutputStream outputStream = null;
+        try {
+            outputStream = new BufferedOutputStream(
+                    new FileOutputStream(videoFile), BUFFER);
+        } catch (FileNotFoundException e) {
+            if (httpAccessor != null) {
+                try {
+                    httpAccessor.close();
+                } catch (ExoPlaybackException e1) {
+                    e1.printStackTrace();
+                }
+            }
+            httpAccessor = null;
+            if (outputStream != null) {
+                try {
+                    outputStream.close();
+                } catch (IOException e1) {
+                    e1.printStackTrace();
+                }
+            }
+            outputStream = null;
+            mIsDownloading = false;
+            e.printStackTrace();
+            return;
+        }
+
+        /*RandomAccessFile randomAccessFile = null;
         try {
             randomAccessFile = new RandomAccessFile(videoFile, "rwd");
-            /*if (contentLength != -1) {
+            *//*if (contentLength != -1) {
                 // 直接生成一个contentLength大小的文件
                 randomAccessFile.setLength(contentLength);
-            }*/
+            }*//*
             randomAccessFile.seek(startPosition);
         } catch (IOException e) {
             if (httpAccessor != null) {
@@ -394,7 +421,7 @@ public class DownloadFileService extends Service {
             mIsDownloading = false;
             e.printStackTrace();
             return;
-        }
+        }*/
 
         editor = mPreferences.edit();
         editor.putString(VIDEO_PATH, httpPath);
@@ -408,7 +435,7 @@ public class DownloadFileService extends Service {
         long readDataSize = 0;
         readDataSize += startPosition;
 
-        long startTime = SystemClock.elapsedRealtime();
+        //long startTime = SystemClock.elapsedRealtime();
         for (; ; ) {
             if (!mIsDownloading) {
                 break;
@@ -448,7 +475,7 @@ public class DownloadFileService extends Service {
             }
 
             try {
-                randomAccessFile.write(buffer, 0, readSize);
+                outputStream.write(buffer, 0, readSize);
             } catch (IOException e) {
                 e.printStackTrace();
                 mIsDownloading = false;
@@ -459,14 +486,14 @@ public class DownloadFileService extends Service {
             if (mCallback != null) {
                 mCallback.onProgressUpdated(readDataSize);
             }
-            long endTime = SystemClock.elapsedRealtime();
+            /*long endTime = SystemClock.elapsedRealtime();
             if (endTime - startTime >= 1000) {
                 // MLog.i(TAG, "downloadStart() readDataSize: " + readDataSize);
                 startTime = endTime;
                 editor = mPreferences.edit();
                 editor.putLong(VIDEO_POSITION, readDataSize);
                 editor.commit();
-            }
+            }*/
         }// for(;;) end
 
         try {
@@ -476,7 +503,8 @@ public class DownloadFileService extends Service {
         }
 
         try {
-            randomAccessFile.close();
+            outputStream.flush();
+            outputStream.close();
         } catch (IOException e) {
             e.printStackTrace();
         }
