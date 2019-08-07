@@ -301,6 +301,7 @@ public class ContentsFragment extends BaseFragment {
     private Handler mUiHandler;
     private long contentLength = -1;
     private ContentsAdapter mAdapter;
+    private SharedPreferences mPreferences;
 
     /***
      代码执行的内容跟onStart(),onResume()一样,
@@ -342,6 +343,9 @@ public class ContentsFragment extends BaseFragment {
     }
 
     private void initData() {
+        mPreferences = getContext().getSharedPreferences(
+                DownloadFileService.PREFERENCES_NAME, Context.MODE_PRIVATE);
+
         mUiHandler = new Handler(Looper.getMainLooper()) {
             @Override
             public void handleMessage(Message msg) {
@@ -377,12 +381,12 @@ public class ContentsFragment extends BaseFragment {
 
                         Contents.setTitle(name);
 
-                        SharedPreferences preferences =
-                                getContext().getSharedPreferences(
-                                        DownloadFileService.PREFERENCES_NAME, Context.MODE_PRIVATE);
+                        // 视频文件存在,并且已经下载好的,点击后才播放它,不然还是在线播放
+                        boolean videoIsFinished = mPreferences.getBoolean(
+                                DownloadFileService.VIDEO_IS_FINISHED, false);
                         String videoPath =
-                                preferences.getString(DownloadFileService.VIDEO_PATH, "");
-                        if (TextUtils.equals(videoPath, path)) {
+                                mPreferences.getString(DownloadFileService.VIDEO_PATH, "");
+                        if (TextUtils.equals(videoPath, path) && videoIsFinished) {
                             File moviesFile = new File(DownloadFileService.PATH);
                             for (File file : moviesFile.listFiles()) {
                                 if (file == null) {
@@ -410,6 +414,17 @@ public class ContentsFragment extends BaseFragment {
                                         DownloadFileService.class,
                                         DownloadFileService.MSG_DOWNLOAD_START,
                                         null);
+
+                                mUiHandler.postDelayed(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        String videoName = mPreferences.getString(
+                                                DownloadFileService.VIDEO_NAME, "");
+                                        if (!TextUtils.isEmpty(videoName)) {
+                                            mAddressET.setText(videoName);
+                                        }
+                                    }
+                                }, 1000);
                                 break;
                             default:
                                 break;
@@ -426,11 +441,11 @@ public class ContentsFragment extends BaseFragment {
         mRecyclerView.setLayoutManager(linearLayoutManager);
         mRecyclerView.setAdapter(mAdapter);
 
-        SharedPreferences preferences =
-                getContext().getSharedPreferences(
-                        DownloadFileService.PREFERENCES_NAME, Context.MODE_PRIVATE);
-        String videoName = preferences.getString(DownloadFileService.VIDEO_NAME, "");
-        if (!TextUtils.isEmpty(videoName)) {
+        // 文件下载完的才显示其文件名
+        boolean videoIsFinished = mPreferences.getBoolean(
+                DownloadFileService.VIDEO_IS_FINISHED, false);
+        String videoName = mPreferences.getString(DownloadFileService.VIDEO_NAME, "");
+        if (!TextUtils.isEmpty(videoName) && videoIsFinished) {
             mAddressET.setText(videoName);
         }
     }
@@ -447,8 +462,11 @@ public class ContentsFragment extends BaseFragment {
     private void onClick(View v) {
         switch (v.getId()) {
             case R.id.playback_btn:
+                boolean videoIsFinished = mPreferences.getBoolean(
+                        DownloadFileService.VIDEO_IS_FINISHED, false);
                 String address = mAddressET.getText().toString();
-                if (TextUtils.isEmpty(address)) {
+                if (TextUtils.isEmpty(address) && videoIsFinished) {
+                    // 如果要播放下载好的视频,那么把地址栏清空
                     boolean isExist = false;
                     File moviesFile = new File(DownloadFileService.PATH);
                     for (File file : moviesFile.listFiles()) {

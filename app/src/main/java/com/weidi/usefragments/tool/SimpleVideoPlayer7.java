@@ -1267,6 +1267,7 @@ public class SimpleVideoPlayer7 {
         ++wrapper.handleFrameCounts;
         wrapper.handleFrameLengthTotal += wrapper.frameDataLength;
 
+
         // 得到wrapper.presentationTimeUs时间戳
         if ((Long) wrapper.handleFrameCounts != null
                 && wrapper.getTime.containsKey((Long) wrapper.handleFrameCounts)) {
@@ -1300,7 +1301,7 @@ public class SimpleVideoPlayer7 {
                     elapsedTime);
         }*/
 
-        // 过一秒才更新
+        // 过一秒才更新(使用于进度条和已播放时间的显示)
         if (wrapper instanceof VideoWrapper
                 && wrapper.presentationTimeUs1 != -1
                 && wrapper.presentationTimeUs1 - wrapper.startTimeUs >= 1000000) {
@@ -1339,6 +1340,15 @@ public class SimpleVideoPlayer7 {
         return feedInputBufferResult && drainOutputBufferResult;
     }
 
+    /***
+     正常情况下,
+     mAudioWrapper.presentationTimeUs2
+     比
+     mVideoWrapper.presentationTimeUs2
+     小一点,差距不是很大.
+     因此如果音频的时间戳比视频的时间戳大,
+     那么需要暂停一会,让视频的时间戳变大.
+     */
     private void handleAudioOutputBuffer(
             int roomIndex, ByteBuffer room, MediaCodec.BufferInfo roomInfo, int roomSize) {
         // 被使用到video那里进行"睡眠"多少时间的判断
@@ -1424,24 +1434,21 @@ public class SimpleVideoPlayer7 {
         MLog.i(TAG, "handleVideoOutputBuffer()        elapsedTime2: " +
                 elapsedTime);*/
 
-        // 不能执行,不然很卡顿
-        /*if (roomInfo.presentationTimeUs / 1000
-                - mAudioWrapper.presentationTimeUs2 / 1000 < 0) {
-            return;
-        }*/
-
         while (mAudioWrapper.isHandling
                 && mVideoWrapper.isHandling
                 && (mVideoWrapper.presentationTimeUs2 / 1000
                 - mAudioWrapper.presentationTimeUs2 / 1000 >= 650)) {
-            SystemClock.sleep(1);// 10
+            SystemClock.sleep(1);
         }
 
         while (roomInfo.presentationTimeUs / 1000
                 > System.currentTimeMillis()
                 - MediaUtils.startTimeMs
+                // 暂停后的时间戳修复
                 - MediaUtils.paustTimeMs
+                // 快进后的时间戳修复
                 + MediaUtils.progressTimeMs
+                // 人为的时间戳修复
                 - MediaUtils.variableValues) {
             SystemClock.sleep(1);
         }

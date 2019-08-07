@@ -18,9 +18,9 @@ public class HttpAccessor extends DataAccessor {
     private static final boolean DEBUG = true;
 
     // Timeout time connect(ms).
-    private static final int DEFAULT_CONNECT_TIMEOUT_MILLIS = 30 * 1000;
+    private static final int DEFAULT_CONNECT_TIMEOUT_MILLIS = 5 * 60 * 1000;
     // Timeout time from read(ms).
-    private static final int DEFAULT_READ_TIMEOUT_MILLIS = 30 * 1000;
+    private static final int DEFAULT_READ_TIMEOUT_MILLIS = 5 * 60 * 1000;
 
     // Request method to server.
     private static final String REQUEST_METHOD_HEAD = "HEAD";

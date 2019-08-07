@@ -91,7 +91,7 @@ public class DownloadFileService extends Service {
     public static final int MSG_GET_CONTENT_LENGTH = 6;
     private static final int BUFFER = 1024 * 1024 * 2;
 
-    public static final String PATH =
+    public static String PATH =
             "/storage/2430-1702/Android/data/com.weidi.usefragments/files/Movies/";
     /*PATH = "/data/data/com.weidi.usefragments/files/";
     PATH = "/storage/37C8-3904/Android/data/com.weidi.usefragments/files/Movies/";
@@ -99,9 +99,9 @@ public class DownloadFileService extends Service {
     public static final String PREFERENCES_NAME = "alexander_preferences";
     public static final String VIDEO_NAME = "video_name";
     public static final String VIDEO_PATH = "video_path";
-    private static final String VIDEO_LENGTH = "video_length";
-    private static final String VIDEO_POSITION = "video_position";
-    private static final String VIDEO_IS_FINISHED = "video_is_finished";
+    public static final String VIDEO_LENGTH = "video_length";
+    public static final String VIDEO_IS_FINISHED = "video_is_finished";
+    //private static final String VIDEO_POSITION = "video_position";
     private SharedPreferences mPreferences;
 
     private HandlerThread mHandlerThread;
@@ -169,6 +169,7 @@ public class DownloadFileService extends Service {
         Object result = null;
         switch (what) {
             case MSG_DOWNLOAD_START:
+                // 开始下载
                 mUri = null;
                 if (objArray != null && objArray.length > 0) {
                     mUri = (String) objArray[0];
@@ -186,14 +187,17 @@ public class DownloadFileService extends Service {
                 }
                 break;
             case MSG_DOWNLOAD_PAUSE_OR_START:
+                // 暂停或开始
                 mUiHandler.removeMessages(MSG_DOWNLOAD_PAUSE_OR_START);
                 mUiHandler.sendEmptyMessage(MSG_DOWNLOAD_PAUSE_OR_START);
                 break;
             case MSG_DOWNLOAD_STOP:
+                // 停止下载
                 mUiHandler.removeMessages(MSG_DOWNLOAD_STOP);
                 mUiHandler.sendEmptyMessage(MSG_DOWNLOAD_STOP);
                 break;
             case MSG_IS_DOWNLOADING:
+                // 判断是否还在下载
                 return mIsDownloading;
             case MSG_SET_CALLBACK:
                 if (objArray != null && objArray.length > 0) {
@@ -203,6 +207,7 @@ public class DownloadFileService extends Service {
                 }
                 break;
             case MSG_GET_CONTENT_LENGTH:
+                // 返回文件长度
                 return contentLength;
             default:
                 break;
@@ -272,10 +277,8 @@ public class DownloadFileService extends Service {
             httpPath = Contents.getUri();
         }
 
-        long startPosition = 0;
         String videoPath = mPreferences.getString(VIDEO_PATH, "");
         if (TextUtils.equals(httpPath, videoPath)) {
-            startPosition = mPreferences.getLong(VIDEO_POSITION, 0);
             boolean videoIsFinished = mPreferences.getBoolean(VIDEO_IS_FINISHED, false);
             if (videoIsFinished && isVideoExist()) {
                 mIsDownloading = true;
@@ -283,9 +286,6 @@ public class DownloadFileService extends Service {
                 return;
             }
         }
-        // 虽然断点下载是可以了,但是下载的文件不能播放
-        startPosition = 0;
-        MLog.i(TAG, "downloadStart() startPosition: " + startPosition);
 
         MLog.i(TAG, "downloadStart() httpPath: " + httpPath);
         if (TextUtils.isEmpty(httpPath)) {
@@ -324,8 +324,14 @@ public class DownloadFileService extends Service {
         editor.putString(VIDEO_NAME, fileName);
         editor.commit();
 
-        // Test
         fileName = "alexander_mylove" + suffixName;
+
+        /*LinkedList<String> list = new LinkedList<String>();
+        list.add("/storage/2430-1702/");
+        list = getUSBPathList(getApplicationContext(), list);
+        if (list != null && !list.isEmpty()) {
+            PATH = list.get(0) + "/BaiduNetdisk/video/";
+        }*/
 
         String filePath = PATH + fileName;
         Contents.setPath(filePath);
@@ -347,7 +353,6 @@ public class DownloadFileService extends Service {
         try {
             httpAccessor = new HttpAccessor(new URL(httpPath), null);
             httpAccessor.open();
-            httpAccessor.byteSeek(startPosition);
             contentLength = httpAccessor.getSize();
             if (mCallback != null && contentLength != -1) {
                 mCallback.onProgressUpdated(contentLength);
@@ -393,49 +398,16 @@ public class DownloadFileService extends Service {
             return;
         }
 
-        /*RandomAccessFile randomAccessFile = null;
-        try {
-            randomAccessFile = new RandomAccessFile(videoFile, "rwd");
-            *//*if (contentLength != -1) {
-                // 直接生成一个contentLength大小的文件
-                randomAccessFile.setLength(contentLength);
-            }*//*
-            randomAccessFile.seek(startPosition);
-        } catch (IOException e) {
-            if (httpAccessor != null) {
-                try {
-                    httpAccessor.close();
-                } catch (ExoPlaybackException e1) {
-                    e1.printStackTrace();
-                }
-            }
-            httpAccessor = null;
-            if (randomAccessFile != null) {
-                try {
-                    randomAccessFile.close();
-                } catch (IOException e1) {
-                    e1.printStackTrace();
-                }
-            }
-            randomAccessFile = null;
-            mIsDownloading = false;
-            e.printStackTrace();
-            return;
-        }*/
-
         editor = mPreferences.edit();
         editor.putString(VIDEO_PATH, httpPath);
         editor.putLong(VIDEO_LENGTH, contentLength);
-        editor.putLong(VIDEO_POSITION, 0);
         editor.putBoolean(VIDEO_IS_FINISHED, false);
         editor.commit();
 
         byte[] buffer = new byte[BUFFER];
         int readSize = -1;
         long readDataSize = 0;
-        readDataSize += startPosition;
 
-        //long startTime = SystemClock.elapsedRealtime();
         for (; ; ) {
             if (!mIsDownloading) {
                 break;
@@ -486,14 +458,6 @@ public class DownloadFileService extends Service {
             if (mCallback != null) {
                 mCallback.onProgressUpdated(readDataSize);
             }
-            /*long endTime = SystemClock.elapsedRealtime();
-            if (endTime - startTime >= 1000) {
-                // MLog.i(TAG, "downloadStart() readDataSize: " + readDataSize);
-                startTime = endTime;
-                editor = mPreferences.edit();
-                editor.putLong(VIDEO_POSITION, readDataSize);
-                editor.commit();
-            }*/
         }// for(;;) end
 
         try {
@@ -519,7 +483,6 @@ public class DownloadFileService extends Service {
                 || contentLength <= readDataSize + 1024 * 1024)) {
             editor = mPreferences.edit();
             editor.putBoolean(VIDEO_IS_FINISHED, true);
-            editor.putLong(VIDEO_POSITION, contentLength);
             editor.commit();
             mCallback.onFinished();
         }
