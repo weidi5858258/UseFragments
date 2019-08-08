@@ -90,6 +90,12 @@ public class MainActivity1 extends BaseActivity
         }
     }
 
+    /**
+     * A native method that is implemented by the 'native-lib' native library,
+     * which is packaged with this application.
+     */
+    private native String stringFromJNI();
+
     private static HashMap<String, Integer> sFragmentBackTypeSMap;
 
     static {
@@ -210,8 +216,8 @@ public class MainActivity1 extends BaseActivity
         }
 
         // test
-        if (DEBUG)
-            Log.d(TAG, "onCreate() stringFromJNI(): " + stringFromJNI());
+        Log.d(TAG, "onCreate() stringFromJNI(): " + stringFromJNI());
+        test();
     }
 
     @Override
@@ -592,16 +598,6 @@ public class MainActivity1 extends BaseActivity
             }
         }
     }
-
-    /**
-     * A native method that is implemented by the 'native-lib' native library,
-     * which is packaged with this application.
-     */
-    public native String stringFromJNI();
-
-    public native String testFFMPEG();
-
-    public native int audioPlayer();
 
     /***
      action=ACTION_DOWN, keyCode=KEYCODE_HEADSETHOOK, scanCode=226, metaState=0, flags=0x8,

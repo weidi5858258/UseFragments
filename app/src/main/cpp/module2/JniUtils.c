@@ -18,7 +18,7 @@
 // #include <utils/Log.h>
 
 #define SOCKET_NAME "weidi"
-#define LOG "jni" // 这个是自定义的LOG的标识
+#define LOG "alexander" // 这个是自定义的LOG的标识
 #define LOGD(...)  __android_log_print(ANDROID_LOG_DEBUG,LOG,__VA_ARGS__) // 定义LOGD类型
 #define LOGI(...)  __android_log_print(ANDROID_LOG_INFO,LOG,__VA_ARGS__)  // 定义LOGI类型
 #define LOGW(...)  __android_log_print(ANDROID_LOG_WARN,LOG,__VA_ARGS__)  // 定义LOGW类型
@@ -219,8 +219,8 @@ JNIEXPORT jbyteArray JNICALL Java_com_weidi_usefragments_tool_JniUtils_getByteAr
     (*env)->GetByteArrayRegion(env, btA, 0, leng, byte_);
     int i = 0;
     for (; i < leng; i++) {
-        LOGI("------------->%d",
-             byte_[i]);// byte:-128~127（赋值128实际值-128,赋值129实际值-127,赋值-128实际值127,赋值-129实际值126）
+        // byte:-128~127（赋值128实际值-128,赋值129实际值-127,赋值-128实际值127,赋值-129实际值126）
+        LOGI("------------->%d", byte_[i]);
     }
 
     jbyteArray byteArray = (*env)->NewByteArray(env, leng);
@@ -303,48 +303,52 @@ JNIEXPORT jdoubleArray JNICALL Java_com_weidi_usefragments_tool_JniUtils_getDoub
 }
 
 /*************************************************************************************************/
+/***
+ 传递java端自定义对象
+ 用"反射"的思想去理解
+ */
 
 JNIEXPORT jobject JNICALL Java_com_weidi_usefragments_tool_JniUtils_getObjectFromC(
-        JNIEnv *env, jclass obj, jobject obje) {
-// jclass objectClass = (*env)->GetObjectClass(env, obje);
-    jclass objectClass = (*env)->FindClass(env, "com/weidi/jni/Person");
+        JNIEnv *env, jclass obj, jobject javaObject) {
+    // jclass objectClass = (*env)->GetObjectClass(env, javaObject);
+    jclass objectClass = (*env)->FindClass(env, "com/weidi/usefragments/javabean/Person");
     // 得到java端对象下面的属性ID
     jfieldID fieldId_name = (*env)->GetFieldID(env, objectClass, "name", "Ljava/lang/String;");
     jfieldID fieldId_age = (*env)->GetFieldID(env, objectClass, "age", "I");
     // 用属性ID得到属性值，还要用上传进来的对象
-    jobject object_ = (*env)->GetObjectField(env, obje, fieldId_name);
+    jobject object_ = (*env)->GetObjectField(env, javaObject, fieldId_name);
     jstring string_name = (jstring) object_;
-    jint int_age = (*env)->GetIntField(env, obje, fieldId_age);
+    jint int_age = (*env)->GetIntField(env, javaObject, fieldId_age);
 
     // 打印属性值
     const char *char_ = (*env)->GetStringUTFChars(env, string_name, 0);
     LOGI("------------->%s", char_);
     LOGI("------------->%d", (int) int_age);
     // 现在不要释放，不然下面的语句就不能执行了
-    // (*env) -> ReleaseStringUTFChars(env, obje, string_name);
+    // (*env) -> ReleaseStringUTFChars(env, javaObject, string_name);
 
-// // 得到构造方法ID
-// jmethodID methodId_constructor2 = (*env)->GetMethodID(env, objectClass, "<init>", "()V");
-// //  创建java对象
-// jobject object_4 = (*env)->NewObject(env, objectClass, methodId_constructor2, 0);
+    // // 得到构造方法ID
+    // jmethodID methodId_constructor2 = (*env)->GetMethodID(env, objectClass, "<init>", "()V");
+    // //  创建java对象
+    // jobject object_4 = (*env)->NewObject(env, objectClass, methodId_constructor2, 0);
     // 调用方法
-    jmethodID methodId_ = (*env)->GetMethodID(env, objectClass, "toString", "()Ljava/lang/String;");
-    jobject object_2 = (*env)->CallObjectMethod(env, obje, methodId_, 0);
+    jmethodID toString = (*env)->GetMethodID(env, objectClass, "toString", "()Ljava/lang/String;");
+    jobject object_2 = (*env)->CallObjectMethod(env, javaObject, toString, 0);
     jstring string_ = (jstring) object_2;
     char_ = (*env)->GetStringUTFChars(env, string_, 0);
     LOGI("------------->%s", char_);
-    // (*env) -> ReleaseStringUTFChars(env, obje, string_);
+    // (*env) -> ReleaseStringUTFChars(env, javaObject, string_);
 
     // 还是使用这种方式创建java对象比较简单
-// jobject object_3 = (*env)->AllocObject(env, objectClass);
-    jmethodID methodId_2 = (*env)->GetMethodID(env, objectClass, "setName",
-                                               "(Ljava/lang/String;)V");
-    // 得到构造方法ID
+    // jobject object_3 = (*env)->AllocObject(env, objectClass);
+    jmethodID setName = (*env)->GetMethodID(
+            env, objectClass, "setName", "(Ljava/lang/String;)V");
+    // 得到无参的构造方法ID
     jmethodID methodId_constructor = (*env)->GetMethodID(env, objectClass, "<init>", "()V");
-    //  创建java对象
+    // 创建java对象
     jobject object_3 = (*env)->NewObject(env, objectClass, methodId_constructor, 0);
     // object_3也可以换成obje，那么上面一句也不要了，返回obje就行了
-    (*env)->CallVoidMethod(env, object_3, methodId_2, (*env)->NewStringUTF(env, "王力伟weidi"));
+    (*env)->CallVoidMethod(env, object_3, setName, (*env)->NewStringUTF(env, "王力伟weidi"));
 
     // (*env)->SetObjectField(env, object_3, fieldId_name, (*env)->NewStringUTF(env, "王力伟"));
     (*env)->SetIntField(env, object_3, fieldId_age, 31);
@@ -356,7 +360,7 @@ JNIEXPORT jobject JNICALL Java_com_weidi_usefragments_tool_JniUtils_getObjectFro
 JNIEXPORT jobjectArray JNICALL Java_com_weidi_usefragments_tool_JniUtils_getObjectArrayFromC(
         JNIEnv *env, jclass obj, jobjectArray objArray) {
     jsize size_len = (*env)->GetArrayLength(env, objArray);
-    jclass objectClass = (*env)->FindClass(env, "com/weidi/jni/Person");
+    jclass objectClass = (*env)->FindClass(env, "com/weidi/usefragments/javabean/Person");
     jmethodID methodId_ = (*env)->GetMethodID(env, objectClass, "toString", "()Ljava/lang/String;");
     int i;
     for (i = 0; i < size_len; i++) {

@@ -28,16 +28,3 @@ Java_com_weidi_usefragments_MainActivity1_stringFromJNI(JNIEnv *env, jobject obj
     std::string hello = "Hello from C++";
     return env->NewStringUTF(hello.c_str());
 }
-
-extern "C"
-JNIEXPORT jstring JNICALL
-Java_com_weidi_usefragments_MainActivity1_testFFMPEG(JNIEnv *env, jobject object) {
-    std::string hello = "Hello from C++";
-    return env->NewStringUTF(hello.c_str());
-}
-
-extern "C"
-JNIEXPORT jint JNICALL
-Java_com_weidi_usefragments_MainActivity1_audioPlayer(JNIEnv *env, jobject object) {
-
-}

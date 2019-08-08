@@ -9,7 +9,11 @@ import com.weidi.usefragments.javabean.Person;
 public class JniUtils {
 
     static {
-        System.loadLibrary("jni");
+        try {
+            System.loadLibrary("alexander_jni");
+        } catch (java.lang.UnsatisfiedLinkError error) {
+            error.printStackTrace();
+        }
     }
 
     // 传递基本数据类型
