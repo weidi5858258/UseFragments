@@ -1,6 +1,9 @@
 package com.weidi.usefragments;
 
 import android.app.Fragment;
+
+import com.weidi.usefragments.javabean.Person;
+
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -39,6 +42,7 @@ import com.weidi.usefragments.test_fragment.scene2.TestMotionEventFragment;
 import com.weidi.usefragments.test_fragment.scene2.ThrowingScreenFragment;
 import com.weidi.usefragments.test_fragment.scene2.VideoLiveBroadcastingFragment;
 import com.weidi.usefragments.test_fragment.scene2.ViewPagerFragment;
+import com.weidi.usefragments.tool.JniUtils;
 import com.weidi.usefragments.tool.MLog;
 import com.weidi.usefragments.tool.SimpleAudioPlayer;
 import com.weidi.usefragments.tool.SimpleVideoPlayer;
@@ -587,7 +591,6 @@ public class MainActivity1 extends BaseActivity
                 }
             }
         }
-
     }
 
     /**
@@ -595,6 +598,10 @@ public class MainActivity1 extends BaseActivity
      * which is packaged with this application.
      */
     public native String stringFromJNI();
+
+    public native String testFFMPEG();
+
+    public native int audioPlayer();
 
     /***
      action=ACTION_DOWN, keyCode=KEYCODE_HEADSETHOOK, scanCode=226, metaState=0, flags=0x8,
@@ -634,6 +641,82 @@ public class MainActivity1 extends BaseActivity
             return decodeVideoFragment.onKeyDown(keyCode, event);
         }
         return super.onKeyDown(keyCode, event);
+    }
+
+    private void test() {
+        // 传递基本数据类型
+        MLog.i(TAG, "from C String: " + JniUtils.getStringFromC("王力伟weidi5858258"));
+        MLog.i(TAG, "from C int: " + JniUtils.getIntFromC(100));
+        MLog.i(TAG, "from C byte: " + JniUtils.getByteFromC((byte) 128));
+        MLog.i(TAG, "from C boolean: " + JniUtils.getBooleanFromC(true));
+        MLog.i(TAG, "from C char: " + JniUtils.getCharFromC('a'));
+        MLog.i(TAG, "from C short: " + JniUtils.getShortFromC((short) 1000));
+        MLog.i(TAG, "from C long: " + JniUtils.getLongFromC(99999999L));
+        MLog.i(TAG, "from C float: " + JniUtils.getFloatFromC(1000.00F));
+        MLog.i(TAG, "from C double: " + JniUtils.getDoubleFromC(10000000000D));
+
+        // 传递基本数据类型的数组
+        String[] test = {"hahah", "ehehe", "哈哈", "中", "今天天气很好"};
+        String[] str = JniUtils.getStringArrayFromC(test);
+        for (int i = 0; i < str.length; i++) {
+            MLog.i(TAG, "" + str[i]);
+        }
+
+        int[] in_ = {10, 20, 30, 40, 50};
+        int[] in_2 = JniUtils.getIntArrayFromC(in_);
+        for (int i = 0; i < in_2.length; i++) {
+            MLog.i(TAG, "" + in_2[i]);
+        }
+
+        byte[] bt_ = {(byte) 128, (byte) 129, (byte) 130, (byte) -129, (byte) -130};
+        byte[] bt_2 = JniUtils.getByteArrayFromC(bt_);
+        for (int i = 0; i < bt_2.length; i++) {
+            MLog.i(TAG, "" + bt_2[i]);
+        }
+
+        try {
+            char[] char_ = {'伟', 'B', 'C', 'D', 'E'};
+            char[] char_2 = JniUtils.getCharArrayFromC(char_);
+            for (int i = 0; i < char_2.length; i++) {
+                // 中文显示还是有问题
+                MLog.i(TAG, new String(
+                        String.valueOf(char_2[i]).getBytes("ISO-8859-1"), "UTF-8"));
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        boolean[] boolean_ = {true, false, true, false, true};
+        boolean[] boolean_2 = JniUtils.getBooleanArrayFromC(boolean_);
+        for (int i = 0; i < boolean_2.length; i++) {
+            MLog.i(TAG, "" + boolean_2[i]);
+        }
+
+        // 传递java端的对象
+        Person person_ = new Person();
+        person_.setName("伟弟");
+        person_.setAge(30);
+        Person person_2 = JniUtils.getObjectFromC(person_);
+        if (person_2 != null) {
+            MLog.i(TAG, "" + person_2.toString());
+        }
+
+        Person person_3 = new Person();
+        person_3.setName("张三");
+        person_3.setAge(31);
+        Person person_4 = new Person();
+        person_4.setName("李四");
+        person_4.setAge(32);
+        Person person_5 = new Person();
+        person_5.setName("王五");
+        person_5.setAge(33);
+        Person[] persons_ = {person_3, person_4, person_5};
+        Person[] persons_2 = JniUtils.getObjectArrayFromC(persons_);
+        if (persons_2 != null) {
+            for (int i = 0; i < persons_2.length; i++) {
+                MLog.i(TAG, "" + persons_2[i].toString());
+            }
+        }
     }
 
 }
