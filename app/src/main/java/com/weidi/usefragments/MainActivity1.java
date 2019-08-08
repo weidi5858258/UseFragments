@@ -79,7 +79,11 @@ public class MainActivity1 extends BaseActivity
 
     // Used to load the 'native-lib' library on application startup.
     static {
-        System.loadLibrary("native-lib");
+        try {
+            System.loadLibrary("native-lib");
+        } catch (java.lang.UnsatisfiedLinkError error) {
+            error.printStackTrace();
+        }
     }
 
     private static HashMap<String, Integer> sFragmentBackTypeSMap;
