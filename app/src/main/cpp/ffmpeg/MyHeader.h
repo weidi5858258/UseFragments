@@ -81,6 +81,18 @@ extern "C" {// 不能少
 #define LOGE(...)  __android_log_print(ANDROID_LOG_ERROR,LOG,__VA_ARGS__) // 定义LOGE类型
 #define LOGF(...)  __android_log_print(ANDROID_LOG_FATAL,LOG,__VA_ARGS__) // 定义LOGF类型
 
+// 1 second of 48khz 32bit audio
+#define MAX_AUDIO_FRAME_SIZE 192000
+
+typedef struct AVPacketQueue {
+    AVPacketList *firstAVPacketList = NULL;
+    AVPacketList *lastAVPacketList = NULL;
+    // 有多少个AVPacketList
+    int allAVPacketsCount = 0;
+    // 所有AVPacket占用的空间大小
+    int64_t allAVPacketsSize = 0;
+};
+
 // 子类都要用到的部分
 struct Wrapper {
     AVFormatContext *avFormatContext = NULL;
@@ -90,15 +102,18 @@ struct Wrapper {
     // 编码器
     AVCodec *encoderAVCodec = NULL;
     // 存储压缩数据(视频对应H.264等码流数据,音频对应AAC/MP3等码流数据)
-    AVPacket *avPacket = NULL;
+    // AVPacket *avPacket = NULL;
     // 存储非压缩数据(视频对应RGB/YUV像素数据,音频对应PCM采样数据)
     AVFrame *srcAVFrame = NULL;
-    // 用于格式转换
+    // 用于格式转换(音频用不到)
     AVFrame *dstAVFrame = NULL;
     // 有些东西需要通过它去得到
     AVCodecParameters *avCodecParameters = NULL;
     int streamIndex = -1;
-    int frameCount = 0;
+    // 读取了多少个AVPacket
+    int readFramesCount = 0;
+    // 处理了多少个AVPacket
+    int handleFramesCount = 0;
     // 存储原始数据
     unsigned char *outBuffer1 = NULL;
     unsigned char *outBuffer2 = NULL;
@@ -106,30 +121,46 @@ struct Wrapper {
     size_t outBufferSize = 0;
     // 视频使用到sws_scale函数时需要定义这些变量,音频也要用到
     unsigned char *srcData[4] = {NULL}, dstData[4] = {NULL};
+
+    struct AVPacketQueue *queue1 = NULL;
+    struct AVPacketQueue *queue2 = NULL;
+    bool isHandlingForQueue1 = false;
+    bool isHandlingForQueue2 = false;
+
+    pthread_mutex_t readLockMutex = PTHREAD_MUTEX_INITIALIZER;
+    pthread_cond_t readLockCondition = PTHREAD_COND_INITIALIZER;
 };
 
 struct AudioWrapper {
     struct Wrapper father;
     SwrContext *swrContext = NULL;
+    // 从音频源或视频源中得到
+    // 采样率
+    int srcSampleRate = 0;
+    int dstSampleRate = 44100;
+    // 声道数
+    int srcNbChannels = 0;
+    // 由dstChannelLayout去获到
+    int dstNbChannels = 0;
+    int srcNbSamples = 0;
+    int dstNbSamples = 0;
+    // 由srcNbChannels能得到srcChannelLayout,也能由srcChannelLayout得到srcNbChannels
+    int srcChannelLayout = 0;
+    int dstChannelLayout = 0;
+    // 双声道输出
+    // int dstChannelLayout = AV_CH_LAYOUT_STEREO;
     // 从音频源或视频源中得到(采样格式)
     enum AVSampleFormat srcAVSampleFormat = AV_SAMPLE_FMT_NONE;
     // 输出的采样格式16bit PCM
     enum AVSampleFormat dstAVSampleFormat = AV_SAMPLE_FMT_S16;
-    // 从音频源或视频源中得到
-    // 采样率
-    int srcSampleRate = 0;
-    int srcNbSamples = 0;
-    // 声道数
-    int srcNbChannels = 0;
-    // 由srcNbChannels能得到srcChannelLayout,也能由srcChannelLayout得到srcNbChannels
-    int srcChannelLayout = 0;
-    // 用户设置
-    int dstSampleRate = 44100;
-    int dstNbSamples = 0;
-    // 由dstChannelLayout去获到
-    int dstNbChannels = 0;
-    // 双声道输出
-    int dstChannelLayout = AV_CH_LAYOUT_STEREO;
+
+    // 要播放的数据存在于playBuffer中
+    DECLARE_ALIGNED(16, unsigned char, playBuffer)[MAX_AUDIO_FRAME_SIZE * 4];
+
+    //解码一次得到的数据量
+    unsigned int decodedDataSize = 0;
+    //用于标记已处理过的数据位置(针对audio_decoded_data_size的位置)
+    unsigned int decodedDataSizeIndex = 0;
 };
 
 struct VideoWrapper {
@@ -149,5 +180,8 @@ struct VideoWrapper {
     // 使用到sws_scale函数时需要定义这些变量
     int srcLineSize[4] = {0}, dstLineSize[4] = {0};
 };
+
+struct AudioWrapper *audioWrapper = NULL;
+struct VideoWrapper *videoWrapper = NULL;
 
 #endif //USEFRAGMENTS_MYHEADER_H
