@@ -7,6 +7,8 @@
 
 #include "MyHeader.h"
 
+#define LOG "alexander"
+
 namespace alexander {
 
     class SimpleAudioPlayer {

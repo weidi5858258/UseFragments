@@ -84,6 +84,13 @@ extern "C" {// 不能少
 // 1 second of 48khz 32bit audio
 #define MAX_AUDIO_FRAME_SIZE 192000
 
+#define TYPE_UNKNOW -1
+#define TYPE_AUDIO 1
+#define TYPE_VIDEO 2
+
+#define MAX_AVPACKET_COUNT_AUDIO 2000
+#define MAX_AVPACKET_COUNT_VIDEO 5000
+
 typedef struct AVPacketQueue {
     AVPacketList *firstAVPacketList = NULL;
     AVPacketList *lastAVPacketList = NULL;
@@ -95,6 +102,7 @@ typedef struct AVPacketQueue {
 
 // 子类都要用到的部分
 struct Wrapper {
+    int type = TYPE_UNKNOW;
     AVFormatContext *avFormatContext = NULL;
     AVCodecContext *avCodecContext = NULL;
     // 解码器
@@ -127,8 +135,21 @@ struct Wrapper {
     bool isHandlingForQueue1 = false;
     bool isHandlingForQueue2 = false;
 
+    int maxAVPacketsCount = 1000;
+
+    bool isReading = false;
+    bool isHandling = false;
+
+    // 因为user所以pause
+    bool isPausedForUser = false;
+    // 因为cache所以pause
+    bool isPausedForCache = false;
+
     pthread_mutex_t readLockMutex = PTHREAD_MUTEX_INITIALIZER;
     pthread_cond_t readLockCondition = PTHREAD_COND_INITIALIZER;
+
+    pthread_mutex_t handleLockMutex = PTHREAD_MUTEX_INITIALIZER;
+    pthread_cond_t handleLockCondition = PTHREAD_COND_INITIALIZER;
 };
 
 struct AudioWrapper {
