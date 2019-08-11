@@ -202,7 +202,6 @@ struct VideoWrapper {
     int srcLineSize[4] = {0}, dstLineSize[4] = {0};
 };
 
-struct AudioWrapper *audioWrapper = NULL;
-struct VideoWrapper *videoWrapper = NULL;
+
 
 #endif //USEFRAGMENTS_MYHEADER_H
