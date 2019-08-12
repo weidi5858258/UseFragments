@@ -144,6 +144,7 @@ public class JniPlayerActivity extends BaseActivity {
         // Volume change should always affect media volume
         setVolumeControlStream(AudioManager.STREAM_MUSIC);
         mSurfaceView = findViewById(R.id.surfaceView);
+        // 没有图像出来,就是由于没有设置PixelFormat.RGBA_8888
         // 这里要写
         mSurfaceView.getHolder().setFormat(PixelFormat.RGBA_8888);
         mSurfaceView.getHolder().addCallback(new SurfaceHolder.Callback() {

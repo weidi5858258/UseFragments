@@ -780,11 +780,11 @@ namespace alexander {
         av_packet_unref(srcAVPacket);
 
         if (wrapper->type == TYPE_AUDIO) {
-            LOGI("readData() audio readFramesCount                : %d\n",
+            LOGI("readData() audio readFramesCount          : %d\n",
                  wrapper->readFramesCount);
             LOGI("%s\n", "readData() audio end");
         } else {
-            LOGI("readData() video readFramesCount                : %d\n",
+            LOGI("readData() video readFramesCount          : %d\n",
                  wrapper->readFramesCount);
             LOGI("%s\n", "readData() video end");
         }
@@ -1096,51 +1096,6 @@ namespace alexander {
                 continue;
             }
 
-            /*// 新的api
-            // 发送压缩数据去进行解码
-            if (avcodec_send_packet(videoWrapper->father->avCodecContext, avPacket) < 0) {
-                LOGI("video decode error.\n");
-                return NULL;
-            }
-            // 对压缩数据进行解码,解码后的数据放到srcAVFrame(保存的是非压缩数据)
-            while (1) {
-                int receiveFrame = avcodec_receive_frame(videoWrapper->father->avCodecContext,
-                                                         videoWrapper->father->srcAVFrame);
-                // LOGI("receiveFrame: %d\n", receiveFrame);
-                if (receiveFrame != 0) {
-                    break;
-                }
-
-                // 进行格式的转换,转换后的数据放在dstAVFrame
-                // 对于packed格式的数据（例如RGB24）,会存到data[0]里面。
-                // 对于planar格式的数据（例如YUV420P）,则会分开成data[0],data[1],data[2]...
-                // （YUV420P中data[0]存Y,data[1]存U,data[2]存V）
-                sws_scale(videoWrapper->swsContext,
-                          (const unsigned char *const *) videoWrapper->father->srcAVFrame->data,
-                          videoWrapper->father->srcAVFrame->linesize,
-                          0, videoWrapper->srcHeight,
-                          videoWrapper->father->dstAVFrame->data,
-                          videoWrapper->father->dstAVFrame->linesize);
-
-                nowPts = videoWrapper->father->srcAVFrame->pts;
-                double timeDifference = (nowPts - prePts) * av_q2d(stream->time_base);
-                sleep = timeDifference * 1000000;
-                if (sleep > 41708) {
-                    LOGI("handleVideoData() prePts: %lf\n", prePts * av_q2d(stream->time_base));
-                    LOGI("handleVideoData() nowPts: %lf\n", nowPts * av_q2d(stream->time_base));
-                    LOGI("handleVideoData() sleep : %ld\n", sleep);
-                }
-                prePts = nowPts;
-                if (sleep < 1000000) {
-                    usleep(sleep);
-                } else {
-                    LOGI("handleVideoData() sleep : 40 * 1000\n");
-                    usleep(40 * 1000);
-                }
-            }*/
-
-//            av_frame_unref(decodedAVFrame);
-//            av_frame_unref(rgbAVFrame);
             ret = avcodec_send_packet(videoWrapper->father->avCodecContext, avPacket);
             if (ret < 0) {
                 LOGE("avcodec_send_packet: %d\n", ret);
@@ -1172,7 +1127,7 @@ namespace alexander {
                                          videoWrapper->srcWidth,
                                          videoWrapper->srcHeight,
                                          1);
-                    // 5.将YUV420P->RGBA_8888
+                    // 5.将YUV420P->RGBA_8888(只有AV_PIX_FMT_YUV420P这种像素格式才可以使用下面方法)
                     libyuv::I420ToARGB(decodedAVFrame->data[0], decodedAVFrame->linesize[0],
                                        decodedAVFrame->data[2], decodedAVFrame->linesize[2],
                                        decodedAVFrame->data[1], decodedAVFrame->linesize[1],
@@ -1189,71 +1144,7 @@ namespace alexander {
                     }
                     break;
                 }
-            }
-
-
-            /*while (1) {
-                av_frame_unref(decodedAVFrame);
-                av_frame_unref(rgbAVFrame);
-                ret = avcodec_decode_video2(videoWrapper->father->avCodecContext,
-                                            decodedAVFrame,
-                                            &got_frame_ptr,
-                                            avPacket);
-                if (ret < 0) {
-                    LOGI("ret = %d\n", ret);
-                    // error, skip the frame
-                    break;
-                }
-
-                if (!got_frame_ptr) {
-                    continue;
-                }
-
-                // 3.lock锁定下一个即将要绘制的Surface
-                ANativeWindow_lock(nativeWindow, &outBuffer, NULL);
-                // 4.读取帧画面放入缓冲区,指定RGB的AVFrame的像素格式、宽高和缓冲区
-                avpicture_fill((AVPicture *) decodedAVFrame,
-                        // 转换RGB的缓冲区，就使用绘制时的缓冲区，即可完成Surface绘制
-                               (const uint8_t *) outBuffer.bits,
-                        // 像素格式
-                               AV_PIX_FMT_RGBA,
-                               videoWrapper->srcWidth, videoWrapper->srcHeight);
-
-                LOGI("handleVideoData() rgbAVFrame->linesize[0]1: %d\n",
-                     rgbAVFrame->linesize[0]);
-
-                // 5.将YUV420P->RGBA_8888
-                libyuv::I420ToARGB(decodedAVFrame->data[0], decodedAVFrame->linesize[0],// Y
-                                   decodedAVFrame->data[2], decodedAVFrame->linesize[2],// V
-                                   decodedAVFrame->data[1], decodedAVFrame->linesize[1],// U
-                                   rgbAVFrame->data[0], rgbAVFrame->linesize[0],
-                                   videoWrapper->srcWidth, videoWrapper->srcHeight);
-
-                LOGI("handleVideoData() rgbAVFrame->linesize[0]2: %d\n",
-                     rgbAVFrame->linesize[0]);
-
-                // 6.unlock绘制
-                ANativeWindow_unlockAndPost(nativeWindow);
-
-                *//*nowPts = decodedAVFrame->pts;
-                double timeDifference = (nowPts - prePts) * av_q2d(stream->time_base);
-                sleep = timeDifference * 1000000;
-                if (sleep > 41708) {
-                    LOGI("handleVideoData() prePts: %lf\n", prePts * av_q2d(stream->time_base));
-                    LOGI("handleVideoData() nowPts: %lf\n", nowPts * av_q2d(stream->time_base));
-                }
-                LOGI("handleVideoData() sleep : %ld\n", sleep);//
-                prePts = nowPts;
-                if (sleep < 1000000) {
-                    usleep(sleep);
-                } else {
-                    LOGI("handleVideoData() sleep : 40 * 1000\n");
-                    usleep(40 * 1000);
-                }*//*
-
-                usleep(40 * 1000);
-                break;
-            }*/// while(1) end
+            }// while(1) end
 
             av_packet_unref(avPacket);
 
@@ -1280,7 +1171,11 @@ namespace alexander {
         // 7.释放资源
         ANativeWindow_release(nativeWindow);
 
+        av_packet_unref(avPacket);
+        avPacket = NULL;
+
         av_frame_free(&rgbAVFrame);
+        rgbAVFrame = NULL;
 
         LOGI("handleVideoData() video handleFramesCount : %d\n",
              videoWrapper->father->handleFramesCount);
