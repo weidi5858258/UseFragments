@@ -9,8 +9,6 @@
 
 #define LOG "alexander"
 
-static struct AudioWrapper *audioWrapper = NULL;
-static struct VideoWrapper *videoWrapper = NULL;
 
 namespace alexander {
 

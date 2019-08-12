@@ -186,6 +186,105 @@
             </intent-filter>
         </activity>
 
+        <activity
+            android:name="com.weidi.usefragments.JniPlayerActivity"
+            android:screenOrientation="landscape"
+            android:configChanges="uiMode|keyboard|keyboardHidden|screenSize|orientation|fontScale"
+            android:windowSoftInputMode="stateAlwaysHidden|adjustPan"
+            android:launchMode="singleTask"
+            android:theme="@style/Theme.AppCompat.Light">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <!-- Resume Play support -->
+                <action android:name="com.sonyericsson.video.action.START_PLAYBACK" />
+                <action android:name="com.sony.dtv.osat.video.action.START_PLAYBACK" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="rtsp" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <!-- Resume Play support -->
+                <action android:name="com.sonyericsson.video.action.START_PLAYBACK" />
+                <action android:name="com.sony.dtv.osat.video.action.START_PLAYBACK" />
+                <action android:name="com.sonyericsson.video.action.START_PLAYBACK_WITH_DETAIL" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="video/*" />
+                <data android:mimeType="application/sdp" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="com.sony.dtv.osat.video.action.START_PLAYBACK" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+            <intent-filter >
+                <action android:name="android.intent.action.VIEW" />
+                <!-- Resume Play support -->
+                <action android:name="com.sonyericsson.video.action.START_PLAYBACK" />
+                <action android:name="com.sony.dtv.osat.video.action.START_PLAYBACK" />
+                <action android:name="com.sonyericsson.video.action.START_PLAYBACK_WITH_DETAIL" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="http" />
+                <data android:scheme="https" />
+                <data android:scheme="dlna" />
+                <data android:scheme="content" />
+                <data android:scheme="file" />
+                <data android:mimeType="video/mpeg4" />
+                <data android:mimeType="video/mp4" />
+                <data android:mimeType="video/3gp" />
+                <data android:mimeType="video/3gpp" />
+                <data android:mimeType="video/3gpp2" />
+                <data android:mimeType="video/webm" />
+                <data android:mimeType="video/avi" />
+                <data android:mimeType="video/ismv" />
+                <data android:mimeType="video/x-m4v" />
+                <data android:mimeType="video/mpeg" />
+                <data android:mimeType="video/vnd.dlna.mpeg-tts" />
+                <data android:mimeType="video/x-ms-asf" />
+                <data android:mimeType="video/x-matroska" />
+                <data android:mimeType="video/x-ms-wmv" />
+                <data android:mimeType="application/sdp" />
+            </intent-filter>
+            <intent-filter >
+                <!-- HTTP Streaming support -->
+                <action android:name="android.intent.action.VIEW" />
+                <!-- Resume Play support -->
+                <action android:name="com.sonyericsson.video.action.START_PLAYBACK" />
+                <action android:name="com.sony.dtv.osat.video.action.START_PLAYBACK" />
+                <action android:name="com.sonyericsson.video.action.START_PLAYBACK_WITH_DETAIL" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="http" />
+                <data android:scheme="https" />
+                <data android:mimeType="audio/x-mpegurl" />
+                <data android:mimeType="audio/mpegurl" />
+                <data android:mimeType="application/vnd.apple.mpegurl" />
+                <data android:mimeType="application/x-mpegurl" />
+                <data android:mimeType="application/dash+xml" />
+            </intent-filter>
+            <intent-filter >
+                <!-- HTTP Streaming support -->
+                <!-- HTTP live Streaming support -->
+                <action android:name="android.intent.action.VIEW" />
+                <action android:name="com.sonyericsson.video.action.START_PLAYBACK" />
+                <action android:name="com.sony.dtv.osat.video.action.START_PLAYBACK" />
+                <action android:name="com.sonyericsson.video.action.START_PLAYBACK_WITH_DETAIL" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="http" />
+                <data android:scheme="https" />
+                <data android:host="*"/>
+                <data android:pathPattern=".*.m3u8"/>
+            </intent-filter>
+            <intent-filter>
+                <!-- VU Progressive DL playback support -->
+                <action android:name="com.sonyericsson.video.action.PROGRESSIVE_PLAYBACK" />
+                <action android:name="com.sonyericsson.video.action.PROGRESSIVE_PLAYBACK_WITH_DETAIL" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="video/vnd.sony.mnv" />
+            </intent-filter>
+        </activity>
+
         <!--<activity
             android:name=".MainActivity2">
             <intent-filter>

@@ -7,11 +7,67 @@
 
 #include "MyHeader.h"
 
+#define LOG "alexander"
+
 namespace alexander {
 
-    class SimpleVideoPlayer {
+    static struct AudioWrapper *audioWrapper = NULL;
+    static struct VideoWrapper *videoWrapper = NULL;
 
-    };
+    void *readData(void *opaque);
+
+    void *handleAudioData(void *opaque);
+
+    void *handleVideoData(void *opaque);
+
+    void initAV();
+
+    void initAudio();
+
+    void initVideo();
+
+    int getAVPacketFromQueue(struct AVPacketQueue *packet_queue, AVPacket *avpacket);
+
+    int putAVPacketToQueue(struct AVPacketQueue *packet_queue, AVPacket *avpacket);
+
+    int audioDecodeFrame();
+
+    int openAndFindAVFormatContextForAudio();
+
+    int openAndFindAVFormatContextForVideo();
+
+    int findStreamIndexForAudio();
+
+    int findStreamIndexForVideo();
+
+    int findAndOpenAVCodecForAudio();
+
+    int findAndOpenAVCodecForVideo();
+
+    int createSwrContent();
+
+    int createSwsContext();
+
+    void closeAudio();
+
+    void closeVideo();
+
+    int alexanderAudioPlayer();
+
+    int alexanderVideoPlayer();
+
+    void setSurface(JNIEnv *env, jobject surface);
+
+    /*class SimpleVideoPlayer {
+
+    private:
+        // char *inFilePath = "/storage/2430-1702/BaiduNetdisk/music/谭咏麟 - 水中花.mp3";
+        char *inFilePath = NULL;
+
+        ANativeWindow *nativeWindow = NULL;
+
+    public:
+    };*/
 
 }
 

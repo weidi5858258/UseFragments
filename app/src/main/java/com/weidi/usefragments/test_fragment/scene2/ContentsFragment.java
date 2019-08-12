@@ -24,6 +24,7 @@ import android.widget.Toast;
 
 import com.weidi.eventbus.EventBusUtils;
 import com.weidi.usefragments.BaseActivity;
+import com.weidi.usefragments.JniPlayerActivity;
 import com.weidi.usefragments.PlayerActivity;
 import com.weidi.usefragments.R;
 import com.weidi.usefragments.adapter.ContentsAdapter;
@@ -403,9 +404,14 @@ public class ContentsFragment extends BaseFragment {
 
                         switch (viewId) {
                             case R.id.item_root_layout:
-                                Intent intent = new Intent();
+                                /*Intent intent = new Intent();
                                 intent.setClass(getContext(), PlayerActivity.class);
                                 intent.putExtra(PlayerActivity.CONTENT_PATH, path);
+                                getAttachedActivity().startActivity(intent);
+                                ((BaseActivity) getAttachedActivity()).enterActivity();*/
+
+                                Intent intent = new Intent();
+                                intent.setClass(getContext(), JniPlayerActivity.class);
                                 getAttachedActivity().startActivity(intent);
                                 ((BaseActivity) getAttachedActivity()).enterActivity();
                                 break;

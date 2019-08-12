@@ -30,6 +30,7 @@ import com.weidi.usefragments.test_view.BubblePopupWindow;
 import com.weidi.usefragments.tool.Callback;
 import com.weidi.usefragments.tool.Contents;
 import com.weidi.usefragments.tool.DownloadCallback;
+import com.weidi.usefragments.tool.FFMPEG;
 import com.weidi.usefragments.tool.MLog;
 import com.weidi.usefragments.tool.PermissionsUtils;
 import com.weidi.usefragments.tool.SimpleVideoPlayer7;
@@ -275,7 +276,7 @@ public class PlayerActivity extends BaseActivity {
             }
         });
 
-        //        mSampleVideoPlayer = new SimpleVideoPlayer();
+        // mSampleVideoPlayer = new SimpleVideoPlayer();
         mSampleVideoPlayer = new SimpleVideoPlayer7();
 
         int duration = (int) mSampleVideoPlayer.getDurationUs() / 1000;

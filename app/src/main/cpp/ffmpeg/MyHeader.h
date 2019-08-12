@@ -8,6 +8,9 @@
 // 必须得有
 #include "jni.h"
 #include "android/log.h"
+// 需要引入native绘制的头文件
+#include <android/native_window_jni.h>
+#include <android/native_window.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -67,6 +70,25 @@ extern "C" {// 不能少
 #include <libavutil/error.h>
 #include <libavutil/time.h>
 
+// 使用libyuv,将YUV转换RGB
+#include <libyuv/basic_types.h>
+#include <libyuv/compare.h>
+#include <libyuv/convert.h>
+#include <libyuv/convert_argb.h>
+#include <libyuv/convert_from.h>
+#include <libyuv/convert_from_argb.h>
+#include <libyuv/cpu_id.h>
+#include <libyuv/mjpeg_decoder.h>
+#include <libyuv/planar_functions.h>
+#include <libyuv/rotate.h>
+#include <libyuv/rotate_argb.h>
+#include <libyuv/row.h>
+#include <libyuv/scale.h>
+#include <libyuv/scale_argb.h>
+#include <libyuv/scale_row.h>
+#include <libyuv/version.h>
+#include <libyuv/video_common.h>
+
 //    #include <jconfig.h>
 //    #include <jerror.h>
 //    #include <jmorecfg.h>
@@ -88,8 +110,13 @@ extern "C" {// 不能少
 #define TYPE_AUDIO 1
 #define TYPE_VIDEO 2
 
+#define NEXT_UNKNOW -1
+#define NEXT_QUEUE1 1
+#define NEXT_QUEUE2 2
+
 #define MAX_AVPACKET_COUNT_AUDIO 2000
-#define MAX_AVPACKET_COUNT_VIDEO 5000
+// >= 500
+#define MAX_AVPACKET_COUNT_VIDEO 1000
 
 typedef struct AVPacketQueue {
     AVPacketList *firstAVPacketList = NULL;
@@ -132,8 +159,9 @@ struct Wrapper {
 
     struct AVPacketQueue *queue1 = NULL;
     struct AVPacketQueue *queue2 = NULL;
-    bool isHandlingForQueue1 = false;
-    bool isHandlingForQueue2 = false;
+    bool isReadQueue1Full = false;
+    bool isReadQueue2Full = false;
+    int next = NEXT_UNKNOW;
 
     int maxAVPacketsCount = 1000;
 
@@ -153,7 +181,7 @@ struct Wrapper {
 };
 
 struct AudioWrapper {
-    struct Wrapper father;
+    struct Wrapper *father = NULL;
     SwrContext *swrContext = NULL;
     // 从音频源或视频源中得到
     // 采样率
@@ -185,7 +213,7 @@ struct AudioWrapper {
 };
 
 struct VideoWrapper {
-    struct Wrapper father;
+    struct Wrapper *father = NULL;
     SwsContext *swsContext = NULL;
     // 从视频源中得到
     enum AVPixelFormat srcAVPixelFormat = AV_PIX_FMT_NONE;

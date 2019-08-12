@@ -1,5 +1,7 @@
 package com.weidi.usefragments.tool;
 
+import android.view.Surface;
+
 /**
  * Created by root on 19-8-8.
  */
@@ -14,6 +16,6 @@ public class FFMPEG {
         }
     }
 
-    private native int simpleAudioPlayer();
+    public static native int simpleAudioPlayer(Surface surface);
 
 }

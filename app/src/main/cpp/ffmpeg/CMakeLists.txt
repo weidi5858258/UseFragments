@@ -125,6 +125,13 @@ set_target_properties( swscale
                        PROPERTIES IMPORTED_LOCATION
                        ${LIBS_DIR}/${CPU_DIR}/libswscale.so )
 #################################################################
+add_library( yuv
+             SHARED
+             IMPORTED )
+set_target_properties( yuv
+                       PROPERTIES IMPORTED_LOCATION
+                       ${LIBS_DIR}/${CPU_DIR}/libyuv.so )
+#################################################################
 # 引用头文件
 include_directories( ../include/ )
 #################################################################
@@ -155,5 +162,6 @@ target_link_libraries(
                        avfilter
                        swresample
                        swscale
+                       yuv
                      )
 #################################################################
