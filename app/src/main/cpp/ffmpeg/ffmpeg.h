@@ -15,6 +15,8 @@ void write(unsigned char *pcmData,
 
 void close();
 
-void alexanderSleep(int ms);
+void audioSleep(long ms);
+
+void videoSleep(long ms);
 
 #endif //USEFRAGMENTS_FFMPEG_H

@@ -53,15 +53,11 @@ namespace alexander {
 
     void closeVideo();
 
-    int alexanderAudioPlayer();
+    int initAudioPlayer();
 
-    int alexanderVideoPlayer();
+    int initVideoPlayer();
 
-    void setJniParameters(JNIEnv *env,
-                          jobject ffmpegJavaObject,
-                          jobject surfaceJavaObject,
-                          jmethodID createAudioTrack,
-                          jmethodID write);
+    void setJniParameters(JNIEnv *env, jobject surfaceJavaObject);
 
     /*class SimpleVideoPlayer {
 

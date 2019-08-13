@@ -29,6 +29,18 @@ public class FFMPEG {
 
     public native int setSurface(Surface surface);
 
+    public native int initAudio();
+
+    public native int initVideo();
+
+    public native int audioReadData();
+
+    public native int audioHandleData();
+
+    public native int videoReadData();
+
+    public native int videoHandleData();
+
     public native int play();
 
     public native int pause();
@@ -77,6 +89,7 @@ public class FFMPEG {
         }
     }
 
+    // 供jni层调用
     private void sleep(long ms) {
         SystemClock.sleep(ms);
     }

@@ -1207,6 +1207,7 @@ public class MediaUtils {
         // 在我的手机上使用AudioFormat.CHANNEL_OUT_MONO创建不了AudioTrack
         boolean isInputPcm = isEncodingLinearPcm(audioFormat);
         int channelConfig = getChannelConfig(channelCount, isInputPcm);
+        //int channelConfig = decideChannelConfig(channelCount, false, "");
         int bufferSizeInBytes = getMinBufferSize(
                 sampleRateInHz, channelConfig, audioFormat);
         if (DEBUG)

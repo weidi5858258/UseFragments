@@ -311,10 +311,13 @@ public class ContentsFragment extends BaseFragment {
         if (DEBUG)
             MLog.d(TAG, "onShow(): " + printThis());
 
-        contentLength = (Long) EventBusUtils.post(
+        Object object = EventBusUtils.post(
                 DownloadFileService.class,
                 DownloadFileService.MSG_GET_CONTENT_LENGTH,
                 null);
+        if (object != null) {
+            contentLength = (Long) object;
+        }
         EventBusUtils.post(
                 DownloadFileService.class,
                 DownloadFileService.MSG_SET_CALLBACK,

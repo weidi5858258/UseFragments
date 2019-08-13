@@ -75,6 +75,7 @@ public class JniPlayerActivity2 extends BaseActivity {
         super.onResume();
         if (DEBUG)
             MLog.d(TAG, "onResume(): " + printThis());
+        internalResume();
     }
 
     @Override
@@ -157,6 +158,9 @@ public class JniPlayerActivity2 extends BaseActivity {
         if (DEBUG)
             MLog.d(TAG, "onWindowFocusChanged(): " + printThis() +
                     " hasFocus: " + hasFocus);
+        if (hasFocus) {
+
+        }
     }
 
     ///////////////////////////////////////////////////////////////////////
@@ -170,35 +174,6 @@ public class JniPlayerActivity2 extends BaseActivity {
         setVolumeControlStream(AudioManager.STREAM_MUSIC);
 
         mSurfaceView = findViewById(R.id.surfaceView);
-        // 没有图像出来,就是由于没有设置PixelFormat.RGBA_8888
-        // 这里要写
-        mSurfaceView.getHolder().setFormat(PixelFormat.RGBA_8888);
-        mSurfaceView.getHolder().addCallback(new SurfaceHolder.Callback() {
-            @Override
-            public void surfaceCreated(
-                    SurfaceHolder holder) {
-                MLog.d(TAG, "surfaceCreated()");
-                mSurface = holder.getSurface();
-                // 这里也要写
-                holder.setFormat(PixelFormat.RGBA_8888);
-
-                // Test
-                FFMPEG ffmpeg = new FFMPEG();
-                ffmpeg.setSurface(mSurface);
-                ffmpeg.play();
-            }
-
-            @Override
-            public void surfaceChanged(
-                    SurfaceHolder holder, int format, int width, int height) {
-            }
-
-            @Override
-            public void surfaceDestroyed(
-                    SurfaceHolder holder) {
-                MLog.d(TAG, "surfaceDestroyed()");
-            }
-        });
     }
 
     private void internalStart() {
@@ -206,6 +181,72 @@ public class JniPlayerActivity2 extends BaseActivity {
         PowerManager powerManager = (PowerManager) getSystemService(Context.POWER_SERVICE);
         mPowerWakeLock = powerManager.newWakeLock(PowerManager.SCREEN_BRIGHT_WAKE_LOCK, TAG);
         mPowerWakeLock.acquire();
+    }
+
+    private void internalResume() {
+        if (mSurface == null) {
+            // 没有图像出来,就是由于没有设置PixelFormat.RGBA_8888
+            // 这里要写
+            mSurfaceView.getHolder().setFormat(PixelFormat.RGBA_8888);
+            mSurfaceView.getHolder().addCallback(new SurfaceHolder.Callback() {
+                @Override
+                public void surfaceCreated(
+                        SurfaceHolder holder) {
+                    MLog.d(TAG, "surfaceCreated()");
+                    mSurface = holder.getSurface();
+                    // 这里也要写
+                    holder.setFormat(PixelFormat.RGBA_8888);
+
+                    // Test
+                    FFMPEG ffmpeg = new FFMPEG();
+                    ffmpeg.setSurface(mSurface);
+
+                    int videoResult = ffmpeg.initVideo();
+                    int audioResult = ffmpeg.initAudio();
+
+                    if (videoResult == 0) {
+                        new Thread(new Runnable() {
+                            @Override
+                            public void run() {
+                                ffmpeg.videoReadData();
+                            }
+                        }).start();
+                        new Thread(new Runnable() {
+                            @Override
+                            public void run() {
+                                ffmpeg.videoHandleData();
+                            }
+                        }).start();
+                    }
+
+                    if (audioResult == 0) {
+                        new Thread(new Runnable() {
+                            @Override
+                            public void run() {
+                                ffmpeg.audioReadData();
+                            }
+                        }).start();
+                        new Thread(new Runnable() {
+                            @Override
+                            public void run() {
+                                ffmpeg.audioHandleData();
+                            }
+                        }).start();
+                    }
+                }
+
+                @Override
+                public void surfaceChanged(
+                        SurfaceHolder holder, int format, int width, int height) {
+                }
+
+                @Override
+                public void surfaceDestroyed(
+                        SurfaceHolder holder) {
+                    MLog.d(TAG, "surfaceDestroyed()");
+                }
+            });
+        }
     }
 
     private void internalStop() {
