@@ -9,10 +9,12 @@ void createAudioTrack(int sampleRateInHz,
                       int channelCount,
                       int audioFormat);
 
-void write(unsigned char *audioData,
+void write(unsigned char *pcmData,
            int offsetInBytes,
            int sizeInBytes);
 
 void close();
+
+void alexanderSleep(int ms);
 
 #endif //USEFRAGMENTS_FFMPEG_H

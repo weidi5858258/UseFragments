@@ -3,6 +3,7 @@ package com.weidi.usefragments.tool;
 import android.media.AudioManager;
 import android.media.AudioTrack;
 import android.os.Build;
+import android.os.SystemClock;
 import android.view.Surface;
 
 import com.weidi.usefragments.media.MediaUtils;
@@ -74,6 +75,10 @@ public class FFMPEG {
                 && mAudioTrack.getState() == AudioTrack.STATE_INITIALIZED) {
             mAudioTrack.write(audioData, offsetInBytes, sizeInBytes);
         }
+    }
+
+    private void sleep(long ms) {
+        SystemClock.sleep(ms);
     }
 
     private void setVolume() {

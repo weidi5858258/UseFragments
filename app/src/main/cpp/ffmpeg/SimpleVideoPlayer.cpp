@@ -6,6 +6,7 @@
 
 namespace alexander {
 
+//    char *inFilePath = "/storage/2430-1702/BaiduNetdisk/video/Silent_Movie_Short_321_AC4_h264_MP4_25fps.mp4";
     char *inFilePath = "/storage/2430-1702/BaiduNetdisk/video/shape_of_my_heart.mp4";
 //    char *inFilePath = "/storage/2430-1702/BaiduNetdisk/video/05.mp4";
 //    char *inFilePath = "http://xunlei.jingpin88.com/20171026/cQ7hsCrN/mp4/cQ7hsCrN.mp4";
@@ -38,6 +39,7 @@ namespace alexander {
         audioWrapper->father->type = TYPE_AUDIO;
         audioWrapper->father->maxAVPacketsCount = MAX_AVPACKET_COUNT_AUDIO;
 
+        audioWrapper->father->isStarted = false;
         audioWrapper->father->isReadQueue1Full = false;
         audioWrapper->father->isReadQueue2Full = false;
         audioWrapper->father->readFramesCount = 0;
@@ -69,6 +71,7 @@ namespace alexander {
         videoWrapper->father->type = TYPE_VIDEO;
         videoWrapper->father->maxAVPacketsCount = MAX_AVPACKET_COUNT_VIDEO;
 
+        videoWrapper->father->isStarted = false;
         videoWrapper->father->isReadQueue1Full = false;
         videoWrapper->father->isReadQueue2Full = false;
         videoWrapper->father->readFramesCount = 0;
@@ -264,9 +267,9 @@ namespace alexander {
         audioWrapper->srcAVSampleFormat = audioWrapper->father->avCodecContext->sample_fmt;
         LOGI("---------------------------------\n");
         LOGI("srcSampleRate       : %d\n", audioWrapper->srcSampleRate);
-        LOGI("srcNbSamples        : %d\n", audioWrapper->srcNbSamples);
         LOGI("srcNbChannels       : %d\n", audioWrapper->srcNbChannels);
         LOGI("srcAVSampleFormat   : %d\n", audioWrapper->srcAVSampleFormat);
+        LOGI("srcNbSamples        : %d\n", audioWrapper->srcNbSamples);
         LOGI("srcChannelLayout1   : %d\n", audioWrapper->srcChannelLayout);
         // 有些视频从源视频中得到的channel_layout与使用函数得到的channel_layout结果是一样的
         // 但是还是要使用函数得到的channel_layout为好
@@ -277,40 +280,24 @@ namespace alexander {
             audioWrapper->srcNbSamples = 1024;
         }
         // dst
-        //audioWrapper->dstSampleRate = audioWrapper->srcSampleRate;
+        // Android中跟音频有关的参数: dstSampleRate dstNbChannels 位宽
+        audioWrapper->dstSampleRate = audioWrapper->srcSampleRate;
+        audioWrapper->dstNbChannels = audioWrapper->srcNbChannels;
         audioWrapper->dstNbSamples = audioWrapper->srcNbSamples;
-        //audioWrapper->dstNbChannels = audioWrapper->srcNbChannels;
-        /*if (!audioWrapper->dstChannelLayout
-            || audioWrapper->dstChannelLayout !=
-               av_get_channel_layout_nb_channels(audioWrapper->dstChannelLayout)) {
-            audioWrapper->dstChannelLayout = av_get_default_channel_layout(
-                    audioWrapper->dstNbChannels);
-            LOGI("dstChannelLayout1   : %d\n", audioWrapper->dstChannelLayout);
-            // why?
-            audioWrapper->dstChannelLayout &= ~AV_CH_LAYOUT_STEREO_DOWNMIX;
-            LOGI("dstChannelLayout2   : %d\n", audioWrapper->dstChannelLayout);
-        }*/
-        audioWrapper->dstNbChannels = av_get_channel_layout_nb_channels(
-                audioWrapper->dstChannelLayout);
+        /*audioWrapper->dstNbChannels = av_get_channel_layout_nb_channels(
+                audioWrapper->dstChannelLayout);*/
 
         LOGI("dstSampleRate       : %d\n", audioWrapper->dstSampleRate);
-        LOGI("dstNbSamples        : %d\n", audioWrapper->dstNbSamples);
         LOGI("dstNbChannels       : %d\n", audioWrapper->dstNbChannels);
         LOGI("dstAVSampleFormat   : %d\n", audioWrapper->dstAVSampleFormat);
+        LOGI("dstNbSamples        : %d\n", audioWrapper->dstNbSamples);
         LOGI("---------------------------------\n");
 
         // avPacket ---> srcAVFrame ---> dstAVFrame ---> 播放声音
         audioWrapper->father->srcAVFrame = av_frame_alloc();
         // audioWrapper->father->dstAVFrame = av_frame_alloc();
 
-        /***
-         struct SwrContext *s,
-         int64_t out_ch_layout, enum AVSampleFormat out_sample_fmt, int out_sample_rate,
-         int64_t  in_ch_layout, enum AVSampleFormat  in_sample_fmt, int  in_sample_rate,
-         int log_offset, void *log_ctx
-         */
         audioWrapper->swrContext = swr_alloc();
-        //audioWrapper->swrContext =
         swr_alloc_set_opts(audioWrapper->swrContext,
                            audioWrapper->dstChannelLayout,  // out_ch_layout
                            audioWrapper->dstAVSampleFormat, // out_sample_fmt
@@ -318,20 +305,76 @@ namespace alexander {
                            audioWrapper->srcChannelLayout,  // in_ch_layout
                            audioWrapper->srcAVSampleFormat, // in_sample_fmt
                            audioWrapper->srcSampleRate,     // in_sample_rate
-                           0,                              // log_offset
-                           NULL);                          // log_ctx
+                           0,                               // log_offset
+                           NULL);                           // log_ctx
         if (audioWrapper->swrContext == NULL) {
-            LOGI("%s\n", "audioSwrContext is NULL.");
+            LOGI("%s\n", "createSwrContent() swrContext is NULL");
             return -1;
         }
 
         int ret = swr_init(audioWrapper->swrContext);
         if (ret != 0) {
-            LOGI("%s\n", "audioSwrContext swr_init failed.");
+            LOGI("%s\n", "createSwrContent() swrContext swr_init failed");
             return -1;
         } else {
-            LOGI("%s\n", "audioSwrContext swr_init success.");
+            LOGI("%s\n", "createSwrContent() swrContext swr_init success");
         }
+
+        // 这个对应关系还不知道怎么弄
+        int audioFormat = 2;
+        switch (audioWrapper->dstAVSampleFormat) {
+            case AV_SAMPLE_FMT_NONE: {
+                break;
+            }
+            case AV_SAMPLE_FMT_U8: {
+                break;
+            }
+            case AV_SAMPLE_FMT_S16: {
+                audioFormat = 2;
+                break;
+            }
+            case AV_SAMPLE_FMT_S32: {
+                break;
+            }
+            case AV_SAMPLE_FMT_S64: {
+                break;
+            }
+            case AV_SAMPLE_FMT_FLT: {
+                break;
+            }
+            case AV_SAMPLE_FMT_DBL: {
+                break;
+            }
+            case AV_SAMPLE_FMT_U8P: {
+                break;
+            }
+            case AV_SAMPLE_FMT_S16P: {
+                break;
+            }
+            case AV_SAMPLE_FMT_S32P: {
+                break;
+            }
+            case AV_SAMPLE_FMT_S64P: {
+                break;
+            }
+            case AV_SAMPLE_FMT_FLTP: {
+                break;
+            }
+            case AV_SAMPLE_FMT_DBLP: {
+                break;
+            }
+            case AV_SAMPLE_FMT_NB: {
+                break;
+            }
+            default:
+                break;
+        }
+
+        LOGI("%s\n", "createSwrContent() createAudioTrack start");
+        createAudioTrack(audioWrapper->dstSampleRate,
+                         audioWrapper->dstNbChannels,
+                         audioFormat);
+        LOGI("%s\n", "createSwrContent() createAudioTrack end");
 
         return 0;
     }
@@ -614,30 +657,14 @@ namespace alexander {
         pthread_mutex_unlock(&audioWrapper->father->handleLockMutex);
         LOGI("handleAudioData() pthread_cond_wait() end\n");
 
-        int ret = 0, get_nb_samples_per_channel = 0, resampled_data_size = 0;
-        int got_frame_ptr = 0;
-        int64_t get_ch_layout_from_decoded_avframe = 0;
-
-        bool onlyOne = true;
-        int audioFormat = 2;
-        if (audioWrapper->srcAVSampleFormat == AV_SAMPLE_FMT_S16) {
-            audioFormat = 2;
-        }
-        LOGI("%s\n", "handleAudioData() createAudioTrack start");
-        createAudioTrack(audioWrapper->dstSampleRate,
-                         audioWrapper->dstNbChannels,
-                         audioFormat);
-        LOGI("%s\n", "handleAudioData() createAudioTrack end");
-        usleep(100 * 1000);
-
-        // 16bit 44100 PCM 数据，16bit是2个字节
-        unsigned char *out_buffer = (unsigned char *) av_malloc(MAX_AUDIO_FRAME_SIZE);
-
-        audioWrapper->father->next = NEXT_QUEUE1;
+        int ret = 0, out_buffer_size = 0;
+        // 16bit 44100 PCM 数据,16bit是2个字节
+        audioWrapper->father->outBuffer1 = (unsigned char *) av_malloc(MAX_AUDIO_FRAME_SIZE);
         // 压缩数据
         AVPacket *avPacket = av_packet_alloc();
         // decodedAVFrame为解码后的数据
         AVFrame *decodedAVFrame = audioWrapper->father->srcAVFrame;
+        audioWrapper->father->next = NEXT_QUEUE1;
         audioWrapper->father->isHandling = true;
         for (;;) {
             if (!audioWrapper->father->isHandling) {
@@ -704,168 +731,56 @@ namespace alexander {
             while (1) {
                 ret = avcodec_receive_frame(audioWrapper->father->avCodecContext, decodedAVFrame);
                 switch (ret) {
-                    case AVERROR(EAGAIN):// 输出是不可用的，必须发送新的输入
+                    // 输出是不可用的,必须发送新的输入
+                    case AVERROR(EAGAIN):
                         break;
-                    case AVERROR_EOF:// 已经完全刷新，不会再有输出帧了
+                        // 已经完全刷新,不会再有输出帧了
+                    case AVERROR_EOF:
                         break;
-                    case AVERROR(EINVAL):// codec打不开，或者是一个encoder
+                        // codec打不开,或者是一个encoder
+                    case AVERROR(EINVAL):
                         break;
-                    case 0:// 成功，返回一个输出帧
+                        // 成功,返回一个输出帧
+                    case 0:
                         // 9.转换音频
-                        ret = swr_convert(audioWrapper->swrContext,// 重采样上下文
-                                          &out_buffer,// 输出缓冲区
-                                          MAX_AUDIO_FRAME_SIZE,// 每通道采样的可用空间量
-                                          (const uint8_t **) decodedAVFrame->data,// 输入缓冲区
-                                          decodedAVFrame->nb_samples);// 一个通道中可用的输入采样数量
+                        ret = swr_convert(
+                                audioWrapper->swrContext,
+                                // 输出缓冲区
+                                &audioWrapper->father->outBuffer1,
+                                // 每通道采样的可用空间量
+                                MAX_AUDIO_FRAME_SIZE,
+                                // 输入缓冲区
+                                (const uint8_t **) decodedAVFrame->data,
+                                // 一个通道中可用的输入采样数量
+                                decodedAVFrame->nb_samples);
                         if (ret < 0) {
                             LOGE("转换时出错 %d", ret);
                         } else {
                             // 获取给定音频参数所需的缓冲区大小
-                            int out_buffer_size = av_samples_get_buffer_size(
+                            out_buffer_size = av_samples_get_buffer_size(
                                     NULL,
-                                    audioWrapper->dstNbChannels,// 输出的声道个数
-                                    decodedAVFrame->nb_samples,// 一个通道中音频采样数量
-                                    audioWrapper->dstAVSampleFormat,// 输出采样格式16bit
-                                    1);// 缓冲区大小对齐（0 = 默认值，1 = 不对齐）
-                            // 10.输出PCM文件
-                            //fwrite(out_buffer, 1, (size_t) out_buffer_size, fp_pcm);
-
-                            // ---------------------播放音乐需要的逻辑---------------------
-
-                            write(out_buffer, 0, out_buffer_size);
+                                    // 输出的声道个数
+                                    audioWrapper->dstNbChannels,
+                                    // 一个通道中音频采样数量
+                                    decodedAVFrame->nb_samples,
+                                    // 输出采样格式16bit
+                                    audioWrapper->dstAVSampleFormat,
+                                    // 缓冲区大小对齐（0 = 默认值，1 = 不对齐）
+                                    1);
+                            if (!audioWrapper->father->isStarted) {
+                                audioWrapper->father->isStarted = true;
+                            }
+                            while (!videoWrapper->father->isStarted
+                                   && videoWrapper->father->isHandling) {
+                                usleep(1000);
+                            }
+                            write(audioWrapper->father->outBuffer1, 0, out_buffer_size);
                         }
                         break;
                     default:// 合法的解码错误
                         LOGE("从解码器接收帧时出错 %d", ret);
                         break;
                 }
-
-                /***
-                 当AVPacket中装得是音频时,有可能一个AVPacket中有多个AVFrame,
-                 而某些解码器只会解出第一个AVFrame,这种情况我们必须循环解码出后续AVFrame.
-                 */
-                /*ret = avcodec_decode_audio4(audioWrapper->father->avCodecContext,
-                                            decodedAVFrame,
-                                            &got_frame_ptr,
-                                            avPacket);
-                if (ret < 0) {
-                    LOGI("ret = %d\n", ret);
-                    // error, skip the frame
-                    break;
-                }
-
-                if (!got_frame_ptr) {
-                    continue;
-                }
-
-                // 执行到这里我们得到了一个AVFrame
-                // 得到这个AVFrame的声音布局,比如立体声
-                get_ch_layout_from_decoded_avframe =
-                        (decodedAVFrame->channel_layout != 0
-                         && decodedAVFrame->channels ==
-                            av_get_channel_layout_nb_channels(decodedAVFrame->channel_layout))
-                        ?
-                        decodedAVFrame->channel_layout
-                        :
-                        av_get_default_channel_layout(decodedAVFrame->channels);
-
-                if (audioWrapper->srcSampleRate != decodedAVFrame->sample_rate) {
-                    LOGI("SampleRate变了 srcSampleRate: %d now: %d\n",
-                         audioWrapper->srcSampleRate, decodedAVFrame->sample_rate);
-                }
-                if (audioWrapper->srcAVSampleFormat != decodedAVFrame->format) {
-                    LOGI("AVSampleFormat变了 srcAVSampleFormat: %d now: %d\n",
-                         audioWrapper->srcAVSampleFormat, decodedAVFrame->format);
-                }
-                if (audioWrapper->srcChannelLayout != get_ch_layout_from_decoded_avframe) {
-                    LOGI("ChannelLayout变了 srcChannelLayout: %d now: %d\n",
-                         audioWrapper->srcChannelLayout, get_ch_layout_from_decoded_avframe);
-                }
-
-                if (audioWrapper->srcSampleRate != decodedAVFrame->sample_rate
-                    || audioWrapper->srcAVSampleFormat != decodedAVFrame->format
-                    || audioWrapper->srcChannelLayout != get_ch_layout_from_decoded_avframe) {
-                    LOGI("---------------------------------\n");
-                    LOGI("nowSampleRate       : %d\n", decodedAVFrame->sample_rate);
-                    LOGI("nowAVSampleFormat   : %d\n", decodedAVFrame->format);
-                    LOGI("nowChannelLayout    : %d\n", get_ch_layout_from_decoded_avframe);
-                    LOGI("nowNbChannels       : %d\n", decodedAVFrame->channels);
-                    LOGI("nowNbSamples        : %d\n", decodedAVFrame->nb_samples);
-                    LOGI("---------------------------------\n");
-
-                    if (audioWrapper->swrContext) {
-                        swr_free(&audioWrapper->swrContext);
-                    }
-                    LOGI("audio_state->audioSwrContext swr_alloc_set_opts.\n");
-                    audioWrapper->swrContext = swr_alloc();
-                    swr_alloc_set_opts(audioWrapper->swrContext,
-                                       audioWrapper->dstChannelLayout,
-                                       audioWrapper->dstAVSampleFormat,
-                                       audioWrapper->dstSampleRate,
-                                       get_ch_layout_from_decoded_avframe,
-                                       (enum AVSampleFormat) decodedAVFrame->format,
-                                       decodedAVFrame->sample_rate,
-                                       0, NULL);
-                    if (!audioWrapper->swrContext || swr_init(audioWrapper->swrContext) < 0) {
-                        LOGI("swr_init() failed\n");
-                        break;
-                    } else {
-                        LOGI("audio_state->audioSwrContext is created.\n");
-                    }
-
-                    audioWrapper->srcSampleRate = decodedAVFrame->sample_rate;
-                    audioWrapper->srcNbChannels = decodedAVFrame->channels;
-                    audioWrapper->srcAVSampleFormat = (enum AVSampleFormat) decodedAVFrame->format;
-                    audioWrapper->srcNbSamples = decodedAVFrame->nb_samples;
-                    audioWrapper->srcChannelLayout = get_ch_layout_from_decoded_avframe;
-                }
-
-                if (onlyOne) {
-                    onlyOne = false;
-                    int audioFormat = 2;
-                    if (audioWrapper->srcAVSampleFormat == AV_SAMPLE_FMT_S16) {
-                        audioFormat = 2;
-                    }
-
-                    LOGI("%s\n", "handleAudioData() createAudioTrack start");
-                    createAudioTrack(audioWrapper->srcSampleRate,
-                                     audioWrapper->srcNbChannels,
-                                     audioFormat);
-                    LOGI("%s\n", "handleAudioData() createAudioTrack end");
-                    usleep(100 * 1000);
-                }
-
-                *//***
-                 转换该AVFrame到设置好的SDL需要的样子,有些旧的代码示例最主要就是少了这一部分,
-                 往往一些音频能播,一些不能播,这就是原因,比如有些源文件音频恰巧是AV_SAMPLE_FMT_S16的.
-                 swr_convert 返回的是转换后每个声道(channel)的采样数
-                 *//*
-                unsigned char *out[] = {audioWrapper->playBuffer};
-                int out_count = sizeof(audioWrapper->playBuffer)
-                                / audioWrapper->dstNbChannels
-                                / av_get_bytes_per_sample(audioWrapper->dstAVSampleFormat);
-                const unsigned char **in = (const unsigned char **) decodedAVFrame->extended_data;
-                int in_count = decodedAVFrame->nb_samples;
-                // 转换后的数据存在audioWrapper->outBuffer中,也就是要播放的数据
-                // 大小为decodedAVFrame->nb_samples
-                get_nb_samples_per_channel = swr_convert(audioWrapper->swrContext,
-                                                         out,
-                                                         out_count,
-                                                         in,
-                                                         in_count);
-                if (get_nb_samples_per_channel < 0) {
-                    LOGI("swr_convert() failed\n");
-                    break;
-                }
-
-                // 声道数 x 每个声道采样数 x 每个样本字节数
-                // We have data, return it and come back for more later
-                resampled_data_size = audioWrapper->dstNbChannels
-                                      * get_nb_samples_per_channel
-                                      * av_get_bytes_per_sample(audioWrapper->dstAVSampleFormat);
-
-                write(audioWrapper->playBuffer, 0, resampled_data_size);*/
-
                 break;
             }//while(1) end
             av_packet_unref(avPacket);
@@ -893,6 +808,8 @@ namespace alexander {
                           &videoWrapper->father->handleLockMutex);
         pthread_mutex_unlock(&videoWrapper->father->handleLockMutex);
         LOGI("handleVideoData() pthread_cond_wait() end\n");
+
+        usleep(3 * 1000 * 1000);
 
         int64_t prePts = 0;
         int64_t nowPts = 0;
@@ -1005,8 +922,18 @@ namespace alexander {
                 }
 
                 if (ret >= 0) {
+                    if (!videoWrapper->father->isStarted) {
+                        videoWrapper->father->isStarted = true;
+                    }
+                    while (!audioWrapper->father->isStarted
+                           && audioWrapper->father->isHandling) {
+                        usleep(1000);
+                    }
+
                     nowPts = decodedAVFrame->pts;
                     double timeDifference = (nowPts - prePts) * av_q2d(stream->time_base);
+                    /*LOGI("handleVideoData() nowPts : %lf\n",
+                         nowPts * av_q2d(stream->time_base));*/
                     sleep = timeDifference * 1000000;
                     prePts = nowPts;
 
@@ -1029,11 +956,13 @@ namespace alexander {
                     // 6.unlock绘制
                     ANativeWindow_unlockAndPost(nativeWindow);
 
-                    if (sleep < 1000000) {
-                        usleep(sleep);
+                    sleep -= 20000;
+                    //LOGI("handleVideoData() sleep : %d\n", sleep);
+                    if (sleep < 1000000 && sleep > 0) {
+                        usleep(20 * 1000);
                     } else {
-                        LOGI("handleVideoData() sleep : 40 * 1000\n");
-                        usleep(40 * 1000);
+                        LOGI("handleVideoData() sleep : 20 * 1000\n");
+                        usleep(20 * 1000);
                     }
                     break;
                 }
@@ -1292,7 +1221,7 @@ namespace alexander {
     }
 
 #define USE_AUDIO
-//#define USE_VIDEO
+#define USE_VIDEO
 
     /***
      run this method and playback video
@@ -1305,18 +1234,22 @@ namespace alexander {
         initAudio();
         if (openAndFindAVFormatContextForAudio() < 0) {
             LOGE("openAndFindAVFormatContextForAudio() failed\n");
+            closeAudio();
             return -1;
         }
         if (findStreamIndexForAudio() < 0) {
             LOGE("findStreamIndexForAudio() failed\n");
+            closeAudio();
             return -1;
         }
         if (findAndOpenAVCodecForAudio() < 0) {
             LOGE("findAndOpenAVCodecForAudio() failed\n");
+            closeAudio();
             return -1;
         }
         if (createSwrContent() < 0) {
             LOGE("createSwrContent() failed\n");
+            closeAudio();
             return -1;
         }
 #endif
@@ -1325,18 +1258,22 @@ namespace alexander {
         initVideo();
         if (openAndFindAVFormatContextForVideo() < 0) {
             LOGE("openAndFindAVFormatContextForVideo() failed\n");
+            closeVideo();
             return -1;
         }
         if (findStreamIndexForVideo() < 0) {
             LOGE("findStreamIndexForVideo() failed\n");
+            closeVideo();
             return -1;
         }
         if (findAndOpenAVCodecForVideo() < 0) {
             LOGE("findAndOpenAVCodecForVideo() failed\n");
+            closeVideo();
             return -1;
         }
         if (createSwsContext() < 0) {
             LOGE("createSwsContext() failed\n");
+            closeVideo();
             return -1;
         }
 #endif

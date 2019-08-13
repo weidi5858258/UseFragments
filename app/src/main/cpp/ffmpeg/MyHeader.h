@@ -165,6 +165,8 @@ struct Wrapper {
 
     int maxAVPacketsCount = 1000;
 
+    bool isStarted = false;
+
     bool isReading = false;
     bool isHandling = false;
 
@@ -201,14 +203,6 @@ struct AudioWrapper {
     enum AVSampleFormat srcAVSampleFormat = AV_SAMPLE_FMT_NONE;
     // 输出的采样格式16bit PCM
     enum AVSampleFormat dstAVSampleFormat = AV_SAMPLE_FMT_S16;
-
-    // 要播放的数据存在于playBuffer中
-    DECLARE_ALIGNED(16, unsigned char, playBuffer)[MAX_AUDIO_FRAME_SIZE * 4];
-
-    //解码一次得到的数据量
-    unsigned int decodedDataSize = 0;
-    //用于标记已处理过的数据位置(针对audio_decoded_data_size的位置)
-    unsigned int decodedDataSizeIndex = 0;
 };
 
 struct VideoWrapper {
@@ -228,7 +222,6 @@ struct VideoWrapper {
     // 使用到sws_scale函数时需要定义这些变量
     int srcLineSize[4] = {0}, dstLineSize[4] = {0};
 };
-
 
 
 #endif //USEFRAGMENTS_MYHEADER_H
