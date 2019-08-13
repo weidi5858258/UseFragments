@@ -62,6 +62,7 @@ public class FFMPEG {
 
     // 供jni层调用
     private void write(byte[] audioData, int offsetInBytes, int sizeInBytes) {
+        //MLog.i(TAG, "audioData.length: " + audioData.length);
         /*for (int i = 0; i < audioData.length; i++) {
             MLog.i(TAG, "" + audioData[i]);
         }

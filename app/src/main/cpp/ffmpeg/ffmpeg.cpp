@@ -46,43 +46,74 @@ bool getEnv(JNIEnv **env) {
     return isAttached;
 }
 
-JNIEnv *env;
-bool isAttached = false;
-
 void createAudioTrack(int sampleRateInHz,
                       int channelCount,
                       int audioFormat) {
-    isAttached = getEnv(&env);
+    JNIEnv *env;
+    bool isAttached = getEnv(&env);
     if (env != NULL && ffmpegJavaObject != NULL && createAudioTrackMethodID != NULL) {
         env->CallVoidMethod(ffmpegJavaObject, createAudioTrackMethodID,
                             (jint) sampleRateInHz, (jint) channelCount, (jint) audioFormat);
     }
-
+    if (isAttached) {
+        gJavaVm->DetachCurrentThread();
+    }
 }
 
 void write(unsigned char *audioData,
            int offsetInBytes,
            int sizeInBytes) {
-    /*JNIEnv *env;
-    bool isAttached = getEnv(&env);*/
+    JNIEnv *env;
+    bool isAttached = getEnv(&env);
     if (env != NULL && ffmpegJavaObject != NULL && writeMethodID != NULL) {
-        jbyteArray byteArray = env->NewByteArray(sizeInBytes);
+        /*jbyteArray byteArray = env->NewByteArray(sizeInBytes);
         env->SetByteArrayRegion(byteArray, 0, sizeInBytes, reinterpret_cast<jbyte *>(audioData));
         env->CallVoidMethod(ffmpegJavaObject, writeMethodID,
-                            byteArray, (jint) offsetInBytes, (jint) sizeInBytes);
+                            byteArray, (jint) offsetInBytes, (jint) sizeInBytes);*/
+
+        // out_buffer缓冲区数据，转成byte数组
+
+        // 调用AudioTrack.write()时，需要创建jbyteArray
+        jbyteArray audio_sample_array = env->NewByteArray(sizeInBytes);
+
+        // 拷贝数组需要对指针操作
+        jbyte *sample_bytep = env->GetByteArrayElements(audio_sample_array,
+                                                        NULL);
+
+        // out_buffer的数据拷贝到sample_bytep
+        memcpy(sample_bytep,// 目标dest所指的内存地址
+               audioData,// 源src所指的内存地址的起始位置
+               (size_t) sizeInBytes);// 拷贝字节的数据的大小
+
+        // 同步到audio_sample_array，并释放sample_bytep，与GetByteArrayElements对应
+        // 如果不调用，audio_sample_array里面是空的，播放无声，并且会内存泄漏
+        env->ReleaseByteArrayElements(audio_sample_array,
+                                      sample_bytep, 0);
+
+        // 三、调用AudioTrack.write()
+        /*env->CallIntMethod(audio_track, audio_track_write_mid,
+                              audio_sample_array,// 需要播放的数据数组
+                              0,
+                           sizeInBytes);*/
+
+        env->CallVoidMethod(ffmpegJavaObject, writeMethodID,
+                            audio_sample_array, (jint) offsetInBytes, (jint) sizeInBytes);
+
+        // 释放局部引用，对应NewByteArray
+        env->DeleteLocalRef(audio_sample_array);
     }
-    /*if (isAttached) {
+    if (isAttached) {
         gJavaVm->DetachCurrentThread();
-    }*/
+    }
 }
 
 void close() {
-    if (isAttached) {
+    /*if (isAttached) {
         LOGE("createAudioTrack() isAttached = %d", isAttached);
         gJavaVm->DetachCurrentThread();
-    }
-    env->DeleteGlobalRef(ffmpegJavaObject);
-    ffmpegJavaObject = NULL;
+    }*/
+    /*env->DeleteGlobalRef(ffmpegJavaObject);
+    ffmpegJavaObject = NULL;*/
 }
 
 extern "C"

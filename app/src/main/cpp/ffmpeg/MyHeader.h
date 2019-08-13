@@ -186,7 +186,7 @@ struct AudioWrapper {
     // 从音频源或视频源中得到
     // 采样率
     int srcSampleRate = 0;
-    int dstSampleRate = 44100;
+    int dstSampleRate = 0;
     // 声道数
     int srcNbChannels = 0;
     // 由dstChannelLayout去获到
@@ -195,9 +195,8 @@ struct AudioWrapper {
     int dstNbSamples = 0;
     // 由srcNbChannels能得到srcChannelLayout,也能由srcChannelLayout得到srcNbChannels
     int srcChannelLayout = 0;
-    int dstChannelLayout = 0;
     // 双声道输出
-    // int dstChannelLayout = AV_CH_LAYOUT_STEREO;
+    int dstChannelLayout = 0;
     // 从音频源或视频源中得到(采样格式)
     enum AVSampleFormat srcAVSampleFormat = AV_SAMPLE_FMT_NONE;
     // 输出的采样格式16bit PCM
