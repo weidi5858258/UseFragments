@@ -187,7 +187,7 @@
         </activity>
 
         <activity
-            android:name="com.weidi.usefragments.JniPlayerActivity"
+            android:name="com.weidi.usefragments.JniPlayerActivity2"
             android:screenOrientation="landscape"
             android:configChanges="uiMode|keyboard|keyboardHidden|screenSize|orientation|fontScale"
             android:windowSoftInputMode="stateAlwaysHidden|adjustPan"

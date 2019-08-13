@@ -413,7 +413,7 @@ public class Camera2Fragment extends BaseFragment {
 
         // When the screen is turned off and turned back on, the SurfaceTexture is already
         // available, and "onSurfaceTextureAvailable" will not be called. In that case, we can open
-        // a camera and start preview from here (otherwise, we wait until the surface is ready in
+        // a camera and start preview from here (otherwise, we wait until the surfaceJavaObject is ready in
         // the SurfaceTextureListener).
         if (mTextureView.isAvailable()) {
             openCamera(mTextureView.getWidth(), mTextureView.getHeight());

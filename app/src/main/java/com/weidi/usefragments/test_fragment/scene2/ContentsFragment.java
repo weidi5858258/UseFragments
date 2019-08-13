@@ -1,7 +1,6 @@
 package com.weidi.usefragments.test_fragment.scene2;
 
 import android.app.Activity;
-import android.app.Fragment;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -18,24 +17,23 @@ import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
 
 import com.weidi.eventbus.EventBusUtils;
 import com.weidi.usefragments.BaseActivity;
 import com.weidi.usefragments.JniPlayerActivity;
+import com.weidi.usefragments.JniPlayerActivity2;
 import com.weidi.usefragments.PlayerActivity;
 import com.weidi.usefragments.R;
 import com.weidi.usefragments.adapter.ContentsAdapter;
-import com.weidi.usefragments.adapter.FragmentTitleAdapter;
-import com.weidi.usefragments.fragment.FragOperManager;
 import com.weidi.usefragments.fragment.base.BaseFragment;
 import com.weidi.usefragments.inject.InjectOnClick;
 import com.weidi.usefragments.inject.InjectView;
 import com.weidi.usefragments.service.DownloadFileService;
 import com.weidi.usefragments.tool.Contents;
 import com.weidi.usefragments.tool.DownloadCallback;
+import com.weidi.usefragments.tool.FFMPEG;
 import com.weidi.usefragments.tool.MLog;
 
 import java.io.File;
@@ -411,7 +409,7 @@ public class ContentsFragment extends BaseFragment {
                                 ((BaseActivity) getAttachedActivity()).enterActivity();*/
 
                                 Intent intent = new Intent();
-                                intent.setClass(getContext(), JniPlayerActivity.class);
+                                intent.setClass(getContext(), JniPlayerActivity2.class);
                                 getAttachedActivity().startActivity(intent);
                                 ((BaseActivity) getAttachedActivity()).enterActivity();
                                 break;

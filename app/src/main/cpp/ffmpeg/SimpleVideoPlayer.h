@@ -5,6 +5,7 @@
 #ifndef USEFRAGMENTS_SIMPLEVIDEOPLAYER_H
 #define USEFRAGMENTS_SIMPLEVIDEOPLAYER_H
 
+#include "ffmpeg.h"
 #include "MyHeader.h"
 
 #define LOG "alexander"
@@ -56,7 +57,11 @@ namespace alexander {
 
     int alexanderVideoPlayer();
 
-    void setSurface(JNIEnv *env, jobject surface);
+    void setJniParameters(JNIEnv *env,
+                          jobject ffmpegJavaObject,
+                          jobject surfaceJavaObject,
+                          jmethodID createAudioTrack,
+                          jmethodID write);
 
     /*class SimpleVideoPlayer {
 

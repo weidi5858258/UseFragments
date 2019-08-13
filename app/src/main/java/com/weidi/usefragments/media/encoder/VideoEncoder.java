@@ -38,7 +38,7 @@ public class VideoEncoder extends BaseEncoder {
     protected void onConfigured(MediaCodec encoder) {
         mSurface = encoder.createInputSurface();
         if (DEBUG)
-            Log.i(TAG, "VideoEncoder create input surface: " + mSurface);
+            Log.i(TAG, "VideoEncoder create input surfaceJavaObject: " + mSurface);
     }
 
     public Surface getSurface() {
