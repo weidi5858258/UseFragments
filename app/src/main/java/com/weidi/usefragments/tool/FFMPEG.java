@@ -59,6 +59,8 @@ public class FFMPEG {
 
     public native boolean isPlaying();
 
+    public native int seekTo(long timestamp);
+
     // 供jni层调用
     private void createAudioTrack(int sampleRateInHz,
                                   int channelCount,

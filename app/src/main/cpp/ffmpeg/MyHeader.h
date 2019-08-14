@@ -174,6 +174,7 @@ struct Wrapper {
     bool isPausedForCache = false;
 
     int64_t duration = 0;
+    int64_t timestamp = 0;
 
     pthread_mutex_t readLockMutex;
     pthread_cond_t readLockCondition;

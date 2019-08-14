@@ -7,6 +7,7 @@ import android.media.AudioManager;
 import android.view.KeyEvent;
 
 import com.weidi.eventbus.EventBusUtils;
+import com.weidi.usefragments.JniPlayerActivity;
 import com.weidi.usefragments.tool.SimpleAudioPlayer;
 import com.weidi.usefragments.tool.SimpleVideoPlayer7;
 
@@ -18,6 +19,7 @@ import com.weidi.usefragments.tool.SimpleVideoPlayer7;
  */
 
 public class MediaButtonReceiver extends BroadcastReceiver {
+
     private static final String TAG =
             MediaButtonReceiver.class.getSimpleName();
     private static final boolean DEBUG = true;
@@ -28,8 +30,7 @@ public class MediaButtonReceiver extends BroadcastReceiver {
         /*if (DEBUG)
             MLog.d(TAG, "MediaButtonReceiver " + intentAction);*/
         if (Intent.ACTION_MEDIA_BUTTON.equals(intentAction)) {
-            KeyEvent event =
-                    (KeyEvent) intent.getParcelableExtra(Intent.EXTRA_KEY_EVENT);
+            KeyEvent event = intent.getParcelableExtra(Intent.EXTRA_KEY_EVENT);
             if (event == null) {
                 return;
             }
@@ -38,9 +39,11 @@ public class MediaButtonReceiver extends BroadcastReceiver {
                 case KeyEvent.KEYCODE_HEADSETHOOK:
                     if (event.getAction() == KeyEvent.ACTION_DOWN) {
                         EventBusUtils.post(
+                                JniPlayerActivity.class, KeyEvent.KEYCODE_HEADSETHOOK, null);
+                        /*EventBusUtils.post(
                                 SimpleAudioPlayer.class, KeyEvent.KEYCODE_HEADSETHOOK, null);
                         EventBusUtils.post(
-                                SimpleVideoPlayer7.class, KeyEvent.KEYCODE_HEADSETHOOK, null);
+                                SimpleVideoPlayer7.class, KeyEvent.KEYCODE_HEADSETHOOK, null);*/
                     }
                     break;
                 case KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE:
@@ -62,4 +65,5 @@ public class MediaButtonReceiver extends BroadcastReceiver {
             // 耳机插拔
         }
     }
+
 }

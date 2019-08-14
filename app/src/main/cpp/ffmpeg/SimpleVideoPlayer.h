@@ -72,6 +72,8 @@ namespace alexander {
 
     bool isPlaying();
 
+    int seekTo(int64_t timestamp);
+
     /*class SimpleVideoPlayer {
 
     private:

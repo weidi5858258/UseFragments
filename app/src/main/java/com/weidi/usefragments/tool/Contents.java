@@ -237,6 +237,97 @@ public class Contents {
                 "");
 
         movieMap.put(
+                "方谬神探01",
+                "http://xunlei.xiazai-zuida.com/1907/%E6%96%B9%E8%B0%AC%E7%A5%9E%E6%8E%A2-01.mp4");
+        movieMap.put(
+                "方谬神探02",
+                "http://xunlei.xiazai-zuida.com/1907/%E6%96%B9%E8%B0%AC%E7%A5%9E%E6%8E%A2-02.mp4");
+        movieMap.put(
+                "方谬神探03",
+                "http://xunlei.xiazai-zuida.com/1907/%E6%96%B9%E8%B0%AC%E7%A5%9E%E6%8E%A2-03.mp4");
+        movieMap.put(
+                "方谬神探04",
+                "http://xunlei.xiazai-zuida.com/1907/%E6%96%B9%E8%B0%AC%E7%A5%9E%E6%8E%A2-04.mp4");
+        movieMap.put(
+                "方谬神探05",
+                "http://xunlei.xiazai-zuida.com/1907/%E6%96%B9%E8%B0%AC%E7%A5%9E%E6%8E%A2-05.mp4");
+        movieMap.put(
+                "方谬神探06",
+                "http://xunlei.xiazai-zuida.com/1907/%E6%96%B9%E8%B0%AC%E7%A5%9E%E6%8E%A2-06.mp4");
+        movieMap.put(
+                "方谬神探07",
+                "http://xunlei.xiazai-zuida.com/1907/%E6%96%B9%E8%B0%AC%E7%A5%9E%E6%8E%A2-07.mp4");
+        movieMap.put(
+                "方谬神探08",
+                "http://xunlei.xiazai-zuida.com/1907/%E6%96%B9%E8%B0%AC%E7%A5%9E%E6%8E%A2-08.mp4");
+        movieMap.put(
+                "方谬神探09",
+                "http://xunlei.xiazai-zuida.com/1907/%E6%96%B9%E8%B0%AC%E7%A5%9E%E6%8E%A2-09.mp4");
+        movieMap.put(
+                "方谬神探10",
+                "http://xunlei.xiazai-zuida.com/1907/%E6%96%B9%E8%B0%AC%E7%A5%9E%E6%8E%A2-10.mp4");
+        movieMap.put(
+                "方谬神探11",
+                "http://xunlei.xiazai-zuida.com/1907/%E6%96%B9%E8%B0%AC%E7%A5%9E%E6%8E%A2-11.mp4");
+        movieMap.put(
+                "方谬神探12",
+                "http://xunlei.xiazai-zuida.com/1907/%E6%96%B9%E8%B0%AC%E7%A5%9E%E6%8E%A2-12.mp4");
+        movieMap.put(
+                "方谬神探13",
+                "http://xunlei.xiazai-zuida.com/1907/%E6%96%B9%E8%B0%AC%E7%A5%9E%E6%8E%A2-13.mp4");
+        movieMap.put(
+                "方谬神探14",
+                "http://xunlei.xiazai-zuida.com/1907/%E6%96%B9%E8%B0%AC%E7%A5%9E%E6%8E%A2-14.mp4");
+        movieMap.put(
+                "方谬神探15",
+                "http://xunlei.xiazai-zuida.com/1907/%E6%96%B9%E8%B0%AC%E7%A5%9E%E6%8E%A2-15.mp4");
+        movieMap.put(
+                "方谬神探16",
+                "http://xunlei.xiazai-zuida.com/1907/%E6%96%B9%E8%B0%AC%E7%A5%9E%E6%8E%A2-16.mp4");
+        movieMap.put(
+                "方谬神探17",
+                "http://xunlei.xiazai-zuida.com/1907/%E6%96%B9%E8%B0%AC%E7%A5%9E%E6%8E%A2-17.mp4");
+        movieMap.put(
+                "方谬神探18",
+                "http://xunlei.xiazai-zuida.com/1907/%E6%96%B9%E8%B0%AC%E7%A5%9E%E6%8E%A2-18.mp4");
+        movieMap.put(
+                "方谬神探19",
+                "http://xunlei.xiazai-zuida.com/1907/%E6%96%B9%E8%B0%AC%E7%A5%9E%E6%8E%A2-19.mp4");
+        movieMap.put(
+                "方谬神探20",
+                "http://xunlei.xiazai-zuida.com/1907/%E6%96%B9%E8%B0%AC%E7%A5%9E%E6%8E%A2-20.mp4");
+        movieMap.put(
+                "方谬神探21",
+                "http://xunlei.xiazai-zuida.com/1907/%E6%96%B9%E8%B0%AC%E7%A5%9E%E6%8E%A2-21.mp4");
+        movieMap.put(
+                "方谬神探22",
+                "http://xunlei.xiazai-zuida.com/1907/%E6%96%B9%E8%B0%AC%E7%A5%9E%E6%8E%A2-22.mp4");
+        movieMap.put(
+                "方谬神探23",
+                "http://xunlei.xiazai-zuida.com/1907/%E6%96%B9%E8%B0%AC%E7%A5%9E%E6%8E%A2-23.mp4");
+        movieMap.put(
+                "方谬神探24",
+                "http://xunlei.xiazai-zuida.com/1907/%E6%96%B9%E8%B0%AC%E7%A5%9E%E6%8E%A2-24.mp4");
+        movieMap.put(
+                "方谬神探25",
+                "http://xunlei.xiazai-zuida.com/1907/%E6%96%B9%E8%B0%AC%E7%A5%9E%E6%8E%A2-25.mp4");
+        movieMap.put(
+                "方谬神探26",
+                "http://xunlei.xiazai-zuida.com/1907/%E6%96%B9%E8%B0%AC%E7%A5%9E%E6%8E%A2-26.mp4");
+        movieMap.put(
+                "方谬神探27",
+                "http://xunlei.xiazai-zuida.com/1907/%E6%96%B9%E8%B0%AC%E7%A5%9E%E6%8E%A2-27.mp4");
+        movieMap.put(
+                "方谬神探28",
+                "http://xunlei.xiazai-zuida.com/1907/%E6%96%B9%E8%B0%AC%E7%A5%9E%E6%8E%A2-28.mp4");
+        movieMap.put(
+                "方谬神探29",
+                "http://xunlei.xiazai-zuida.com/1907/%E6%96%B9%E8%B0%AC%E7%A5%9E%E6%8E%A2-29.mp4");
+        movieMap.put(
+                "方谬神探30",
+                "http://xunlei.xiazai-zuida.com/1907/%E6%96%B9%E8%B0%AC%E7%A5%9E%E6%8E%A2-30.mp4");
+
+        movieMap.put(
                 "盗墓笔记之怒海潜沙-秦岭神树01",
                 "http://ok.xzokzyzy.com/20190606/1940_094739d9/%E6%80%92%E6%B5%B7%E6%BD%9C%E6%B2%99&%E7%A7%A6%E5%B2%AD%E7%A5%9E%E6%A0%91%E7%AC%AC01%E9%9B%86.mp4");
         movieMap.put(
@@ -351,7 +442,7 @@ public class Contents {
                 "shape_of_my_heart",
                 "/storage/2430-1702/BaiduNetdisk/video/shape_of_my_heart.mp4");
         movieMap.put(
-                "地狱男爵-血皇后崛起.mp4",
+                "地狱男爵-血皇后崛起-local",
                 "/storage/2430-1702/BaiduNetdisk/video/地狱男爵-血皇后崛起.mp4");
         movieMap.put(
                 "流浪的地球",

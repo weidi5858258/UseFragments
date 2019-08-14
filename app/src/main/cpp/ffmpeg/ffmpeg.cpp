@@ -239,3 +239,9 @@ JNIEXPORT jboolean JNICALL
 Java_com_weidi_usefragments_tool_FFMPEG_isPlaying(JNIEnv *env, jobject instance) {
     return (jboolean) alexander::isPlaying();
 }
+
+extern "C"
+JNIEXPORT jint JNICALL
+Java_com_weidi_usefragments_tool_FFMPEG_seekTo(JNIEnv *env, jobject instance, jlong timestamp) {
+    return (jint) alexander::seekTo(timestamp);
+}

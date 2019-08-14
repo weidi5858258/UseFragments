@@ -1,7 +1,10 @@
 package com.weidi.usefragments;
 
+import android.content.BroadcastReceiver;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.res.Configuration;
 import android.graphics.PixelFormat;
 import android.media.AudioManager;
@@ -12,6 +15,7 @@ import android.os.Message;
 import android.os.PowerManager;
 import android.text.format.DateUtils;
 import android.util.Log;
+import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.Surface;
@@ -26,6 +30,7 @@ import android.widget.TextView;
 
 import com.weidi.eventbus.EventBusUtils;
 import com.weidi.usefragments.media.MediaUtils;
+import com.weidi.usefragments.receiver.MediaButtonReceiver;
 import com.weidi.usefragments.service.DownloadFileService;
 import com.weidi.usefragments.test_view.BubblePopupWindow;
 import com.weidi.usefragments.tool.Callback;
@@ -172,12 +177,12 @@ public class JniPlayerActivity extends BaseActivity {
     private static final int MSG_LOADING_SHOW = 0x005;
     private static final int MSG_LOADING_HIDE = 0x006;
     private static final int MSG_ON_PROGRESS_UPDATED = 0x007;
+    private static final int MSG_START_PLAYBACK = 0x008;
 
     private SurfaceView mSurfaceView;
     private Surface mSurface;
     private PowerManager.WakeLock mPowerWakeLock;
-    // private SimpleVideoPlayer mSampleVideoPlayer;
-    private SimpleVideoPlayer7 mSampleVideoPlayer;
+    //private SimpleVideoPlayer7 mSampleVideoPlayer;
     private FFMPEG mFFMPEGPlayer;
     private String mPath;
     private long mProgress;
@@ -202,9 +207,14 @@ public class JniPlayerActivity extends BaseActivity {
     TextView mShowTimeTV;
     BubblePopupWindow mBubblePopupWindow;
 
+    int audioInitResult = -1;
+    int videoInitResult = -1;
+
     private Handler mUiHandler;
 
     private void initData() {
+        EventBusUtils.register(this);
+        registerHeadsetPlugReceiver();
         // Volume change should always affect media volume
         setVolumeControlStream(AudioManager.STREAM_MUSIC);
 
@@ -241,10 +251,12 @@ public class JniPlayerActivity extends BaseActivity {
         mNextIB.setOnClickListener(mOnClickListener);
         mSurfaceView.setOnClickListener(mOnClickListener);
 
-        // mSampleVideoPlayer = new SimpleVideoPlayer();
-        mSampleVideoPlayer = new SimpleVideoPlayer7();
+        mFFMPEGPlayer = new FFMPEG();
 
-        int duration = (int) mSampleVideoPlayer.getDurationUs() / 1000;
+        audioInitResult = -1;
+        videoInitResult = -1;
+
+        int duration = 0;//(int) mSampleVideoPlayer.getDurationUs() / 1000;
         int currentPosition = (int) mPresentationTimeUs / 1000;
         float pos = (float) currentPosition / duration;
         int target = Math.round(pos * mProgressBar.getMax());
@@ -260,12 +272,12 @@ public class JniPlayerActivity extends BaseActivity {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromTouch) {
                 if (fromTouch) {
-                    long tempProgress =
+                    /*long tempProgress =
                             (long) ((progress / 3840.00) * mSampleVideoPlayer.getDurationUs());
                     mProgress = tempProgress;
                     String elapsedTime =
                             DateUtils.formatElapsedTime(tempProgress / 1000 / 1000);
-                    mShowTimeTV.setText(elapsedTime);
+                    mShowTimeTV.setText(elapsedTime);*/
                     /*mUiHandler.removeMessages(PLAYBACK_PROGRESS_CHANGED);
                     mUiHandler.sendEmptyMessageDelayed(PLAYBACK_PROGRESS_CHANGED, 50);*/
                 }
@@ -326,42 +338,23 @@ public class JniPlayerActivity extends BaseActivity {
                     // 这里也要写
                     holder.setFormat(PixelFormat.RGBA_8888);
 
+                    if (mFFMPEGPlayer == null) {
+                        return;
+                    }
+
                     // Test
-                    mFFMPEGPlayer = new FFMPEG();
                     mFFMPEGPlayer.setSurface(mPath, mSurface);
 
-                    int videoResult = mFFMPEGPlayer.initVideo();
-                    int audioResult = mFFMPEGPlayer.initAudio();
+                    new Thread(new Runnable() {
+                        @Override
+                        public void run() {
+                            audioInitResult = mFFMPEGPlayer.initAudio();
+                            videoInitResult = mFFMPEGPlayer.initVideo();
 
-                    if (videoResult == 0) {
-                        new Thread(new Runnable() {
-                            @Override
-                            public void run() {
-                                mFFMPEGPlayer.videoReadData();
-                            }
-                        }).start();
-                        new Thread(new Runnable() {
-                            @Override
-                            public void run() {
-                                mFFMPEGPlayer.videoHandleData();
-                            }
-                        }).start();
-                    }
-
-                    if (audioResult == 0) {
-                        new Thread(new Runnable() {
-                            @Override
-                            public void run() {
-                                mFFMPEGPlayer.audioReadData();
-                            }
-                        }).start();
-                        new Thread(new Runnable() {
-                            @Override
-                            public void run() {
-                                mFFMPEGPlayer.audioHandleData();
-                            }
-                        }).start();
-                    }
+                            mUiHandler.removeMessages(MSG_START_PLAYBACK);
+                            mUiHandler.sendEmptyMessage(MSG_START_PLAYBACK);
+                        }
+                    }).start();
                 }
 
                 @Override
@@ -373,28 +366,21 @@ public class JniPlayerActivity extends BaseActivity {
                 public void surfaceDestroyed(
                         SurfaceHolder holder) {
                     MLog.d(TAG, "surfaceDestroyed()");
+                    if (mFFMPEGPlayer != null) {
+                        mFFMPEGPlayer.release();
+                    }
                 }
             });
         }
     }
 
     private void internalStop() {
-        if (mPowerWakeLock != null) {
-            mPowerWakeLock.release();
-            mPowerWakeLock = null;
-        }
-        if (mFFMPEGPlayer != null) {
-            mFFMPEGPlayer.stop();
-        }
+
     }
 
     private void internalDestroy() {
-        if (mSampleVideoPlayer != null) {
-            mSampleVideoPlayer.release();
-        }
-        if (mFFMPEGPlayer != null) {
-            mFFMPEGPlayer.release();
-        }
+        unregisterHeadsetPlugReceiver();
+        EventBusUtils.unregister(this);
     }
 
     private void showBubbleView(String time, View view) {
@@ -413,29 +399,30 @@ public class JniPlayerActivity extends BaseActivity {
                         (mPresentationTimeUs / 1000) / 1000);
                 mProgressTimeTV.setText(curElapsedTime);
 
-                if (mNeedToSyncProgressBar) {
+                /*if (mNeedToSyncProgressBar) {
                     int duration = (int) (mSampleVideoPlayer.getDurationUs() / 1000);
                     int currentPosition = (int) (mPresentationTimeUs / 1000);
                     float pos = (float) currentPosition / duration;
                     int target = Math.round(pos * mProgressBar.getMax());
                     mProgressBar.setProgress(target);
-                }
+                }*/
                 break;
             case PLAYBACK_PROGRESS_CHANGED:
-                long process = (long) ((mProgress / 3840.00) * mSampleVideoPlayer.getDurationUs());
+                /*long process = (long) ((mProgress / 3840.00) * mSampleVideoPlayer.getDurationUs
+                ());
                 mSampleVideoPlayer.setProgressUs(process);
                 MLog.d(TAG, "uiHandleMessage() process: " + process +
-                        " " + DateUtils.formatElapsedTime(process / 1000 / 1000));
+                        " " + DateUtils.formatElapsedTime(process / 1000 / 1000));*/
                 break;
             case MSG_ON_READY:
-                String durationTime = DateUtils.formatElapsedTime(
+                /*String durationTime = DateUtils.formatElapsedTime(
                         (mSampleVideoPlayer.getDurationUs() / 1000) / 1000);
                 mDurationTimeTV.setText(durationTime);
                 if (durationTime.length() > 5) {
                     mProgressTimeTV.setText("00:00:00");
                 } else {
                     mProgressTimeTV.setText("00:00");
-                }
+                }*/
                 mProgressBar.setProgress(0);
                 mFileNameTV.setText(Contents.getTitle());
                 mLoadingView.setVisibility(View.VISIBLE);
@@ -448,6 +435,63 @@ public class JniPlayerActivity extends BaseActivity {
                 break;
             case MSG_ON_PROGRESS_UPDATED:
                 mProgressBar.setSecondaryProgress(mDownloadProgress);
+                break;
+            case KeyEvent.KEYCODE_HEADSETHOOK:
+                if (firstFlag && secondFlag && threeFlag) {
+                    if (DEBUG)
+                        Log.d(TAG, "onKeyDown() 3");
+                } else if (firstFlag && secondFlag) {
+                    if (DEBUG)
+                        Log.d(TAG, "onKeyDown() 2");
+                    /*if (mProgressUs == -1) {
+                        step = (int) ((mVideoWrapper.presentationTimeUs2
+                                / (mVideoWrapper.durationUs * 1.00)) * 3840.00);
+                        Log.d(TAG, "onKeuiHandleMessageyDown() step: " + step);
+                    }
+                    step += 100;
+                    long progress = (long) (((step / 3840.00) * mVideoWrapper.durationUs));
+                    setProgressUs(progress);*/
+                    if (mFFMPEGPlayer != null) {
+                        mFFMPEGPlayer.seekTo(0);
+                    }
+                } else {
+                    if (DEBUG)
+                        Log.d(TAG, "onKeyDown() 1");
+                }
+                firstFlag = false;
+                secondFlag = false;
+                threeFlag = false;
+                break;
+            case MSG_START_PLAYBACK:
+                if (videoInitResult == 0) {
+                    new Thread(new Runnable() {
+                        @Override
+                        public void run() {
+                            mFFMPEGPlayer.videoReadData();
+                        }
+                    }).start();
+                    new Thread(new Runnable() {
+                        @Override
+                        public void run() {
+                            mFFMPEGPlayer.videoHandleData();
+                        }
+                    }).start();
+                }
+
+                if (audioInitResult == 0) {
+                    new Thread(new Runnable() {
+                        @Override
+                        public void run() {
+                            mFFMPEGPlayer.audioReadData();
+                        }
+                    }).start();
+                    new Thread(new Runnable() {
+                        @Override
+                        public void run() {
+                            mFFMPEGPlayer.audioHandleData();
+                        }
+                    }).start();
+                }
                 break;
             default:
                 break;
@@ -590,7 +634,7 @@ public class JniPlayerActivity extends BaseActivity {
                     break;
                 case R.id.content_tv:
                     mNeedToSyncProgressBar = true;
-                    mSampleVideoPlayer.setProgressUs(mProgress);
+                    //mSampleVideoPlayer.setProgressUs(mProgress);
                     mBubblePopupWindow.dismiss();
                     break;
                 default:
@@ -598,5 +642,85 @@ public class JniPlayerActivity extends BaseActivity {
             }
         }
     };
+
+    private boolean firstFlag = false;
+    private boolean secondFlag = false;
+    private boolean threeFlag = false;
+
+    private Object onEvent(int what, Object[] objArray) {
+        Object result = null;
+        switch (what) {
+            case KeyEvent.KEYCODE_HEADSETHOOK:
+                if (!firstFlag) {
+                    firstFlag = true;
+                } else if (firstFlag && !secondFlag) {
+                    secondFlag = true;
+                } else if (firstFlag && secondFlag && !threeFlag) {
+                    threeFlag = true;
+                }
+                // 单位时间内按1次,2次,3次分别实现单击,双击,三击
+                mUiHandler.removeMessages(KeyEvent.KEYCODE_HEADSETHOOK);
+                mUiHandler.sendEmptyMessageDelayed(KeyEvent.KEYCODE_HEADSETHOOK, 300);
+                break;
+            default:
+                break;
+        }
+        return result;
+    }
+
+    /////////////////////////////////////////////////////////////////
+
+    /***
+     下面是耳机操作
+     */
+
+    // Android监听耳机的插拔事件(只能动态注册,经过测试可行)
+    private HeadsetPlugReceiver mHeadsetPlugReceiver;
+    private AudioManager mAudioManager;
+    private ComponentName mMediaButtonReceiver;
+
+    private void registerHeadsetPlugReceiver() {
+        mHeadsetPlugReceiver = new HeadsetPlugReceiver();
+        IntentFilter filter = new IntentFilter();
+        filter.addAction("android.intent.action.HEADSET_PLUG");
+        filter.setPriority(2147483647);
+        registerReceiver(mHeadsetPlugReceiver, filter);
+
+        mAudioManager =
+                (AudioManager) getSystemService(Context.AUDIO_SERVICE);
+        mMediaButtonReceiver = new ComponentName(
+                getPackageName(), MediaButtonReceiver.class.getName());
+        mAudioManager.registerMediaButtonEventReceiver(mMediaButtonReceiver);
+    }
+
+    private void unregisterHeadsetPlugReceiver() {
+        if (mHeadsetPlugReceiver == null) {
+            return;
+        }
+
+        unregisterReceiver(mHeadsetPlugReceiver);
+        mAudioManager.unregisterMediaButtonEventReceiver(mMediaButtonReceiver);
+    }
+
+    private class HeadsetPlugReceiver extends BroadcastReceiver {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            if (intent.hasExtra("state")) {
+                switch (intent.getIntExtra("state", 0)) {
+                    case 0:
+                        if (DEBUG)
+                            MLog.d(TAG, "HeadsetPlugReceiver headset not connected");
+                        //pause();
+                        break;
+                    case 1:
+                        if (DEBUG)
+                            MLog.d(TAG, "HeadsetPlugReceiver headset has connected");
+                        //play();
+                        break;
+                    default:
+                }
+            }
+        }
+    }
 
 }
