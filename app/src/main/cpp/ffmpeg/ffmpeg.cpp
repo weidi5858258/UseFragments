@@ -9,12 +9,11 @@
 // 这个是自定义的LOG的标识
 #define LOG "alexander"
 
+static JavaVM *gJavaVm = NULL;
 jobject ffmpegJavaObject = NULL;
 jmethodID createAudioTrackMethodID = NULL;
 jmethodID writeMethodID = NULL;
 jmethodID sleepMethodID = NULL;
-
-static JavaVM *gJavaVm = NULL;
 
 /***
  called at the library loaded.
@@ -62,19 +61,11 @@ void createAudioTrack(int sampleRateInHz,
     }
 }
 
-JNIEnv *audioEnv;
-JNIEnv *videoEnv;
-bool isAttached = false;
-
 void write(unsigned char *pcmData,
            int offsetInBytes,
            int sizeInBytes) {
-    /*JNIEnv *audioEnv;
-    bool isAttached = getEnv(&audioEnv);*/
-    if (audioEnv == NULL) {
-        LOGI("write() audioEnv is NULL\n");
-        isAttached = getEnv(&audioEnv);
-    }
+    JNIEnv *audioEnv;
+    bool audioIsAttached = getEnv(&audioEnv);
     if (audioEnv != NULL && ffmpegJavaObject != NULL && writeMethodID != NULL) {
         jbyteArray audioData = audioEnv->NewByteArray(sizeInBytes);
         // 拷贝数组需要对指针操作
@@ -93,9 +84,9 @@ void write(unsigned char *pcmData,
         // 释放局部引用,对应NewByteArray
         audioEnv->DeleteLocalRef(audioData);
     }
-    /*if (isAttached) {
+    if (audioIsAttached) {
         gJavaVm->DetachCurrentThread();
-    }*/
+    }
 }
 
 void close() {
@@ -109,37 +100,32 @@ void close() {
 }
 
 void audioSleep(long ms) {
-    if (audioEnv == NULL) {
-        LOGI("audioSleep() audioEnv is NULL\n");
-        isAttached = getEnv(&audioEnv);
-    }
+    JNIEnv *audioEnv;
+    bool audioIsAttached = getEnv(&audioEnv);
     if (audioEnv != NULL && ffmpegJavaObject != NULL && sleepMethodID != NULL) {
         audioEnv->CallVoidMethod(ffmpegJavaObject, sleepMethodID, (jlong) ms);
     }
-
-    /*if (isAttached) {
+    if (audioIsAttached) {
         gJavaVm->DetachCurrentThread();
-    }*/
+    }
 }
 
 void videoSleep(long ms) {
-    if (videoEnv == NULL) {
-        LOGI("videoSleep() videoEnv is NULL\n");
-        isAttached = getEnv(&videoEnv);
-    }
+    JNIEnv *videoEnv;
+    bool videoIsAttached = getEnv(&videoEnv);
     if (videoEnv != NULL && ffmpegJavaObject != NULL && sleepMethodID != NULL) {
         videoEnv->CallVoidMethod(ffmpegJavaObject, sleepMethodID, (jlong) ms);
     }
-
-    /*if (isAttached) {
+    if (videoIsAttached) {
         gJavaVm->DetachCurrentThread();
-    }*/
+    }
 }
 
 extern "C"
 JNIEXPORT jint JNICALL
 Java_com_weidi_usefragments_tool_FFMPEG_setSurface(JNIEnv *env,
                                                    jobject ffmpegObject,
+                                                   jstring path,
                                                    jobject surfaceObject) {
     jclass FFMPEGClass = env->FindClass("com/weidi/usefragments/tool/FFMPEG");
     // 第三个参数: 括号中是java端方法的参数签名,括号后面是java端方法的返回值签名(V表示void)
@@ -150,7 +136,9 @@ Java_com_weidi_usefragments_tool_FFMPEG_setSurface(JNIEnv *env,
     jmethodID sleep = env->GetMethodID(
             FFMPEGClass, "sleep", "(J)V");
 
-    alexander::setJniParameters(env, surfaceObject);
+    const char *filePath = env->GetStringUTFChars(path, 0);
+    alexander::setJniParameters(env, filePath, surfaceObject);
+    env->ReleaseStringUTFChars(path, filePath);
 
     // 直接赋值是不行的
     // ffmpegJavaObject = ffmpegObject;
@@ -177,59 +165,77 @@ Java_com_weidi_usefragments_tool_FFMPEG_initVideo(JNIEnv *env, jobject ffmpegObj
 extern "C"
 JNIEXPORT jint JNICALL
 Java_com_weidi_usefragments_tool_FFMPEG_audioReadData(JNIEnv *env, jobject ffmpegObject) {
+#ifdef USE_AUDIO
     int type = 1;
     alexander::readData(&type);
+#endif
     return (jint) 0;
 }
 
 extern "C"
 JNIEXPORT jint JNICALL
 Java_com_weidi_usefragments_tool_FFMPEG_audioHandleData(JNIEnv *env, jobject ffmpegObject) {
+#ifdef USE_AUDIO
     alexander::handleAudioData(NULL);
+#endif
     return (jint) 0;
 }
 
 extern "C"
 JNIEXPORT jint JNICALL
 Java_com_weidi_usefragments_tool_FFMPEG_videoReadData(JNIEnv *env, jobject ffmpegObject) {
+#ifdef USE_VIDEO
     int type = 2;
     alexander::readData(&type);
+#endif
     return (jint) 0;
 }
 
 extern "C"
 JNIEXPORT jint JNICALL
 Java_com_weidi_usefragments_tool_FFMPEG_videoHandleData(JNIEnv *env, jobject ffmpegObject) {
+#ifdef USE_VIDEO
     alexander::handleVideoData(NULL);
+#endif
     return (jint) 0;
 }
 
 extern "C"
 JNIEXPORT jint JNICALL
 Java_com_weidi_usefragments_tool_FFMPEG_play(JNIEnv *env, jobject ffmpegObject) {
-
+    alexander::play();
     return (jint) 0;
 }
 
 extern "C"
 JNIEXPORT jint JNICALL
 Java_com_weidi_usefragments_tool_FFMPEG_pause(JNIEnv *env, jobject ffmpegObject) {
-
+    alexander::pause();
     return (jint) 0;
 }
 
 extern "C"
 JNIEXPORT jint JNICALL
 Java_com_weidi_usefragments_tool_FFMPEG_stop(JNIEnv *env, jobject ffmpegObject) {
-
+    alexander::stop();
     return (jint) 0;
 }
 
 extern "C"
 JNIEXPORT jint JNICALL
 Java_com_weidi_usefragments_tool_FFMPEG_release(JNIEnv *env, jobject ffmpegObject) {
-    alexander::closeAudio();
-    alexander::closeVideo();
-
+    alexander::release();
     return (jint) 0;
+}
+
+extern "C"
+JNIEXPORT jboolean JNICALL
+Java_com_weidi_usefragments_tool_FFMPEG_isRunning(JNIEnv *env, jobject instance) {
+    return (jboolean) alexander::isRunning();
+}
+
+extern "C"
+JNIEXPORT jboolean JNICALL
+Java_com_weidi_usefragments_tool_FFMPEG_isPlaying(JNIEnv *env, jobject instance) {
+    return (jboolean) alexander::isPlaying();
 }

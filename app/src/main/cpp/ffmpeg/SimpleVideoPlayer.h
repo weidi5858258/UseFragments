@@ -12,6 +12,9 @@
 
 namespace alexander {
 
+#define USE_AUDIO
+#define USE_VIDEO
+
     static struct AudioWrapper *audioWrapper = NULL;
     static struct VideoWrapper *videoWrapper = NULL;
 
@@ -30,8 +33,6 @@ namespace alexander {
     int getAVPacketFromQueue(struct AVPacketQueue *packet_queue, AVPacket *avpacket);
 
     int putAVPacketToQueue(struct AVPacketQueue *packet_queue, AVPacket *avpacket);
-
-    int audioDecodeFrame();
 
     int openAndFindAVFormatContextForAudio();
 
@@ -57,7 +58,19 @@ namespace alexander {
 
     int initVideoPlayer();
 
-    void setJniParameters(JNIEnv *env, jobject surfaceJavaObject);
+    void setJniParameters(JNIEnv *env, const char *filePath, jobject surfaceJavaObject);
+
+    int play();
+
+    int pause();
+
+    int stop();
+
+    int release();
+
+    bool isRunning();
+
+    bool isPlaying();
 
     /*class SimpleVideoPlayer {
 

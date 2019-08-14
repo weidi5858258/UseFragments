@@ -412,7 +412,8 @@ public class ContentsFragment extends BaseFragment {
                                 ((BaseActivity) getAttachedActivity()).enterActivity();*/
 
                                 Intent intent = new Intent();
-                                intent.setClass(getContext(), JniPlayerActivity2.class);
+                                intent.setClass(getContext(), JniPlayerActivity.class);
+                                intent.putExtra(JniPlayerActivity.CONTENT_PATH, path);
                                 getAttachedActivity().startActivity(intent);
                                 ((BaseActivity) getAttachedActivity()).enterActivity();
                                 break;

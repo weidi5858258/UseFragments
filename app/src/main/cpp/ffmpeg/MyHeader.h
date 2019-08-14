@@ -114,7 +114,7 @@ extern "C" {// 不能少
 #define NEXT_QUEUE1 1
 #define NEXT_QUEUE2 2
 
-#define MAX_AVPACKET_COUNT_AUDIO 2000
+#define MAX_AVPACKET_COUNT_AUDIO 1000
 // >= 500
 #define MAX_AVPACKET_COUNT_VIDEO 1000
 
@@ -132,6 +132,8 @@ struct Wrapper {
     int type = TYPE_UNKNOW;
     AVFormatContext *avFormatContext = NULL;
     AVCodecContext *avCodecContext = NULL;
+    // 有些东西需要通过它去得到
+    AVCodecParameters *avCodecParameters = NULL;
     // 解码器
     AVCodec *decoderAVCodec = NULL;
     // 编码器
@@ -142,8 +144,6 @@ struct Wrapper {
     AVFrame *srcAVFrame = NULL;
     // 用于格式转换(音频用不到)
     AVFrame *dstAVFrame = NULL;
-    // 有些东西需要通过它去得到
-    AVCodecParameters *avCodecParameters = NULL;
     int streamIndex = -1;
     // 读取了多少个AVPacket
     int readFramesCount = 0;
@@ -162,24 +162,23 @@ struct Wrapper {
     bool isReadQueue1Full = false;
     bool isReadQueue2Full = false;
     int next = NEXT_UNKNOW;
-
-    int maxAVPacketsCount = 1000;
+    // 队列中最多保存多少个AVPacket
+    int maxAVPacketsCount = 0;
 
     bool isStarted = false;
-
     bool isReading = false;
     bool isHandling = false;
-
     // 因为user所以pause
     bool isPausedForUser = false;
     // 因为cache所以pause
     bool isPausedForCache = false;
 
-    pthread_mutex_t readLockMutex = PTHREAD_MUTEX_INITIALIZER;
-    pthread_cond_t readLockCondition = PTHREAD_COND_INITIALIZER;
+    int64_t duration = 0;
 
-    pthread_mutex_t handleLockMutex = PTHREAD_MUTEX_INITIALIZER;
-    pthread_cond_t handleLockCondition = PTHREAD_COND_INITIALIZER;
+    pthread_mutex_t readLockMutex;
+    pthread_cond_t readLockCondition;
+    pthread_mutex_t handleLockMutex;
+    pthread_cond_t handleLockCondition;
 };
 
 struct AudioWrapper {
@@ -222,6 +221,5 @@ struct VideoWrapper {
     // 使用到sws_scale函数时需要定义这些变量
     int srcLineSize[4] = {0}, dstLineSize[4] = {0};
 };
-
 
 #endif //USEFRAGMENTS_MYHEADER_H

@@ -351,6 +351,9 @@ public class Contents {
                 "shape_of_my_heart",
                 "/storage/2430-1702/BaiduNetdisk/video/shape_of_my_heart.mp4");
         movieMap.put(
+                "地狱男爵-血皇后崛起.mp4",
+                "/storage/2430-1702/BaiduNetdisk/video/地狱男爵-血皇后崛起.mp4");
+        movieMap.put(
                 "流浪的地球",
                 "/storage/2430-1702/BaiduNetdisk/video/流浪的地球.mp4");
         movieMap.put(
@@ -359,7 +362,6 @@ public class Contents {
         movieMap.put(
                 "05",
                 "/storage/2430-1702/BaiduNetdisk/video/05.mp4");
-
         movieMap.put(
                 "",
                 "");

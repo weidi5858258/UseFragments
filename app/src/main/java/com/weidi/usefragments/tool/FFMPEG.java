@@ -8,8 +8,8 @@ import android.view.Surface;
 
 import com.weidi.usefragments.media.MediaUtils;
 
-/**
- * Created by root on 19-8-8.
+/***
+ Created by root on 19-8-8.
  */
 
 public class FFMPEG {
@@ -20,6 +20,7 @@ public class FFMPEG {
         try {
             System.loadLibrary("ffmpeg");
         } catch (java.lang.UnsatisfiedLinkError error) {
+            MLog.e(TAG, "卧槽, ffmpeg库加载失败了!!!");
             error.printStackTrace();
         }
     }
@@ -27,18 +28,23 @@ public class FFMPEG {
     private AudioTrack mAudioTrack;
     private float mVolume = 1.0f;
 
-    public native int setSurface(Surface surface);
+    // 首先调用
+    public native int setSurface(String filePath, Surface surface);
 
     public native int initAudio();
 
     public native int initVideo();
 
+    // 开线程
     public native int audioReadData();
 
+    // 开线程
     public native int audioHandleData();
 
+    // 开线程
     public native int videoReadData();
 
+    // 开线程
     public native int videoHandleData();
 
     public native int play();
@@ -48,6 +54,10 @@ public class FFMPEG {
     public native int stop();
 
     public native int release();
+
+    public native boolean isRunning();
+
+    public native boolean isPlaying();
 
     // 供jni层调用
     private void createAudioTrack(int sampleRateInHz,
@@ -104,13 +114,5 @@ public class FFMPEG {
             mAudioTrack.setStereoVolume(mVolume, mVolume);
         }
     }
-
-    /*private void stop() {
-        MediaUtils.stopAudioTrack(mAudioTrack);
-    }
-
-    private void release() {
-        MediaUtils.releaseAudioTrack(mAudioTrack);
-    }*/
 
 }

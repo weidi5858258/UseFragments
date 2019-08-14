@@ -178,6 +178,7 @@ public class JniPlayerActivity extends BaseActivity {
     private PowerManager.WakeLock mPowerWakeLock;
     // private SimpleVideoPlayer mSampleVideoPlayer;
     private SimpleVideoPlayer7 mSampleVideoPlayer;
+    private FFMPEG mFFMPEGPlayer;
     private String mPath;
     private long mProgress;
     private long mPresentationTimeUs;
@@ -239,53 +240,6 @@ public class JniPlayerActivity extends BaseActivity {
         mPauseIB.setOnClickListener(mOnClickListener);
         mNextIB.setOnClickListener(mOnClickListener);
         mSurfaceView.setOnClickListener(mOnClickListener);
-        // 没有图像出来,就是由于没有设置PixelFormat.RGBA_8888
-        // 这里要写
-        mSurfaceView.getHolder().setFormat(PixelFormat.RGBA_8888);
-        mSurfaceView.getHolder().addCallback(new SurfaceHolder.Callback() {
-            @Override
-            public void surfaceCreated(
-                    SurfaceHolder holder) {
-                MLog.d(TAG, "surfaceCreated()");
-                mSurface = holder.getSurface();
-
-                // 这里也要写
-                holder.setFormat(PixelFormat.RGBA_8888);
-
-                // Test
-                FFMPEG ffmpeg = new FFMPEG();
-                ffmpeg.setSurface(mSurface);
-                ffmpeg.play();
-
-                /*mSampleVideoPlayer.setSurface(mSurface);
-                mSampleVideoPlayer.play();*/
-                //next();
-
-                /*SimpleVideoPlayer mSampleVideoPlayer = new SimpleVideoPlayer();
-                mSampleVideoPlayer.setContext(getContext());
-                mSampleVideoPlayer.setPath(mVideoPath);
-                mSampleVideoPlayer.setSurface(mSurface);
-                mSampleVideoPlayer.play();*/
-
-                /*mSampleVideoPlayer.setContext(getContext());
-                mSampleVideoPlayer.setPath(mPath);
-                mSampleVideoPlayer.setSurface(mSurface);
-                mSampleVideoPlayer.setCallback(mCallback);
-                //mSampleVideoPlayer.setProgressUs(300160000L);
-                mSampleVideoPlayer.play();*/
-            }
-
-            @Override
-            public void surfaceChanged(
-                    SurfaceHolder holder, int format, int width, int height) {
-            }
-
-            @Override
-            public void surfaceDestroyed(
-                    SurfaceHolder holder) {
-                MLog.d(TAG, "surfaceDestroyed()");
-            }
-        });
 
         // mSampleVideoPlayer = new SimpleVideoPlayer();
         mSampleVideoPlayer = new SimpleVideoPlayer7();
@@ -358,6 +312,70 @@ public class JniPlayerActivity extends BaseActivity {
                 DownloadFileService.class,
                 DownloadFileService.MSG_SET_CALLBACK,
                 new Object[]{mDownloadCallback});
+
+        if (mSurface == null) {
+            // 没有图像出来,就是由于没有设置PixelFormat.RGBA_8888
+            // 这里要写
+            mSurfaceView.getHolder().setFormat(PixelFormat.RGBA_8888);
+            mSurfaceView.getHolder().addCallback(new SurfaceHolder.Callback() {
+                @Override
+                public void surfaceCreated(
+                        SurfaceHolder holder) {
+                    MLog.d(TAG, "surfaceCreated()");
+                    mSurface = holder.getSurface();
+                    // 这里也要写
+                    holder.setFormat(PixelFormat.RGBA_8888);
+
+                    // Test
+                    mFFMPEGPlayer = new FFMPEG();
+                    mFFMPEGPlayer.setSurface(mPath, mSurface);
+
+                    int videoResult = mFFMPEGPlayer.initVideo();
+                    int audioResult = mFFMPEGPlayer.initAudio();
+
+                    if (videoResult == 0) {
+                        new Thread(new Runnable() {
+                            @Override
+                            public void run() {
+                                mFFMPEGPlayer.videoReadData();
+                            }
+                        }).start();
+                        new Thread(new Runnable() {
+                            @Override
+                            public void run() {
+                                mFFMPEGPlayer.videoHandleData();
+                            }
+                        }).start();
+                    }
+
+                    if (audioResult == 0) {
+                        new Thread(new Runnable() {
+                            @Override
+                            public void run() {
+                                mFFMPEGPlayer.audioReadData();
+                            }
+                        }).start();
+                        new Thread(new Runnable() {
+                            @Override
+                            public void run() {
+                                mFFMPEGPlayer.audioHandleData();
+                            }
+                        }).start();
+                    }
+                }
+
+                @Override
+                public void surfaceChanged(
+                        SurfaceHolder holder, int format, int width, int height) {
+                }
+
+                @Override
+                public void surfaceDestroyed(
+                        SurfaceHolder holder) {
+                    MLog.d(TAG, "surfaceDestroyed()");
+                }
+            });
+        }
     }
 
     private void internalStop() {
@@ -365,11 +383,17 @@ public class JniPlayerActivity extends BaseActivity {
             mPowerWakeLock.release();
             mPowerWakeLock = null;
         }
+        if (mFFMPEGPlayer != null) {
+            mFFMPEGPlayer.stop();
+        }
     }
 
     private void internalDestroy() {
         if (mSampleVideoPlayer != null) {
             mSampleVideoPlayer.release();
+        }
+        if (mFFMPEGPlayer != null) {
+            mFFMPEGPlayer.release();
         }
     }
 
@@ -532,20 +556,22 @@ public class JniPlayerActivity extends BaseActivity {
                     MLog.i(TAG, "MediaUtils.variableValues: " + MediaUtils.variableValues);
                     break;
                 case R.id.button_play:
-                    if (mSampleVideoPlayer.isRunning()) {
-                        if (mSampleVideoPlayer.isPlaying()) {
-                            mPlayIB.setVisibility(View.GONE);
-                            mPauseIB.setVisibility(View.VISIBLE);
-                            mSampleVideoPlayer.pause();
+                    if (mFFMPEGPlayer != null) {
+                        if (mFFMPEGPlayer.isRunning()) {
+                            if (mFFMPEGPlayer.isPlaying()) {
+                                mPlayIB.setVisibility(View.GONE);
+                                mPauseIB.setVisibility(View.VISIBLE);
+                                mFFMPEGPlayer.pause();
+                            }
                         }
                     }
                     break;
                 case R.id.button_pause:
-                    if (mSampleVideoPlayer.isRunning()) {
-                        if (!mSampleVideoPlayer.isPlaying()) {
+                    if (mFFMPEGPlayer != null) {
+                        if (!mFFMPEGPlayer.isPlaying()) {
                             mPlayIB.setVisibility(View.VISIBLE);
                             mPauseIB.setVisibility(View.GONE);
-                            mSampleVideoPlayer.play();
+                            mFFMPEGPlayer.play();
                         }
                     }
                     break;
