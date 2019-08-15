@@ -121,6 +121,24 @@ public class Contents {
                 "零号病人",
                 "http://vip.zuiku8.com/1808/%E9%9B%B6%E5%8F%B7%E7%97%85%E4%BA%BA.HD1280%E9%AB%98%E6%B8%85%E4%B8%AD%E8%8B%B1%E5%8F%8C%E5%AD%97%E7%89%88.mp4");
         movieMap.put(
+                "决战异世界",
+                "http://download.xunleizuida.com/1904/%E5%86%B3%E6%88%98%E5%BC%82%E4%B8%96%E7%95%8C.HD1280%E9%AB%98%E6%B8%85%E5%9B%BD%E8%AF%AD%E4%B8%AD%E5%AD%97%E7%89%88.mp4");
+        movieMap.put(
+                "大轰炸",
+                "http://xunleib.zuida360.com/1810/%E5%A4%A7%E8%BD%B0%E7%82%B8.HD1280%E9%AB%98%E6%B8%85%E4%B8%AD%E8%8B%B1%E5%8F%8C%E5%AD%97%E7%89%88.mp4");
+        movieMap.put(
+                "特勤精英之逃出生天",
+                "http://download.xunleizuida.com/1904/%E7%89%B9%E5%8B%A4%E7%B2%BE%E8%8B%B1%E4%B9%8B%E9%80%83%E5%87%BA%E7%94%9F%E5%A4%A9.HD1280%E9%AB%98%E6%B8%85%E5%9B%BD%E8%AF%AD%E4%B8%AD%E5%AD%97%E7%89%88.mp4");
+        movieMap.put(
+                "特勤精英之生死救援",
+                "http://download.xunleizuida.com/1904/%E7%89%B9%E5%8B%A4%E7%B2%BE%E8%8B%B1%E4%B9%8B%E7%94%9F%E6%AD%BB%E6%95%91%E6%8F%B4.HD1280%E9%AB%98%E6%B8%85%E5%9B%BD%E8%AF%AD%E4%B8%AD%E5%AD%97%E7%89%88.mp4");
+        movieMap.put(
+                "",
+                "");
+        movieMap.put(
+                "",
+                "");
+        movieMap.put(
                 "",
                 "");
         movieMap.put(

@@ -348,8 +348,8 @@ public class JniPlayerActivity extends BaseActivity {
                     new Thread(new Runnable() {
                         @Override
                         public void run() {
-                            audioInitResult = mFFMPEGPlayer.initAudio();
                             videoInitResult = mFFMPEGPlayer.initVideo();
+                            audioInitResult = mFFMPEGPlayer.initAudio();
 
                             mUiHandler.removeMessages(MSG_START_PLAYBACK);
                             mUiHandler.sendEmptyMessage(MSG_START_PLAYBACK);
@@ -463,21 +463,6 @@ public class JniPlayerActivity extends BaseActivity {
                 threeFlag = false;
                 break;
             case MSG_START_PLAYBACK:
-                if (videoInitResult == 0) {
-                    new Thread(new Runnable() {
-                        @Override
-                        public void run() {
-                            mFFMPEGPlayer.videoReadData();
-                        }
-                    }).start();
-                    new Thread(new Runnable() {
-                        @Override
-                        public void run() {
-                            mFFMPEGPlayer.videoHandleData();
-                        }
-                    }).start();
-                }
-
                 if (audioInitResult == 0) {
                     new Thread(new Runnable() {
                         @Override
@@ -489,6 +474,20 @@ public class JniPlayerActivity extends BaseActivity {
                         @Override
                         public void run() {
                             mFFMPEGPlayer.audioHandleData();
+                        }
+                    }).start();
+                }
+                if (videoInitResult == 0) {
+                    new Thread(new Runnable() {
+                        @Override
+                        public void run() {
+                            mFFMPEGPlayer.videoReadData();
+                        }
+                    }).start();
+                    new Thread(new Runnable() {
+                        @Override
+                        public void run() {
+                            mFFMPEGPlayer.videoHandleData();
                         }
                     }).start();
                 }
