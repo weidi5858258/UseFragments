@@ -245,3 +245,21 @@ JNIEXPORT jint JNICALL
 Java_com_weidi_usefragments_tool_FFMPEG_seekTo(JNIEnv *env, jobject instance, jlong timestamp) {
     return (jint) alexander::seekTo(timestamp);
 }
+
+extern "C"
+JNIEXPORT jlong JNICALL
+Java_com_weidi_usefragments_tool_FFMPEG_getDuration(JNIEnv *env, jobject instance) {
+    return (jlong) alexander::getDuration();
+}
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_weidi_usefragments_tool_FFMPEG_stepAdd(JNIEnv *env, jobject instance) {
+    alexander::stepAdd();
+}
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_weidi_usefragments_tool_FFMPEG_stepSubtract(JNIEnv *env, jobject instance) {
+    alexander::stepSubtract();
+}

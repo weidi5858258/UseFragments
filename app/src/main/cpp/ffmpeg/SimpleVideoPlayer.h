@@ -74,6 +74,12 @@ namespace alexander {
 
     int seekTo(int64_t timestamp);
 
+    int64_t getDuration();
+
+    void stepAdd();
+
+    void stepSubtract();
+
     /*class SimpleVideoPlayer {
 
     private:

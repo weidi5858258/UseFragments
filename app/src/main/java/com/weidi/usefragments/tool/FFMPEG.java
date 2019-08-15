@@ -59,7 +59,14 @@ public class FFMPEG {
 
     public native boolean isPlaying();
 
+    public native void stepAdd();
+
+    public native void stepSubtract();
+
+    // 单位: 秒
     public native int seekTo(long timestamp);
+
+    public native long getDuration();
 
     // 供jni层调用
     private void createAudioTrack(int sampleRateInHz,

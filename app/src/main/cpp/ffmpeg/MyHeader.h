@@ -173,7 +173,9 @@ struct Wrapper {
     // 因为cache所以pause
     bool isPausedForCache = false;
 
+    // 单位: 秒
     int64_t duration = 0;
+    // 单位: 秒
     int64_t timestamp = 0;
 
     pthread_mutex_t readLockMutex;

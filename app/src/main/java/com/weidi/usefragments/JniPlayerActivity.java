@@ -39,7 +39,6 @@ import com.weidi.usefragments.tool.DownloadCallback;
 import com.weidi.usefragments.tool.FFMPEG;
 import com.weidi.usefragments.tool.MLog;
 import com.weidi.usefragments.tool.PermissionsUtils;
-import com.weidi.usefragments.tool.SimpleVideoPlayer7;
 
 /***
 
@@ -182,7 +181,6 @@ public class JniPlayerActivity extends BaseActivity {
     private SurfaceView mSurfaceView;
     private Surface mSurface;
     private PowerManager.WakeLock mPowerWakeLock;
-    //private SimpleVideoPlayer7 mSampleVideoPlayer;
     private FFMPEG mFFMPEGPlayer;
     private String mPath;
     private long mProgress;
@@ -256,8 +254,8 @@ public class JniPlayerActivity extends BaseActivity {
         audioInitResult = -1;
         videoInitResult = -1;
 
-        int duration = 0;//(int) mSampleVideoPlayer.getDurationUs() / 1000;
-        int currentPosition = (int) mPresentationTimeUs / 1000;
+        int duration = (int) mFFMPEGPlayer.getDuration();
+        int currentPosition = (int) mPresentationTimeUs;
         float pos = (float) currentPosition / duration;
         int target = Math.round(pos * mProgressBar.getMax());
         mProgressBar.setProgress(target);
@@ -272,12 +270,13 @@ public class JniPlayerActivity extends BaseActivity {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromTouch) {
                 if (fromTouch) {
-                    /*long tempProgress =
-                            (long) ((progress / 3840.00) * mSampleVideoPlayer.getDurationUs());
+                    // 得到的是秒
+                    long tempProgress =
+                            (long) ((progress / 3840.00) * mFFMPEGPlayer.getDuration());
                     mProgress = tempProgress;
                     String elapsedTime =
-                            DateUtils.formatElapsedTime(tempProgress / 1000 / 1000);
-                    mShowTimeTV.setText(elapsedTime);*/
+                            DateUtils.formatElapsedTime(tempProgress);
+                    mShowTimeTV.setText(elapsedTime);
                     /*mUiHandler.removeMessages(PLAYBACK_PROGRESS_CHANGED);
                     mUiHandler.sendEmptyMessageDelayed(PLAYBACK_PROGRESS_CHANGED, 50);*/
                 }
@@ -399,30 +398,29 @@ public class JniPlayerActivity extends BaseActivity {
                         (mPresentationTimeUs / 1000) / 1000);
                 mProgressTimeTV.setText(curElapsedTime);
 
-                /*if (mNeedToSyncProgressBar) {
-                    int duration = (int) (mSampleVideoPlayer.getDurationUs() / 1000);
+                if (mNeedToSyncProgressBar) {
+                    int duration = (int) (mFFMPEGPlayer.getDuration() / 1000);
                     int currentPosition = (int) (mPresentationTimeUs / 1000);
                     float pos = (float) currentPosition / duration;
                     int target = Math.round(pos * mProgressBar.getMax());
                     mProgressBar.setProgress(target);
-                }*/
+                }
                 break;
             case PLAYBACK_PROGRESS_CHANGED:
-                /*long process = (long) ((mProgress / 3840.00) * mSampleVideoPlayer.getDurationUs
-                ());
-                mSampleVideoPlayer.setProgressUs(process);
-                MLog.d(TAG, "uiHandleMessage() process: " + process +
-                        " " + DateUtils.formatElapsedTime(process / 1000 / 1000));*/
+                // 单位: 秒
+                /*long process = (long) ((mProgress / 3840.00) * mFFMPEGPlayer.getDuration());
+                mFFMPEGPlayer.seekTo(process);
+                MLog.d(TAG, "uiHandleMessage() mProgress: " + process +
+                        " " + DateUtils.formatElapsedTime(process));*/
                 break;
             case MSG_ON_READY:
-                /*String durationTime = DateUtils.formatElapsedTime(
-                        (mSampleVideoPlayer.getDurationUs() / 1000) / 1000);
+                String durationTime = DateUtils.formatElapsedTime(mFFMPEGPlayer.getDuration());
                 mDurationTimeTV.setText(durationTime);
                 if (durationTime.length() > 5) {
                     mProgressTimeTV.setText("00:00:00");
                 } else {
                     mProgressTimeTV.setText("00:00");
-                }*/
+                }
                 mProgressBar.setProgress(0);
                 mFileNameTV.setText(Contents.getTitle());
                 mLoadingView.setVisibility(View.VISIBLE);
@@ -463,6 +461,16 @@ public class JniPlayerActivity extends BaseActivity {
                 threeFlag = false;
                 break;
             case MSG_START_PLAYBACK:
+                if (videoInitResult == 0 || audioInitResult == 0) {
+                    durationTime = DateUtils.formatElapsedTime(mFFMPEGPlayer.getDuration());
+                    mDurationTimeTV.setText(durationTime);
+                    if (durationTime.length() > 5) {
+                        mProgressTimeTV.setText("00:00:00");
+                    } else {
+                        mProgressTimeTV.setText("00:00");
+                    }
+                    mProgressBar.setProgress(0);
+                }
                 if (audioInitResult == 0) {
                     new Thread(new Runnable() {
                         @Override
@@ -587,16 +595,14 @@ public class JniPlayerActivity extends BaseActivity {
         }
     };
 
-    private static final int STEP = 1000;
-
     private View.OnClickListener mOnClickListener = new View.OnClickListener() {
         @Override
         public void onClick(View v) {
             switch (v.getId()) {
                 case R.id.button_prev:
-                    // 声音太快执行这里
-                    MediaUtils.variableValues -= STEP;
-                    MLog.i(TAG, "MediaUtils.variableValues: " + MediaUtils.variableValues);
+                    if (mFFMPEGPlayer != null) {
+                        mFFMPEGPlayer.stepSubtract();
+                    }
                     break;
                 case R.id.button_play:
                     if (mFFMPEGPlayer != null) {
@@ -619,9 +625,9 @@ public class JniPlayerActivity extends BaseActivity {
                     }
                     break;
                 case R.id.button_next:
-                    // 声音太慢执行这里
-                    MediaUtils.variableValues += STEP;
-                    MLog.i(TAG, "MediaUtils.variableValues: " + MediaUtils.variableValues);
+                    if (mFFMPEGPlayer != null) {
+                        mFFMPEGPlayer.stepAdd();
+                    }
                     break;
                 case R.id.surfaceView:
                     if (mControllerPanelLayout.getVisibility() == View.VISIBLE) {
@@ -633,8 +639,12 @@ public class JniPlayerActivity extends BaseActivity {
                     break;
                 case R.id.content_tv:
                     mNeedToSyncProgressBar = true;
-                    //mSampleVideoPlayer.setProgressUs(mProgress);
                     mBubblePopupWindow.dismiss();
+                    MLog.d(TAG, "onClick() mProgress: " + mProgress +
+                            " " + DateUtils.formatElapsedTime(mProgress));
+                    if (mProgress >= 0 && mProgress <= mFFMPEGPlayer.getDuration()) {
+                        mFFMPEGPlayer.seekTo(mProgress);
+                    }
                     break;
                 default:
                     break;
