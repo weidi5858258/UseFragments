@@ -753,6 +753,7 @@ namespace alexander {
 
     double audioTimeDifference = 0;
     double videoTimeDifference = 0;
+    long preProgress = 0;
     long sleep = 0;
     long step = 0;
 
@@ -925,12 +926,7 @@ namespace alexander {
                             }
                             audioTimeDifference =
                                     decodedAVFrame->pts * av_q2d(stream->time_base);
-                            //decodedAVFrame->pts * av_q2d(stream->time_base) * AV_TIME_BASE;
                             //LOGD("handleAudioData() nowPts : %lf\n", audioTimeDifference);
-                            /*LOGW("handleAudioData() audioTimeDifference : %ld\n",
-                                 audioTimeDifference);*/
-                            /*LOGW("handleAudioData() decodedAVFrame->pts : %lf\n",
-                                 decodedAVFrame->pts * av_q2d(stream->time_base));*/
 #endif
 
                             // 获取给定音频参数所需的缓冲区大小
@@ -960,11 +956,9 @@ namespace alexander {
         av_packet_unref(avPacket);
         avPacket = NULL;
 
-        close();
-
         LOGD("handleAudioData() audio handleFramesCount : %d\n",
              audioWrapper->father->handleFramesCount);
-
+        stop();
         closeAudio();
 
         LOGD("%s\n", "handleAudioData() end");
@@ -987,6 +981,7 @@ namespace alexander {
         sleep = 0;
         step = 0;
         long tempSleep = 0;
+        preProgress = 0;
         int64_t prePts = 0;
         int64_t nowPts = 0;
         double timeDifference = 0;
@@ -1101,6 +1096,7 @@ namespace alexander {
                        && videoWrapper->father->queue1->allAVPacketsCount == 0
                        && videoWrapper->father->queue2->allAVPacketsCount == 0) {
                 videoWrapper->father->isHandling = false;
+                onProgressUpdated(videoWrapper->father->duration);
                 LOGW("handleVideoData() 电影结束,散场\n");
                 break;
             }
@@ -1146,25 +1142,15 @@ namespace alexander {
                     videoTimeDifference =
                             nowPts * av_q2d(stream->time_base);
                     //LOGI("handleVideoData() nowPts : %lf\n", videoTimeDifference);
-                    //nowPts * av_q2d(stream->time_base) * AV_TIME_BASE;
-                    /*if (videoTimeDifference == audioTimeDifference) {
-                        nowPts += 50000;
-                        LOGI("handleVideoData() videoTimeDifference : %ld\n",
-                             videoTimeDifference);
-                        if (audioWrapper != NULL && audioWrapper->father != NULL) {
-                            audioWrapper->father->isPausedForUser = true;
-                        }
-                        pthread_mutex_lock(&videoWrapper->father->handleLockMutex);
-                        pthread_cond_wait(&videoWrapper->father->handleLockCondition,
-                                          &videoWrapper->father->handleLockMutex);
-                        pthread_mutex_unlock(&videoWrapper->father->handleLockMutex);
-                    }*/
+                    long progress = (long) videoTimeDifference;
+                    if (progress > preProgress) {
+                        preProgress = progress;
+                        onProgressUpdated(progress);
+                    }
 #endif
                     timeDifference = (nowPts - prePts) * av_q2d(stream->time_base);
                     prePts = nowPts;
 #ifdef USE_AUDIO
-                    /*LOGI("handleVideoData() videoTimeDifference : %ld\n",
-                         videoTimeDifference);*/
                     if (videoTimeDifference < audioTimeDifference) {
                         // break后videoTimeDifference增长的速度会加快
                         break;
@@ -1243,7 +1229,7 @@ namespace alexander {
 
         LOGW("handleVideoData() video handleFramesCount : %d\n",
              videoWrapper->father->handleFramesCount);
-
+        stop();
         closeVideo();
 
         LOGW("%s\n", "handleVideoData() end");
@@ -1823,12 +1809,33 @@ namespace alexander {
 
     void stepAdd() {
         step++;
+        char dest[50];
+        sprintf(dest, "sleep: %ld, step: %ld\n", sleep, step);
+        onInfo(dest);
         LOGI("stepAdd()      sleep: %ld, step: %ld\n", sleep, step);
     }
 
     void stepSubtract() {
         step--;
+        char dest[50];
+        sprintf(dest, "sleep: %ld, step: %ld\n", sleep, step);
+        onInfo(dest);
         LOGI("stepSubtract() sleep: %ld, step: %ld\n", sleep, step);
     }
+
+    /***
+     char src[40];
+     char dest[100];
+     memset(dest, '\0', sizeof(dest));
+     strcpy(src, "This is runoob.com");
+     strcpy(dest, src);
+
+     原型：int strlen ( const char *str )
+     功能：返回字符串的实际长度,不含 '\0'.
+     strlen之所以不包含'\0',是因为它在计数的途中遇到'\0'结束.
+     char buf[100] = "hello";
+     printf("%d\n", strlen(buf));// 5
+     printf("%d\n", sizeof(buf));// 100
+     */
 
 }

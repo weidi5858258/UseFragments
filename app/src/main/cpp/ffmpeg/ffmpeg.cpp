@@ -15,6 +15,17 @@ jmethodID createAudioTrackMethodID = NULL;
 jmethodID writeMethodID = NULL;
 jmethodID sleepMethodID = NULL;
 
+jobject callbackJavaObject = NULL;
+struct Callback {
+    jmethodID onReadyMethodID = NULL;
+    jmethodID onPausedMethodID = NULL;
+    jmethodID onPlayedMethodID = NULL;
+    jmethodID onFinishedMethodID = NULL;
+    jmethodID onProgressUpdatedMethodID = NULL;
+    jmethodID onErrorMethodID = NULL;
+    jmethodID onInfoMethodID = NULL;
+} callback;
+
 /***
  called at the library loaded.
  这个方法只有放在这个文件里才有效,在其他文件不会被回调
@@ -93,7 +104,9 @@ void close() {
     JNIEnv *env;
     bool isAttached = getEnv(&env);
     env->DeleteGlobalRef(ffmpegJavaObject);
+    env->DeleteGlobalRef(callbackJavaObject);
     ffmpegJavaObject = NULL;
+    callbackJavaObject = NULL;
     if (isAttached) {
         gJavaVm->DetachCurrentThread();
     }
@@ -102,7 +115,9 @@ void close() {
 void audioSleep(long ms) {
     JNIEnv *audioEnv;
     bool audioIsAttached = getEnv(&audioEnv);
-    if (audioEnv != NULL && ffmpegJavaObject != NULL && sleepMethodID != NULL) {
+    if (audioEnv != NULL
+        && ffmpegJavaObject != NULL
+        && sleepMethodID != NULL) {
         audioEnv->CallVoidMethod(ffmpegJavaObject, sleepMethodID, (jlong) ms);
     }
     if (audioIsAttached) {
@@ -113,13 +128,110 @@ void audioSleep(long ms) {
 void videoSleep(long ms) {
     JNIEnv *videoEnv;
     bool videoIsAttached = getEnv(&videoEnv);
-    if (videoEnv != NULL && ffmpegJavaObject != NULL && sleepMethodID != NULL) {
+    if (videoEnv != NULL
+        && ffmpegJavaObject != NULL
+        && sleepMethodID != NULL) {
         videoEnv->CallVoidMethod(ffmpegJavaObject, sleepMethodID, (jlong) ms);
     }
     if (videoIsAttached) {
         gJavaVm->DetachCurrentThread();
     }
 }
+
+void onReady() {
+    JNIEnv *jniEnv;
+    bool isAttached = getEnv(&jniEnv);
+    if (jniEnv != NULL
+        && callbackJavaObject != NULL
+        && callback.onReadyMethodID != NULL) {
+        jniEnv->CallVoidMethod(callbackJavaObject, callback.onReadyMethodID);
+    }
+    if (isAttached) {
+        gJavaVm->DetachCurrentThread();
+    }
+}
+
+void onPaused() {
+    JNIEnv *jniEnv;
+    bool isAttached = getEnv(&jniEnv);
+    if (jniEnv != NULL
+        && callbackJavaObject != NULL
+        && callback.onPausedMethodID != NULL) {
+        jniEnv->CallVoidMethod(callbackJavaObject, callback.onPausedMethodID);
+    }
+    if (isAttached) {
+        gJavaVm->DetachCurrentThread();
+    }
+}
+
+void onPlayed() {
+    JNIEnv *jniEnv;
+    bool isAttached = getEnv(&jniEnv);
+    if (jniEnv != NULL
+        && callbackJavaObject != NULL
+        && callback.onPlayedMethodID != NULL) {
+        jniEnv->CallVoidMethod(callbackJavaObject, callback.onPlayedMethodID);
+    }
+    if (isAttached) {
+        gJavaVm->DetachCurrentThread();
+    }
+}
+
+void onFinished() {
+    JNIEnv *jniEnv;
+    bool isAttached = getEnv(&jniEnv);
+    if (jniEnv != NULL
+        && callbackJavaObject != NULL
+        && callback.onFinishedMethodID != NULL) {
+        jniEnv->CallVoidMethod(callbackJavaObject, callback.onFinishedMethodID);
+    }
+    if (isAttached) {
+        gJavaVm->DetachCurrentThread();
+    }
+}
+
+void onProgressUpdated(long seconds) {
+    JNIEnv *jniEnv;
+    bool isAttached = getEnv(&jniEnv);
+    if (jniEnv != NULL
+        && callbackJavaObject != NULL
+        && callback.onProgressUpdatedMethodID != NULL) {
+        jniEnv->CallVoidMethod(callbackJavaObject,
+                               callback.onProgressUpdatedMethodID,
+                               (jlong) seconds);
+    }
+    if (isAttached) {
+        gJavaVm->DetachCurrentThread();
+    }
+}
+
+void onError() {
+    JNIEnv *jniEnv;
+    bool isAttached = getEnv(&jniEnv);
+    if (jniEnv != NULL && callbackJavaObject != NULL && callback.onErrorMethodID != NULL) {
+        jniEnv->CallVoidMethod(callbackJavaObject, callback.onErrorMethodID);
+    }
+    if (isAttached) {
+        gJavaVm->DetachCurrentThread();
+    }
+}
+
+void onInfo(char *info) {
+    JNIEnv *jniEnv;
+    bool isAttached = getEnv(&jniEnv);
+    if (jniEnv != NULL
+        && callbackJavaObject != NULL
+        && callback.onInfoMethodID != NULL) {
+        jniEnv->CallVoidMethod(callbackJavaObject,
+                               callback.onInfoMethodID,
+                               jniEnv->NewStringUTF(info));
+    }
+    if (isAttached) {
+        gJavaVm->DetachCurrentThread();
+    }
+}
+
+/////////////////////////////////////////////////////////////////////////
 
 extern "C"
 JNIEXPORT jint JNICALL
@@ -152,6 +264,32 @@ Java_com_weidi_usefragments_tool_FFMPEG_setSurface(JNIEnv *env,
 
 extern "C"
 JNIEXPORT jint JNICALL
+Java_com_weidi_usefragments_tool_FFMPEG_setCallback(JNIEnv *env,
+                                                    jobject ffmpegObject,
+                                                    jobject callbackObject) {
+    jclass CallbackClass = env->FindClass("com/weidi/usefragments/tool/Callback");
+    // 第三个参数: 括号中是java端方法的参数签名,括号后面是java端方法的返回值签名(V表示void)
+    callback.onReadyMethodID = env->GetMethodID(
+            CallbackClass, "onReady", "()V");
+    callback.onPausedMethodID = env->GetMethodID(
+            CallbackClass, "onPaused", "()V");
+    callback.onPlayedMethodID = env->GetMethodID(
+            CallbackClass, "onPlayed", "()V");
+    callback.onFinishedMethodID = env->GetMethodID(
+            CallbackClass, "onFinished", "()V");
+    callback.onProgressUpdatedMethodID = env->GetMethodID(
+            CallbackClass, "onProgressUpdated", "(J)V");
+    callback.onErrorMethodID = env->GetMethodID(
+            CallbackClass, "onError", "()V");
+    callback.onInfoMethodID = env->GetMethodID(
+            CallbackClass, "onInfo", "(Ljava/lang/String;)V");
+    callbackJavaObject = reinterpret_cast<jobject>(env->NewGlobalRef(callbackObject));
+
+    return (jint) 0;
+}
+
+extern "C"
+JNIEXPORT jint JNICALL
 Java_com_weidi_usefragments_tool_FFMPEG_initAudio(JNIEnv *env, jobject ffmpegObject) {
     return (jint) alexander::initAudioPlayer();
 }
@@ -159,6 +297,7 @@ Java_com_weidi_usefragments_tool_FFMPEG_initAudio(JNIEnv *env, jobject ffmpegObj
 extern "C"
 JNIEXPORT jint JNICALL
 Java_com_weidi_usefragments_tool_FFMPEG_initVideo(JNIEnv *env, jobject ffmpegObject) {
+    onReady();
     return (jint) alexander::initVideoPlayer();
 }
 
@@ -204,6 +343,7 @@ extern "C"
 JNIEXPORT jint JNICALL
 Java_com_weidi_usefragments_tool_FFMPEG_play(JNIEnv *env, jobject ffmpegObject) {
     alexander::play();
+    onPlayed();
     return (jint) 0;
 }
 
@@ -211,6 +351,7 @@ extern "C"
 JNIEXPORT jint JNICALL
 Java_com_weidi_usefragments_tool_FFMPEG_pause(JNIEnv *env, jobject ffmpegObject) {
     alexander::pause();
+    onPaused();
     return (jint) 0;
 }
 
@@ -225,6 +366,7 @@ extern "C"
 JNIEXPORT jint JNICALL
 Java_com_weidi_usefragments_tool_FFMPEG_release(JNIEnv *env, jobject ffmpegObject) {
     alexander::release();
+    close();
     return (jint) 0;
 }
 

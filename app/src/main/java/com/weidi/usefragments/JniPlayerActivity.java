@@ -29,7 +29,6 @@ import android.widget.SeekBar;
 import android.widget.TextView;
 
 import com.weidi.eventbus.EventBusUtils;
-import com.weidi.usefragments.media.MediaUtils;
 import com.weidi.usefragments.receiver.MediaButtonReceiver;
 import com.weidi.usefragments.service.DownloadFileService;
 import com.weidi.usefragments.test_view.BubblePopupWindow;
@@ -39,6 +38,7 @@ import com.weidi.usefragments.tool.DownloadCallback;
 import com.weidi.usefragments.tool.FFMPEG;
 import com.weidi.usefragments.tool.MLog;
 import com.weidi.usefragments.tool.PermissionsUtils;
+import com.weidi.utils.MyToast;
 
 /***
 
@@ -170,7 +170,7 @@ public class JniPlayerActivity extends BaseActivity {
     public static final String CONTENT_PATH = "content_path";
 
     private static final int PLAYBACK_INFO = 0x001;
-    private static final int PLAYBACK_PROGRESS_UPDATED = 0x002;
+    public static final int PLAYBACK_PROGRESS_UPDATED = 0x002;
     private static final int PLAYBACK_PROGRESS_CHANGED = 0x003;
     private static final int MSG_ON_READY = 0x004;
     private static final int MSG_LOADING_SHOW = 0x005;
@@ -184,7 +184,7 @@ public class JniPlayerActivity extends BaseActivity {
     private FFMPEG mFFMPEGPlayer;
     private String mPath;
     private long mProgress;
-    private long mPresentationTimeUs;
+    private long mPresentationTime;
     private int mDownloadProgress = -1;
     private long contentLength = -1;
     private boolean mNeedToSyncProgressBar = true;
@@ -255,7 +255,7 @@ public class JniPlayerActivity extends BaseActivity {
         videoInitResult = -1;
 
         int duration = (int) mFFMPEGPlayer.getDuration();
-        int currentPosition = (int) mPresentationTimeUs;
+        int currentPosition = (int) mPresentationTime;
         float pos = (float) currentPosition / duration;
         int target = Math.round(pos * mProgressBar.getMax());
         mProgressBar.setProgress(target);
@@ -341,14 +341,24 @@ public class JniPlayerActivity extends BaseActivity {
                         return;
                     }
 
-                    // Test
                     mFFMPEGPlayer.setSurface(mPath, mSurface);
+                    mFFMPEGPlayer.setCallback(mFFMPEGPlayer.mCallback);
+                    mFFMPEGPlayer.setHandler(mUiHandler);
 
                     new Thread(new Runnable() {
                         @Override
                         public void run() {
                             videoInitResult = mFFMPEGPlayer.initVideo();
                             audioInitResult = mFFMPEGPlayer.initAudio();
+                            if (videoInitResult != 0 && audioInitResult != 0) {
+                                MyToast.show("音视频初始化都失败");
+                            } else if (videoInitResult != 0 && audioInitResult == 0) {
+                                MyToast.show("视频初始化都失败");
+                            } else if (videoInitResult == 0 && audioInitResult != 0) {
+                                MyToast.show("音频初始化都失败");
+                            } else if (videoInitResult == 0 && audioInitResult == 0) {
+                                MyToast.show("音视频初始化都成功");
+                            }
 
                             mUiHandler.removeMessages(MSG_START_PLAYBACK);
                             mUiHandler.sendEmptyMessage(MSG_START_PLAYBACK);
@@ -366,7 +376,7 @@ public class JniPlayerActivity extends BaseActivity {
                         SurfaceHolder holder) {
                     MLog.d(TAG, "surfaceDestroyed()");
                     if (mFFMPEGPlayer != null) {
-                        mFFMPEGPlayer.release();
+                        mFFMPEGPlayer.releaseAll();
                     }
                 }
             });
@@ -394,13 +404,16 @@ public class JniPlayerActivity extends BaseActivity {
 
         switch (msg.what) {
             case PLAYBACK_PROGRESS_UPDATED:
-                String curElapsedTime = DateUtils.formatElapsedTime(
-                        (mPresentationTimeUs / 1000) / 1000);
+                if (msg.obj == null) {
+                    return;
+                }
+                long presentationTime = (Long) msg.obj;
+                String curElapsedTime = DateUtils.formatElapsedTime(presentationTime);
                 mProgressTimeTV.setText(curElapsedTime);
 
                 if (mNeedToSyncProgressBar) {
-                    int duration = (int) (mFFMPEGPlayer.getDuration() / 1000);
-                    int currentPosition = (int) (mPresentationTimeUs / 1000);
+                    int duration = (int) (mFFMPEGPlayer.getDuration());
+                    int currentPosition = (int) (presentationTime);
                     float pos = (float) currentPosition / duration;
                     int target = Math.round(pos * mProgressBar.getMax());
                     mProgressBar.setProgress(target);
@@ -531,7 +544,7 @@ public class JniPlayerActivity extends BaseActivity {
 
         @Override
         public void onProgressUpdated(long presentationTimeUs) {
-            mPresentationTimeUs = presentationTimeUs;
+            mPresentationTime = presentationTimeUs;
             mUiHandler.removeMessages(PLAYBACK_PROGRESS_UPDATED);
             mUiHandler.sendEmptyMessage(PLAYBACK_PROGRESS_UPDATED);
         }

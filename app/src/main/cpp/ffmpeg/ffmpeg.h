@@ -13,10 +13,22 @@ void write(unsigned char *pcmData,
            int offsetInBytes,
            int sizeInBytes);
 
-void close();
-
 void audioSleep(long ms);
 
 void videoSleep(long ms);
+
+void onReady();
+
+void onPaused();
+
+void onPlayed();
+
+void onFinished();
+
+void onProgressUpdated(long seconds);
+
+void onError();
+
+void onInfo(char *info);
 
 #endif //USEFRAGMENTS_FFMPEG_H
