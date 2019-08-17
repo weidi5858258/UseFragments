@@ -23,7 +23,6 @@ import android.widget.Toast;
 import com.weidi.eventbus.EventBusUtils;
 import com.weidi.usefragments.BaseActivity;
 import com.weidi.usefragments.JniPlayerActivity;
-import com.weidi.usefragments.JniPlayerActivity2;
 import com.weidi.usefragments.PlayerActivity;
 import com.weidi.usefragments.R;
 import com.weidi.usefragments.adapter.ContentsAdapter;
@@ -33,7 +32,6 @@ import com.weidi.usefragments.inject.InjectView;
 import com.weidi.usefragments.service.DownloadFileService;
 import com.weidi.usefragments.tool.Contents;
 import com.weidi.usefragments.tool.DownloadCallback;
-import com.weidi.usefragments.tool.FFMPEG;
 import com.weidi.usefragments.tool.MLog;
 
 import java.io.File;

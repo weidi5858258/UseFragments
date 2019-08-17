@@ -1995,13 +1995,13 @@ public class FragOperManager implements Serializable {
         }
         Iterator<Map<Activity, Integer>> iterator = mContainerMapList.iterator();
         while (iterator.hasNext()) {
-            Map<Activity, Integer> map = iterator.next();
+            Map<Activity, Integer> map = iterator.nextHandle();
             for (Map.Entry<Activity, Integer> entry : map.entrySet()) {
                 FragmentTransaction fTransaction =
                         entry.getKey().getFragmentManager().beginTransaction();
                 Iterator<Fragment> iter = mAllFragmentsList.iterator();
                 while (iter.hasNext()) {
-                    Fragment fragment = iter.next();
+                    Fragment fragment = iter.nextHandle();
                     fTransaction.remove(fragment);
                     iter.remove();
                 }

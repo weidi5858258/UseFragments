@@ -298,6 +298,7 @@ extern "C"
 JNIEXPORT jint JNICALL
 Java_com_weidi_usefragments_tool_FFMPEG_initVideo(JNIEnv *env, jobject ffmpegObject) {
     onReady();
+    alexander::initAV();
     return (jint) alexander::initVideoPlayer();
 }
 

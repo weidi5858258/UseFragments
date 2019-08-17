@@ -393,7 +393,7 @@ public class DecodeVideoFragment extends BaseFragment {
 
                 /*mSampleVideoPlayer.setSurface(mSurface);
                 mSampleVideoPlayer.play();*/
-                //next();
+                //nextHandle();
 
                 /*SimpleVideoPlayer mSampleVideoPlayer = new SimpleVideoPlayer();
                 mSampleVideoPlayer.setContext(getContext());
@@ -483,9 +483,9 @@ public class DecodeVideoFragment extends BaseFragment {
         }
         //mSampleVideoPlayer2.setPath(mCurVideoFile.getAbsolutePath());
         if (DEBUG)
-            MLog.d(TAG, "next() mCurVideoIndex: " + mCurVideoIndex +
+            MLog.d(TAG, "nextHandle() mCurVideoIndex: " + mCurVideoIndex +
                     " " + mCurVideoFile.getAbsolutePath());
-        //mSampleVideoPlayer2.next();
+        //mSampleVideoPlayer2.nextHandle();
     }
 
     public boolean onKeyDown(int keyCode, KeyEvent event) {

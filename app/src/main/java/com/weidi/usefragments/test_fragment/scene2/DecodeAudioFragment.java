@@ -651,7 +651,7 @@ public class DecodeAudioFragment extends BaseFragment {
         }
         mSimpleAudioPlayer.setPath(mCurMusicFile.getAbsolutePath());
         if (DEBUG)
-            MLog.d(TAG, "next() mCurMusicIndex: " + mCurMusicIndex +
+            MLog.d(TAG, "nextHandle() mCurMusicIndex: " + mCurMusicIndex +
                     " " + mCurMusicFile.getAbsolutePath());
         mSimpleAudioPlayer.next();
     }

@@ -352,10 +352,16 @@ public class JniPlayerActivity extends BaseActivity {
                             audioInitResult = mFFMPEGPlayer.initAudio();
                             if (videoInitResult != 0 && audioInitResult != 0) {
                                 MyToast.show("音视频初始化都失败");
+                                mUiHandler.post(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        finish();
+                                    }
+                                });
                             } else if (videoInitResult != 0 && audioInitResult == 0) {
-                                MyToast.show("视频初始化都失败");
+                                MyToast.show("视频初始化失败");
                             } else if (videoInitResult == 0 && audioInitResult != 0) {
-                                MyToast.show("音频初始化都失败");
+                                MyToast.show("音频初始化失败");
                             } else if (videoInitResult == 0 && audioInitResult == 0) {
                                 MyToast.show("音视频初始化都成功");
                             }

@@ -92,7 +92,8 @@ public class DownloadFileService extends Service {
     private static final int BUFFER = 1024 * 1024 * 2;
 
     public static String PATH =
-            "/storage/2430-1702/Android/data/com.weidi.usefragments/files/Movies/";
+            "/storage/emulated/0/Movies/";
+            //"/storage/2430-1702/Android/data/com.weidi.usefragments/files/Movies/";
     /*PATH = "/data/data/com.weidi.usefragments/files/";
     PATH = "/storage/37C8-3904/Android/data/com.weidi.usefragments/files/Movies/";
     PATH = "/storage/2430-1702/Android/data/com.weidi.usefragments/files/Movies/";*/

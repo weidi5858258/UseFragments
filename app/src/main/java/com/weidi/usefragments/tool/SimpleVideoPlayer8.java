@@ -55,7 +55,7 @@ import java.util.List;
  3.一方pause时,另一方没有pause
  4.seek
  5.pause or play
- 6.prev or next
+ 6.prev or nextHandle
  7.sound控制
  8.屏幕明亮控制
 

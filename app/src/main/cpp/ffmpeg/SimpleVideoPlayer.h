@@ -12,7 +12,7 @@
 
 namespace alexander {
 
-#define USE_AUDIO
+//#define USE_AUDIO
 #define USE_VIDEO
 
     static struct AudioWrapper *audioWrapper = NULL;

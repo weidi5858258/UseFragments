@@ -248,7 +248,7 @@ public class PlayerActivity extends BaseActivity {
 
                 /*mSampleVideoPlayer.setSurface(mSurface);
                 mSampleVideoPlayer.play();*/
-                //next();
+                //nextHandle();
 
                 /*SimpleVideoPlayer mSampleVideoPlayer = new SimpleVideoPlayer();
                 mSampleVideoPlayer.setContext(getContext());

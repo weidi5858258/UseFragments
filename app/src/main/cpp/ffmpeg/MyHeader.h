@@ -110,11 +110,15 @@ extern "C" {// 不能少
 #define TYPE_AUDIO 1
 #define TYPE_VIDEO 2
 
-#define NEXT_UNKNOW -1
-#define NEXT_QUEUE1 1
-#define NEXT_QUEUE2 2
+#define NEXT_READ_UNKNOW -1
+#define NEXT_READ_QUEUE1 1
+#define NEXT_READ_QUEUE2 2
 
-#define MAX_AVPACKET_COUNT_AUDIO 1000
+#define NEXT_HANDLE_UNKNOW -1
+#define NEXT_HANDLE_QUEUE1 1
+#define NEXT_HANDLE_QUEUE2 2
+
+#define MAX_AVPACKET_COUNT_AUDIO 2000
 // >= 500
 #define MAX_AVPACKET_COUNT_VIDEO 1000
 
@@ -161,7 +165,8 @@ struct Wrapper {
     struct AVPacketQueue *queue2 = NULL;
     bool isReadQueue1Full = false;
     bool isReadQueue2Full = false;
-    int next = NEXT_UNKNOW;
+    int nextRead = NEXT_READ_UNKNOW;
+    int nextHandle = NEXT_HANDLE_UNKNOW;
     // 队列中最多保存多少个AVPacket
     int maxAVPacketsCount = 0;
 
