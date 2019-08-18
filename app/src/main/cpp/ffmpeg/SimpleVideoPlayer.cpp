@@ -542,9 +542,11 @@ namespace alexander {
         return -1;
     }
 
+    double TIME_DIFFERENCE = 0.100000;
     double audioTimeDifference = 0;
     double videoTimeDifference = 0;
-    double preTimeDifference = 0;
+    double totalTimeDifference = 0;
+    long totalTimeDifferenceCount = 0;
     long preProgress = 0;
     long sleep = 0;
     long step = 0;
@@ -1078,9 +1080,11 @@ namespace alexander {
         pthread_mutex_unlock(&videoWrapper->father->handleLockMutex);
         LOGW("handleVideoData() wait() end\n");
 
+        TIME_DIFFERENCE = 0.100000;
         audioTimeDifference = 0;
         videoTimeDifference = 0;
-        preTimeDifference = 0;
+        totalTimeDifference = 0;
+        totalTimeDifferenceCount = 0;
 
         sleep = 0;
         step = 0;
@@ -1287,14 +1291,17 @@ namespace alexander {
                             break;
                         }
                         // 0.177853 0.155691 0.156806 0.154362
-                        double timeDifference2 = videoTimeDifference - audioTimeDifference;
-                        LOGW("handleVideoData() video - audio : %lf\n", timeDifference2);
-                        /*if (preTimeDifference < timeDifference2) {
-                            preTimeDifference = timeDifference2;
-                        }*/
+                        double tempTimeDifference = videoTimeDifference - audioTimeDifference;
+                        LOGW("handleVideoData() video - audio   : %lf\n", tempTimeDifference);
+                        if (tempTimeDifference < 1.000000) {
+                            totalTimeDifference += tempTimeDifference;
+                            totalTimeDifferenceCount++;
+                            TIME_DIFFERENCE = totalTimeDifference / totalTimeDifferenceCount;
+                            LOGW("handleVideoData() TIME_DIFFERENCE : %lf\n", TIME_DIFFERENCE);
+                        }
                         // 如果videoTimeDifference比audioTimeDifference大出了一定的范围
                         // 那么说明视频播放快了,应等待音频
-                        while (videoTimeDifference - audioTimeDifference >= 0.100000) {
+                        while (videoTimeDifference - audioTimeDifference >= TIME_DIFFERENCE) {
                             videoSleep(10);
                         }
 #endif
