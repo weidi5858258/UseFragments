@@ -349,23 +349,30 @@ public class JniPlayerActivity extends BaseActivity {
                         @Override
                         public void run() {
                             videoInitResult = mFFMPEGPlayer.initVideo();
-                            audioInitResult = mFFMPEGPlayer.initAudio();
-                            if (videoInitResult != 0 && audioInitResult != 0) {
-                                MyToast.show("音视频初始化都失败");
+                            if (videoInitResult != 0) {
+                                MyToast.show("视频初始化失败");
                                 mUiHandler.post(new Runnable() {
                                     @Override
                                     public void run() {
                                         finish();
                                     }
                                 });
-                            } else if (videoInitResult != 0 && audioInitResult == 0) {
-                                MyToast.show("视频初始化失败");
-                            } else if (videoInitResult == 0 && audioInitResult != 0) {
-                                MyToast.show("音频初始化失败");
-                            } else if (videoInitResult == 0 && audioInitResult == 0) {
-                                MyToast.show("音视频初始化都成功");
+                                return;
                             }
 
+                            audioInitResult = mFFMPEGPlayer.initAudio();
+                            if (audioInitResult != 0) {
+                                MyToast.show("音频初始化失败");
+                                mUiHandler.post(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        finish();
+                                    }
+                                });
+                                return;
+                            }
+
+                            MyToast.show("音视频初始化都成功");
                             mUiHandler.removeMessages(MSG_START_PLAYBACK);
                             mUiHandler.sendEmptyMessage(MSG_START_PLAYBACK);
                         }
@@ -413,13 +420,13 @@ public class JniPlayerActivity extends BaseActivity {
                 if (msg.obj == null) {
                     return;
                 }
-                long presentationTime = (Long) msg.obj;
-                String curElapsedTime = DateUtils.formatElapsedTime(presentationTime);
+                mPresentationTime = (Long) msg.obj;
+                String curElapsedTime = DateUtils.formatElapsedTime(mPresentationTime);
                 mProgressTimeTV.setText(curElapsedTime);
 
                 if (mNeedToSyncProgressBar) {
                     int duration = (int) (mFFMPEGPlayer.getDuration());
-                    int currentPosition = (int) (presentationTime);
+                    int currentPosition = (int) (mPresentationTime);
                     float pos = (float) currentPosition / duration;
                     int target = Math.round(pos * mProgressBar.getMax());
                     mProgressBar.setProgress(target);
@@ -460,20 +467,28 @@ public class JniPlayerActivity extends BaseActivity {
                 } else if (firstFlag && secondFlag) {
                     if (DEBUG)
                         Log.d(TAG, "onKeyDown() 2");
-                    /*if (mProgressUs == -1) {
-                        step = (int) ((mVideoWrapper.presentationTimeUs2
-                                / (mVideoWrapper.durationUs * 1.00)) * 3840.00);
-                        Log.d(TAG, "onKeuiHandleMessageyDown() step: " + step);
-                    }
-                    step += 100;
-                    long progress = (long) (((step / 3840.00) * mVideoWrapper.durationUs));
-                    setProgressUs(progress);*/
+
                     if (mFFMPEGPlayer != null) {
-                        mFFMPEGPlayer.seekTo(0);
+                        mFFMPEGPlayer.seekTo(mPresentationTime + 30);
                     }
                 } else {
                     if (DEBUG)
                         Log.d(TAG, "onKeyDown() 1");
+
+                    // 播放与暂停
+                    if (mFFMPEGPlayer != null) {
+                        if (mFFMPEGPlayer.isRunning()) {
+                            if (mFFMPEGPlayer.isPlaying()) {
+                                mPlayIB.setVisibility(View.GONE);
+                                mPauseIB.setVisibility(View.VISIBLE);
+                                mFFMPEGPlayer.pause();
+                            } else {
+                                mPlayIB.setVisibility(View.VISIBLE);
+                                mPauseIB.setVisibility(View.GONE);
+                                mFFMPEGPlayer.play();
+                            }
+                        }
+                    }
                 }
                 firstFlag = false;
                 secondFlag = false;
@@ -549,8 +564,8 @@ public class JniPlayerActivity extends BaseActivity {
         }
 
         @Override
-        public void onProgressUpdated(long presentationTimeUs) {
-            mPresentationTime = presentationTimeUs;
+        public void onProgressUpdated(long presentationTime) {
+            mPresentationTime = presentationTime;
             mUiHandler.removeMessages(PLAYBACK_PROGRESS_UPDATED);
             mUiHandler.sendEmptyMessage(PLAYBACK_PROGRESS_UPDATED);
         }

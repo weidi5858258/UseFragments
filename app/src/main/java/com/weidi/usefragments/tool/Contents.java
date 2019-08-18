@@ -30,6 +30,9 @@ public class Contents {
                 "地狱男爵-血皇后崛起",
                 "http://anning.luanniao-zuida.com/1907/%E5%9C%B0%E7%8B%B1%E7%94%B7%E7%88%B5%EF%BC%9A%E8%A1%80%E7%9A%87%E5%90%8E%E5%B4%9B%E8%B5%B7.BD1280%E9%AB%98%E6%B8%85%E4%B8%AD%E8%8B%B1%E5%8F%8C%E5%AD%97%E7%89%88.mp4");
         movieMap.put(
+                "痞子英雄2-黎明升起",
+                "http://download.xunleizuida.com/1905/%E7%97%9E%E5%AD%90%E8%8B%B1%E9%9B%842%EF%BC%9A%E9%BB%8E%E6%98%8E%E5%8D%87%E8%B5%B7.HD1280%E9%AB%98%E6%B8%85%E5%9B%BD%E8%AF%AD%E4%B8%AD%E5%AD%97%E7%89%88.mp4");
+        movieMap.put(
                 "生死时速",
                 "http://xunlei.jingpin88.com/20171028/6WQ5SFS2/mp4/6WQ5SFS2.mp4");
         movieMap.put(
@@ -44,6 +47,9 @@ public class Contents {
         movieMap.put(
                 "黑豹",
                 "http://xunleib.zuida360.com/1805/H%E8%B1%B9.BD1280%E9%AB%98%E6%B8%85%E5%9B%BD%E8%AF%AD%E7%89%B9%E6%95%88%E4%B8%AD%E8%8B%B1%E5%8F%8C%E5%AD%97%E7%89%88.mp4");
+        movieMap.put(
+                "生化危机5-惩罚",
+                "http://xunlei.jingpin88.com/20171105/O3dRhCpO/mp4/O3dRhCpO.mp4");
         movieMap.put(
                 "生化危机-终章",
                 "http://zuidaziyuan.com/1704/%E7%94%9F%E5%8C%96%E5%8D%B1%E6%9C%BA6%EF%BC%9A%E7%BB%88%E7%AB%A0.BD1280%E9%AB%98%E6%B8%85%E4%B8%AD%E8%8B%B1%E5%8F%8C%E5%AD%97%E7%89%88.mp4");
@@ -86,7 +92,6 @@ public class Contents {
         movieMap.put(
                 "复仇者联盟4-终局之战",
                 "http://okxxzy.xzokzyzy.com/20190728/23849_9b8076fd/AvengersEndgame.2019.1080p.mp4");
-                //"http://okxxzy.xzokzyzy.com/20190728/23849_9b8076fd/AvengersEndgame.2019.1080p.mp4");
                 //"http://xunlei.zuidaxunlei.com/1907/FCZ%E8%81%94%E7%9B%9F4%EF%BC%9A%E7%BB%88%E5%B1%80%E4%B9%8B%E6%88%98.HD1280%E9%AB%98%E6%B8%85%E4%B8%AD%E5%AD%97%E7%89%88.mp4");
         movieMap.put(
                 "忍者刺客",
@@ -133,9 +138,6 @@ public class Contents {
         movieMap.put(
                 "特勤精英之生死救援",
                 "http://download.xunleizuida.com/1904/%E7%89%B9%E5%8B%A4%E7%B2%BE%E8%8B%B1%E4%B9%8B%E7%94%9F%E6%AD%BB%E6%95%91%E6%8F%B4.HD1280%E9%AB%98%E6%B8%85%E5%9B%BD%E8%AF%AD%E4%B8%AD%E5%AD%97%E7%89%88.mp4");
-        movieMap.put(
-                "",
-                "");
         movieMap.put(
                 "",
                 "");
@@ -254,6 +256,71 @@ public class Contents {
         movieMap.put(
                 "变形金刚5(null)",
                 "");
+
+        movieMap.put(
+                "破冰行动",
+                "http://anning.luanniao-zuida.com/1908/PB%E8%A1%8C%E5%8A%A8%E7%94%B5%E8%A7%86%E7%89%88-01.mp4");
+
+        movieMap.put(
+                "勇探实录01",
+                "http://anning.luanniao-zuida.com/1908/%E5%8B%87%E6%8E%A2%E5%AE%9E%E5%BD%95%E5%9B%BD%E8%AF%AD-01.mp4");
+        movieMap.put(
+                "勇探实录02",
+                "http://anning.luanniao-zuida.com/1908/%E5%8B%87%E6%8E%A2%E5%AE%9E%E5%BD%95%E5%9B%BD%E8%AF%AD-02.mp4");
+        movieMap.put(
+                "勇探实录03",
+                "http://anning.luanniao-zuida.com/1908/%E5%8B%87%E6%8E%A2%E5%AE%9E%E5%BD%95%E5%9B%BD%E8%AF%AD-03.mp4");
+        movieMap.put(
+                "勇探实录04",
+                "http://anning.luanniao-zuida.com/1908/%E5%8B%87%E6%8E%A2%E5%AE%9E%E5%BD%95%E5%9B%BD%E8%AF%AD-04.mp4");
+        movieMap.put(
+                "勇探实录05",
+                "http://anning.luanniao-zuida.com/1908/%E5%8B%87%E6%8E%A2%E5%AE%9E%E5%BD%95%E5%9B%BD%E8%AF%AD-05.mp4");
+        movieMap.put(
+                "勇探实录06",
+                "http://anning.luanniao-zuida.com/1908/%E5%8B%87%E6%8E%A2%E5%AE%9E%E5%BD%95%E5%9B%BD%E8%AF%AD-06.mp4");
+        movieMap.put(
+                "勇探实录07",
+                "http://anning.luanniao-zuida.com/1908/%E5%8B%87%E6%8E%A2%E5%AE%9E%E5%BD%95%E5%9B%BD%E8%AF%AD-07.mp4");
+        movieMap.put(
+                "勇探实录08",
+                "http://anning.luanniao-zuida.com/1908/%E5%8B%87%E6%8E%A2%E5%AE%9E%E5%BD%95%E5%9B%BD%E8%AF%AD-08.mp4");
+        movieMap.put(
+                "勇探实录09",
+                "http://anning.luanniao-zuida.com/1908/%E5%8B%87%E6%8E%A2%E5%AE%9E%E5%BD%95%E5%9B%BD%E8%AF%AD-09.mp4");
+        movieMap.put(
+                "勇探实录10",
+                "http://anning.luanniao-zuida.com/1908/%E5%8B%87%E6%8E%A2%E5%AE%9E%E5%BD%95%E5%9B%BD%E8%AF%AD-10.mp4");
+        movieMap.put(
+                "勇探实录11",
+                "http://anning.luanniao-zuida.com/1908/%E5%8B%87%E6%8E%A2%E5%AE%9E%E5%BD%95%E5%9B%BD%E8%AF%AD-11.mp4");
+        movieMap.put(
+                "勇探实录12",
+                "http://anning.luanniao-zuida.com/1908/%E5%8B%87%E6%8E%A2%E5%AE%9E%E5%BD%95%E5%9B%BD%E8%AF%AD-12.mp4");
+        movieMap.put(
+                "勇探实录13",
+                "http://anning.luanniao-zuida.com/1908/%E5%8B%87%E6%8E%A2%E5%AE%9E%E5%BD%95%E5%9B%BD%E8%AF%AD-13.mp4");
+        movieMap.put(
+                "勇探实录14",
+                "http://anning.luanniao-zuida.com/1908/%E5%8B%87%E6%8E%A2%E5%AE%9E%E5%BD%95%E5%9B%BD%E8%AF%AD-14.mp4");
+        movieMap.put(
+                "勇探实录15",
+                "http://anning.luanniao-zuida.com/1908/%E5%8B%87%E6%8E%A2%E5%AE%9E%E5%BD%95%E5%9B%BD%E8%AF%AD-15.mp4");
+        movieMap.put(
+                "勇探实录16",
+                "http://anning.luanniao-zuida.com/1908/%E5%8B%87%E6%8E%A2%E5%AE%9E%E5%BD%95%E5%9B%BD%E8%AF%AD-16.mp4");
+        movieMap.put(
+                "勇探实录17",
+                "http://anning.luanniao-zuida.com/1908/%E5%8B%87%E6%8E%A2%E5%AE%9E%E5%BD%95%E5%9B%BD%E8%AF%AD-17.mp4");
+        movieMap.put(
+                "勇探实录18",
+                "http://anning.luanniao-zuida.com/1908/%E5%8B%87%E6%8E%A2%E5%AE%9E%E5%BD%95%E5%9B%BD%E8%AF%AD-18.mp4");
+        movieMap.put(
+                "勇探实录19",
+                "http://anning.luanniao-zuida.com/1908/%E5%8B%87%E6%8E%A2%E5%AE%9E%E5%BD%95%E5%9B%BD%E8%AF%AD-19.mp4");
+        movieMap.put(
+                "勇探实录20",
+                "http://anning.luanniao-zuida.com/1908/%E5%8B%87%E6%8E%A2%E5%AE%9E%E5%BD%95%E5%9B%BD%E8%AF%AD-20.mp4");
 
         movieMap.put(
                 "方谬神探01",

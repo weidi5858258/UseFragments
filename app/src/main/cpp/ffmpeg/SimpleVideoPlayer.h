@@ -12,11 +12,15 @@
 
 namespace alexander {
 
-//#define USE_AUDIO
+#define USE_AUDIO
 #define USE_VIDEO
 
     static struct AudioWrapper *audioWrapper = NULL;
     static struct VideoWrapper *videoWrapper = NULL;
+    static bool isLocal = false;
+
+    static char inFilePath[2048];
+    static ANativeWindow *nativeWindow = NULL;
 
     void *readData(void *opaque);
 
