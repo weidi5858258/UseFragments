@@ -52,6 +52,7 @@ namespace alexander {
         audioWrapper->father->isHandling = false;
         audioWrapper->father->isPausedForUser = false;
         audioWrapper->father->isPausedForCache = false;
+        audioWrapper->father->seekToInit = false;
         audioWrapper->father->isReadQueue1Full = false;
         audioWrapper->father->isReadQueue2Full = false;
         audioWrapper->father->duration = -1;
@@ -110,6 +111,7 @@ namespace alexander {
         videoWrapper->father->isHandling = false;
         videoWrapper->father->isPausedForUser = false;
         videoWrapper->father->isPausedForCache = false;
+        videoWrapper->father->seekToInit = false;
         videoWrapper->father->isReadQueue1Full = false;
         videoWrapper->father->isReadQueue2Full = false;
         videoWrapper->father->duration = -1;
@@ -542,7 +544,7 @@ namespace alexander {
         return -1;
     }
 
-    double TIME_DIFFERENCE = 0.100000;
+    double TIME_DIFFERENCE = 1.000000;// 0.180000
     double audioTimeDifference = 0;
     double videoTimeDifference = 0;
     double totalTimeDifference = 0;
@@ -605,9 +607,12 @@ namespace alexander {
                     LOGW("%s\n", "readData() video seek start");
                 }
 
-                pthread_mutex_lock(&wrapper->readLockMutex);
-                pthread_cond_wait(&wrapper->readLockCondition, &wrapper->readLockMutex);
-                pthread_mutex_unlock(&wrapper->readLockMutex);
+                if (!wrapper->seekToInit) {
+                    pthread_mutex_lock(&wrapper->readLockMutex);
+                    pthread_cond_wait(&wrapper->readLockCondition, &wrapper->readLockMutex);
+                    pthread_mutex_unlock(&wrapper->readLockMutex);
+                }
+                wrapper->seekToInit = false;
 
                 AVStream *stream =
                         wrapper->avFormatContext->streams[wrapper->streamIndex];
@@ -1024,7 +1029,7 @@ namespace alexander {
                             }
                             audioTimeDifference =
                                     decodedAVFrame->pts * av_q2d(stream->time_base);
-                            LOGD("handleAudioData() nowPts : %lf\n", audioTimeDifference);
+                            //LOGD("handleAudioData() nowPts : %lf\n", audioTimeDifference);
 #endif
 
                             // 获取给定音频参数所需的缓冲区大小
@@ -1080,7 +1085,7 @@ namespace alexander {
         pthread_mutex_unlock(&videoWrapper->father->handleLockMutex);
         LOGW("handleVideoData() wait() end\n");
 
-        TIME_DIFFERENCE = 0.100000;
+        //TIME_DIFFERENCE = 0.180000;
         audioTimeDifference = 0;
         videoTimeDifference = 0;
         totalTimeDifference = 0;
@@ -1274,8 +1279,10 @@ namespace alexander {
 #ifdef USE_AUDIO
                         videoTimeDifference =
                                 nowPts * av_q2d(stream->time_base);
-                        LOGW("handleVideoData() nowPts : %lf\n", videoTimeDifference);
+                        //LOGW("handleVideoData() nowPts : %lf\n", videoTimeDifference);
                         long progress = (long) videoTimeDifference;
+                        //LOGW("handleVideoData() progress    : %ld\n", progress);
+                        //LOGW("handleVideoData() preProgress : %ld\n", preProgress);
                         if (progress > preProgress) {
                             preProgress = progress;
                             onProgressUpdated(progress);
@@ -1292,17 +1299,20 @@ namespace alexander {
                         }
                         // 0.177853 0.155691 0.156806 0.154362
                         double tempTimeDifference = videoTimeDifference - audioTimeDifference;
-                        LOGW("handleVideoData() video - audio   : %lf\n", tempTimeDifference);
-                        if (tempTimeDifference < 1.000000) {
+                        if (tempTimeDifference > TIME_DIFFERENCE) {
+                            // 不好的现象
+                            LOGE("handleVideoData() video - audio   : %lf\n", tempTimeDifference);
+                        }
+                        /*if (tempTimeDifference < 1.000000) {
                             totalTimeDifference += tempTimeDifference;
                             totalTimeDifferenceCount++;
                             TIME_DIFFERENCE = totalTimeDifference / totalTimeDifferenceCount;
                             LOGW("handleVideoData() TIME_DIFFERENCE : %lf\n", TIME_DIFFERENCE);
-                        }
+                        }*/
                         // 如果videoTimeDifference比audioTimeDifference大出了一定的范围
                         // 那么说明视频播放快了,应等待音频
-                        while (videoTimeDifference - audioTimeDifference >= TIME_DIFFERENCE) {
-                            videoSleep(10);
+                        while (videoTimeDifference - audioTimeDifference > TIME_DIFFERENCE) {
+                            videoSleep(1);
                         }
 #endif
                         if (videoWrapper->father->isHandling) {
@@ -1326,14 +1336,18 @@ namespace alexander {
                             tempSleep = timeDifference * 1000;// 0.040000
                             tempSleep -= 30;
                             tempSleep += step;
-                            sleep = tempSleep;
-                            LOGI("handleVideoData() sleep  : %ld\n", sleep);
-                            if (sleep < 100 && sleep > 0) {
+                            if (sleep != tempSleep) {
+                                sleep = tempSleep;
+                                LOGI("handleVideoData() sleep  : %ld\n", sleep);
+                            }
+                            if (sleep < 15 && sleep > 0) {
                                 videoSleep(sleep);
                             } else {
-                                if (sleep != 0) {
-                                    videoSleep(10);
+                                if (sleep > 0) {
+                                    // 好像是个比较合理的值
+                                    videoSleep(11);
                                 }
+                                // sleep <= 0时不需要sleep
                             }
 
                             // 6.unlock绘制
@@ -1843,7 +1857,6 @@ namespace alexander {
 #ifdef USE_AUDIO
         if (audioWrapper != NULL && audioWrapper->father != NULL) {
             audioWrapper->father->timestamp = timestamp;
-
             pthread_mutex_lock(&audioWrapper->father->readLockMutex);
             pthread_cond_signal(&audioWrapper->father->readLockCondition);
             pthread_mutex_unlock(&audioWrapper->father->readLockMutex);
@@ -1897,12 +1910,13 @@ namespace alexander {
             pthread_mutex_lock(&audioWrapper->father->readLockMutex);
             pthread_cond_signal(&audioWrapper->father->readLockCondition);
             pthread_mutex_unlock(&audioWrapper->father->readLockMutex);
+
+            audioWrapper->father->seekToInit = true;
         }
 #endif
 #ifdef USE_VIDEO
         if (videoWrapper != NULL && videoWrapper->father != NULL) {
             videoWrapper->father->timestamp = timestamp;
-
             pthread_mutex_lock(&videoWrapper->father->readLockMutex);
             pthread_cond_signal(&videoWrapper->father->readLockCondition);
             pthread_mutex_unlock(&videoWrapper->father->readLockMutex);
@@ -1956,6 +1970,8 @@ namespace alexander {
             pthread_mutex_lock(&videoWrapper->father->readLockMutex);
             pthread_cond_signal(&videoWrapper->father->readLockCondition);
             pthread_mutex_unlock(&videoWrapper->father->readLockMutex);
+
+            videoWrapper->father->seekToInit = true;
         }
 #endif
         return 0;

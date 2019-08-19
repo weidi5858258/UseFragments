@@ -179,6 +179,8 @@ struct Wrapper {
     bool isPausedForUser = false;
     // 因为cache所以pause
     bool isPausedForCache = false;
+    // seek的初始化条件有没有完成,true表示完成
+    bool seekToInit = false;
 
     // 单位: 秒
     int64_t duration = 0;

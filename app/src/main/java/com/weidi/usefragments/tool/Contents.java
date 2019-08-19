@@ -531,6 +531,9 @@ public class Contents {
                 "地狱男爵-血皇后崛起-local",
                 "/storage/2430-1702/BaiduNetdisk/video/地狱男爵-血皇后崛起.mp4");
         movieMap.put(
+                "痞子英雄2-黎明升起-local",
+                "/storage/2430-1702/BaiduNetdisk/video/痞子英雄2-黎明升起.mp4");
+        movieMap.put(
                 "流浪的地球",
                 "/storage/2430-1702/BaiduNetdisk/video/流浪的地球.mp4");
         movieMap.put(
@@ -539,9 +542,6 @@ public class Contents {
         movieMap.put(
                 "05",
                 "/storage/2430-1702/BaiduNetdisk/video/05.mp4");
-        movieMap.put(
-                "",
-                "");
     }
 
     private static String mTitle = "";
