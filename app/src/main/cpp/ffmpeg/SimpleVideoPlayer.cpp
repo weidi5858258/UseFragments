@@ -453,6 +453,7 @@ namespace alexander {
         videoWrapper->father->srcAVFrame = av_frame_alloc();
         videoWrapper->father->dstAVFrame = av_frame_alloc();
 
+        // 第一种方式
         // srcXXX与dstXXX的参数必须要按照下面这样去设置,不然播放画面会有问题的
         // 根据视频源得到的AVPixelFormat,Width和Height计算出一帧视频所需要的空间大小
         /*int imageGetBufferSize = av_image_get_buffer_size(
@@ -1129,6 +1130,7 @@ namespace alexander {
         AVFrame *rgbAVFrame = av_frame_alloc();
         videoWrapper->father->isHandling = true;
 
+        // 第二种方式
         int imageGetBufferSize = av_image_get_buffer_size(
                 AV_PIX_FMT_RGBA, videoWrapper->srcWidth, videoWrapper->srcHeight, 1);
         LOGI("imageGetBufferSize  : %d\n", imageGetBufferSize);
