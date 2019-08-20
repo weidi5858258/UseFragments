@@ -328,6 +328,7 @@ public class JniPlayerActivity extends BaseActivity {
             // 没有图像出来,就是由于没有设置PixelFormat.RGBA_8888
             // 这里要写
             mSurfaceView.getHolder().setFormat(PixelFormat.RGBA_8888);
+            //mSurfaceView.getHolder().setFormat(PixelFormat.RGB_888);
             mSurfaceView.getHolder().addCallback(new SurfaceHolder.Callback() {
                 @Override
                 public void surfaceCreated(
@@ -336,14 +337,15 @@ public class JniPlayerActivity extends BaseActivity {
                     mSurface = holder.getSurface();
                     // 这里也要写
                     holder.setFormat(PixelFormat.RGBA_8888);
+                    //holder.setFormat(PixelFormat.RGB_888);
 
                     if (mFFMPEGPlayer == null) {
                         return;
                     }
 
-                    mFFMPEGPlayer.setSurface(mPath, mSurface);
                     mFFMPEGPlayer.setCallback(mFFMPEGPlayer.mCallback);
                     mFFMPEGPlayer.setHandler(mUiHandler);
+                    mFFMPEGPlayer.setSurface(mPath, mSurface);
 
                     new Thread(new Runnable() {
                         @Override

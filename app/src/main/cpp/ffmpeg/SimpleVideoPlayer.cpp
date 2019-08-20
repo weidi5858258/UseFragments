@@ -455,7 +455,7 @@ namespace alexander {
 
         // srcXXX与dstXXX的参数必须要按照下面这样去设置,不然播放画面会有问题的
         // 根据视频源得到的AVPixelFormat,Width和Height计算出一帧视频所需要的空间大小
-        int imageGetBufferSize = av_image_get_buffer_size(
+        /*int imageGetBufferSize = av_image_get_buffer_size(
                 videoWrapper->dstAVPixelFormat, videoWrapper->srcWidth, videoWrapper->srcHeight, 1);
         LOGI("imageGetBufferSize  : %d\n", imageGetBufferSize);
         videoWrapper->father->outBufferSize = imageGetBufferSize;
@@ -483,7 +483,7 @@ namespace alexander {
         if (videoWrapper->swsContext == NULL) {
             LOGI("%s\n", "videoSwsContext is NULL.");
             return -1;
-        }
+        }*/
         LOGI("---------------------------------\n");
 
         if (videoWrapper->father->avFormatContext->duration != AV_NOPTS_VALUE) {
@@ -1113,11 +1113,12 @@ namespace alexander {
         LOGW("handleVideoData() ANativeWindow_setBuffersGeometry() start\n");
         // 2.设置缓冲区的属性（宽、高、像素格式）,像素格式要和SurfaceView的像素格式一直
         ANativeWindow_setBuffersGeometry(nativeWindow,
-                                         videoWrapper->srcWidth, videoWrapper->srcHeight,
+                                         videoWrapper->srcWidth,
+                                         videoWrapper->srcHeight,
                                          WINDOW_FORMAT_RGBA_8888);
+        LOGW("handleVideoData() ANativeWindow_setBuffersGeometry() end\n");
         // 绘制时的缓冲区
         ANativeWindow_Buffer outBuffer;
-        LOGW("handleVideoData() ANativeWindow_setBuffersGeometry() end\n");
 
         AVStream *stream =
                 videoWrapper->father->avFormatContext->streams[videoWrapper->father->streamIndex];
@@ -1127,6 +1128,30 @@ namespace alexander {
         AVFrame *decodedAVFrame = videoWrapper->father->srcAVFrame;
         AVFrame *rgbAVFrame = av_frame_alloc();
         videoWrapper->father->isHandling = true;
+
+        int imageGetBufferSize = av_image_get_buffer_size(
+                AV_PIX_FMT_RGBA, videoWrapper->srcWidth, videoWrapper->srcHeight, 1);
+        LOGI("imageGetBufferSize  : %d\n", imageGetBufferSize);
+        videoWrapper->father->outBufferSize = imageGetBufferSize;
+        videoWrapper->father->outBuffer1 = (unsigned char *) av_malloc(
+                imageGetBufferSize * sizeof(unsigned char));
+        av_image_fill_arrays(rgbAVFrame->data,
+                             rgbAVFrame->linesize,
+                             videoWrapper->father->outBuffer1,
+                             AV_PIX_FMT_RGBA,
+                             videoWrapper->srcWidth,
+                             videoWrapper->srcHeight,
+                             1);
+        // 由于解码出来的帧格式不是RGBA的,在渲染之前需要进行格式转换
+        videoWrapper->swsContext = sws_getContext(videoWrapper->srcWidth,
+                                                  videoWrapper->srcHeight,
+                                                  videoWrapper->srcAVPixelFormat,
+                                                  videoWrapper->srcWidth,
+                                                  videoWrapper->srcHeight,
+                                                  AV_PIX_FMT_RGBA,
+                                                  SWS_BICUBIC,// SWS_BICUBIC SWS_BILINEAR
+                                                  NULL, NULL, NULL);
+
         LOGW("handleVideoData() for (;;) start\n");
         for (;;) {
             if (videoWrapper->father->isPausedForUser
@@ -1328,6 +1353,8 @@ namespace alexander {
                         if (videoWrapper->father->isHandling) {
                             // 3.lock锁定下一个即将要绘制的Surface
                             ANativeWindow_lock(nativeWindow, &outBuffer, NULL);
+
+                            /*// 第一种方式(一般情况下这种方式是可以的,但是在我的一加手机上不行,画面是花屏)
                             // 4.读取帧画面放入缓冲区,指定RGB的AVFrame的像素格式、宽高和缓冲区
                             av_image_fill_arrays(rgbAVFrame->data,
                                                  rgbAVFrame->linesize,
@@ -1341,7 +1368,27 @@ namespace alexander {
                                                decodedAVFrame->data[2], decodedAVFrame->linesize[2],
                                                decodedAVFrame->data[1], decodedAVFrame->linesize[1],
                                                rgbAVFrame->data[0], rgbAVFrame->linesize[0],
-                                               videoWrapper->srcWidth, videoWrapper->srcHeight);
+                                               videoWrapper->srcWidth, videoWrapper->srcHeight);*/
+
+                            // https://blog.csdn.net/u013898698/article/details/79430202
+                            // 第二种方式(我的一加手机就能正常显示画面了)
+                            // 格式转换
+                            sws_scale(videoWrapper->swsContext,
+                                      (uint8_t const *const *) decodedAVFrame->data,
+                                      decodedAVFrame->linesize,
+                                      0,
+                                      videoWrapper->srcHeight,
+                                      rgbAVFrame->data,
+                                      rgbAVFrame->linesize);
+                            // 获取stride
+                            uint8_t *dst = (uint8_t *) outBuffer.bits;
+                            int dstStride = outBuffer.stride * 4;
+                            uint8_t *src = (uint8_t *) (rgbAVFrame->data[0]);
+                            int srcStride = rgbAVFrame->linesize[0];
+                            // 由于window的stride和帧的stride不同,因此需要逐行复制
+                            for (int h = 0; h < videoWrapper->srcHeight; h++) {
+                                memcpy(dst + h * dstStride, src + h * srcStride, srcStride);
+                            }
 
                             tempSleep = timeDifference * 1000;// 0.040000
                             tempSleep -= 30;
