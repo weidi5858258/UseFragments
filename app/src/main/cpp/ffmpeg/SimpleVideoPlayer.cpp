@@ -721,6 +721,16 @@ namespace alexander {
                 break;
             }
 
+            /*if (wrapper->type == TYPE_VIDEO) {
+                LOGF("readData() video data: %u, %u, %u, %u, %u\n",
+                     srcAVPacket->data[0],
+                     srcAVPacket->data[1],
+                     srcAVPacket->data[2],
+                     srcAVPacket->data[3],
+                     srcAVPacket->data[4],
+                     srcAVPacket->data[5]);
+            }*/
+
             wrapper->readFramesCount++;
             // 非常非常非常重要
             av_copy_packet(dstAVPacket, srcAVPacket);
