@@ -223,7 +223,9 @@ struct VideoWrapper {
     enum AVPixelFormat srcAVPixelFormat = AV_PIX_FMT_NONE;
     // 从原来的像素格式转换为想要的视频格式(可能应用于不需要播放视频的场景)
     // 播放时dstAVPixelFormat必须跟srcAVPixelFormat的值一样,不然画面有问题
-    enum AVPixelFormat dstAVPixelFormat = AV_PIX_FMT_RGB24;
+    enum AVPixelFormat dstAVPixelFormat = AV_PIX_FMT_RGBA;
+    AVFrame *decodedAVFrame = NULL;
+    AVFrame *rgbAVFrame = NULL;
     // 从视频源中得到的宽高
     int srcWidth = 0, srcHeight = 0;
     size_t srcArea = 0;
@@ -231,7 +233,7 @@ struct VideoWrapper {
     int dstWidth = 720, dstHeight = 360;
     size_t dstArea = 0;
     // 使用到sws_scale函数时需要定义这些变量
-    int srcLineSize[4] = {0}, dstLineSize[4] = {0};
+    int srcLineSize[4] = {NULL}, dstLineSize[4] = {NULL};
 };
 
 #endif //USEFRAGMENTS_MYHEADER_H

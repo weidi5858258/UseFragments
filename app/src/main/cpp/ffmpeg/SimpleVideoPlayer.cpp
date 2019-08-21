@@ -117,6 +117,8 @@ namespace alexander {
         videoWrapper->father->duration = -1;
         videoWrapper->father->timestamp = -1;
 
+        videoWrapper->dstAVPixelFormat = AV_PIX_FMT_RGBA;
+
         videoWrapper->father->queue1 =
                 (struct AVPacketQueue *) av_mallocz(sizeof(struct AVPacketQueue));
         videoWrapper->father->queue2 =
@@ -444,47 +446,44 @@ namespace alexander {
         LOGI("srcWidth            : %d\n", videoWrapper->srcWidth);
         LOGI("srcHeight           : %d\n", videoWrapper->srcHeight);
         LOGI("srcAVPixelFormat    : %d\n", videoWrapper->srcAVPixelFormat);
+        LOGI("dstAVPixelFormat    : %d\n", videoWrapper->dstAVPixelFormat);
         videoWrapper->dstWidth = videoWrapper->srcWidth;
         videoWrapper->dstHeight = videoWrapper->srcHeight;
-        videoWrapper->dstAVPixelFormat = videoWrapper->srcAVPixelFormat;
         videoWrapper->srcArea = videoWrapper->srcWidth * videoWrapper->srcHeight;
 
-        // avPacket ---> srcAVFrame ---> dstAVFrame ---> 渲染画面
-        videoWrapper->father->srcAVFrame = av_frame_alloc();
-        videoWrapper->father->dstAVFrame = av_frame_alloc();
+        // decodedAVFrame为解码后的数据
+        // avPacket ---> decodedAVFrame ---> rgbAVFrame ---> 渲染画面
+        videoWrapper->decodedAVFrame = av_frame_alloc();
+        videoWrapper->rgbAVFrame = av_frame_alloc();
 
-        // 第一种方式
-        // srcXXX与dstXXX的参数必须要按照下面这样去设置,不然播放画面会有问题的
-        // 根据视频源得到的AVPixelFormat,Width和Height计算出一帧视频所需要的空间大小
-        /*int imageGetBufferSize = av_image_get_buffer_size(
+        int imageGetBufferSize = av_image_get_buffer_size(
                 videoWrapper->dstAVPixelFormat, videoWrapper->srcWidth, videoWrapper->srcHeight, 1);
         LOGI("imageGetBufferSize  : %d\n", imageGetBufferSize);
         videoWrapper->father->outBufferSize = imageGetBufferSize;
-        // 存储视频帧的原始数据
-        videoWrapper->father->outBuffer1 = (unsigned char *) av_malloc(imageGetBufferSize);
-        // 类似于格式化刚刚申请的内存(关联操作:dstAVFrame, outBuffer1, dstAVPixelFormat)
+        videoWrapper->father->outBuffer1 = (unsigned char *) av_malloc(
+                imageGetBufferSize * sizeof(unsigned char));
         int imageFillArrays = av_image_fill_arrays(
-                // uint8_t *dst_data[4]
-                videoWrapper->father->dstAVFrame->data,
-                // int dst_linesize[4]
-                videoWrapper->father->dstAVFrame->linesize,
-                // const uint8_t *src
+                videoWrapper->rgbAVFrame->data,
+                videoWrapper->rgbAVFrame->linesize,
                 videoWrapper->father->outBuffer1,
                 videoWrapper->dstAVPixelFormat,
-                videoWrapper->srcWidth, videoWrapper->srcHeight, 1);
+                videoWrapper->srcWidth,
+                videoWrapper->srcHeight,
+                1);
         if (imageFillArrays < 0) {
             LOGI("imageFillArrays     : %d\n", imageFillArrays);
             return -1;
         }
+        // 由于解码出来的帧格式不是RGBA的,在渲染之前需要进行格式转换
         videoWrapper->swsContext = sws_getContext(
                 videoWrapper->srcWidth, videoWrapper->srcHeight, videoWrapper->srcAVPixelFormat,
                 videoWrapper->srcWidth, videoWrapper->srcHeight, videoWrapper->dstAVPixelFormat,
-                SWS_BICUBIC,//flags
+                SWS_BICUBIC,// SWS_BICUBIC SWS_BILINEAR
                 NULL, NULL, NULL);
         if (videoWrapper->swsContext == NULL) {
             LOGI("%s\n", "videoSwsContext is NULL.");
             return -1;
-        }*/
+        }
         LOGI("---------------------------------\n");
 
         if (videoWrapper->father->avFormatContext->duration != AV_NOPTS_VALUE) {
@@ -1096,7 +1095,6 @@ namespace alexander {
         pthread_mutex_unlock(&videoWrapper->father->handleLockMutex);
         LOGW("handleVideoData() wait() end\n");
 
-        //TIME_DIFFERENCE = 0.180000;
         audioTimeDifference = 0;
         videoTimeDifference = 0;
         totalTimeDifference = 0;
@@ -1125,35 +1123,7 @@ namespace alexander {
                 videoWrapper->father->avFormatContext->streams[videoWrapper->father->streamIndex];
         // 必须创建
         AVPacket *avPacket = av_packet_alloc();
-        // decodedAVFrame为解码后的数据
-        AVFrame *decodedAVFrame = videoWrapper->father->srcAVFrame;
-        AVFrame *rgbAVFrame = av_frame_alloc();
         videoWrapper->father->isHandling = true;
-
-        // 第二种方式
-        int imageGetBufferSize = av_image_get_buffer_size(
-                AV_PIX_FMT_RGBA, videoWrapper->srcWidth, videoWrapper->srcHeight, 1);
-        LOGI("imageGetBufferSize  : %d\n", imageGetBufferSize);
-        videoWrapper->father->outBufferSize = imageGetBufferSize;
-        videoWrapper->father->outBuffer1 = (unsigned char *) av_malloc(
-                imageGetBufferSize * sizeof(unsigned char));
-        av_image_fill_arrays(rgbAVFrame->data,
-                             rgbAVFrame->linesize,
-                             videoWrapper->father->outBuffer1,
-                             AV_PIX_FMT_RGBA,
-                             videoWrapper->srcWidth,
-                             videoWrapper->srcHeight,
-                             1);
-        // 由于解码出来的帧格式不是RGBA的,在渲染之前需要进行格式转换
-        videoWrapper->swsContext = sws_getContext(videoWrapper->srcWidth,
-                                                  videoWrapper->srcHeight,
-                                                  videoWrapper->srcAVPixelFormat,
-                                                  videoWrapper->srcWidth,
-                                                  videoWrapper->srcHeight,
-                                                  AV_PIX_FMT_RGBA,
-                                                  SWS_BICUBIC,// SWS_BICUBIC SWS_BILINEAR
-                                                  NULL, NULL, NULL);
-
         LOGW("handleVideoData() for (;;) start\n");
         for (;;) {
             if (videoWrapper->father->isPausedForUser
@@ -1292,7 +1262,8 @@ namespace alexander {
                 break;
             }
             while (1) {
-                ret = avcodec_receive_frame(videoWrapper->father->avCodecContext, decodedAVFrame);
+                ret = avcodec_receive_frame(videoWrapper->father->avCodecContext,
+                                            videoWrapper->decodedAVFrame);
                 switch (ret) {
                     case AVERROR(EAGAIN):
                         break;
@@ -1312,7 +1283,7 @@ namespace alexander {
                             videoSleep(1);
                         }
 #endif
-                        nowPts = decodedAVFrame->pts;
+                        nowPts = videoWrapper->decodedAVFrame->pts;
 #ifdef USE_AUDIO
                         videoTimeDifference =
                                 nowPts * av_q2d(stream->time_base);
@@ -1372,26 +1343,31 @@ namespace alexander {
                                                rgbAVFrame->data[0], rgbAVFrame->linesize[0],
                                                videoWrapper->srcWidth, videoWrapper->srcHeight);*/
 
-                            // https://blog.csdn.net/u013898698/article/details/79430202
                             // 第二种方式(我的一加手机就能正常显示画面了)
+                            // https://blog.csdn.net/u013898698/article/details/79430202
                             // 格式转换
+                            // 把decodedAVFrame的数据经过格式转换后保存到rgbAVFrame中
                             sws_scale(videoWrapper->swsContext,
-                                      (uint8_t const *const *) decodedAVFrame->data,
-                                      decodedAVFrame->linesize,
+                                      (uint8_t const *const *) videoWrapper->decodedAVFrame->data,
+                                      videoWrapper->decodedAVFrame->linesize,
                                       0,
                                       videoWrapper->srcHeight,
-                                      rgbAVFrame->data,
-                                      rgbAVFrame->linesize);
+                                      videoWrapper->rgbAVFrame->data,
+                                      videoWrapper->rgbAVFrame->linesize);
+                            // 把rgbAVFrame里面的数据复制到outBuffer中就能渲染画面了
                             // 获取stride
+                            // 一行的数据
+                            uint8_t *src = videoWrapper->rgbAVFrame->data[0];
+                            // 一行的长度
+                            int srcStride = videoWrapper->rgbAVFrame->linesize[0];
                             uint8_t *dst = (uint8_t *) outBuffer.bits;
                             int dstStride = outBuffer.stride * 4;
-                            uint8_t *src = (uint8_t *) (rgbAVFrame->data[0]);
-                            int srcStride = rgbAVFrame->linesize[0];
                             // 由于window的stride和帧的stride不同,因此需要逐行复制
                             for (int h = 0; h < videoWrapper->srcHeight; h++) {
                                 memcpy(dst + h * dstStride, src + h * srcStride, srcStride);
                             }
 
+                            // 单位: 毫秒
                             tempSleep = timeDifference * 1000;// 0.040000
                             tempSleep -= 30;
                             tempSleep += step;
@@ -1446,9 +1422,6 @@ namespace alexander {
 
         av_packet_unref(avPacket);
         avPacket = NULL;
-
-        av_frame_free(&rgbAVFrame);
-        rgbAVFrame = NULL;
 
         LOGW("handleVideoData() video handleFramesCount : %d\n",
              videoWrapper->father->handleFramesCount);
@@ -1587,6 +1560,14 @@ namespace alexander {
         if (videoWrapper->father->dstAVFrame != NULL) {
             av_frame_free(&videoWrapper->father->dstAVFrame);
             videoWrapper->father->dstAVFrame = NULL;
+        }
+        if (videoWrapper->decodedAVFrame != NULL) {
+            av_frame_free(&videoWrapper->decodedAVFrame);
+            videoWrapper->decodedAVFrame = NULL;
+        }
+        if (videoWrapper->rgbAVFrame != NULL) {
+            av_frame_free(&videoWrapper->rgbAVFrame);
+            videoWrapper->rgbAVFrame = NULL;
         }
         if (videoWrapper->father->avCodecParameters != NULL) {
             avcodec_parameters_free(&videoWrapper->father->avCodecParameters);
