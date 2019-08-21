@@ -14,6 +14,8 @@ public class Contents {
 
     public static Map<String, String> movieMap = new LinkedHashMap<>();
     private static String mPath;
+//    private static final String PATH = "/storage/2430-1702/BaiduNetdisk/video/";
+    private static final String PATH = "/storage/emulated/0/BaiduNetdisk/video/";
 
     static {
         // {csd-1=java.nio.HeapByteBuffer[pos=0 lim=8 cap=8], mime=video/avc, frame-rate=24, track-id=2, profile=2, width=1280, height=720, max-input-size=151238, durationUs=6227930041, csd-0=java.nio.HeapByteBuffer[pos=0 lim=41 cap=41], bitrate-mode=0, level=512}
@@ -257,70 +259,6 @@ public class Contents {
                 "变形金刚5(null)",
                 "");
 
-        movieMap.put(
-                "破冰行动",
-                "http://anning.luanniao-zuida.com/1908/PB%E8%A1%8C%E5%8A%A8%E7%94%B5%E8%A7%86%E7%89%88-01.mp4");
-
-        movieMap.put(
-                "勇探实录01",
-                "http://anning.luanniao-zuida.com/1908/%E5%8B%87%E6%8E%A2%E5%AE%9E%E5%BD%95%E5%9B%BD%E8%AF%AD-01.mp4");
-        movieMap.put(
-                "勇探实录02",
-                "http://anning.luanniao-zuida.com/1908/%E5%8B%87%E6%8E%A2%E5%AE%9E%E5%BD%95%E5%9B%BD%E8%AF%AD-02.mp4");
-        movieMap.put(
-                "勇探实录03",
-                "http://anning.luanniao-zuida.com/1908/%E5%8B%87%E6%8E%A2%E5%AE%9E%E5%BD%95%E5%9B%BD%E8%AF%AD-03.mp4");
-        movieMap.put(
-                "勇探实录04",
-                "http://anning.luanniao-zuida.com/1908/%E5%8B%87%E6%8E%A2%E5%AE%9E%E5%BD%95%E5%9B%BD%E8%AF%AD-04.mp4");
-        movieMap.put(
-                "勇探实录05",
-                "http://anning.luanniao-zuida.com/1908/%E5%8B%87%E6%8E%A2%E5%AE%9E%E5%BD%95%E5%9B%BD%E8%AF%AD-05.mp4");
-        movieMap.put(
-                "勇探实录06",
-                "http://anning.luanniao-zuida.com/1908/%E5%8B%87%E6%8E%A2%E5%AE%9E%E5%BD%95%E5%9B%BD%E8%AF%AD-06.mp4");
-        movieMap.put(
-                "勇探实录07",
-                "http://anning.luanniao-zuida.com/1908/%E5%8B%87%E6%8E%A2%E5%AE%9E%E5%BD%95%E5%9B%BD%E8%AF%AD-07.mp4");
-        movieMap.put(
-                "勇探实录08",
-                "http://anning.luanniao-zuida.com/1908/%E5%8B%87%E6%8E%A2%E5%AE%9E%E5%BD%95%E5%9B%BD%E8%AF%AD-08.mp4");
-        movieMap.put(
-                "勇探实录09",
-                "http://anning.luanniao-zuida.com/1908/%E5%8B%87%E6%8E%A2%E5%AE%9E%E5%BD%95%E5%9B%BD%E8%AF%AD-09.mp4");
-        movieMap.put(
-                "勇探实录10",
-                "http://anning.luanniao-zuida.com/1908/%E5%8B%87%E6%8E%A2%E5%AE%9E%E5%BD%95%E5%9B%BD%E8%AF%AD-10.mp4");
-        movieMap.put(
-                "勇探实录11",
-                "http://anning.luanniao-zuida.com/1908/%E5%8B%87%E6%8E%A2%E5%AE%9E%E5%BD%95%E5%9B%BD%E8%AF%AD-11.mp4");
-        movieMap.put(
-                "勇探实录12",
-                "http://anning.luanniao-zuida.com/1908/%E5%8B%87%E6%8E%A2%E5%AE%9E%E5%BD%95%E5%9B%BD%E8%AF%AD-12.mp4");
-        movieMap.put(
-                "勇探实录13",
-                "http://anning.luanniao-zuida.com/1908/%E5%8B%87%E6%8E%A2%E5%AE%9E%E5%BD%95%E5%9B%BD%E8%AF%AD-13.mp4");
-        movieMap.put(
-                "勇探实录14",
-                "http://anning.luanniao-zuida.com/1908/%E5%8B%87%E6%8E%A2%E5%AE%9E%E5%BD%95%E5%9B%BD%E8%AF%AD-14.mp4");
-        movieMap.put(
-                "勇探实录15",
-                "http://anning.luanniao-zuida.com/1908/%E5%8B%87%E6%8E%A2%E5%AE%9E%E5%BD%95%E5%9B%BD%E8%AF%AD-15.mp4");
-        movieMap.put(
-                "勇探实录16",
-                "http://anning.luanniao-zuida.com/1908/%E5%8B%87%E6%8E%A2%E5%AE%9E%E5%BD%95%E5%9B%BD%E8%AF%AD-16.mp4");
-        movieMap.put(
-                "勇探实录17",
-                "http://anning.luanniao-zuida.com/1908/%E5%8B%87%E6%8E%A2%E5%AE%9E%E5%BD%95%E5%9B%BD%E8%AF%AD-17.mp4");
-        movieMap.put(
-                "勇探实录18",
-                "http://anning.luanniao-zuida.com/1908/%E5%8B%87%E6%8E%A2%E5%AE%9E%E5%BD%95%E5%9B%BD%E8%AF%AD-18.mp4");
-        movieMap.put(
-                "勇探实录19",
-                "http://anning.luanniao-zuida.com/1908/%E5%8B%87%E6%8E%A2%E5%AE%9E%E5%BD%95%E5%9B%BD%E8%AF%AD-19.mp4");
-        movieMap.put(
-                "勇探实录20",
-                "http://anning.luanniao-zuida.com/1908/%E5%8B%87%E6%8E%A2%E5%AE%9E%E5%BD%95%E5%9B%BD%E8%AF%AD-20.mp4");
 
         movieMap.put(
                 "方谬神探01",
@@ -415,133 +353,232 @@ public class Contents {
 
         movieMap.put(
                 "盗墓笔记之怒海潜沙-秦岭神树01",
-                "http://ok.xzokzyzy.com/20190606/1940_094739d9/%E6%80%92%E6%B5%B7%E6%BD%9C%E6%B2%99&%E7%A7%A6%E5%B2%AD%E7%A5%9E%E6%A0%91%E7%AC%AC01%E9%9B%86.mp4");
+                "http://download.xunleizuida.com/1906/DM%E7%AC%94%E8%AE%B0%E4%B9%8B%E6%80%92%E6%B5%B7QS-01.mp4");
         movieMap.put(
                 "盗墓笔记之怒海潜沙-秦岭神树02",
-                "http://ok.xzokzyzy.com/20190606/1941_69388e66/%E6%80%92%E6%B5%B7%E6%BD%9C%E6%B2%99&%E7%A7%A6%E5%B2%AD%E7%A5%9E%E6%A0%91%E7%AC%AC02%E9%9B%86.mp4");
+                "http://download.xunleizuida.com/1906/DM%E7%AC%94%E8%AE%B0%E4%B9%8B%E6%80%92%E6%B5%B7QS-02.mp4");
         movieMap.put(
                 "盗墓笔记之怒海潜沙-秦岭神树03",
-                "http://ok.xzokzyzy.com/20190606/1942_7c9b7db0/%E6%80%92%E6%B5%B7%E6%BD%9C%E6%B2%99&%E7%A7%A6%E5%B2%AD%E7%A5%9E%E6%A0%91%E7%AC%AC03%E9%9B%86.mp4");
+                "http://download.xunleizuida.com/1906/DM%E7%AC%94%E8%AE%B0%E4%B9%8B%E6%80%92%E6%B5%B7QS-03.mp4");
         movieMap.put(
                 "盗墓笔记之怒海潜沙-秦岭神树04",
-                "http://ok.xzokzyzy.com/20190606/1943_5eeae07a/%E6%80%92%E6%B5%B7%E6%BD%9C%E6%B2%99&%E7%A7%A6%E5%B2%AD%E7%A5%9E%E6%A0%91%E7%AC%AC04%E9%9B%86.mp4");
+                "http://download.xunleizuida.com/1906/DM%E7%AC%94%E8%AE%B0%E4%B9%8B%E6%80%92%E6%B5%B7QS-04.mp4");
         movieMap.put(
                 "盗墓笔记之怒海潜沙-秦岭神树05",
-                "http://ok.xzokzyzy.com/20190606/1944_5875130d/%E6%80%92%E6%B5%B7%E6%BD%9C%E6%B2%99&%E7%A7%A6%E5%B2%AD%E7%A5%9E%E6%A0%91%E7%AC%AC05%E9%9B%86.mp4");
+                "http://download.xunleizuida.com/1906/DM%E7%AC%94%E8%AE%B0%E4%B9%8B%E6%80%92%E6%B5%B7QS-05.mp4");
         movieMap.put(
                 "盗墓笔记之怒海潜沙-秦岭神树06",
-                "http://ok.xzokzyzy.com/20190606/1945_853c6ac8/%E6%80%92%E6%B5%B7%E6%BD%9C%E6%B2%99&%E7%A7%A6%E5%B2%AD%E7%A5%9E%E6%A0%91%E7%AC%AC06%E9%9B%86.mp4");
+                "http://download.xunleizuida.com/1906/DM%E7%AC%94%E8%AE%B0%E4%B9%8B%E6%80%92%E6%B5%B7QS-06.mp4");
         movieMap.put(
                 "盗墓笔记之怒海潜沙-秦岭神树07",
-                "http://ok.xzokzyzy.com/20190606/1946_237c73a3/%E6%80%92%E6%B5%B7%E6%BD%9C%E6%B2%99&%E7%A7%A6%E5%B2%AD%E7%A5%9E%E6%A0%91%E7%AC%AC07%E9%9B%86.mp4");
+                "http://download.xunleizuida.com/1906/DM%E7%AC%94%E8%AE%B0%E4%B9%8B%E6%80%92%E6%B5%B7QS-07.mp4");
         movieMap.put(
                 "盗墓笔记之怒海潜沙-秦岭神树08",
-                "http://ok.xzokzyzy.com/20190606/1947_0b7060b7/%E6%80%92%E6%B5%B7%E6%BD%9C%E6%B2%99&%E7%A7%A6%E5%B2%AD%E7%A5%9E%E6%A0%91%E7%AC%AC08%E9%9B%86.mp4");
+                "http://download.xunleizuida.com/1906/DM%E7%AC%94%E8%AE%B0%E4%B9%8B%E6%80%92%E6%B5%B7QS-08.mp4");
         movieMap.put(
                 "盗墓笔记之怒海潜沙-秦岭神树09",
-                "http://ok.xzokzyzy.com/20190607/1997_e7f592db/%E6%80%92%E6%B5%B7%E6%BD%9C%E6%B2%99&%E7%A7%A6%E5%B2%AD%E7%A5%9E%E6%A0%91%E7%AC%AC09%E9%9B%86.mp4");
+                "http://download.xunleizuida.com/1906/DM%E7%AC%94%E8%AE%B0%E4%B9%8B%E6%80%92%E6%B5%B7QS-09.mp4");
         movieMap.put(
                 "盗墓笔记之怒海潜沙-秦岭神树10",
-                "http://ok.xzokzyzy.com/20190607/1998_92596ca6/%E6%80%92%E6%B5%B7%E6%BD%9C%E6%B2%99&%E7%A7%A6%E5%B2%AD%E7%A5%9E%E6%A0%91%E7%AC%AC10%E9%9B%86.mp4");
+                "http://download.xunleizuida.com/1906/DM%E7%AC%94%E8%AE%B0%E4%B9%8B%E6%80%92%E6%B5%B7QS-10.mp4");
         movieMap.put(
                 "盗墓笔记之怒海潜沙-秦岭神树11",
-                "http://ok.xzokzyzy.com/20190608/2023_2c3fb753/%E6%80%92%E6%B5%B7%E6%BD%9C%E6%B2%99&%E7%A7%A6%E5%B2%AD%E7%A5%9E%E6%A0%91%E7%AC%AC11%E9%9B%86.mp4");
+                "http://download.xunleizuida.com/1906/DM%E7%AC%94%E8%AE%B0%E4%B9%8B%E6%80%92%E6%B5%B7QS-11.mp4");
         movieMap.put(
                 "盗墓笔记之怒海潜沙-秦岭神树12",
-                "http://ok.xzokzyzy.com/20190608/2024_41230b24/%E6%80%92%E6%B5%B7%E6%BD%9C%E6%B2%99&%E7%A7%A6%E5%B2%AD%E7%A5%9E%E6%A0%91%E7%AC%AC12%E9%9B%86.mp4");
+                "http://download.xunleizuida.com/1906/DM%E7%AC%94%E8%AE%B0%E4%B9%8B%E6%80%92%E6%B5%B7QS-12.mp4");
         movieMap.put(
                 "盗墓笔记之怒海潜沙-秦岭神树13",
-                "http://okzy.xzokzyzy.com/20190613/9751_a5d894c5/%E6%80%92%E6%B5%B7%E6%BD%9C%E6%B2%99&%E7%A7%A6%E5%B2%AD%E7%A5%9E%E6%A0%91%E7%AC%AC13%E9%9B%86.mp4");
+                "http://download.xunleizuida.com/1906/DM%E7%AC%94%E8%AE%B0%E4%B9%8B%E6%80%92%E6%B5%B7QS-13.mp4");
         movieMap.put(
                 "盗墓笔记之怒海潜沙-秦岭神树14",
-                "http://okzy.xzokzyzy.com/20190613/9752_d98f0cef/%E6%80%92%E6%B5%B7%E6%BD%9C%E6%B2%99&%E7%A7%A6%E5%B2%AD%E7%A5%9E%E6%A0%91%E7%AC%AC14%E9%9B%86.mp4");
+                "http://download.xunleizuida.com/1906/DM%E7%AC%94%E8%AE%B0%E4%B9%8B%E6%80%92%E6%B5%B7QS-14.mp4");
         movieMap.put(
                 "盗墓笔记之怒海潜沙-秦岭神树15",
-                "http://ok.xzokzyzy.com/20190614/2270_68a94c08/%E6%80%92%E6%B5%B7%E6%BD%9C%E6%B2%99&%E7%A7%A6%E5%B2%AD%E7%A5%9E%E6%A0%91%E7%AC%AC15%E9%9B%86.mp4");
+                "http://download.xunleizuida.com/1906/DM%E7%AC%94%E8%AE%B0%E4%B9%8B%E6%80%92%E6%B5%B7QS-15.mp4");
         movieMap.put(
                 "盗墓笔记之怒海潜沙-秦岭神树16",
-                "http://ok.xzokzyzy.com/20190614/2271_5a0c3928/%E6%80%92%E6%B5%B7%E6%BD%9C%E6%B2%99&%E7%A7%A6%E5%B2%AD%E7%A5%9E%E6%A0%91%E7%AC%AC16%E9%9B%86.mp4");
+                "http://download.xunleizuida.com/1906/DM%E7%AC%94%E8%AE%B0%E4%B9%8B%E6%80%92%E6%B5%B7QS-16.mp4");
         movieMap.put(
                 "盗墓笔记之怒海潜沙-秦岭神树17",
-                "http://ok.xzokzyzy.com/20190615/2331_96421bd6/%E6%80%92%E6%B5%B7%E6%BD%9C%E6%B2%99&%E7%A7%A6%E5%B2%AD%E7%A5%9E%E6%A0%91%E7%AC%AC17%E9%9B%86.mp4");
+                "http://download.xunleizuida.com/1906/DM%E7%AC%94%E8%AE%B0%E4%B9%8B%E6%80%92%E6%B5%B7QS-17.mp4");
         movieMap.put(
                 "盗墓笔记之怒海潜沙-秦岭神树18",
-                "http://ok.xzokzyzy.com/20190615/2332_c27a2802/%E6%80%92%E6%B5%B7%E6%BD%9C%E6%B2%99&%E7%A7%A6%E5%B2%AD%E7%A5%9E%E6%A0%91%E7%AC%AC18%E9%9B%86.mp4");
+                "http://download.xunleizuida.com/1906/DM%E7%AC%94%E8%AE%B0%E4%B9%8B%E6%80%92%E6%B5%B7QS-18.mp4");
         movieMap.put(
                 "盗墓笔记之怒海潜沙-秦岭神树19",
-                "http://ok.xzokzyzy.com/20190620/2490_28cb251f/%E6%80%92%E6%B5%B7%E6%BD%9C%E6%B2%99&%E7%A7%A6%E5%B2%AD%E7%A5%9E%E6%A0%91%E7%AC%AC19%E9%9B%86.mp4");
+                "http://xunlei.xiazai-zuida.com/1906/DM%E7%AC%94%E8%AE%B0%E4%B9%8B%E6%80%92%E6%B5%B7QS-19.mp4");
         movieMap.put(
                 "盗墓笔记之怒海潜沙-秦岭神树20",
-                "http://ok.xzokzyzy.com/20190620/2491_7a9ee929/%E6%80%92%E6%B5%B7%E6%BD%9C%E6%B2%99&%E7%A7%A6%E5%B2%AD%E7%A5%9E%E6%A0%91%E7%AC%AC20%E9%9B%86.mp4");
+                "http://xunlei.xiazai-zuida.com/1906/DM%E7%AC%94%E8%AE%B0%E4%B9%8B%E6%80%92%E6%B5%B7QS-20.mp4");
         movieMap.put(
                 "盗墓笔记之怒海潜沙-秦岭神树21",
-                "http://ok.xzokzyzy.com/20190621/2555_75ff5778/%E6%80%92%E6%B5%B7%E6%BD%9C%E6%B2%99&%E7%A7%A6%E5%B2%AD%E7%A5%9E%E6%A0%91%E7%AC%AC21%E9%9B%86.mp4");
+                "http://xunlei.xiazai-zuida.com/1906/DM%E7%AC%94%E8%AE%B0%E4%B9%8B%E6%80%92%E6%B5%B7QS-21.mp4");
         movieMap.put(
                 "盗墓笔记之怒海潜沙-秦岭神树22",
-                "http://ok.xzokzyzy.com/20190621/2556_4f58b93b/%E6%80%92%E6%B5%B7%E6%BD%9C%E6%B2%99&%E7%A7%A6%E5%B2%AD%E7%A5%9E%E6%A0%91%E7%AC%AC22%E9%9B%86.mp4");
+                "http://xunlei.xiazai-zuida.com/1906/DM%E7%AC%94%E8%AE%B0%E4%B9%8B%E6%80%92%E6%B5%B7QS-22.mp4");
         movieMap.put(
                 "盗墓笔记之怒海潜沙-秦岭神树23",
-                "https://www.22tu.cc/play-32098-1-23/");
+                "http://xunlei.xiazai-zuida.com/1906/DM%E7%AC%94%E8%AE%B0%E4%B9%8B%E6%80%92%E6%B5%B7QS-23.mp4");
         movieMap.put(
                 "盗墓笔记之怒海潜沙-秦岭神树24",
-                "");
+                "http://xunlei.xiazai-zuida.com/1906/DM%E7%AC%94%E8%AE%B0%E4%B9%8B%E6%80%92%E6%B5%B7QS-24.mp4");
         movieMap.put(
                 "盗墓笔记之怒海潜沙-秦岭神树25",
-                "");
+                "http://xunlei.xiazai-zuida.com/1906/DM%E7%AC%94%E8%AE%B0%E4%B9%8B%E6%80%92%E6%B5%B7QS-25.mp4");
         movieMap.put(
                 "盗墓笔记之怒海潜沙-秦岭神树26",
-                "");
+                "http://xunlei.xiazai-zuida.com/1906/DM%E7%AC%94%E8%AE%B0%E4%B9%8B%E6%80%92%E6%B5%B7QS-26.mp4");
         movieMap.put(
                 "盗墓笔记之怒海潜沙-秦岭神树27",
-                "");
+                "http://xunlei.xiazai-zuida.com/1906/DM%E7%AC%94%E8%AE%B0%E4%B9%8B%E6%80%92%E6%B5%B7QS-27.mp4");
         movieMap.put(
                 "盗墓笔记之怒海潜沙-秦岭神树28",
-                "");
+                "http://xunlei.xiazai-zuida.com/1906/DM%E7%AC%94%E8%AE%B0%E4%B9%8B%E6%80%92%E6%B5%B7QS-28.mp4");
         movieMap.put(
                 "盗墓笔记之怒海潜沙-秦岭神树29",
-                "");
+                "http://xunlei.xiazai-zuida.com/1906/DM%E7%AC%94%E8%AE%B0%E4%B9%8B%E6%80%92%E6%B5%B7QS-29.mp4");
         movieMap.put(
                 "盗墓笔记之怒海潜沙-秦岭神树30",
-                "");
+                "http://xunlei.xiazai-zuida.com/1906/DM%E7%AC%94%E8%AE%B0%E4%B9%8B%E6%80%92%E6%B5%B7QS-30.mp4");
         movieMap.put(
                 "盗墓笔记之怒海潜沙-秦岭神树31",
-                "");
+                "http://xunlei.xiazai-zuida.com/1906/DM%E7%AC%94%E8%AE%B0%E4%B9%8B%E6%80%92%E6%B5%B7QS-31.mp4");
         movieMap.put(
                 "盗墓笔记之怒海潜沙-秦岭神树32",
-                "");
+                "http://xunlei.xiazai-zuida.com/1906/DM%E7%AC%94%E8%AE%B0%E4%B9%8B%E6%80%92%E6%B5%B7QS-32.mp4");
         movieMap.put(
                 "盗墓笔记之怒海潜沙-秦岭神树33",
-                "");
+                "http://xunlei.xiazai-zuida.com/1906/DM%E7%AC%94%E8%AE%B0%E4%B9%8B%E6%80%92%E6%B5%B7QS-33.mp4");
         movieMap.put(
                 "盗墓笔记之怒海潜沙-秦岭神树34",
-                "");
+                "http://xunlei.xiazai-zuida.com/1906/DM%E7%AC%94%E8%AE%B0%E4%B9%8B%E6%80%92%E6%B5%B7QS-34.mp4");
         movieMap.put(
                 "盗墓笔记之怒海潜沙-秦岭神树35",
-                "");
+                "http://xunlei.xiazai-zuida.com/1906/DM%E7%AC%94%E8%AE%B0%E4%B9%8B%E6%80%92%E6%B5%B7QS-35.mp4");
+        movieMap.put(
+                "盗墓笔记之怒海潜沙-秦岭神树36",
+                "http://xunlei.xiazai-zuida.com/1906/DM%E7%AC%94%E8%AE%B0%E4%B9%8B%E6%80%92%E6%B5%B7QS-36.mp4");
+        movieMap.put(
+                "盗墓笔记之怒海潜沙-秦岭神树37",
+                "http://xunlei.xiazai-zuida.com/1906/DM%E7%AC%94%E8%AE%B0%E4%B9%8B%E6%80%92%E6%B5%B7QS-37.mp4");
+        movieMap.put(
+                "盗墓笔记之怒海潜沙-秦岭神树38",
+                "http://xunlei.xiazai-zuida.com/1906/DM%E7%AC%94%E8%AE%B0%E4%B9%8B%E6%80%92%E6%B5%B7QS-38.mp4");
+        movieMap.put(
+                "盗墓笔记之怒海潜沙-秦岭神树39",
+                "http://xunlei.xiazai-zuida.com/1906/DM%E7%AC%94%E8%AE%B0%E4%B9%8B%E6%80%92%E6%B5%B7QS-39.mp4");
+        movieMap.put(
+                "盗墓笔记之怒海潜沙-秦岭神树40",
+                "http://xunlei.xiazai-zuida.com/1906/DM%E7%AC%94%E8%AE%B0%E4%B9%8B%E6%80%92%E6%B5%B7QS-40.mp4");
 
 
         // 本地视频
         movieMap.put(
-                "08_mm-MP4-H264_720x400_2997_AAC-LC_192_48",
-                "/storage/2430-1702/BaiduNetdisk/video/08_mm-MP4-H264_720x400_2997_AAC-LC_192_48.mp4");
-        movieMap.put(
-                "shape_of_my_heart",
-                "/storage/2430-1702/BaiduNetdisk/video/shape_of_my_heart.mp4");
-        movieMap.put(
                 "地狱男爵-血皇后崛起-local",
-                "/storage/2430-1702/BaiduNetdisk/video/地狱男爵-血皇后崛起.mp4");
+                PATH + "地狱男爵-血皇后崛起.mp4");
         movieMap.put(
                 "痞子英雄2-黎明升起-local",
-                "/storage/2430-1702/BaiduNetdisk/video/痞子英雄2-黎明升起.mp4");
+                PATH + "痞子英雄2-黎明升起.mp4");
         movieMap.put(
                 "流浪的地球",
-                "/storage/2430-1702/BaiduNetdisk/video/流浪的地球.mp4");
+                PATH + "流浪的地球.mp4");
+        movieMap.put(
+                "08_mm-MP4-H264_720x400_2997_AAC-LC_192_48",
+                PATH + "08_mm-MP4-H264_720x400_2997_AAC-LC_192_48.mp4");
+        movieMap.put(
+                "shape_of_my_heart",
+                PATH + "shape_of_my_heart.mp4");
+        movieMap.put(
+                "jlbhd5",
+                PATH + "jlbhd5.mp4");
         movieMap.put(
                 "test",
-                "/storage/2430-1702/BaiduNetdisk/video/test.mp4");
+                PATH + "test.mp4");
         movieMap.put(
                 "05",
-                "/storage/2430-1702/BaiduNetdisk/video/05.mp4");
+                PATH + "05.mp4");
+
+        movieMap.put(
+                "第4节标准流输入输出",
+                PATH + "/c_plus_plus_面向对象编程/第4节标准流输入输出.mp4");
+        movieMap.put(
+                "第5节标准库string类型",
+                PATH + "/c_plus_plus_面向对象编程/第5节标准库string类型.mp4");
+        movieMap.put(
+                "第6节标准库vector类型",
+                PATH + "/c_plus_plus_面向对象编程/第6节标准库vector类型.mp4");
+        movieMap.put(
+                "第7节再谈函数",
+                PATH + "/c_plus_plus_面向对象编程/第7节再谈函数.mp4");
+        movieMap.put(
+                "第8节面向对象基础",
+                PATH + "/c_plus_plus_面向对象编程/第8节面向对象基础.mp4");
+        movieMap.put(
+                "第9节定义类和对象",
+                PATH + "/c_plus_plus_面向对象编程/第9节定义类和对象.mp4");
+        movieMap.put(
+                "第10节类和对象的使用",
+                PATH + "/c_plus_plus_面向对象编程/第10节类和对象的使用.mp4");
+        movieMap.put(
+                "第11节构造函数和析构函数",
+                PATH + "/c_plus_plus_面向对象编程/第11节构造函数和析构函数.mp4");
+        movieMap.put(
+                "第12节this指针和复制构造函数",
+                PATH + "/c_plus_plus_面向对象编程/第12节this指针和复制构造函数.mp4");
+        movieMap.put(
+                "第13节类的静态成员",
+                PATH + "/c_plus_plus_面向对象编程/第13节类的静态成员.mp4");
+        movieMap.put(
+                "第14节const对象和const成员",
+                PATH + "/c_plus_plus_面向对象编程/第14节const对象和const成员.mp4");
+        movieMap.put(
+                "第15节友元",
+                PATH + "/c_plus_plus_面向对象编程/第15节友元.mp4");
+        movieMap.put(
+                "第16节运算符重载基础",
+                PATH + "/c_plus_plus_面向对象编程/第16节运算符重载基础.mp4");
+        movieMap.put(
+                "第17节运算符重载规则",
+                PATH + "/c_plus_plus_面向对象编程/第17节运算符重载规则.mp4");
+        movieMap.put(
+                "第18节重载二元和一元运算符",
+                PATH + "/c_plus_plus_面向对象编程/第18节重载二元和一元运算符.mp4");
+        movieMap.put(
+                "第19节流插入提取运算符和类型转换",
+                PATH + "/c_plus_plus_面向对象编程/第19节流插入提取运算符和类型转换.mp4");
+        movieMap.put(
+                "第20节定义自己的String类1",
+                PATH + "/c_plus_plus_面向对象编程/第20节定义自己的String类1.mp4");
+        movieMap.put(
+                "第21节定义自己的string类2",
+                PATH + "/c_plus_plus_面向对象编程/第21节定义自己的string类2.mp4");
+        movieMap.put(
+                "第22节继承与派生基础",
+                PATH + "/c_plus_plus_面向对象编程/第22节继承与派生基础.mp4");
+        movieMap.put(
+                "第23节派生类使用",
+                PATH + "/c_plus_plus_面向对象编程/第23节派生类使用.mp4");
+        movieMap.put(
+                "第24节多态",
+                PATH + "/c_plus_plus_面向对象编程/第24节多态.mp4");
+        movieMap.put(
+                "第25节文件操作",
+                PATH + "/c_plus_plus_面向对象编程/第25节文件操作.mp4");
+        movieMap.put(
+                "第26节STL顺序容器",
+                PATH + "/c_plus_plus_面向对象编程/第26节STL顺序容器.mp4");
+        movieMap.put(
+                "第27节STL关联容器和容器适配器",
+                PATH + "/c_plus_plus_面向对象编程/第27节STL关联容器和容器适配器.mp4");
+        movieMap.put(
+                "第28节STL迭代器和算法",
+                PATH + "/c_plus_plus_面向对象编程/第28节STL迭代器和算法.mp4");
+        movieMap.put(
+                "第29节STL实例",
+                PATH + "/c_plus_plus_面向对象编程/第29节STL实例.mp4");
+
+
     }
 
     private static String mTitle = "";
@@ -715,6 +752,67 @@ public class Contents {
         movieMap.put(
                 "重案六组第四季36",
                 "http://okzy.xzokzyzy.com/20190629/9911_779d9559/%E9%87%8D%E6%A1%88%E5%85%AD%E7%BB%844%E7%AC%AC36%E9%9B%86.mp4");
+
+        movieMap.put(
+                "勇探实录01",
+                "http://anning.luanniao-zuida.com/1908/%E5%8B%87%E6%8E%A2%E5%AE%9E%E5%BD%95%E5%9B%BD%E8%AF%AD-01.mp4");
+        movieMap.put(
+                "勇探实录02",
+                "http://anning.luanniao-zuida.com/1908/%E5%8B%87%E6%8E%A2%E5%AE%9E%E5%BD%95%E5%9B%BD%E8%AF%AD-02.mp4");
+        movieMap.put(
+                "勇探实录03",
+                "http://anning.luanniao-zuida.com/1908/%E5%8B%87%E6%8E%A2%E5%AE%9E%E5%BD%95%E5%9B%BD%E8%AF%AD-03.mp4");
+        movieMap.put(
+                "勇探实录04",
+                "http://anning.luanniao-zuida.com/1908/%E5%8B%87%E6%8E%A2%E5%AE%9E%E5%BD%95%E5%9B%BD%E8%AF%AD-04.mp4");
+        movieMap.put(
+                "勇探实录05",
+                "http://anning.luanniao-zuida.com/1908/%E5%8B%87%E6%8E%A2%E5%AE%9E%E5%BD%95%E5%9B%BD%E8%AF%AD-05.mp4");
+        movieMap.put(
+                "勇探实录06",
+                "http://anning.luanniao-zuida.com/1908/%E5%8B%87%E6%8E%A2%E5%AE%9E%E5%BD%95%E5%9B%BD%E8%AF%AD-06.mp4");
+        movieMap.put(
+                "勇探实录07",
+                "http://anning.luanniao-zuida.com/1908/%E5%8B%87%E6%8E%A2%E5%AE%9E%E5%BD%95%E5%9B%BD%E8%AF%AD-07.mp4");
+        movieMap.put(
+                "勇探实录08",
+                "http://anning.luanniao-zuida.com/1908/%E5%8B%87%E6%8E%A2%E5%AE%9E%E5%BD%95%E5%9B%BD%E8%AF%AD-08.mp4");
+        movieMap.put(
+                "勇探实录09",
+                "http://anning.luanniao-zuida.com/1908/%E5%8B%87%E6%8E%A2%E5%AE%9E%E5%BD%95%E5%9B%BD%E8%AF%AD-09.mp4");
+        movieMap.put(
+                "勇探实录10",
+                "http://anning.luanniao-zuida.com/1908/%E5%8B%87%E6%8E%A2%E5%AE%9E%E5%BD%95%E5%9B%BD%E8%AF%AD-10.mp4");
+        movieMap.put(
+                "勇探实录11",
+                "http://anning.luanniao-zuida.com/1908/%E5%8B%87%E6%8E%A2%E5%AE%9E%E5%BD%95%E5%9B%BD%E8%AF%AD-11.mp4");
+        movieMap.put(
+                "勇探实录12",
+                "http://anning.luanniao-zuida.com/1908/%E5%8B%87%E6%8E%A2%E5%AE%9E%E5%BD%95%E5%9B%BD%E8%AF%AD-12.mp4");
+        movieMap.put(
+                "勇探实录13",
+                "http://anning.luanniao-zuida.com/1908/%E5%8B%87%E6%8E%A2%E5%AE%9E%E5%BD%95%E5%9B%BD%E8%AF%AD-13.mp4");
+        movieMap.put(
+                "勇探实录14",
+                "http://anning.luanniao-zuida.com/1908/%E5%8B%87%E6%8E%A2%E5%AE%9E%E5%BD%95%E5%9B%BD%E8%AF%AD-14.mp4");
+        movieMap.put(
+                "勇探实录15",
+                "http://anning.luanniao-zuida.com/1908/%E5%8B%87%E6%8E%A2%E5%AE%9E%E5%BD%95%E5%9B%BD%E8%AF%AD-15.mp4");
+        movieMap.put(
+                "勇探实录16",
+                "http://anning.luanniao-zuida.com/1908/%E5%8B%87%E6%8E%A2%E5%AE%9E%E5%BD%95%E5%9B%BD%E8%AF%AD-16.mp4");
+        movieMap.put(
+                "勇探实录17",
+                "http://anning.luanniao-zuida.com/1908/%E5%8B%87%E6%8E%A2%E5%AE%9E%E5%BD%95%E5%9B%BD%E8%AF%AD-17.mp4");
+        movieMap.put(
+                "勇探实录18",
+                "http://anning.luanniao-zuida.com/1908/%E5%8B%87%E6%8E%A2%E5%AE%9E%E5%BD%95%E5%9B%BD%E8%AF%AD-18.mp4");
+        movieMap.put(
+                "勇探实录19",
+                "http://anning.luanniao-zuida.com/1908/%E5%8B%87%E6%8E%A2%E5%AE%9E%E5%BD%95%E5%9B%BD%E8%AF%AD-19.mp4");
+        movieMap.put(
+                "勇探实录20",
+                "http://anning.luanniao-zuida.com/1908/%E5%8B%87%E6%8E%A2%E5%AE%9E%E5%BD%95%E5%9B%BD%E8%AF%AD-20.mp4");
     }
 
 }
