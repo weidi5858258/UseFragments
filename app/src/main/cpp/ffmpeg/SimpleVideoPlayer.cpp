@@ -1343,6 +1343,7 @@ namespace alexander {
                                                videoWrapper->srcWidth, videoWrapper->srcHeight);*/
 
                             // 第二种方式(我的一加手机就能正常显示画面了)
+                            // https://www.cnblogs.com/azraelly/archive/2013/01/01/2841269.html
                             // https://blog.csdn.net/u013898698/article/details/79430202
                             // 格式转换
                             // 把decodedAVFrame的数据经过格式转换后保存到rgbAVFrame中
