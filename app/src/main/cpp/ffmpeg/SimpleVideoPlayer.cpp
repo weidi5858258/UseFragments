@@ -4,6 +4,14 @@
 
 #include "SimpleVideoPlayer.h"
 
+/***
+ https://www.cnblogs.com/azraelly/archive/2013/01/01/2841269.html
+ 图文详解YUV420数据格式
+ https://blog.csdn.net/cgwang_1580/article/details/79595958
+ 常用视频像素格式NV12、NV2、I420、YV12、YUYV
+
+
+ */
 namespace alexander {
 
     int getAVPacketFromQueue(struct AVPacketQueue *packet_queue,
@@ -699,11 +707,11 @@ namespace alexander {
                         // while(1) end
                         break;
                     }
-                    if (wrapper->type == TYPE_AUDIO) {
+                    /*if (wrapper->type == TYPE_AUDIO) {
                         LOGF("readData() audio readFrame: %d\n", readFrame);
                     } else {
                         LOGF("readData() video readFrame: %d\n", readFrame);
-                    }
+                    }*/
                     continue;
                 }
 
@@ -1108,6 +1116,7 @@ namespace alexander {
         int64_t nowPts = 0;
         double timeDifference = 0;
         int ret = 0;
+        bool onlyOne = true;
 
         LOGW("handleVideoData() ANativeWindow_setBuffersGeometry() start\n");
         // 2.设置缓冲区的属性（宽、高、像素格式）,像素格式要和SurfaceView的像素格式一直
@@ -1281,6 +1290,15 @@ namespace alexander {
                                && !audioWrapper->father->isStarted) {
                             videoSleep(1);
                         }
+                        if (audioWrapper != NULL
+                            && audioWrapper->father != NULL
+                            && audioWrapper->father->isStarted
+                            && videoWrapper->father->isStarted
+                            && onlyOne) {
+                            LOGW("handleVideoData() 音视频都已经准备好,开始播放!!!\n");
+                            onlyOne = false;
+                            onPlayed();
+                        }
 #endif
                         nowPts = videoWrapper->decodedAVFrame->pts;
 #ifdef USE_AUDIO
@@ -1302,11 +1320,13 @@ namespace alexander {
                         // 如果发现小了,说明视频播放慢了,应丢弃这些帧
                         if (videoTimeDifference < audioTimeDifference) {
                             // break后videoTimeDifference增长的速度会加快
+                            //LOGD("handleVideoData() audio nowPts : %lf\n", audioTimeDifference);
+                            //LOGW("handleVideoData() video nowPts : %lf\n", videoTimeDifference);
                             break;
                         }
                         // 0.177853 0.155691 0.156806 0.154362
                         double tempTimeDifference = videoTimeDifference - audioTimeDifference;
-                        if (tempTimeDifference > TIME_DIFFERENCE) {
+                        if (tempTimeDifference > 2.000000) {
                             // 不好的现象
                             LOGE("handleVideoData() video - audio   : %lf\n", tempTimeDifference);
                         }
@@ -1343,7 +1363,6 @@ namespace alexander {
                                                videoWrapper->srcWidth, videoWrapper->srcHeight);*/
 
                             // 第二种方式(我的一加手机就能正常显示画面了)
-                            // https://www.cnblogs.com/azraelly/archive/2013/01/01/2841269.html
                             // https://blog.csdn.net/u013898698/article/details/79430202
                             // 格式转换
                             // 把decodedAVFrame的数据经过格式转换后保存到rgbAVFrame中
@@ -1373,7 +1392,7 @@ namespace alexander {
                             tempSleep += step;
                             if (sleep != tempSleep) {
                                 sleep = tempSleep;
-                                LOGI("handleVideoData() sleep  : %ld\n", sleep);
+                                LOGW("handleVideoData() sleep  : %ld\n", sleep);
                             }
                             if (sleep < 15 && sleep > 0) {
                                 videoSleep(sleep);

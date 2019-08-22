@@ -13,6 +13,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
 import android.os.PowerManager;
+import android.os.SystemClock;
 import android.text.format.DateUtils;
 import android.util.Log;
 import android.view.KeyEvent;
@@ -505,34 +506,33 @@ public class JniPlayerActivity extends BaseActivity {
                     }
                     mProgressBar.setProgress(0);
                 }
-                if (audioInitResult == 0) {
-                    new Thread(new Runnable() {
-                        @Override
-                        public void run() {
-                            mFFMPEGPlayer.audioReadData();
-                        }
-                    }).start();
-                    new Thread(new Runnable() {
-                        @Override
-                        public void run() {
-                            mFFMPEGPlayer.audioHandleData();
-                        }
-                    }).start();
-                }
-                if (videoInitResult == 0) {
-                    new Thread(new Runnable() {
-                        @Override
-                        public void run() {
-                            mFFMPEGPlayer.videoReadData();
-                        }
-                    }).start();
-                    new Thread(new Runnable() {
-                        @Override
-                        public void run() {
-                            mFFMPEGPlayer.videoHandleData();
-                        }
-                    }).start();
-                }
+
+                new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        mFFMPEGPlayer.audioHandleData();
+                    }
+                }).start();
+                new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        mFFMPEGPlayer.videoHandleData();
+                    }
+                }).start();
+                new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        SystemClock.sleep(500);
+                        mFFMPEGPlayer.audioReadData();
+                    }
+                }).start();
+                new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        SystemClock.sleep(500);
+                        mFFMPEGPlayer.videoReadData();
+                    }
+                }).start();
                 break;
             default:
                 break;
