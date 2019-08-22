@@ -117,6 +117,7 @@ namespace alexander {
         videoWrapper->father->duration = -1;
         videoWrapper->father->timestamp = -1;
 
+        // AV_PIX_FMT_RGB32
         videoWrapper->dstAVPixelFormat = AV_PIX_FMT_RGBA;
 
         videoWrapper->father->queue1 =
@@ -1032,8 +1033,7 @@ namespace alexander {
 #ifdef USE_VIDEO
                             while (videoWrapper != NULL
                                    && videoWrapper->father != NULL
-                                   && !videoWrapper->father->isStarted
-                                   && videoWrapper->father->isHandling) {
+                                   && !videoWrapper->father->isStarted) {
                                 // usleep(1000);
                                 audioSleep(1);
                             }
@@ -1278,8 +1278,7 @@ namespace alexander {
 #ifdef USE_AUDIO
                         while (audioWrapper != NULL
                                && audioWrapper->father != NULL
-                               && !audioWrapper->father->isStarted
-                               && audioWrapper->father->isHandling) {
+                               && !audioWrapper->father->isStarted) {
                             videoSleep(1);
                         }
 #endif
