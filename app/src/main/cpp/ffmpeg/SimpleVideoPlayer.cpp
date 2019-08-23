@@ -148,6 +148,30 @@ namespace alexander {
     int openAndFindAVFormatContextForAudio() {
         // AVFormatContext初始化,里面设置结构体的一些默认信息
         // 相当于Java中创建对象
+        /***
+        播放流媒体命令:
+        ffplay -rtsp_transport tcp -max_delay 5000000 rtsp://mms.cnr.cn/cnr003?MzE5MTg0IzEjIzI5NjgwOQ==
+        相应代码为:
+        AVDictionary *avdic=NULL;
+        char option_key[]="rtsp_transport";
+        char option_value[]="tcp";
+        av_dict_set(&avdic,option_key,option_value,0);
+        char option_key2[]="max_delay";
+        char option_value2[]="5000000";
+        av_dict_set(&avdic,option_key2,option_value2,0);
+        char url[]="rtsp://mms.cnr.cn/cnr003?MzE5MTg0IzEjIzI5NjgwOQ==";
+        avformat_open_input(&pFormatCtx,url,NULL,&avdic);
+         
+        AVDictionary* options = NULL;
+        //设置缓存大小,1080p可将值调大
+        av_dict_set(&options, "buffer_size", "102400", 0);
+        //以udp方式打开,如果以tcp方式打开将udp替换为tcp
+        av_dict_set(&options, "rtsp_transport", "tcp", 0);
+        //设置超时断开连接时间,单位微秒
+        av_dict_set(&options, "stimeout", "2000000", 0);
+        //设置最大时延
+        av_dict_set(&options, "max_delay", "500000", 0);
+         */
         audioWrapper->father->avFormatContext = avformat_alloc_context();
         if (audioWrapper->father->avFormatContext == NULL) {
             LOGE("audioWrapper->father->avFormatContext is NULL.\n");
@@ -1059,7 +1083,7 @@ namespace alexander {
                                     decodedAVFrame->nb_samples,
                                     // 输出采样格式16bit
                                     audioWrapper->dstAVSampleFormat,
-                                    // 缓冲区大小对齐（0 = 默认值，1 = 不对齐）
+                                    // 缓冲区大小对齐（0 = 默认值,1 = 不对齐）
                                     1);
 
                             write(audioWrapper->father->outBuffer1, 0, out_buffer_size);
