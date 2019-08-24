@@ -141,11 +141,11 @@ public class Contents {
                 "特勤精英之生死救援",
                 "http://download.xunleizuida.com/1904/%E7%89%B9%E5%8B%A4%E7%B2%BE%E8%8B%B1%E4%B9%8B%E7%94%9F%E6%AD%BB%E6%95%91%E6%8F%B4.HD1280%E9%AB%98%E6%B8%85%E5%9B%BD%E8%AF%AD%E4%B8%AD%E5%AD%97%E7%89%88.mp4");
         movieMap.put(
-                "",
-                "");
+                "扫毒2天地对决",
+                "http://xunlei.xiazai-zuida.com/1908/%E6%89%AB%E6%AF%922.HD1280%E9%AB%98%E6%B8%85%E5%9B%BD%E8%AF%AD%E4%B8%AD%E5%AD%97%E7%89%88.mp4");
         movieMap.put(
-                "",
-                "");
+                "犬王",
+                "http://xunlei.xiazai-zuida.com/1908/%E7%8A%AC%E7%8E%8B.HD1280%E9%AB%98%E6%B8%85%E5%9B%BD%E8%AF%AD%E7%89%88.mp4");
         movieMap.put(
                 "",
                 "");
@@ -258,6 +258,46 @@ public class Contents {
         movieMap.put(
                 "变形金刚5(null)",
                 "");
+
+        movieMap.put(
+                "神盾局特工第六季01",
+                "http://download.xunleizuida.com/1905/%E7%A5%9E%E7%9B%BE%E5%B1%80%E7%89%B9%E5%B7%A5%E7%AC%AC%E5%85%AD%E5%AD%A3-01.mp4");
+        movieMap.put(
+                "神盾局特工第六季02",
+                "http://download.xunleizuida.com/1905/%E7%A5%9E%E7%9B%BE%E5%B1%80%E7%89%B9%E5%B7%A5%E7%AC%AC%E5%85%AD%E5%AD%A3-02.mp4");
+        movieMap.put(
+                "神盾局特工第六季03",
+                "http://download.xunleizuida.com/1905/%E7%A5%9E%E7%9B%BE%E5%B1%80%E7%89%B9%E5%B7%A5%E7%AC%AC%E5%85%AD%E5%AD%A3-03.mp4");
+        movieMap.put(
+                "神盾局特工第六季04",
+                "http://download.xunleizuida.com/1906/%E7%A5%9E%E7%9B%BE%E5%B1%80%E7%89%B9%E5%B7%A5%E7%AC%AC%E5%85%AD%E5%AD%A3-04.mp4");
+        movieMap.put(
+                "神盾局特工第六季05",
+                "http://download.xunleizuida.com/1906/%E7%A5%9E%E7%9B%BE%E5%B1%80%E7%89%B9%E5%B7%A5%E7%AC%AC%E5%85%AD%E5%AD%A3-05.mp4");
+        movieMap.put(
+                "神盾局特工第六季06",
+                "http://xunlei.xiazai-zuida.com/1906/%E7%A5%9E%E7%9B%BE%E5%B1%80%E7%89%B9%E5%B7%A5%E7%AC%AC%E5%85%AD%E5%AD%A3-06.mp4");
+        movieMap.put(
+                "神盾局特工第六季07",
+                "http://xunlei.xiazai-zuida.com/1906/%E7%A5%9E%E7%9B%BE%E5%B1%80%E7%89%B9%E5%B7%A5%E7%AC%AC%E5%85%AD%E5%AD%A3-07.mp4");
+        movieMap.put(
+                "神盾局特工第六季08",
+                "http://anning.luanniao-zuida.com/1907/%E7%A5%9E%E7%9B%BE%E5%B1%80%E7%89%B9%E5%B7%A5%E7%AC%AC%E5%85%AD%E5%AD%A3-08.mp4");
+        movieMap.put(
+                "神盾局特工第六季09",
+                "http://xunlei.xiazai-zuida.com/1907/%E7%A5%9E%E7%9B%BE%E5%B1%80%E7%89%B9%E5%B7%A5%E7%AC%AC%E5%85%AD%E5%AD%A3-09.mp4");
+        movieMap.put(
+                "神盾局特工第六季10",
+                "http://anning.luanniao-zuida.com/1907/%E7%A5%9E%E7%9B%BE%E5%B1%80%E7%89%B9%E5%B7%A5%E7%AC%AC%E5%85%AD%E5%AD%A3-10.mp4");
+        movieMap.put(
+                "神盾局特工第六季11",
+                "http://xunlei.zuidaxunlei.com/1908/%E7%A5%9E%E7%9B%BE%E5%B1%80%E7%89%B9%E5%B7%A5%E7%AC%AC%E5%85%AD%E5%AD%A3-11.mp4");
+        movieMap.put(
+                "神盾局特工第六季12",
+                "http://xunlei.zuidaxunlei.com/1908/%E7%A5%9E%E7%9B%BE%E5%B1%80%E7%89%B9%E5%B7%A5%E7%AC%AC%E5%85%AD%E5%AD%A3-12.mp4");
+        movieMap.put(
+                "神盾局特工第六季13",
+                "http://xunlei.zuidaxunlei.com/1908/%E7%A5%9E%E7%9B%BE%E5%B1%80%E7%89%B9%E5%B7%A5%E7%AC%AC%E5%85%AD%E5%AD%A3-13.mp4");
 
 
         movieMap.put(

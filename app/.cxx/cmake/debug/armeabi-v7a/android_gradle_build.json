@@ -1,0 +1,161 @@
+
+{
+	"buildFiles" : 
+	[
+		"/root/mydev/workspace_android/UseFragments/app/CMakeLists.txt",
+		"/root/mydev/workspace_android/UseFragments/app/src/main/cpp/module1/CMakeLists.txt",
+		"/root/mydev/workspace_android/UseFragments/app/src/main/cpp/module2/CMakeLists.txt",
+		"/root/mydev/workspace_android/UseFragments/app/src/main/cpp/ffmpeg/CMakeLists.txt"
+	],
+	"cFileExtensions" : [ "c" ],
+	"cleanCommands" : 
+	[
+		"/root/mydev/tools/AndroidSDK/cmake/3.6.4111459/bin/cmake --build /root/mydev/workspace_android/UseFragments/app/.cxx/cmake/debug/armeabi-v7a --target clean"
+	],
+	"cppFileExtensions" : [ "cpp" ],
+	"libraries" : 
+	{
+		"alexander_jni-Debug-armeabi-v7a" : 
+		{
+			"abi" : "armeabi-v7a",
+			"artifactName" : "alexander_jni",
+			"buildCommand" : "/root/mydev/tools/AndroidSDK/cmake/3.6.4111459/bin/cmake --build /root/mydev/workspace_android/UseFragments/app/.cxx/cmake/debug/armeabi-v7a --target alexander_jni",
+			"buildType" : "debug",
+			"files" : 
+			[
+				
+				{
+					"flags" : "  --sysroot=/root/mydev/tools/AndroidSDK/ndk-bundle-16/sysroot -Dalexander_jni_EXPORTS -I../../../../src/main/cpp/module2/../include  -isystem /root/mydev/tools/AndroidSDK/ndk-bundle-16/sysroot/usr/include/arm-linux-androideabi -D__ANDROID_API__=21 -g -DANDROID -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -march=armv7-a -mfloat-abi=softfp -mfpu=vfpv3-d16 -marm -mfpu=neon -Wa,--noexecstack -Wformat -Werror=format-security  -O0  -fPIC      -c ",
+					"src" : "/root/mydev/workspace_android/UseFragments/app/src/main/cpp/module2/JniUtils.c",
+					"workingDirectory" : "/root/mydev/workspace_android/UseFragments/app/.cxx/cmake/debug/armeabi-v7a"
+				}
+			],
+			"output" : "/root/mydev/workspace_android/UseFragments/app/build/intermediates/cmake/debug/obj/armeabi-v7a/libalexander_jni.so",
+			"toolchain" : "3499365113287623606"
+		},
+		"avcodec-Debug-armeabi-v7a" : 
+		{
+			"abi" : "armeabi-v7a",
+			"artifactName" : "avcodec",
+			"buildType" : "debug",
+			"output" : "/root/mydev/workspace_android/UseFragments/app/src/main/jniLibs/armeabi-v7a/libavcodec.so",
+			"toolchain" : "3499365113287623606"
+		},
+		"avfilter-Debug-armeabi-v7a" : 
+		{
+			"abi" : "armeabi-v7a",
+			"artifactName" : "avfilter",
+			"buildType" : "debug",
+			"output" : "/root/mydev/workspace_android/UseFragments/app/src/main/jniLibs/armeabi-v7a/libavfilter.so",
+			"toolchain" : "3499365113287623606"
+		},
+		"avformat-Debug-armeabi-v7a" : 
+		{
+			"abi" : "armeabi-v7a",
+			"artifactName" : "avformat",
+			"buildType" : "debug",
+			"output" : "/root/mydev/workspace_android/UseFragments/app/src/main/jniLibs/armeabi-v7a/libavformat.so",
+			"toolchain" : "3499365113287623606"
+		},
+		"avutil-Debug-armeabi-v7a" : 
+		{
+			"abi" : "armeabi-v7a",
+			"artifactName" : "avutil",
+			"buildType" : "debug",
+			"output" : "/root/mydev/workspace_android/UseFragments/app/src/main/jniLibs/armeabi-v7a/libavutil.so",
+			"toolchain" : "3499365113287623606"
+		},
+		"ffmpeg-Debug-armeabi-v7a" : 
+		{
+			"abi" : "armeabi-v7a",
+			"artifactName" : "ffmpeg",
+			"buildCommand" : "/root/mydev/tools/AndroidSDK/cmake/3.6.4111459/bin/cmake --build /root/mydev/workspace_android/UseFragments/app/.cxx/cmake/debug/armeabi-v7a --target ffmpeg",
+			"buildType" : "debug",
+			"files" : 
+			[
+				
+				{
+					"flags" : "  --sysroot=/root/mydev/tools/AndroidSDK/ndk-bundle-16/sysroot  -Dffmpeg_EXPORTS -I../../../../src/main/cpp/ffmpeg/../include -isystem /root/mydev/tools/AndroidSDK/ndk-bundle-16/sources/cxx-stl/gnu-libstdc++/4.9/include -isystem /root/mydev/tools/AndroidSDK/ndk-bundle-16/sources/cxx-stl/gnu-libstdc++/4.9/libs/armeabi-v7a/include -isystem /root/mydev/tools/AndroidSDK/ndk-bundle-16/sources/cxx-stl/gnu-libstdc++/4.9/include/backward  -isystem /root/mydev/tools/AndroidSDK/ndk-bundle-16/sysroot/usr/include/arm-linux-androideabi -D__ANDROID_API__=21 -g -DANDROID -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -march=armv7-a -mfloat-abi=softfp -mfpu=vfpv3-d16 -marm -mfpu=neon -Wa,--noexecstack -Wformat -Werror=format-security -frtti -fexceptions -frtti -fexceptions -O0  -fPIC    -c ",
+					"src" : "/root/mydev/workspace_android/UseFragments/app/src/main/cpp/ffmpeg/ffmpeg.cpp",
+					"workingDirectory" : "/root/mydev/workspace_android/UseFragments/app/.cxx/cmake/debug/armeabi-v7a"
+				},
+				
+				{
+					"flags" : "  --sysroot=/root/mydev/tools/AndroidSDK/ndk-bundle-16/sysroot  -Dffmpeg_EXPORTS -I../../../../src/main/cpp/ffmpeg/../include -isystem /root/mydev/tools/AndroidSDK/ndk-bundle-16/sources/cxx-stl/gnu-libstdc++/4.9/include -isystem /root/mydev/tools/AndroidSDK/ndk-bundle-16/sources/cxx-stl/gnu-libstdc++/4.9/libs/armeabi-v7a/include -isystem /root/mydev/tools/AndroidSDK/ndk-bundle-16/sources/cxx-stl/gnu-libstdc++/4.9/include/backward  -isystem /root/mydev/tools/AndroidSDK/ndk-bundle-16/sysroot/usr/include/arm-linux-androideabi -D__ANDROID_API__=21 -g -DANDROID -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -march=armv7-a -mfloat-abi=softfp -mfpu=vfpv3-d16 -marm -mfpu=neon -Wa,--noexecstack -Wformat -Werror=format-security -frtti -fexceptions -frtti -fexceptions -O0  -fPIC    -c ",
+					"src" : "/root/mydev/workspace_android/UseFragments/app/src/main/cpp/ffmpeg/SimpleAudioPlayer.cpp",
+					"workingDirectory" : "/root/mydev/workspace_android/UseFragments/app/.cxx/cmake/debug/armeabi-v7a"
+				},
+				
+				{
+					"flags" : "  --sysroot=/root/mydev/tools/AndroidSDK/ndk-bundle-16/sysroot  -Dffmpeg_EXPORTS -I../../../../src/main/cpp/ffmpeg/../include -isystem /root/mydev/tools/AndroidSDK/ndk-bundle-16/sources/cxx-stl/gnu-libstdc++/4.9/include -isystem /root/mydev/tools/AndroidSDK/ndk-bundle-16/sources/cxx-stl/gnu-libstdc++/4.9/libs/armeabi-v7a/include -isystem /root/mydev/tools/AndroidSDK/ndk-bundle-16/sources/cxx-stl/gnu-libstdc++/4.9/include/backward  -isystem /root/mydev/tools/AndroidSDK/ndk-bundle-16/sysroot/usr/include/arm-linux-androideabi -D__ANDROID_API__=21 -g -DANDROID -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -march=armv7-a -mfloat-abi=softfp -mfpu=vfpv3-d16 -marm -mfpu=neon -Wa,--noexecstack -Wformat -Werror=format-security -frtti -fexceptions -frtti -fexceptions -O0  -fPIC    -c ",
+					"src" : "/root/mydev/workspace_android/UseFragments/app/src/main/cpp/ffmpeg/SimpleVideoPlayer.cpp",
+					"workingDirectory" : "/root/mydev/workspace_android/UseFragments/app/.cxx/cmake/debug/armeabi-v7a"
+				},
+				
+				{
+					"flags" : "  --sysroot=/root/mydev/tools/AndroidSDK/ndk-bundle-16/sysroot  -Dffmpeg_EXPORTS -I../../../../src/main/cpp/ffmpeg/../include -isystem /root/mydev/tools/AndroidSDK/ndk-bundle-16/sources/cxx-stl/gnu-libstdc++/4.9/include -isystem /root/mydev/tools/AndroidSDK/ndk-bundle-16/sources/cxx-stl/gnu-libstdc++/4.9/libs/armeabi-v7a/include -isystem /root/mydev/tools/AndroidSDK/ndk-bundle-16/sources/cxx-stl/gnu-libstdc++/4.9/include/backward  -isystem /root/mydev/tools/AndroidSDK/ndk-bundle-16/sysroot/usr/include/arm-linux-androideabi -D__ANDROID_API__=21 -g -DANDROID -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -march=armv7-a -mfloat-abi=softfp -mfpu=vfpv3-d16 -marm -mfpu=neon -Wa,--noexecstack -Wformat -Werror=format-security -frtti -fexceptions -frtti -fexceptions -O0  -fPIC    -c ",
+					"src" : "/root/mydev/workspace_android/UseFragments/app/src/main/cpp/ffmpeg/AudioRecord.cpp",
+					"workingDirectory" : "/root/mydev/workspace_android/UseFragments/app/.cxx/cmake/debug/armeabi-v7a"
+				},
+				
+				{
+					"flags" : "  --sysroot=/root/mydev/tools/AndroidSDK/ndk-bundle-16/sysroot  -Dffmpeg_EXPORTS -I../../../../src/main/cpp/ffmpeg/../include -isystem /root/mydev/tools/AndroidSDK/ndk-bundle-16/sources/cxx-stl/gnu-libstdc++/4.9/include -isystem /root/mydev/tools/AndroidSDK/ndk-bundle-16/sources/cxx-stl/gnu-libstdc++/4.9/libs/armeabi-v7a/include -isystem /root/mydev/tools/AndroidSDK/ndk-bundle-16/sources/cxx-stl/gnu-libstdc++/4.9/include/backward  -isystem /root/mydev/tools/AndroidSDK/ndk-bundle-16/sysroot/usr/include/arm-linux-androideabi -D__ANDROID_API__=21 -g -DANDROID -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -march=armv7-a -mfloat-abi=softfp -mfpu=vfpv3-d16 -marm -mfpu=neon -Wa,--noexecstack -Wformat -Werror=format-security -frtti -fexceptions -frtti -fexceptions -O0  -fPIC    -c ",
+					"src" : "/root/mydev/workspace_android/UseFragments/app/src/main/cpp/ffmpeg/AudioTrack.cpp",
+					"workingDirectory" : "/root/mydev/workspace_android/UseFragments/app/.cxx/cmake/debug/armeabi-v7a"
+				}
+			],
+			"output" : "/root/mydev/workspace_android/UseFragments/app/build/intermediates/cmake/debug/obj/armeabi-v7a/libffmpeg.so",
+			"toolchain" : "3499365113287623606"
+		},
+		"native-lib-Debug-armeabi-v7a" : 
+		{
+			"abi" : "armeabi-v7a",
+			"artifactName" : "native-lib",
+			"buildCommand" : "/root/mydev/tools/AndroidSDK/cmake/3.6.4111459/bin/cmake --build /root/mydev/workspace_android/UseFragments/app/.cxx/cmake/debug/armeabi-v7a --target native-lib",
+			"buildType" : "debug",
+			"files" : 
+			[
+				
+				{
+					"flags" : "  --sysroot=/root/mydev/tools/AndroidSDK/ndk-bundle-16/sysroot  -Dnative_lib_EXPORTS -I../../../../src/main/cpp/module1/../include -isystem /root/mydev/tools/AndroidSDK/ndk-bundle-16/sources/cxx-stl/gnu-libstdc++/4.9/include -isystem /root/mydev/tools/AndroidSDK/ndk-bundle-16/sources/cxx-stl/gnu-libstdc++/4.9/libs/armeabi-v7a/include -isystem /root/mydev/tools/AndroidSDK/ndk-bundle-16/sources/cxx-stl/gnu-libstdc++/4.9/include/backward  -isystem /root/mydev/tools/AndroidSDK/ndk-bundle-16/sysroot/usr/include/arm-linux-androideabi -D__ANDROID_API__=21 -g -DANDROID -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -march=armv7-a -mfloat-abi=softfp -mfpu=vfpv3-d16 -marm -mfpu=neon -Wa,--noexecstack -Wformat -Werror=format-security -frtti -fexceptions -frtti -fexceptions -O0  -fPIC    -c ",
+					"src" : "/root/mydev/workspace_android/UseFragments/app/src/main/cpp/module1/native-lib.cpp",
+					"workingDirectory" : "/root/mydev/workspace_android/UseFragments/app/.cxx/cmake/debug/armeabi-v7a"
+				}
+			],
+			"output" : "/root/mydev/workspace_android/UseFragments/app/build/intermediates/cmake/debug/obj/armeabi-v7a/libnative-lib.so",
+			"toolchain" : "3499365113287623606"
+		},
+		"swresample-Debug-armeabi-v7a" : 
+		{
+			"abi" : "armeabi-v7a",
+			"artifactName" : "swresample",
+			"buildType" : "debug",
+			"output" : "/root/mydev/workspace_android/UseFragments/app/src/main/jniLibs/armeabi-v7a/libswresample.so",
+			"toolchain" : "3499365113287623606"
+		},
+		"swscale-Debug-armeabi-v7a" : 
+		{
+			"abi" : "armeabi-v7a",
+			"artifactName" : "swscale",
+			"buildType" : "debug",
+			"output" : "/root/mydev/workspace_android/UseFragments/app/src/main/jniLibs/armeabi-v7a/libswscale.so",
+			"toolchain" : "3499365113287623606"
+		},
+		"yuv-Debug-armeabi-v7a" : 
+		{
+			"abi" : "armeabi-v7a",
+			"artifactName" : "yuv",
+			"buildType" : "debug",
+			"output" : "/root/mydev/workspace_android/UseFragments/app/src/main/jniLibs/armeabi-v7a/libyuv.so",
+			"toolchain" : "3499365113287623606"
+		}
+	},
+	"toolchains" : 
+	{
+		"3499365113287623606" : 
+		{
+			"cCompilerExecutable" : "/root/mydev/tools/AndroidSDK/ndk-bundle-16/toolchains/arm-linux-androideabi-4.9/prebuilt/linux-x86_64/bin/arm-linux-androideabi-gcc",
+			"cppCompilerExecutable" : "/root/mydev/tools/AndroidSDK/ndk-bundle-16/toolchains/arm-linux-androideabi-4.9/prebuilt/linux-x86_64/bin/arm-linux-androideabi-g++"
+		}
+	}
+}

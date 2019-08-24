@@ -41,7 +41,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-import androidx.annotation.NonNull;
+import android.support.annotation.NonNull;
 
 /***
  mimeType是已知的,都是通过mimeType去得到各种对象

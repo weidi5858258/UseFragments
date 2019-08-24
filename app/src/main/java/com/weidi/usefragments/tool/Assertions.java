@@ -18,7 +18,7 @@ package com.weidi.usefragments.tool;
 import android.os.Looper;
 import android.text.TextUtils;
 
-import androidx.annotation.Nullable;
+import android.support.annotation.Nullable;
 
 /**
  * Provides methods for asserting the truth of expressions and properties.
