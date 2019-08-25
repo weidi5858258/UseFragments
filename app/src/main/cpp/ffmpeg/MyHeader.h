@@ -224,7 +224,10 @@ struct VideoWrapper {
     // 从原来的像素格式转换为想要的视频格式(可能应用于不需要播放视频的场景)
     // 播放时dstAVPixelFormat必须跟srcAVPixelFormat的值一样,不然画面有问题
     enum AVPixelFormat dstAVPixelFormat = AV_PIX_FMT_RGBA;
+    // 一个视频没有解码之前读出的数据是压缩数据,把压缩数据解码后就是原始数据
+    // 解码后的原始数据(像素格式可能不是我们想要的,如果是想要的,那么没必要再调用sws_scale函数了)
     AVFrame *decodedAVFrame = NULL;
+    // 解码后的原始数据(像素格式是我们想要的)
     AVFrame *rgbAVFrame = NULL;
     // 从视频源中得到的宽高
     int srcWidth = 0, srcHeight = 0;

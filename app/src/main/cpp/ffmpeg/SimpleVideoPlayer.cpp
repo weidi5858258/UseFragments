@@ -10,6 +10,45 @@
  https://blog.csdn.net/cgwang_1580/article/details/79595958
  常用视频像素格式NV12、NV2、I420、YV12、YUYV
 
+ int av_image_get_buffer_size(enum AVPixelFormat pix_fmt, int width, int height, int align);
+ 函数的作用是通过指定像素格式、图像宽、图像高来计算所需的内存大小
+ 重点说明一个参数align:此参数是设定内存对齐的对齐数,也就是按多大的字节进行内存对齐.
+ 比如设置为1,表示按1字节对齐,那么得到的结果就是与实际的内存大小一样.
+ 再比如设置为4,表示按4字节对齐.也就是内存的起始地址必须是4的整倍数.
+
+ int av_image_alloc(
+     uint8_t *pointers[4],
+     int linesizes[4],
+     int w,
+     int h,
+     enum AVPixelFormat pix_fmt,
+     int align);
+ pointers[4]：保存图像通道的地址.
+ 如果是RGB,则前三个指针分别指向R,G,B的内存地址,第四个指针保留不用.
+ linesizes[4]：保存图像每个通道的内存对齐的步长,即一行的对齐内存的宽度,此值大小等于图像宽度.
+ w:       要申请内存的图像宽度.
+ h:       要申请内存的图像高度.
+ pix_fmt: 要申请内存的图像的像素格式.
+ align:   用于内存对齐的值.
+ 返回值：所申请的内存空间的总大小.如果是负值,表示申请失败.
+
+ int av_image_fill_arrays(
+     uint8_t *dst_data[4],
+     int dst_linesize[4],
+     const uint8_t *src,
+     enum AVPixelFormat pix_fmt,
+     int width,
+     int height,
+     int align);
+ av_image_fill_arrays()函数自身不具备内存申请的功能,
+ 此函数类似于格式化已经申请的内存,即通过av_image_alloc()函数申请的内存空间.
+ dst_data[4]:     [out]对申请的内存格式化为三个通道后,分别保存其地址.
+ dst_linesize[4]: [out]格式化的内存的步长(即内存对齐后的宽度).
+ *src:            [in]av_image_alloc()函数申请的内存地址.
+ pix_fmt:         [in]申请 src内存时的像素格式.
+ width:           [in]申请src内存时指定的宽度.
+ height:          [in]申请scr内存时指定的高度.
+ align:           [in]申请src内存时指定的对齐字节数.
 
  */
 namespace alexander {
@@ -125,6 +164,7 @@ namespace alexander {
         videoWrapper->father->duration = -1;
         videoWrapper->father->timestamp = -1;
 
+        // Android支持的目标像素格式
         // AV_PIX_FMT_RGB32
         videoWrapper->dstAVPixelFormat = AV_PIX_FMT_RGBA;
 
@@ -483,6 +523,7 @@ namespace alexander {
         videoWrapper->dstWidth = videoWrapper->srcWidth;
         videoWrapper->dstHeight = videoWrapper->srcHeight;
         videoWrapper->srcArea = videoWrapper->srcWidth * videoWrapper->srcHeight;
+        videoWrapper->dstArea = videoWrapper->srcArea;
 
         // decodedAVFrame为解码后的数据
         // avPacket ---> decodedAVFrame ---> rgbAVFrame ---> 渲染画面
@@ -491,10 +532,11 @@ namespace alexander {
 
         int imageGetBufferSize = av_image_get_buffer_size(
                 videoWrapper->dstAVPixelFormat, videoWrapper->srcWidth, videoWrapper->srcHeight, 1);
-        LOGI("imageGetBufferSize  : %d\n", imageGetBufferSize);
-        videoWrapper->father->outBufferSize = imageGetBufferSize;
-        videoWrapper->father->outBuffer1 = (unsigned char *) av_malloc(
-                imageGetBufferSize * sizeof(unsigned char));
+        videoWrapper->father->outBufferSize = imageGetBufferSize * sizeof(unsigned char);
+        LOGI("imageGetBufferSize1 : %d\n", imageGetBufferSize);
+        LOGI("imageGetBufferSize2 : %d\n", videoWrapper->father->outBufferSize);
+        videoWrapper->father->outBuffer1 =
+                (unsigned char *) av_malloc(videoWrapper->father->outBufferSize);
         int imageFillArrays = av_image_fill_arrays(
                 videoWrapper->rgbAVFrame->data,
                 videoWrapper->rgbAVFrame->linesize,
@@ -508,6 +550,7 @@ namespace alexander {
             return -1;
         }
         // 由于解码出来的帧格式不是RGBA的,在渲染之前需要进行格式转换
+        // 现在swsContext知道程序员想要得到什么样的像素格式了
         videoWrapper->swsContext = sws_getContext(
                 videoWrapper->srcWidth, videoWrapper->srcHeight, videoWrapper->srcAVPixelFormat,
                 videoWrapper->srcWidth, videoWrapper->srcHeight, videoWrapper->dstAVPixelFormat,
@@ -1154,7 +1197,7 @@ namespace alexander {
 
         AVStream *stream =
                 videoWrapper->father->avFormatContext->streams[videoWrapper->father->streamIndex];
-        // 必须创建
+        // 必须创建(存放压缩数据,如H264)
         AVPacket *avPacket = av_packet_alloc();
         videoWrapper->father->isHandling = true;
         LOGW("handleVideoData() for (;;) start\n");
@@ -1325,6 +1368,8 @@ namespace alexander {
                         }
 #endif
                         nowPts = videoWrapper->decodedAVFrame->pts;
+                        timeDifference = (nowPts - prePts) * av_q2d(stream->time_base);
+                        prePts = nowPts;
 #ifdef USE_AUDIO
                         videoTimeDifference =
                                 nowPts * av_q2d(stream->time_base);
@@ -1336,10 +1381,6 @@ namespace alexander {
                             preProgress = progress;
                             onProgressUpdated(progress);
                         }
-#endif
-                        timeDifference = (nowPts - prePts) * av_q2d(stream->time_base);
-                        prePts = nowPts;
-#ifdef USE_AUDIO
                         // 正常情况下videoTimeDifference比audioTimeDifference大一些
                         // 如果发现小了,说明视频播放慢了,应丢弃这些帧
                         if (videoTimeDifference < audioTimeDifference) {
@@ -1397,6 +1438,8 @@ namespace alexander {
                                       videoWrapper->srcHeight,
                                       videoWrapper->rgbAVFrame->data,
                                       videoWrapper->rgbAVFrame->linesize);
+
+                            // 这段代码非常关键,还看不懂啥意思
                             // 把rgbAVFrame里面的数据复制到outBuffer中就能渲染画面了
                             // 获取stride
                             // 一行的数据
