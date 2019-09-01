@@ -173,11 +173,14 @@ public class JniPlayerActivity extends BaseActivity {
     private static final int PLAYBACK_INFO = 0x001;
     public static final int PLAYBACK_PROGRESS_UPDATED = 0x002;
     private static final int PLAYBACK_PROGRESS_CHANGED = 0x003;
-    private static final int MSG_ON_READY = 0x004;
-    private static final int MSG_LOADING_SHOW = 0x005;
-    private static final int MSG_LOADING_HIDE = 0x006;
-    private static final int MSG_ON_PROGRESS_UPDATED = 0x007;
-    private static final int MSG_START_PLAYBACK = 0x008;
+    public static final int MSG_ON_READY = 0x004;
+    public static final int MSG_ON_PAUSED = 0x005;
+    public static final int MSG_ON_PLAYED = 0x006;
+    public static final int MSG_ON_FINISHED = 0x007;
+    private static final int MSG_LOADING_SHOW = 0x008;
+    private static final int MSG_LOADING_HIDE = 0x009;
+    private static final int MSG_ON_PROGRESS_UPDATED = 0x010;
+    private static final int MSG_START_PLAYBACK = 0x011;
 
     private SurfaceView mSurfaceView;
     private Surface mSurface;
@@ -395,10 +398,30 @@ public class JniPlayerActivity extends BaseActivity {
                 }
             });
         }
+
+        if (mFFMPEGPlayer != null) {
+            if (mFFMPEGPlayer.isRunning()) {
+                if (!mFFMPEGPlayer.isPlaying()) {
+                    mPlayIB.setVisibility(View.VISIBLE);
+                    mPauseIB.setVisibility(View.GONE);
+                    mControllerPanelLayout.setVisibility(View.INVISIBLE);
+                    mFFMPEGPlayer.play();
+                }
+            }
+        }
     }
 
     private void internalStop() {
-
+        if (mFFMPEGPlayer != null) {
+            if (mFFMPEGPlayer.isRunning()) {
+                if (mFFMPEGPlayer.isPlaying()) {
+                    mPlayIB.setVisibility(View.GONE);
+                    mPauseIB.setVisibility(View.VISIBLE);
+                    mControllerPanelLayout.setVisibility(View.VISIBLE);
+                    mFFMPEGPlayer.pause();
+                }
+            }
+        }
     }
 
     private void internalDestroy() {
@@ -452,6 +475,20 @@ public class JniPlayerActivity extends BaseActivity {
                 mFileNameTV.setText(Contents.getTitle());
                 mLoadingView.setVisibility(View.VISIBLE);
                 break;
+            case MSG_ON_PAUSED:
+                mPlayIB.setVisibility(View.GONE);
+                mPauseIB.setVisibility(View.VISIBLE);
+                mLoadingView.setVisibility(View.VISIBLE);
+                mControllerPanelLayout.setVisibility(View.VISIBLE);
+                break;
+            case MSG_ON_PLAYED:
+                mPlayIB.setVisibility(View.VISIBLE);
+                mPauseIB.setVisibility(View.GONE);
+                mLoadingView.setVisibility(View.GONE);
+                mControllerPanelLayout.setVisibility(View.INVISIBLE);
+                break;
+            case MSG_ON_FINISHED:
+                break;
             case MSG_LOADING_SHOW:
                 mLoadingView.setVisibility(View.VISIBLE);
                 break;
@@ -482,10 +519,12 @@ public class JniPlayerActivity extends BaseActivity {
                             if (mFFMPEGPlayer.isPlaying()) {
                                 mPlayIB.setVisibility(View.GONE);
                                 mPauseIB.setVisibility(View.VISIBLE);
+                                mControllerPanelLayout.setVisibility(View.VISIBLE);
                                 mFFMPEGPlayer.pause();
                             } else {
                                 mPlayIB.setVisibility(View.VISIBLE);
                                 mPauseIB.setVisibility(View.GONE);
+                                mControllerPanelLayout.setVisibility(View.INVISIBLE);
                                 mFFMPEGPlayer.play();
                             }
                         }

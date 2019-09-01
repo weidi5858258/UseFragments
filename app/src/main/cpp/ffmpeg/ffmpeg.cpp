@@ -344,7 +344,6 @@ extern "C"
 JNIEXPORT jint JNICALL
 Java_com_weidi_usefragments_tool_FFMPEG_play(JNIEnv *env, jobject ffmpegObject) {
     alexander::play();
-    onPlayed();
     return (jint) 0;
 }
 
@@ -352,7 +351,6 @@ extern "C"
 JNIEXPORT jint JNICALL
 Java_com_weidi_usefragments_tool_FFMPEG_pause(JNIEnv *env, jobject ffmpegObject) {
     alexander::pause();
-    onPaused();
     return (jint) 0;
 }
 

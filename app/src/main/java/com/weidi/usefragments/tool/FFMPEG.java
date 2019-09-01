@@ -145,22 +145,36 @@ public class FFMPEG {
     public Callback mCallback = new Callback() {
         @Override
         public void onReady() {
-
+            if (mUiHandler != null) {
+                mUiHandler.removeMessages(JniPlayerActivity.MSG_ON_READY);
+                mUiHandler.sendEmptyMessage(JniPlayerActivity.MSG_ON_READY);
+            }
         }
 
         @Override
         public void onPaused() {
             MLog.i(TAG, "onPaused()");
+            if (mUiHandler != null) {
+                mUiHandler.removeMessages(JniPlayerActivity.MSG_ON_PAUSED);
+                mUiHandler.sendEmptyMessage(JniPlayerActivity.MSG_ON_PAUSED);
+            }
         }
 
         @Override
         public void onPlayed() {
             MLog.i(TAG, "onPlayed()");
+            if (mUiHandler != null) {
+                mUiHandler.removeMessages(JniPlayerActivity.MSG_ON_PLAYED);
+                mUiHandler.sendEmptyMessage(JniPlayerActivity.MSG_ON_PLAYED);
+            }
         }
 
         @Override
         public void onFinished() {
-
+            if (mUiHandler != null) {
+                mUiHandler.removeMessages(JniPlayerActivity.MSG_ON_FINISHED);
+                mUiHandler.sendEmptyMessage(JniPlayerActivity.MSG_ON_FINISHED);
+            }
         }
 
         @Override

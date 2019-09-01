@@ -93,7 +93,7 @@ public class DownloadFileService extends Service {
 
     public static String PATH =
             "/storage/emulated/0/Movies/";
-            //"/storage/2430-1702/Android/data/com.weidi.usefragments/files/Movies/";
+    //"/storage/2430-1702/Android/data/com.weidi.usefragments/files/Movies/";
     /*PATH = "/data/data/com.weidi.usefragments/files/";
     PATH = "/storage/37C8-3904/Android/data/com.weidi.usefragments/files/Movies/";
     PATH = "/storage/2430-1702/Android/data/com.weidi.usefragments/files/Movies/";*/
@@ -140,6 +140,10 @@ public class DownloadFileService extends Service {
     private boolean isVideoExist() {
         boolean isExist = false;
         File moviesFile = new File(PATH);
+        File[] listFiles = moviesFile.listFiles();
+        if (listFiles == null) {
+            return isExist;
+        }
         for (File file : moviesFile.listFiles()) {
             if (file == null) {
                 continue;

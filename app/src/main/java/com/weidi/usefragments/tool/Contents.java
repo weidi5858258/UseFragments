@@ -14,8 +14,8 @@ public class Contents {
 
     public static Map<String, String> movieMap = new LinkedHashMap<>();
     private static String mPath;
-    private static final String PATH = "/storage/2430-1702/BaiduNetdisk/video/";
-//    private static final String PATH = "/storage/emulated/0/BaiduNetdisk/video/";
+//    private static final String PATH = "/storage/2430-1702/BaiduNetdisk/video/";
+    private static final String PATH = "/storage/emulated/0/BaiduNetdisk/video/";
 
     static {
         // {csd-1=java.nio.HeapByteBuffer[pos=0 lim=8 cap=8], mime=video/avc, frame-rate=24, track-id=2, profile=2, width=1280, height=720, max-input-size=151238, durationUs=6227930041, csd-0=java.nio.HeapByteBuffer[pos=0 lim=41 cap=41], bitrate-mode=0, level=512}
@@ -147,8 +147,8 @@ public class Contents {
                 "犬王",
                 "http://xunlei.xiazai-zuida.com/1908/%E7%8A%AC%E7%8E%8B.HD1280%E9%AB%98%E6%B8%85%E5%9B%BD%E8%AF%AD%E7%89%88.mp4");
         movieMap.put(
-                "",
-                "");
+                "X战警-黑凤凰",
+                "http://okzy.xzokzyzy.com/20190830/14797_2afe866c/X%E6%88%98%E8%AD%A6%EF%BC%9A%E9%BB%91%E5%87%A4%E5%87%B0.Dark.Phoenix.2019.BD1080P.X264.AAC.English.CHS-ENG.mp4");
         movieMap.put(
                 "",
                 "");
@@ -258,6 +258,31 @@ public class Contents {
         movieMap.put(
                 "变形金刚5(null)",
                 "");
+
+        movieMap.put(
+                "伟大的转折01",
+                "http://xunlei.xiazai-zuida.com/1908/%E4%BC%9F%E5%A4%A7%E7%9A%84%E8%BD%AC%E6%8A%98-01.mp4");
+        movieMap.put(
+                "伟大的转折02",
+                "http://xunlei.xiazai-zuida.com/1908/%E4%BC%9F%E5%A4%A7%E7%9A%84%E8%BD%AC%E6%8A%98-02.mp4");
+        movieMap.put(
+                "伟大的转折03",
+                "http://xunlei.xiazai-zuida.com/1908/%E4%BC%9F%E5%A4%A7%E7%9A%84%E8%BD%AC%E6%8A%98-03.mp4");
+        movieMap.put(
+                "伟大的转折04",
+                "http://xunlei.xiazai-zuida.com/1908/%E4%BC%9F%E5%A4%A7%E7%9A%84%E8%BD%AC%E6%8A%98-04.mp4");
+        movieMap.put(
+                "伟大的转折05",
+                "http://xunlei.xiazai-zuida.com/1908/%E4%BC%9F%E5%A4%A7%E7%9A%84%E8%BD%AC%E6%8A%98-05.mp4");
+        movieMap.put(
+                "伟大的转折06",
+                "http://xunlei.xiazai-zuida.com/1908/%E4%BC%9F%E5%A4%A7%E7%9A%84%E8%BD%AC%E6%8A%98-06.mp4");
+        movieMap.put(
+                "伟大的转折07",
+                "http://xunlei.xiazai-zuida.com/1908/%E4%BC%9F%E5%A4%A7%E7%9A%84%E8%BD%AC%E6%8A%98-07.mp4");
+        movieMap.put(
+                "伟大的转折07",
+                "http://xunlei.xiazai-zuida.com/1908/%E4%BC%9F%E5%A4%A7%E7%9A%84%E8%BD%AC%E6%8A%98-08.mp4");
 
         movieMap.put(
                 "神盾局特工第六季01",
