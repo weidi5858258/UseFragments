@@ -2,7 +2,7 @@
   "variant": {
     "module": {
       "rootBuildGradleFolder": "/root/mydev/workspace_android/UseFragments",
-      "sdkFolder": "/root/mydev/tools/AndroidSDK",
+      "sdkFolder": "/root/mydev/tools/android_sdk",
       "isNativeCompilerSettingsCacheEnabled": false,
       "isBuildOnlyTargetAbiEnabled": true,
       "splitsAbiFilterSet": [],
@@ -13,7 +13,7 @@
       "buildSystem": "CMAKE",
       "compilerSettingsCacheFolder": "/root/mydev/workspace_android/UseFragments/.cxx",
       "cxxFolder": "/root/mydev/workspace_android/UseFragments/app/.cxx",
-      "ndkFolder": "/root/mydev/tools/AndroidSDK/ndk-bundle-16",
+      "ndkFolder": "/root/mydev/tools/android_sdk/ndk-bundle-16",
       "ndkVersion": "16.1.4479499",
       "ndkSupportedAbiList": [
         "ARMEABI",
