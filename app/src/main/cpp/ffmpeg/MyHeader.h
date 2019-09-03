@@ -9,8 +9,8 @@
 #include "jni.h"
 #include "android/log.h"
 // 需要引入native绘制的头文件
-#include <android/native_window_jni.h>
 #include <android/native_window.h>
+#include <android/native_window_jni.h>
 
 #include <stdio.h>
 #include <stdlib.h>
