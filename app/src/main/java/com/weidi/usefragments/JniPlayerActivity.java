@@ -507,6 +507,7 @@ public class JniPlayerActivity extends BaseActivity {
                         Log.d(TAG, "onKeyDown() 2");
 
                     if (mFFMPEGPlayer != null) {
+                        Log.d(TAG, "onKeyDown() mPresentationTime: " + mPresentationTime);
                         mFFMPEGPlayer.seekTo(mPresentationTime + 30);
                     }
                 } else {

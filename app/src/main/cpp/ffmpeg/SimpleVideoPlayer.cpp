@@ -974,6 +974,7 @@ namespace alexander {
         audioWrapper->father->isHandling = true;
         LOGD("handleAudioData() for (;;) start\n");
         for (;;) {
+            // 暂停装置
             if (audioWrapper->father->isPausedForUser
                 || audioWrapper->father->isPausedForCache) {
                 bool isPausedForUser = audioWrapper->father->isPausedForUser;
@@ -1244,6 +1245,7 @@ namespace alexander {
         videoWrapper->father->isHandling = true;
         LOGW("handleVideoData() for (;;) start\n");
         for (;;) {
+            // 暂停装置
             if (videoWrapper->father->isPausedForUser
                 || videoWrapper->father->isPausedForCache) {
                 bool isPausedForUser = videoWrapper->father->isPausedForUser;
@@ -1330,6 +1332,7 @@ namespace alexander {
                     audioWrapper->father->isPausedForCache = true;
                 }
 #endif
+                // 自身暂停
                 videoWrapper->father->isPausedForCache = true;
                 LOGE("handleVideoData() wait() Cache start\n");
                 pthread_mutex_lock(&videoWrapper->father->handleLockMutex);
@@ -1338,8 +1341,8 @@ namespace alexander {
                 pthread_mutex_unlock(&videoWrapper->father->handleLockMutex);
                 LOGE("handleVideoData() wait() Cache end\n");
                 videoWrapper->father->isPausedForCache = false;
-                // 通知音频结束暂停
 #ifdef USE_AUDIO
+                // 通知音频结束暂停
                 if (audioWrapper != NULL && audioWrapper->father != NULL) {
                     audioWrapper->father->isPausedForCache = false;
                     pthread_mutex_lock(&audioWrapper->father->handleLockMutex);
@@ -1423,7 +1426,9 @@ namespace alexander {
 #ifdef USE_AUDIO
                         videoTimeDifference =
                                 nowPts * av_q2d(stream->time_base);
-                        //LOGW("handleVideoData() nowPts : %lf\n", videoTimeDifference);
+                        //LOGD("handleVideoData() audio nowPts : %lf\n", audioTimeDifference);
+                        //LOGW("handleVideoData() video nowPts : %lf\n", videoTimeDifference);
+                        // 显示时间进度
                         long progress = (long) videoTimeDifference;
                         //LOGW("handleVideoData() progress    : %ld\n", progress);
                         //LOGW("handleVideoData() preProgress : %ld\n", preProgress);
@@ -1431,26 +1436,19 @@ namespace alexander {
                             preProgress = progress;
                             onProgressUpdated(progress);
                         }
-                        // 正常情况下videoTimeDifference比audioTimeDifference大一些
-                        // 如果发现小了,说明视频播放慢了,应丢弃这些帧
                         if (videoTimeDifference < audioTimeDifference) {
+                            // 正常情况下videoTimeDifference比audioTimeDifference大一些
+                            // 如果发现小了,说明视频播放慢了,应丢弃这些帧
                             // break后videoTimeDifference增长的速度会加快
-                            //LOGD("handleVideoData() audio nowPts : %lf\n", audioTimeDifference);
-                            //LOGW("handleVideoData() video nowPts : %lf\n", videoTimeDifference);
                             break;
                         }
                         // 0.177853 0.155691 0.156806 0.154362
                         double tempTimeDifference = videoTimeDifference - audioTimeDifference;
                         if (tempTimeDifference > 2.000000) {
                             // 不好的现象
+                            // 为什么会出现这种情况还不知道?
                             LOGE("handleVideoData() video - audio   : %lf\n", tempTimeDifference);
                         }
-                        /*if (tempTimeDifference < 1.000000) {
-                            totalTimeDifference += tempTimeDifference;
-                            totalTimeDifferenceCount++;
-                            TIME_DIFFERENCE = totalTimeDifference / totalTimeDifferenceCount;
-                            LOGW("handleVideoData() TIME_DIFFERENCE : %lf\n", TIME_DIFFERENCE);
-                        }*/
                         // 如果videoTimeDifference比audioTimeDifference大出了一定的范围
                         // 那么说明视频播放快了,应等待音频
                         while (videoTimeDifference - audioTimeDifference > TIME_DIFFERENCE) {
@@ -1509,7 +1507,7 @@ namespace alexander {
                             tempSleep += step;
                             if (sleep != tempSleep) {
                                 sleep = tempSleep;
-                                LOGW("handleVideoData() sleep  : %ld\n", sleep);
+                                // LOGW("handleVideoData() sleep  : %ld\n", sleep);
                             }
                             if (sleep < 15 && sleep > 0) {
                                 videoSleep(sleep);

@@ -150,6 +150,9 @@ public class Contents {
                 "X战警-黑凤凰",
                 "http://okzy.xzokzyzy.com/20190830/14797_2afe866c/X%E6%88%98%E8%AD%A6%EF%BC%9A%E9%BB%91%E5%87%A4%E5%87%B0.Dark.Phoenix.2019.BD1080P.X264.AAC.English.CHS-ENG.mp4");
         movieMap.put(
+                "蜘蛛侠-英雄远征",
+                "http://anning.luanniao-zuida.com/1909/ZZ%E4%BE%A0%EF%BC%9A%E8%8B%B1%E9%9B%84%E8%BF%9C%E5%BE%81.HD1280%E9%AB%98%E6%B8%85%E5%9B%BD%E8%AF%AD%E4%B8%AD%E8%8B%B1%E5%8F%8C%E5%AD%97%E7%89%88.mp4");
+        movieMap.put(
                 "",
                 "");
         movieMap.put(
