@@ -18,6 +18,7 @@ package com.weidi.usefragments.myhandler;
 
 import android.os.Binder;
 import android.os.SystemClock;
+import android.os.Trace;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.util.Log;
@@ -51,7 +52,8 @@ import android.util.Printer;
  *
  *          Looper.loop();
  *      }
- *  }</pre>
+ *  }
+ *  </pre>
  */
 public final class Looper {
     /*
@@ -107,6 +109,10 @@ public final class Looper {
      * application's main looper. The main looper for your application
      * is created by the Android environment, so you should never need
      * to call this function yourself.  See also: {@link #prepare()}
+     *
+     * 这个方法是由Android框架调用的,程序员不能调用这个方法.
+     * 这个方法一调用,就产生了一个sMainLooper,这个对象表示是在主线程中产生的.
+     *
      */
     public static void prepareMainLooper() {
         prepare(false);
@@ -159,8 +165,8 @@ public final class Looper {
 
             final long slowDispatchThresholdMs = me.mSlowDispatchThresholdMs;
 
-            final long traceTag = me.mTraceTag;
-            /*if (traceTag != 0 && Trace.isTagEnabled(traceTag)) {
+            /*final long traceTag = me.mTraceTag;
+            if (traceTag != 0 && Trace.isTagEnabled(traceTag)) {
                 Trace.traceBegin(traceTag, msg.target.getTraceName(msg));
             }*/
             final long start = (slowDispatchThresholdMs == 0) ? 0 : SystemClock.uptimeMillis();

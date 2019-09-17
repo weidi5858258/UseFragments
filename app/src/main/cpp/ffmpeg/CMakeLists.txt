@@ -56,6 +56,7 @@ endif (${ANDROID_ABI} STREQUAL "x86")
 if (${ANDROID_ABI} STREQUAL "x86_64")
     set(CPU_DIR x86_64)
 endif (${ANDROID_ABI} STREQUAL "x86_64")
+
 #################################################################
 # 添加库
 # add_library( # 库名称
@@ -146,6 +147,16 @@ find_library( # Sets the name of the path variable.
         log)
 find_library(android-lib
         android)
+
+#[[find_library(audioclient-lib
+        audioclient)
+find_library(binder-lib
+        binder)
+find_library(cutils-lib
+        cutils)
+find_library(utils-lib
+        utils)]]
+
 #################################################################
 # 关联库 # ffmpeg
 # 好像只能出现一个target_link_libraries(...)
@@ -157,6 +168,11 @@ target_link_libraries(
         # included in the NDK.
         ${log-lib}
         ${android-lib}
+
+        #[[${audioclient-lib}
+        ${binder-lib}
+        ${cutils-lib}
+        ${utils-lib}]]
 
         avformat
         avcodec
