@@ -21,6 +21,7 @@ import com.weidi.usefragments.tool.DownloadCallback;
 import com.weidi.usefragments.tool.ExoPlaybackException;
 import com.weidi.usefragments.tool.HttpAccessor;
 import com.weidi.usefragments.tool.MLog;
+import com.weidi.utils.MD5Util;
 
 import java.io.BufferedOutputStream;
 import java.io.File;
@@ -92,16 +93,16 @@ public class DownloadFileService extends Service {
     private static final int BUFFER = 1024 * 1024 * 2;
 
     public static String PATH =
-            "/storage/emulated/0/Movies/";
-    //"/storage/2430-1702/Android/data/com.weidi.usefragments/files/Movies/";
+            "/storage/2430-1702/Android/data/com.weidi.usefragments/files/Movies/";
+    //            "/storage/emulated/0/Movies/";
     /*PATH = "/data/data/com.weidi.usefragments/files/";
     PATH = "/storage/37C8-3904/Android/data/com.weidi.usefragments/files/Movies/";
     PATH = "/storage/2430-1702/Android/data/com.weidi.usefragments/files/Movies/";*/
     public static final String PREFERENCES_NAME = "alexander_preferences";
-    public static final String VIDEO_NAME = "video_name";
-    public static final String VIDEO_PATH = "video_path";
-    public static final String VIDEO_LENGTH = "video_length";
-    public static final String VIDEO_IS_FINISHED = "video_is_finished";
+    //    public static final String VIDEO_NAME = "video_name";
+    //    public static final String VIDEO_PATH = "video_path";
+    //    public static final String VIDEO_LENGTH = "video_length";
+    //    public static final String VIDEO_IS_FINISHED = "video_is_finished";
     //private static final String VIDEO_POSITION = "video_position";
     private SharedPreferences mPreferences;
 
@@ -135,6 +136,27 @@ public class DownloadFileService extends Service {
                 DownloadFileService.this.uiHandleMessage(msg);
             }
         };
+    }
+
+    private boolean isVideoExist(String fileName) {
+        boolean isExist = false;
+        File moviesFile = new File(PATH);
+        File[] listFiles = moviesFile.listFiles();
+        if (listFiles == null) {
+            return isExist;
+        }
+        for (File file : moviesFile.listFiles()) {
+            if (file == null) {
+                continue;
+            }
+            if (TextUtils.equals(file.getName(), fileName)) {
+                // 需要指向那个文件,然后打开时才能播放
+                Contents.setPath(file.getAbsolutePath());
+                isExist = true;
+                break;
+            }
+        }
+        return isExist;
     }
 
     private boolean isVideoExist() {
@@ -270,7 +292,6 @@ public class DownloadFileService extends Service {
         }
 
         mIsDownloading = false;
-        SharedPreferences.Editor editor = null;
         contentLength = -1;
         String httpPath = null;
         if (!TextUtils.isEmpty(mUri)) {
@@ -281,16 +302,6 @@ public class DownloadFileService extends Service {
         MLog.i(TAG, "downloadStart() httpPath: " + httpPath);
         if (TextUtils.isEmpty(httpPath)) {
             return;
-        }
-
-        // 如果要下载的与下载好的地址相同,并且下载好的文件存在且
-        String videoPath = mPreferences.getString(VIDEO_PATH, "");
-        if (TextUtils.equals(httpPath, videoPath)) {
-            boolean videoIsFinished = mPreferences.getBoolean(VIDEO_IS_FINISHED, false);
-            if (videoIsFinished && isVideoExist()) {
-                MLog.i(TAG, "downloadStart() 文件已经下载好了,不需要再下载");
-                return;
-            }
         }
 
         if (!httpPath.startsWith("http://")
@@ -319,12 +330,16 @@ public class DownloadFileService extends Service {
         } else {
             fileName = Contents.getTitle() + suffixName;
         }
+        // 军情五处-利益之争.mp4
+        MLog.i(TAG, "downloadStart() fileName: " + fileName);
 
-        editor = mPreferences.edit();
-        editor.putString(VIDEO_NAME, fileName);
-        editor.commit();
-
-        fileName = "alexander_mylove" + suffixName;
+        String httpPathMD5 = MD5Util.getMD5String(httpPath);
+        boolean videoIsFinished = mPreferences.getBoolean(httpPathMD5, false);
+        // 视频文件存在并且已经下载完成
+        if (videoIsFinished && isVideoExist(fileName)) {
+            MLog.i(TAG, "downloadStart() 文件已经下载好了,不需要再下载");
+            return;
+        }
 
         /*LinkedList<String> list = new LinkedList<String>();
         list.add("/storage/2430-1702/");
@@ -335,6 +350,7 @@ public class DownloadFileService extends Service {
 
         String filePath = PATH + fileName;
         Contents.setPath(filePath);
+        // /storage/2430-1702/Android/data/com.weidi.usefragments/files/Movies/军情五处-利益之争.mp4
         MLog.i(TAG, "downloadStart() filePath: " + filePath);
         File videoFile = new File(filePath);
         if (!videoFile.exists()) {
@@ -390,10 +406,9 @@ public class DownloadFileService extends Service {
             return;
         }
 
+        SharedPreferences.Editor editor = null;
         editor = mPreferences.edit();
-        editor.putString(VIDEO_PATH, httpPath);
-        editor.putLong(VIDEO_LENGTH, contentLength);
-        editor.putBoolean(VIDEO_IS_FINISHED, false);
+        editor.putBoolean(httpPathMD5, false);
         editor.commit();
 
         byte[] buffer = new byte[BUFFER];
@@ -435,7 +450,9 @@ public class DownloadFileService extends Service {
                 if (readSize < 0) {
                     break;
                 }
-                outputStream.write(buffer, 0, readSize);
+                if (outputStream != null) {
+                    outputStream.write(buffer, 0, readSize);
+                }
             } catch (ExoPlaybackException
                     | IOException e) {
                 e.printStackTrace();
@@ -463,11 +480,13 @@ public class DownloadFileService extends Service {
             e.printStackTrace();
         }
 
-        try {
-            outputStream.flush();
-            outputStream.close();
-        } catch (IOException e) {
-            e.printStackTrace();
+        if (outputStream != null) {
+            try {
+                outputStream.flush();
+                outputStream.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
 
         MLog.i(TAG, "downloadStart() contentLength: " + contentLength);
@@ -477,7 +496,7 @@ public class DownloadFileService extends Service {
                 && (contentLength == readDataSize
                 || contentLength <= readDataSize + 1024 * 1024)) {
             editor = mPreferences.edit();
-            editor.putBoolean(VIDEO_IS_FINISHED, true);
+            editor.putBoolean(httpPathMD5, true);
             editor.commit();
             MLog.i(TAG, "downloadStart() mCallback.onFinished()");
             mCallback.onFinished();

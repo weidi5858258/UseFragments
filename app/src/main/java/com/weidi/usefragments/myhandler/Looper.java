@@ -72,7 +72,7 @@ public final class Looper {
     private static final ThreadLocal<Looper> sThreadLocal = new ThreadLocal<Looper>();
     private static Looper sMainLooper;  // guarded by Looper.class
 
-    private final MessageQueue mQueue;
+    public final MessageQueue mQueue;
     private final Thread mThread;
 
     private Printer mLogging;

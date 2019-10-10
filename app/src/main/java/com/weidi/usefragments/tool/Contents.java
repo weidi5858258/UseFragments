@@ -1,8 +1,5 @@
 package com.weidi.usefragments.tool;
 
-import android.util.ArrayMap;
-
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -14,8 +11,8 @@ public class Contents {
 
     public static Map<String, String> movieMap = new LinkedHashMap<>();
     private static String mPath;
-//    private static final String PATH = "/storage/2430-1702/BaiduNetdisk/video/";
-    private static final String PATH = "/storage/emulated/0/BaiduNetdisk/video/";
+    private static final String PATH = "/storage/2430-1702/BaiduNetdisk/video/";
+//    private static final String PATH = "/storage/emulated/0/BaiduNetdisk/video/";
 
     static {
         // {csd-1=java.nio.HeapByteBuffer[pos=0 lim=8 cap=8], mime=video/avc, frame-rate=24, track-id=2, profile=2, width=1280, height=720, max-input-size=151238, durationUs=6227930041, csd-0=java.nio.HeapByteBuffer[pos=0 lim=41 cap=41], bitrate-mode=0, level=512}
@@ -151,7 +148,14 @@ public class Contents {
                 "http://okzy.xzokzyzy.com/20190830/14797_2afe866c/X%E6%88%98%E8%AD%A6%EF%BC%9A%E9%BB%91%E5%87%A4%E5%87%B0.Dark.Phoenix.2019.BD1080P.X264.AAC.English.CHS-ENG.mp4");
         movieMap.put(
                 "蜘蛛侠-英雄远征",
-                "http://anning.luanniao-zuida.com/1909/ZZ%E4%BE%A0%EF%BC%9A%E8%8B%B1%E9%9B%84%E8%BF%9C%E5%BE%81.HD1280%E9%AB%98%E6%B8%85%E5%9B%BD%E8%AF%AD%E4%B8%AD%E8%8B%B1%E5%8F%8C%E5%AD%97%E7%89%88.mp4");
+                "http://okzy.xzokzyzy.com/20190912/14951_fdda0cb4/YXYZ.2019.1080P.%E5%9B%BD%E8%AF%AD%E4%B8%AD%E5%AD%97.mp4");
+                //"http://anning.luanniao-zuida.com/1909/ZZ%E4%BE%A0%EF%BC%9A%E8%8B%B1%E9%9B%84%E8%BF%9C%E5%BE%81.HD1280%E9%AB%98%E6%B8%85%E5%9B%BD%E8%AF%AD%E4%B8%AD%E8%8B%B1%E5%8F%8C%E5%AD%97%E7%89%88.mp4");
+        movieMap.put(
+                "速度与激情-特别行动",
+                "http://down.phpzuida.com/1909/%E9%80%9FD%E4%B8%8EJ%E6%83%85%EF%BC%9A%E7%89%B9%E5%88%AB%E8%A1%8C%E5%8A%A8.HD%E9%AB%98%E6%B8%85%E4%B8%AD%E5%AD%97%E9%9F%A9%E7%89%88.mp4");
+        movieMap.put(
+                "毁灭战士-灭绝",
+                "http://caizi.meizuida.com/1909/%E6%AF%81%E7%81%AD%E6%88%98%E5%A3%AB%EF%BC%9A%E7%81%AD%E7%BB%9D.HD%E9%AB%98%E6%B8%85%E4%B8%AD%E5%AD%97%E7%89%88.mp4");
         movieMap.put(
                 "",
                 "");
@@ -688,6 +692,7 @@ public class Contents {
         mPath = "/storage/37C8-3904/myfiles/video/12_APITest_WebM-VP9.webm";
         mPath = "/storage/37C8-3904/myfiles/video/AC3Plus_mountainbike-cyberlink_1920_1080.mp4";
         mPath = "/storage/37C8-3904/myfiles/video/Escape.Plan.2.mp4";
+
         mPath = movieMap.get(mTitle);
         return mPath;
     }

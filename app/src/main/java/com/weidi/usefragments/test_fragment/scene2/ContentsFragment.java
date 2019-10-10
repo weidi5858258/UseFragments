@@ -5,6 +5,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.res.Configuration;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -33,6 +34,7 @@ import com.weidi.usefragments.service.DownloadFileService;
 import com.weidi.usefragments.tool.Contents;
 import com.weidi.usefragments.tool.DownloadCallback;
 import com.weidi.usefragments.tool.MLog;
+import com.weidi.utils.MD5Util;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -321,7 +323,7 @@ public class ContentsFragment extends BaseFragment {
                 DownloadFileService.MSG_SET_CALLBACK,
                 new Object[]{mCallback});
 
-        SharedPreferences preferences =
+        /*SharedPreferences preferences =
                 getContext().getSharedPreferences(
                         DownloadFileService.PREFERENCES_NAME, Context.MODE_PRIVATE);
         String videoName = preferences.getString(DownloadFileService.VIDEO_NAME, "");
@@ -329,7 +331,7 @@ public class ContentsFragment extends BaseFragment {
             if (mAddressET != null) {
                 mAddressET.setText(videoName);
             }
-        }
+        }*/
     }
 
     /***
@@ -372,8 +374,8 @@ public class ContentsFragment extends BaseFragment {
                     public void onItemClick(String name, int position, int viewId) {
                         MLog.d(TAG, "onItemClick(): " + name);
 
-                        String path = Contents.movieMap.get(name);
-                        if (TextUtils.isEmpty(path)) {
+                        String videoPlaybackPath = Contents.movieMap.get(name);
+                        if (TextUtils.isEmpty(videoPlaybackPath)) {
                             Toast.makeText(
                                     getContext(), "播放地址为null", Toast.LENGTH_SHORT).show();
                             return;
@@ -381,25 +383,35 @@ public class ContentsFragment extends BaseFragment {
 
                         Contents.setTitle(name);
 
+                        Uri uri = Uri.parse(videoPlaybackPath);
+                        String lastPath = uri.getLastPathSegment();
+                        String suffixName = null;
+                        if (lastPath != null) {
+                            int index = lastPath.lastIndexOf(".");
+                            if (index != -1) {
+                                suffixName = lastPath.substring(index, lastPath.length());
+                            }
+                        }
+                        String fileName = Contents.getTitle() + suffixName;
+
+                        String httpPathMD5 = MD5Util.getMD5String(videoPlaybackPath);
                         // 视频文件存在,并且已经下载好的,点击后才播放它,不然还是在线播放
-                        boolean videoIsFinished = mPreferences.getBoolean(
-                                DownloadFileService.VIDEO_IS_FINISHED, false);
-                        String videoPath =
-                                mPreferences.getString(DownloadFileService.VIDEO_PATH, "");
-                        if (TextUtils.equals(videoPath, path) && videoIsFinished) {
+                        boolean videoIsFinished = mPreferences.getBoolean(httpPathMD5, false);
+                        if (videoIsFinished) {
                             File moviesFile = new File(DownloadFileService.PATH);
                             for (File file : moviesFile.listFiles()) {
                                 if (file == null) {
                                     continue;
                                 }
-                                if (file.getName().contains("alexander_mylove.")) {
+                                if (TextUtils.equals(file.getName(), fileName)) {
                                     // 需要指向那个文件,然后打开时才能播放
-                                    Contents.setPath(file.getAbsolutePath());
-                                    path = file.getAbsolutePath();
+                                    videoPlaybackPath = file.getAbsolutePath();
+                                    Contents.setPath(videoPlaybackPath);
                                     break;
                                 }
                             }
                         }
+                        MLog.d(TAG, "onItemClick() videoPlaybackPath: " + videoPlaybackPath);
 
                         switch (viewId) {
                             case R.id.item_root_layout:
@@ -411,7 +423,7 @@ public class ContentsFragment extends BaseFragment {
 
                                 Intent intent = new Intent();
                                 intent.setClass(getContext(), JniPlayerActivity.class);
-                                intent.putExtra(JniPlayerActivity.CONTENT_PATH, path);
+                                intent.putExtra(JniPlayerActivity.CONTENT_PATH, videoPlaybackPath);
                                 getAttachedActivity().startActivity(intent);
                                 ((BaseActivity) getAttachedActivity()).enterActivity();
                                 break;
@@ -421,7 +433,7 @@ public class ContentsFragment extends BaseFragment {
                                         DownloadFileService.MSG_DOWNLOAD_START,
                                         null);
 
-                                mUiHandler.postDelayed(new Runnable() {
+                                /*mUiHandler.postDelayed(new Runnable() {
                                     @Override
                                     public void run() {
                                         String videoName = mPreferences.getString(
@@ -430,7 +442,7 @@ public class ContentsFragment extends BaseFragment {
                                             mAddressET.setText(videoName);
                                         }
                                     }
-                                }, 1000);
+                                }, 1000);*/
                                 break;
                             default:
                                 break;
@@ -448,12 +460,12 @@ public class ContentsFragment extends BaseFragment {
         mRecyclerView.setAdapter(mAdapter);
 
         // 文件下载完的才显示其文件名
-        boolean videoIsFinished = mPreferences.getBoolean(
+        /*boolean videoIsFinished = mPreferences.getBoolean(
                 DownloadFileService.VIDEO_IS_FINISHED, false);
         String videoName = mPreferences.getString(DownloadFileService.VIDEO_NAME, "");
         if (!TextUtils.isEmpty(videoName) && videoIsFinished) {
             mAddressET.setText(videoName);
-        }
+        }*/
     }
 
     private void handleBeforeOfConfigurationChangedEvent() {
@@ -468,8 +480,8 @@ public class ContentsFragment extends BaseFragment {
     private void onClick(View v) {
         switch (v.getId()) {
             case R.id.playback_btn:
-                boolean videoIsFinished = mPreferences.getBoolean(
-                        DownloadFileService.VIDEO_IS_FINISHED, false);
+                boolean videoIsFinished = false;/*mPreferences.getBoolean(
+                        DownloadFileService.VIDEO_IS_FINISHED, false);*/
                 String address = mAddressET.getText().toString();
                 if (TextUtils.isEmpty(address) && videoIsFinished) {
                     // 如果要播放下载好的视频,那么把地址栏清空
@@ -506,6 +518,7 @@ public class ContentsFragment extends BaseFragment {
                     return;
                 }
 
+                MLog.i(TAG, "onClick() address: " + address);
                 Contents.setPath(address);
 
                 EventBusUtils.post(
