@@ -158,6 +158,10 @@ public class MainActivity1 extends BaseActivity
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
+        // 不允许截屏
+        getWindow().setFlags(
+                WindowManager.LayoutParams.FLAG_SECURE,
+                WindowManager.LayoutParams.FLAG_SECURE);
         getWindow().setFlags(
                 WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON,
                 WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
