@@ -11,6 +11,7 @@ import android.widget.Button;
 import android.widget.TextView;
 
 import com.weidi.usefragments.R;
+import com.weidi.usefragments.business.medical_record.MedicalRecordFragment;
 import com.weidi.usefragments.fragment.FragOperManager;
 import com.weidi.usefragments.fragment.base.BaseFragment;
 import com.weidi.usefragments.inject.InjectView;
@@ -74,7 +75,8 @@ public class Main3Fragment extends BaseFragment {
         mJumpBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                FragOperManager.getInstance().enter3(new VideoLiveBroadcastingFragment());
+                // FragOperManager.getInstance().enter3(new VideoLiveBroadcastingFragment());
+                FragOperManager.getInstance().enter3(new MedicalRecordFragment());
             }
         });
     }

@@ -37,6 +37,7 @@ import com.weidi.usefragments.test_fragment.scene2.Main1Fragment;
 import com.weidi.usefragments.test_fragment.scene2.Main2Fragment;
 import com.weidi.usefragments.test_fragment.scene2.Main3Fragment;
 import com.weidi.usefragments.test_fragment.scene2.Main4Fragment;
+import com.weidi.usefragments.business.medical_record.MedicalRecordFragment;
 import com.weidi.usefragments.test_fragment.scene2.RecordScreenFragment;
 import com.weidi.usefragments.test_fragment.scene2.TestMotionEventFragment;
 import com.weidi.usefragments.test_fragment.scene2.ThrowingScreenFragment;
@@ -153,6 +154,9 @@ public class MainActivity1 extends BaseActivity
                 FragOperManager.POP_BACK_STACK);
         sFragmentBackTypeSMap.put(
                 ContentsFragment.class.getSimpleName(),
+                FragOperManager.POP_BACK_STACK);
+        sFragmentBackTypeSMap.put(
+                MedicalRecordFragment.class.getSimpleName(),
                 FragOperManager.POP_BACK_STACK);
     }
 
