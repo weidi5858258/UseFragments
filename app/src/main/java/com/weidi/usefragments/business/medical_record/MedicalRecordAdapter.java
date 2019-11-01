@@ -7,6 +7,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
+import com.weidi.eventbus.EventBusUtils;
 import com.weidi.usefragments.R;
 import com.weidi.usefragments.tool.MLog;
 
@@ -25,6 +26,16 @@ public class MedicalRecordAdapter extends RecyclerView.Adapter {
     private ArrayList<MedicalRecordBean> mBeans = new ArrayList<MedicalRecordBean>();
     private Context mContext;
     private LayoutInflater mLayoutInflater;
+
+    public interface OnItemClickListener {
+        void onItemClick(int position, MedicalRecordBean bean);
+    }
+
+    private OnItemClickListener mOnItemClickListener;
+
+    public void setOnItemClickListener(OnItemClickListener listener) {
+        mOnItemClickListener = listener;
+    }
 
     public MedicalRecordAdapter(Context context) {
         mContext = context;
@@ -45,6 +56,7 @@ public class MedicalRecordAdapter extends RecyclerView.Adapter {
             RecyclerView.ViewHolder holder, int position) {
         MedicalRecordViewHolder medicalRecordViewHolder = (MedicalRecordViewHolder) holder;
         MedicalRecordBean bean = mBeans.get(position);
+        MLog.d(TAG, "onBindViewHolder() position: " + position + " " + bean.toString());
 
         medicalRecordViewHolder.medicalRecordDateTV.setText(bean.medicalRecordDate);
 
@@ -93,7 +105,16 @@ public class MedicalRecordAdapter extends RecyclerView.Adapter {
         }
 
         medicalRecordViewHolder.medicalRecordRemarksTV.setText(bean.medicalRecordRemarks);
-        medicalRecordViewHolder.itemView.setOnClickListener(onClickListener);
+        medicalRecordViewHolder.itemView.setOnClickListener(
+                new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
+                        MLog.d(TAG, "onClick() position: " + position + " " + bean.toString());
+                        if (mOnItemClickListener != null) {
+                            mOnItemClickListener.onItemClick(position, bean);
+                        }
+                    }
+                });
     }
 
     @Override
@@ -120,36 +141,63 @@ public class MedicalRecordAdapter extends RecyclerView.Adapter {
         }
     }
 
-    public interface OnItemClickListener {
-        void onItemClick(MedicalRecordBean bean, int position, int viewId);
+    public void register() {
+        EventBusUtils.register(this);
     }
 
-    private OnItemClickListener mOnItemClickListener;
-
-    public void setOnItemClickListener(OnItemClickListener listener) {
-        mOnItemClickListener = listener;
+    public void unregister() {
+        EventBusUtils.unregister(this);
     }
 
-    private void onClick(View view) {
-        if (mOnItemClickListener != null) {
-            //int position = mContents.indexOf(name);
-            switch (view.getId()) {
-                case R.id.item_root_layout:
-                    //mOnItemClickListener.onItemClick(name, position, R.id.item_root_layout);
-                    break;
-                default:
-                    break;
-            }
-        }
-    }
+    public static final int WHAT_ADD_ITEM = 1;
+    public static final int WHAT_UPDATE_ITEM = 2;
+    public static final int WHAT_NOTIFY_DATA_SET_CHANGED = 3;
 
-    private View.OnClickListener onClickListener =
-            new View.OnClickListener() {
-                @Override
-                public void onClick(View view) {
-                    MedicalRecordAdapter.this.onClick(view);
+    private Object onEvent(int what, Object[] objArray) {
+        Object result = null;
+        switch (what) {
+            case WHAT_ADD_ITEM:
+                if (objArray == null || objArray.length == 0) {
+                    return result;
                 }
-            };
+                Object object = objArray[0];
+                if (object instanceof MedicalRecordBean) {
+                    MedicalRecordBean bean = (MedicalRecordBean) object;
+                    mBeans.add(bean);
+                }
+                break;
+            case WHAT_UPDATE_ITEM:
+                if (objArray == null || objArray.length == 0) {
+                    return result;
+                }
+                object = objArray[0];
+                if (object instanceof MedicalRecordBean) {
+                    MedicalRecordBean bean = (MedicalRecordBean) object;
+                    MedicalRecordBean tempBean = null;
+                    for (MedicalRecordBean bn : mBeans) {
+                        if (bean._id == bn._id) {
+                            tempBean = bn;
+                            break;
+                        }
+                    }
+                    if (tempBean != null) {
+                        tempBean.medicalRecordDate = bean.medicalRecordDate;
+                        tempBean.medicalRecordLeukocyteCount = bean.medicalRecordLeukocyteCount;
+                        tempBean.medicalRecordNeutrophils = bean.medicalRecordNeutrophils;
+                        tempBean.medicalRecordHemoglobin = bean.medicalRecordHemoglobin;
+                        tempBean.medicalRecordPlateletCount = bean.medicalRecordPlateletCount;
+                        tempBean.medicalRecordRemarks = bean.medicalRecordRemarks;
+                        tempBean.medicalRecordOther = bean.medicalRecordOther;
+                    }
+                }
+                break;
+            case WHAT_NOTIFY_DATA_SET_CHANGED:
+                notifyDataSetChanged();
+                break;
+            default:
+        }
+        return result;
+    }
 
     private static class MedicalRecordViewHolder extends RecyclerView.ViewHolder {
 

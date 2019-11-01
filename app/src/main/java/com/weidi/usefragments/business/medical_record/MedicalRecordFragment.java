@@ -11,13 +11,16 @@ import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.TextView;
 
+import com.weidi.dbutil.SimpleDao2;
 import com.weidi.usefragments.R;
 import com.weidi.usefragments.fragment.FragOperManager;
 import com.weidi.usefragments.fragment.base.BaseFragment;
 import com.weidi.usefragments.inject.InjectOnClick;
 import com.weidi.usefragments.inject.InjectView;
 import com.weidi.usefragments.media.PlayerView;
+import com.weidi.usefragments.test_fragment.dialog.ShowTitleDialogFragment;
 import com.weidi.usefragments.test_fragment.scene2.A2Fragment;
 import com.weidi.usefragments.tool.MLog;
 
@@ -295,7 +298,7 @@ public class MedicalRecordFragment extends BaseFragment {
     }
 
     private void initData() {
-        List<MedicalRecordBean> list = new ArrayList<MedicalRecordBean>();
+        /*List<MedicalRecordBean> list = new ArrayList<MedicalRecordBean>();
         MedicalRecordBean bean = new MedicalRecordBean();
         bean.medicalRecordDate = "2019/09/16";
         bean.medicalRecordLeukocyteCount = "588.7";
@@ -348,10 +351,26 @@ public class MedicalRecordFragment extends BaseFragment {
         bean.medicalRecordHemoglobin = "188";
         bean.medicalRecordPlateletCount = "105";
         bean.medicalRecordRemarks = "4";
-        list.add(bean);
+        list.add(bean);*/
+
+        SimpleDao2.getInstance().setClass(MedicalRecordBean.class);
+        List<MedicalRecordBean> list = SimpleDao2.getInstance().queryAll();
 
         mAdapter = new MedicalRecordAdapter(getContext());
         mAdapter.setData(list);
+        mAdapter.register();
+        mAdapter.setOnItemClickListener(
+                new MedicalRecordAdapter.OnItemClickListener() {
+                    @Override
+                    public void onItemClick(int position, MedicalRecordBean bean) {
+                        MedicalRecordDialogFragment dialogFragment =
+                                new MedicalRecordDialogFragment();
+                        dialogFragment.setName("更新");
+                        dialogFragment.setBean(bean);
+                        dialogFragment.show(getFragmentManager(),
+                                MedicalRecordDialogFragment.class.getSimpleName());
+                    }
+                });
     }
 
     private void initView(View view, Bundle savedInstanceState) {
@@ -373,16 +392,18 @@ public class MedicalRecordFragment extends BaseFragment {
     }
 
     private void destroy() {
-
+        mAdapter.unregister();
     }
 
-    /*@InjectOnClick({R.id.jump_btn})
+    @InjectOnClick({R.id.medical_record_remarks_tv})
     private void onClick(View v) {
         switch (v.getId()) {
-            case R.id.jump_btn:
-                FragOperManager.getInstance().enter3(new A2Fragment());
+            case R.id.medical_record_remarks_tv:
+                MedicalRecordDialogFragment dialogFragment = new MedicalRecordDialogFragment();
+                dialogFragment.show(getFragmentManager(),
+                        MedicalRecordDialogFragment.class.getSimpleName());
                 break;
         }
-    }*/
+    }
 
 }

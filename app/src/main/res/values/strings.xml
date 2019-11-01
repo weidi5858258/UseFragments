@@ -20,5 +20,6 @@
     <string name="medical_record_hemoglobin">血红蛋白\n131-172</string>
     <string name="medical_record_platelet_count">血小板计数\n85-303</string>
     <string name="medical_record_remarks">备注</string><!--备注/用量-->
+    <string name="medical_record_other">其他</string><!--备注/用量-->
 
 </resources>

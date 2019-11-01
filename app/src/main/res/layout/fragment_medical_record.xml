@@ -48,6 +48,7 @@
             android:text="@string/medical_record_platelet_count"
             android:textSize="18sp"/>
         <TextView
+            android:id="@+id/medical_record_remarks_tv"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="@dimen/dimen_8_dp"
