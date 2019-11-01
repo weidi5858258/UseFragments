@@ -68,51 +68,55 @@
 
         <TextView
             android:id="@+id/medical_record_date"
-            android:layout_width="@dimen/dimen_98_dp"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="center"
             android:text="2019/09/16"
             android:textColor="@color/white"
             android:textSize="18sp"/>
         <TextView
             android:id="@+id/medical_record_leukocyte_count"
-            android:layout_width="@dimen/dimen_68_dp"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
+            android:layout_weight="1"
             android:gravity="center"
             android:text="588.7"
             android:textColor="@color/white"
             android:textSize="18sp"/>
         <TextView
             android:id="@+id/medical_record_neutrophils"
-            android:layout_width="@dimen/dimen_80_dp"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginStart="@dimen/dimen_60_dp"
+            android:layout_weight="2"
             android:gravity="center"
             android:text="3.00"
             android:textColor="@color/white"
             android:textSize="18sp"/>
         <TextView
             android:id="@+id/medical_record_hemoglobin"
-            android:layout_width="@dimen/dimen_80_dp"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginStart="@dimen/dimen_54_dp"
+            android:layout_weight="1"
             android:gravity="center"
             android:text="108"
             android:textColor="@color/white"
             android:textSize="18sp"/>
         <TextView
             android:id="@+id/medical_record_platelet_count"
-            android:layout_width="@dimen/dimen_80_dp"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginStart="@dimen/dimen_8_dp"
+            android:layout_weight="1"
             android:gravity="center"
             android:text="105"
             android:textColor="@color/white"
             android:textSize="18sp"/>
         <TextView
             android:id="@+id/medical_record_remarks"
-            android:layout_width="@dimen/dimen_50_dp"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginStart="@dimen/dimen_18_dp"
+            android:layout_weight="1"
+            android:gravity="center"
             android:maxLines="1"
             android:text="4"
             android:textColor="@color/white"
