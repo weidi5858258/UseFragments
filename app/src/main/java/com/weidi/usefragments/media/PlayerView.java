@@ -7,8 +7,7 @@ import android.view.SurfaceView;
 import android.view.View;
 import android.widget.MediaController;
 
-import com.weidi.usefragments.media.VideoPlayer;
-import com.weidi.usefragments.test_fragment.scene2.IPlayerCallBack;
+import com.weidi.usefragments.business.media.IPlayerCallBack;
 
 public class PlayerView extends SurfaceView implements
         MediaController.MediaPlayerControl,

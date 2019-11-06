@@ -11,6 +11,7 @@ import android.widget.Button;
 import android.widget.TextView;
 
 import com.weidi.usefragments.R;
+import com.weidi.usefragments.business.contents.ContentsFragment;
 import com.weidi.usefragments.fragment.FragOperManager;
 import com.weidi.usefragments.fragment.base.BaseFragment;
 import com.weidi.usefragments.inject.InjectView;

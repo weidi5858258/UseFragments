@@ -10,7 +10,7 @@ import android.media.MediaFormat;
 import android.util.Log;
 import android.view.Surface;
 
-import com.weidi.usefragments.test_fragment.scene2.IPlayerCallBack;
+import com.weidi.usefragments.business.media.IPlayerCallBack;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;

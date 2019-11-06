@@ -1,4 +1,4 @@
-package com.weidi.usefragments.test_fragment.scene2;
+package com.weidi.usefragments.business.media;
 
 import android.content.Context;
 import android.util.AttributeSet;

@@ -1,4 +1,4 @@
-package com.weidi.usefragments.test_fragment.scene2;
+package com.weidi.usefragments.business.contents;
 
 import android.app.Activity;
 import android.content.Context;
@@ -26,7 +26,6 @@ import com.weidi.usefragments.BaseActivity;
 import com.weidi.usefragments.JniPlayerActivity;
 import com.weidi.usefragments.PlayerActivity;
 import com.weidi.usefragments.R;
-import com.weidi.usefragments.adapter.ContentsAdapter;
 import com.weidi.usefragments.fragment.base.BaseFragment;
 import com.weidi.usefragments.inject.InjectOnClick;
 import com.weidi.usefragments.inject.InjectView;

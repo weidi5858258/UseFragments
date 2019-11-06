@@ -1,4 +1,4 @@
-package com.weidi.usefragments.adapter;
+package com.weidi.usefragments.business.contents;
 
 import android.content.Context;
 import android.support.v7.widget.RecyclerView;

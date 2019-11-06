@@ -1,4 +1,4 @@
-package com.weidi.usefragments.test_fragment.dialog;
+package com.weidi.usefragments.business.back_stack;
 
 import android.app.Activity;
 import android.app.DialogFragment;
@@ -8,20 +8,17 @@ import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
-import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 
 import com.weidi.usefragments.R;
-import com.weidi.usefragments.adapter.FragmentTitleAdapter;
 import com.weidi.usefragments.fragment.FragOperManager;
 import com.weidi.usefragments.fragment.base.BaseDialogFragment;
 import com.weidi.usefragments.fragment.base.BaseFragment;
 import com.weidi.usefragments.tool.MLog;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 

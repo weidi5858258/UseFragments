@@ -2,7 +2,6 @@ package com.weidi.usefragments.test_fragment.scene2;
 
 import android.app.Activity;
 import android.app.Fragment;
-import android.app.FragmentManager;
 import android.app.FragmentTransaction;
 import android.content.Context;
 import android.content.Intent;
@@ -16,14 +15,13 @@ import android.support.v4.view.ViewPager;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ImageView;
 
 import com.weidi.usefragments.R;
+import com.weidi.usefragments.business.media.CameraPreviewFragment;
 import com.weidi.usefragments.fragment.FragOperManager;
 import com.weidi.usefragments.fragment.base.BaseFragment;
 import com.weidi.usefragments.inject.InjectOnClick;
 import com.weidi.usefragments.inject.InjectView;
-import com.weidi.usefragments.test_fragment.scene1.AFragment;
 import com.weidi.usefragments.tool.MLog;
 
 import java.util.ArrayList;

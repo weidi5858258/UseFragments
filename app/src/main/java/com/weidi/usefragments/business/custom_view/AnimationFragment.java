@@ -1,37 +1,31 @@
-package com.weidi.usefragments.business.medical_record;
+package com.weidi.usefragments.business.custom_view;
 
 import android.app.Activity;
 import android.content.Context;
+import android.content.Intent;
 import android.content.res.Configuration;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
-import android.support.v7.widget.LinearLayoutManager;
-import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
-import com.weidi.dbutil.SimpleDao2;
 import com.weidi.usefragments.R;
 import com.weidi.usefragments.fragment.base.BaseFragment;
 import com.weidi.usefragments.inject.InjectOnClick;
-import com.weidi.usefragments.inject.InjectView;
 import com.weidi.usefragments.tool.MLog;
-
-import java.util.List;
 
 /***
 
  */
-public class MedicalRecordFragment extends BaseFragment {
+public class AnimationFragment extends BaseFragment {
 
     private static final String TAG =
-            MedicalRecordFragment.class.getSimpleName();
-
+            AnimationFragment.class.getSimpleName();
     private static final boolean DEBUG = true;
 
-    public MedicalRecordFragment() {
+    public AnimationFragment() {
         super();
     }
 
@@ -43,7 +37,7 @@ public class MedicalRecordFragment extends BaseFragment {
     public void onAttach(Context context) {
         super.onAttach(context);
         if (DEBUG)
-            MLog.d(TAG, "onAttach() " + printThis() +
+            MLog.d(TAG, "onAttach(): " + printThis() +
                     " mContext: " + context);
     }
 
@@ -51,7 +45,7 @@ public class MedicalRecordFragment extends BaseFragment {
     public void onAttach(Activity activity) {
         super.onAttach(activity);
         if (DEBUG)
-            MLog.d(TAG, "onAttach() " + printThis() +
+            MLog.d(TAG, "onAttach(): " + printThis() +
                     " activity: " + activity);
     }
 
@@ -59,7 +53,7 @@ public class MedicalRecordFragment extends BaseFragment {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         if (DEBUG)
-            MLog.d(TAG, "onCreate() " + printThis() +
+            MLog.d(TAG, "onCreate(): " + printThis() +
                     " savedInstanceState: " + savedInstanceState);
 
         initData();
@@ -71,7 +65,7 @@ public class MedicalRecordFragment extends BaseFragment {
             ViewGroup container,
             Bundle savedInstanceState) {
         if (DEBUG)
-            MLog.d(TAG, "onCreateView() " + printThis() +
+            MLog.d(TAG, "onCreateView(): " + printThis() +
                     " savedInstanceState: " + savedInstanceState);
 
         return super.onCreateView(inflater, container, savedInstanceState);
@@ -81,7 +75,7 @@ public class MedicalRecordFragment extends BaseFragment {
     public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
         if (DEBUG)
-            MLog.d(TAG, "onViewCreated() " + printThis() +
+            MLog.d(TAG, "onViewCreated(): " + printThis() +
                     " savedInstanceState: " + savedInstanceState);
 
         initView(view, savedInstanceState);
@@ -91,7 +85,7 @@ public class MedicalRecordFragment extends BaseFragment {
     public void onViewStateRestored(Bundle savedInstanceState) {
         super.onViewStateRestored(savedInstanceState);
         if (DEBUG)
-            MLog.d(TAG, "onViewStateRestored() " + printThis() +
+            MLog.d(TAG, "onViewStateRestored(): " + printThis() +
                     " savedInstanceState: " + savedInstanceState);
     }
 
@@ -99,7 +93,7 @@ public class MedicalRecordFragment extends BaseFragment {
     public void onActivityCreated(Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
         if (DEBUG)
-            MLog.d(TAG, "onActivityCreated() " + printThis() +
+            MLog.d(TAG, "onActivityCreated(): " + printThis() +
                     " savedInstanceState: " + savedInstanceState);
     }
 
@@ -114,7 +108,7 @@ public class MedicalRecordFragment extends BaseFragment {
             return;
         }
         if (DEBUG)
-            MLog.d(TAG, "onStart() " + printThis());
+            MLog.d(TAG, "onStart(): " + printThis());
     }
 
     /*********************************
@@ -128,7 +122,7 @@ public class MedicalRecordFragment extends BaseFragment {
             return;
         }
         if (DEBUG)
-            MLog.d(TAG, "onResume() " + printThis());
+            MLog.d(TAG, "onResume(): " + printThis());
 
         onShow();
     }
@@ -144,7 +138,7 @@ public class MedicalRecordFragment extends BaseFragment {
             return;
         }
         if (DEBUG)
-            MLog.d(TAG, "onPause() " + printThis());
+            MLog.d(TAG, "onPause(): " + printThis());
     }
 
     /*********************************
@@ -158,7 +152,7 @@ public class MedicalRecordFragment extends BaseFragment {
             return;
         }
         if (DEBUG)
-            MLog.d(TAG, "onStop() " + printThis());
+            MLog.d(TAG, "onStop(): " + printThis());
 
         onHide();
     }
@@ -171,32 +165,40 @@ public class MedicalRecordFragment extends BaseFragment {
     public void onDestroyView() {
         super.onDestroyView();
         if (DEBUG)
-            MLog.d(TAG, "onDestroyView() " + printThis());
+            MLog.d(TAG, "onDestroyView(): " + printThis());
     }
 
     @Override
     public void onDestroy() {
-        super.onDestroy();
         if (DEBUG)
-            MLog.d(TAG, "onDestroy() " + printThis());
+            MLog.d(TAG, "onDestroy(): " + printThis());
 
-
+        destroy();
+        super.onDestroy();
     }
 
     @Override
     public void onDetach() {
         super.onDetach();
         if (DEBUG)
-            MLog.d(TAG, "onDetach() " + printThis());
+            MLog.d(TAG, "onDetach(): " + printThis());
+    }
 
-        destroy();
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (DEBUG)
+            MLog.d(TAG, "onActivityResult(): " + printThis() +
+                    " requestCode: " + requestCode +
+                    " resultCode: " + resultCode +
+                    " data: " + data.toString());
     }
 
     @Override
     public void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
         if (DEBUG)
-            MLog.d(TAG, "onSaveInstanceState() " + printThis());
+            MLog.d(TAG, "onSaveInstanceState(): " + printThis());
     }
 
     @Override
@@ -217,14 +219,14 @@ public class MedicalRecordFragment extends BaseFragment {
     public void onLowMemory() {
         super.onLowMemory();
         if (DEBUG)
-            MLog.d(TAG, "onLowMemory() " + printThis());
+            MLog.d(TAG, "onLowMemory(): " + printThis());
     }
 
     @Override
     public void onTrimMemory(int level) {
         super.onTrimMemory(level);
         if (DEBUG)
-            MLog.d(TAG, "onTrimMemory() " + printThis() +
+            MLog.d(TAG, "onTrimMemory(): " + printThis() +
                     " level: " + level);
     }
 
@@ -235,7 +237,7 @@ public class MedicalRecordFragment extends BaseFragment {
             @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         if (DEBUG)
-            MLog.d(TAG, "onRequestPermissionsResult() " + printThis() +
+            MLog.d(TAG, "onRequestPermissionsResult(): " + printThis() +
                     " requestCode: " + requestCode);
     }
 
@@ -243,7 +245,7 @@ public class MedicalRecordFragment extends BaseFragment {
     public void onHiddenChanged(boolean hidden) {
         super.onHiddenChanged(hidden);
         if (DEBUG)
-            MLog.d(TAG, "onHiddenChanged() " + printThis() +
+            MLog.d(TAG, "onHiddenChanged(): " + printThis() +
                     " hidden: " + hidden);
 
         if (hidden) {
@@ -255,7 +257,7 @@ public class MedicalRecordFragment extends BaseFragment {
 
     @Override
     protected int provideLayout() {
-        return R.layout.fragment_medical_record;
+        return R.layout.fragment_main;
     }
 
     @Override
@@ -265,10 +267,6 @@ public class MedicalRecordFragment extends BaseFragment {
 
     /////////////////////////////////////////////////////////////////
 
-    private MedicalRecordAdapter mAdapter;
-    @InjectView(R.id.medical_record_rv)
-    private RecyclerView mRecyclerView;
-
     /***
      代码执行的内容跟onStart(),onResume()一样,
      因此在某些情况下要么执行onStart(),onResume()方法,要么执行onShow()方法.
@@ -276,7 +274,7 @@ public class MedicalRecordFragment extends BaseFragment {
      */
     private void onShow() {
         if (DEBUG)
-            MLog.d(TAG, "onShow() " + printThis());
+            MLog.d(TAG, "onShow(): " + printThis());
 
     }
 
@@ -287,98 +285,15 @@ public class MedicalRecordFragment extends BaseFragment {
      */
     private void onHide() {
         if (DEBUG)
-            MLog.d(TAG, "onHide() " + printThis());
-
+            MLog.d(TAG, "onHide(): " + printThis());
     }
 
     private void initData() {
-        /*List<MedicalRecordBean> list = new ArrayList<MedicalRecordBean>();
-        MedicalRecordBean bean = new MedicalRecordBean();
-        bean.medicalRecordDate = "2019/09/16";
-        bean.medicalRecordLeukocyteCount = "588.7";
-        bean.medicalRecordNeutrophils = "1.90";
-        bean.medicalRecordHemoglobin = "188";
-        bean.medicalRecordPlateletCount = "105";
-        bean.medicalRecordRemarks = "4";
-        list.add(bean);
 
-        bean = new MedicalRecordBean();
-        bean.medicalRecordDate = "2019/10/05";
-        bean.medicalRecordLeukocyteCount = "5.34";
-        bean.medicalRecordNeutrophils = "1.90";
-        bean.medicalRecordHemoglobin = "94";
-        bean.medicalRecordPlateletCount = "321";
-        bean.medicalRecordRemarks = "4";
-        list.add(bean);
-
-        bean = new MedicalRecordBean();
-        bean.medicalRecordDate = "2019/10/12";
-        bean.medicalRecordLeukocyteCount = "5.34";
-        bean.medicalRecordNeutrophils = "1.90";
-        bean.medicalRecordHemoglobin = "94";
-        bean.medicalRecordPlateletCount = "321";
-        bean.medicalRecordRemarks = "4";
-        list.add(bean);
-
-        bean = new MedicalRecordBean();
-        bean.medicalRecordDate = "2019/10/19";
-        bean.medicalRecordLeukocyteCount = "3.57";
-        bean.medicalRecordNeutrophils = "1.55";
-        bean.medicalRecordHemoglobin = "105";
-        bean.medicalRecordPlateletCount = "180";
-        bean.medicalRecordRemarks = "4";
-        list.add(bean);
-
-        bean = new MedicalRecordBean();
-        bean.medicalRecordDate = "2019/10/25";
-        bean.medicalRecordLeukocyteCount = "4.89";
-        bean.medicalRecordNeutrophils = "3.0";
-        bean.medicalRecordHemoglobin = "108";
-        bean.medicalRecordPlateletCount = "105";
-        bean.medicalRecordRemarks = "4";
-        list.add(bean);
-
-        bean = new MedicalRecordBean();
-        bean.medicalRecordDate = "2019/11/02";
-        bean.medicalRecordLeukocyteCount = "58.7";
-        bean.medicalRecordNeutrophils = "1.90";
-        bean.medicalRecordHemoglobin = "188";
-        bean.medicalRecordPlateletCount = "105";
-        bean.medicalRecordRemarks = "4";
-        list.add(bean);*/
-
-        SimpleDao2.getInstance().setClass(MedicalRecordBean.class);
-        List<MedicalRecordBean> list = SimpleDao2.getInstance().queryAll();
-
-        mAdapter = new MedicalRecordAdapter(getContext());
-        mAdapter.setData(list);
-        mAdapter.register();
-        mAdapter.setOnItemClickListener(
-                new MedicalRecordAdapter.OnItemClickListener() {
-                    @Override
-                    public void onItemClick(int position, MedicalRecordBean bean) {
-                        MedicalRecordDialogFragment dialogFragment =
-                                new MedicalRecordDialogFragment();
-                        dialogFragment.setName("更新");
-                        dialogFragment.setBean(bean);
-                        dialogFragment.show(getFragmentManager(),
-                                MedicalRecordDialogFragment.class.getSimpleName());
-                    }
-                });
     }
 
     private void initView(View view, Bundle savedInstanceState) {
-        LinearLayoutManager linearLayoutManager =
-                new LinearLayoutManager(getContext()) {
-                    @Override
-                    public void onLayoutCompleted(RecyclerView.State state) {
-                        super.onLayoutCompleted(state);
-                        if (DEBUG)
-                            MLog.d(TAG, "onLayoutCompleted()");
-                    }
-                };
-        mRecyclerView.setLayoutManager(linearLayoutManager);
-        mRecyclerView.setAdapter(mAdapter);
+
     }
 
     private void handleBeforeOfConfigurationChangedEvent() {
@@ -386,16 +301,13 @@ public class MedicalRecordFragment extends BaseFragment {
     }
 
     private void destroy() {
-        mAdapter.unregister();
+
     }
 
-    @InjectOnClick({R.id.medical_record_remarks_tv})
+    @InjectOnClick({R.id.jump_btn})
     private void onClick(View v) {
         switch (v.getId()) {
-            case R.id.medical_record_remarks_tv:
-                MedicalRecordDialogFragment dialogFragment = new MedicalRecordDialogFragment();
-                dialogFragment.show(getFragmentManager(),
-                        MedicalRecordDialogFragment.class.getSimpleName());
+            case R.id.jump_btn:
                 break;
         }
     }

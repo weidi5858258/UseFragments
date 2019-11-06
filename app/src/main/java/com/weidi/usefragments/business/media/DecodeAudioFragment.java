@@ -1,4 +1,4 @@
-package com.weidi.usefragments.test_fragment.scene2;
+package com.weidi.usefragments.business.media;
 
 import android.app.Activity;
 import android.content.Context;
@@ -26,6 +26,7 @@ import com.weidi.usefragments.fragment.base.BaseFragment;
 import com.weidi.usefragments.inject.InjectOnClick;
 import com.weidi.usefragments.inject.InjectView;
 import com.weidi.usefragments.media.MediaUtils;
+import com.weidi.usefragments.test_fragment.scene2.A2Fragment;
 import com.weidi.usefragments.tool.MLog;
 import com.weidi.usefragments.tool.SimpleAudioPlayer;
 

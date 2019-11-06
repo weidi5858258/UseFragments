@@ -1,4 +1,4 @@
-package com.weidi.usefragments.test_fragment.scene2;
+package com.weidi.usefragments.business.media;
 
 import android.Manifest;
 import android.app.Activity;
@@ -588,7 +588,7 @@ public class Camera2Fragment extends BaseFragment {
         @Override
         public void onImageAvailable(ImageReader reader) {
             // 当图片可得到的时候获取图片并保存
-            mBackgroundHandler.post(new com.weidi.usefragments.test_fragment.scene2.Camera2Fragment.ImageSaver(reader.acquireNextImage(), mFile));
+            mBackgroundHandler.post(new Camera2Fragment.ImageSaver(reader.acquireNextImage(), mFile));
         }
 
     };
@@ -786,9 +786,9 @@ public class Camera2Fragment extends BaseFragment {
         // Pick the smallest of those big enough. If there is no one big enough, pick the
         // largest of those not big enough.
         if (bigEnough.size() > 0) {
-            return Collections.min(bigEnough, new com.weidi.usefragments.test_fragment.scene2.Camera2Fragment.CompareSizesByArea());
+            return Collections.min(bigEnough, new Camera2Fragment.CompareSizesByArea());
         } else if (notBigEnough.size() > 0) {
-            return Collections.max(notBigEnough, new com.weidi.usefragments.test_fragment.scene2.Camera2Fragment.CompareSizesByArea());
+            return Collections.max(notBigEnough, new Camera2Fragment.CompareSizesByArea());
         } else {
             Log.e(TAG, "Couldn't find any suitable preview size");
             return choices[0];
@@ -798,7 +798,7 @@ public class Camera2Fragment extends BaseFragment {
 
     private void requestCameraPermission() {
         if (FragmentCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.CAMERA)) {
-            new com.weidi.usefragments.test_fragment.scene2.Camera2Fragment.ConfirmationDialog().show(getChildFragmentManager(), FRAGMENT_DIALOG);
+            new Camera2Fragment.ConfirmationDialog().show(getChildFragmentManager(), FRAGMENT_DIALOG);
         } else {
             FragmentCompat.requestPermissions(this, new String[]{Manifest.permission.CAMERA},
                     REQUEST_CAMERA_PERMISSION);
@@ -844,7 +844,7 @@ public class Camera2Fragment extends BaseFragment {
                 // For still image captures, we use the largest available size.
                 Size largest = Collections.max(
                         Arrays.asList(map.getOutputSizes(ImageFormat.JPEG)),
-                        new com.weidi.usefragments.test_fragment.scene2.Camera2Fragment.CompareSizesByArea());
+                        new Camera2Fragment.CompareSizesByArea());
                 if (DEBUG)
                     // largest.getWidth(): 3264 largest.getHeight(): 2448
                     MLog.d(TAG, "setupCameraOutputs() " + printThis() +
@@ -956,7 +956,7 @@ public class Camera2Fragment extends BaseFragment {
         } catch (NullPointerException e) {
             // Currently an NPE is thrown when the Camera2API is used but not supported on the
             // device this code runs.
-            com.weidi.usefragments.test_fragment.scene2.Camera2Fragment.ErrorDialog.newInstance(getString(R.string.camera_error))
+            Camera2Fragment.ErrorDialog.newInstance(getString(R.string.camera_error))
                     .show(getChildFragmentManager(), FRAGMENT_DIALOG);
         }
     }
@@ -1432,8 +1432,8 @@ public class Camera2Fragment extends BaseFragment {
 
         private static final String ARG_MESSAGE = "message";
 
-        public static com.weidi.usefragments.test_fragment.scene2.Camera2Fragment.ErrorDialog newInstance(String message) {
-            com.weidi.usefragments.test_fragment.scene2.Camera2Fragment.ErrorDialog dialog = new com.weidi.usefragments.test_fragment.scene2.Camera2Fragment.ErrorDialog();
+        public static Camera2Fragment.ErrorDialog newInstance(String message) {
+            Camera2Fragment.ErrorDialog dialog = new Camera2Fragment.ErrorDialog();
             Bundle args = new Bundle();
             args.putString(ARG_MESSAGE, message);
             dialog.setArguments(args);

@@ -1,4 +1,4 @@
-package com.weidi.usefragments.adapter;
+package com.weidi.usefragments.business.back_stack;
 
 import android.app.Fragment;
 import android.content.Context;

@@ -1,4 +1,4 @@
-package com.weidi.usefragments.test_fragment.scene2;
+package com.weidi.usefragments.business.media;
 
 import android.app.Activity;
 import android.content.Context;
@@ -10,7 +10,6 @@ import android.media.MediaFormat;
 import android.media.audiofx.AcousticEchoCanceler;
 import android.media.audiofx.NoiseSuppressor;
 import android.os.Bundle;
-import android.os.Environment;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Looper;
@@ -29,9 +28,7 @@ import com.weidi.usefragments.fragment.base.BaseFragment;
 import com.weidi.usefragments.inject.InjectOnClick;
 import com.weidi.usefragments.inject.InjectView;
 import com.weidi.usefragments.media.MediaUtils;
-import com.weidi.usefragments.tool.AACPlayer;
 import com.weidi.usefragments.tool.Callback;
-import com.weidi.usefragments.tool.H264Player;
 import com.weidi.usefragments.tool.MLog;
 import com.weidi.usefragments.tool.SeparateVideo;
 import com.weidi.usefragments.tool.SimpleAudioRecorder;
