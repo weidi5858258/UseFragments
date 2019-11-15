@@ -1,4 +1,4 @@
-package com.weidi.usefragments.tool;
+package com.weidi.usefragments.business.contents;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -11,8 +11,8 @@ public class Contents {
 
     public static Map<String, String> movieMap = new LinkedHashMap<>();
     private static String mPath;
-    private static final String PATH = "/storage/2430-1702/BaiduNetdisk/video/";
-//    private static final String PATH = "/storage/emulated/0/BaiduNetdisk/video/";
+//    private static final String PATH = "/storage/2430-1702/BaiduNetdisk/video/";
+    private static final String PATH = "/storage/emulated/0/BaiduNetdisk/video/";
 
     static {
         // {csd-1=java.nio.HeapByteBuffer[pos=0 lim=8 cap=8], mime=video/avc, frame-rate=24, track-id=2, profile=2, width=1280, height=720, max-input-size=151238, durationUs=6227930041, csd-0=java.nio.HeapByteBuffer[pos=0 lim=41 cap=41], bitrate-mode=0, level=512}
@@ -546,6 +546,9 @@ public class Contents {
 
 
         // 本地视频
+        movieMap.put(
+                "天使陷落",
+                PATH + "天使陷落.mp4");
         movieMap.put(
                 "地狱男爵-血皇后崛起-local",
                 PATH + "地狱男爵-血皇后崛起.mp4");

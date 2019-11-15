@@ -7,9 +7,7 @@ import android.media.AudioManager;
 import android.view.KeyEvent;
 
 import com.weidi.eventbus.EventBusUtils;
-import com.weidi.usefragments.JniPlayerActivity;
-import com.weidi.usefragments.tool.SimpleAudioPlayer;
-import com.weidi.usefragments.tool.SimpleVideoPlayer7;
+import com.weidi.usefragments.business.contents.JniPlayerActivity;
 
 /***
  Created by root on 19-7-2.

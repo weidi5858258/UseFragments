@@ -6,35 +6,15 @@ import android.content.res.Configuration;
 import android.graphics.PixelFormat;
 import android.media.AudioManager;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Looper;
-import android.os.Message;
 import android.os.PowerManager;
-import android.text.format.DateUtils;
 import android.util.Log;
-import android.view.LayoutInflater;
-import android.view.MotionEvent;
 import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
-import android.view.View;
-import android.widget.ImageButton;
-import android.widget.LinearLayout;
-import android.widget.ProgressBar;
-import android.widget.SeekBar;
-import android.widget.TextView;
 
-import com.weidi.eventbus.EventBusUtils;
-import com.weidi.usefragments.media.MediaUtils;
-import com.weidi.usefragments.service.DownloadFileService;
-import com.weidi.usefragments.test_view.BubblePopupWindow;
-import com.weidi.usefragments.tool.Callback;
-import com.weidi.usefragments.tool.Contents;
-import com.weidi.usefragments.tool.DownloadCallback;
 import com.weidi.usefragments.tool.FFMPEG;
 import com.weidi.usefragments.tool.MLog;
 import com.weidi.usefragments.tool.PermissionsUtils;
-import com.weidi.usefragments.tool.SimpleVideoPlayer7;
 
 /***
 

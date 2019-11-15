@@ -9,7 +9,7 @@ import android.os.SystemClock;
 import android.text.TextUtils;
 import android.view.Surface;
 
-import com.weidi.usefragments.JniPlayerActivity;
+import com.weidi.usefragments.business.contents.JniPlayerActivity;
 import com.weidi.usefragments.media.MediaUtils;
 import com.weidi.utils.MyToast;
 

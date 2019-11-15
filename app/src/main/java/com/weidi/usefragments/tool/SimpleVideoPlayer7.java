@@ -27,6 +27,7 @@ import android.view.KeyEvent;
 import android.view.Surface;
 
 import com.weidi.eventbus.EventBusUtils;
+import com.weidi.usefragments.business.contents.Contents;
 import com.weidi.usefragments.media.MediaUtils;
 import com.weidi.usefragments.receiver.MediaButtonReceiver;
 

@@ -28,13 +28,11 @@ import com.weidi.usefragments.media.MediaUtils;
 import com.weidi.usefragments.service.DownloadFileService;
 import com.weidi.usefragments.test_view.BubblePopupWindow;
 import com.weidi.usefragments.tool.Callback;
-import com.weidi.usefragments.tool.Contents;
+import com.weidi.usefragments.business.contents.Contents;
 import com.weidi.usefragments.tool.DownloadCallback;
-import com.weidi.usefragments.tool.FFMPEG;
 import com.weidi.usefragments.tool.MLog;
 import com.weidi.usefragments.tool.PermissionsUtils;
 import com.weidi.usefragments.tool.SimpleVideoPlayer7;
-import com.weidi.usefragments.tool.SimpleVideoPlayer8;
 
 /***
 

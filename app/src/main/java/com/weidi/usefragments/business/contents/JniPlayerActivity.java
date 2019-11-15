@@ -1,4 +1,4 @@
-package com.weidi.usefragments;
+package com.weidi.usefragments.business.contents;
 
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
@@ -30,11 +30,12 @@ import android.widget.SeekBar;
 import android.widget.TextView;
 
 import com.weidi.eventbus.EventBusUtils;
+import com.weidi.usefragments.BaseActivity;
+import com.weidi.usefragments.R;
 import com.weidi.usefragments.receiver.MediaButtonReceiver;
 import com.weidi.usefragments.service.DownloadFileService;
 import com.weidi.usefragments.test_view.BubblePopupWindow;
 import com.weidi.usefragments.tool.Callback;
-import com.weidi.usefragments.tool.Contents;
 import com.weidi.usefragments.tool.DownloadCallback;
 import com.weidi.usefragments.tool.FFMPEG;
 import com.weidi.usefragments.tool.MLog;
