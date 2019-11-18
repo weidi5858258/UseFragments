@@ -22,6 +22,7 @@ import android.widget.EditText;
 import android.widget.Toast;
 
 import com.weidi.eventbus.EventBusUtils;
+import com.weidi.recycler_view.AlexanderLayoutManager;
 import com.weidi.usefragments.BaseActivity;
 import com.weidi.usefragments.PlayerActivity;
 import com.weidi.usefragments.R;
@@ -446,14 +447,15 @@ public class ContentsFragment extends BaseFragment {
                         }
                     }
                 });
-        LinearLayoutManager linearLayoutManager =
+        /*LinearLayoutManager linearLayoutManager =
                 new LinearLayoutManager(getContext()) {
                     @Override
                     public void onLayoutCompleted(RecyclerView.State state) {
                         super.onLayoutCompleted(state);
                     }
                 };
-        mRecyclerView.setLayoutManager(linearLayoutManager);
+        mRecyclerView.setLayoutManager(linearLayoutManager);*/
+        mRecyclerView.setLayoutManager(new AlexanderLayoutManager());
         mRecyclerView.setAdapter(mAdapter);
 
         // 文件下载完的才显示其文件名

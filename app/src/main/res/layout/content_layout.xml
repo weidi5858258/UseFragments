@@ -18,7 +18,7 @@
         android:id="@+id/content_title"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="16dp"
+        android:layout_marginStart="@dimen/dimen_16_dp"
         android:layout_centerVertical="true"
         android:textColor="@color/white"
         android:textDirection="locale"
@@ -28,6 +28,6 @@
         android:id="@+id/item_download_btn"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_alignParentEnd="true"
-        android:text="D"/>
+        android:layout_marginEnd="@dimen/dimen_116_dp"
+        android:layout_alignParentRight="true"/>
 </RelativeLayout>
