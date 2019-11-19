@@ -12,6 +12,7 @@ import android.widget.TextView;
 
 import com.weidi.usefragments.R;
 import com.weidi.usefragments.business.media.Camera2Fragment;
+import com.weidi.usefragments.business.test_horizontal_card.HorizontalCardFragment;
 import com.weidi.usefragments.fragment.FragOperManager;
 import com.weidi.usefragments.fragment.base.BaseFragment;
 import com.weidi.usefragments.inject.InjectView;
@@ -75,7 +76,8 @@ public class Main4Fragment extends BaseFragment {
         mJumpBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                FragOperManager.getInstance().enter3(new Camera2Fragment());
+                // FragOperManager.getInstance().enter3(new Camera2Fragment());
+                FragOperManager.getInstance().enter3(new HorizontalCardFragment());
             }
         });
     }

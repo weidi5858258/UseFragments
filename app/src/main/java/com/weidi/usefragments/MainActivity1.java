@@ -2,6 +2,7 @@ package com.weidi.usefragments;
 
 import android.app.Fragment;
 
+import com.weidi.usefragments.business.test_horizontal_card.HorizontalCardFragment;
 import com.weidi.usefragments.javabean.Person;
 
 import android.content.BroadcastReceiver;
@@ -158,6 +159,9 @@ public class MainActivity1 extends BaseActivity
         sFragmentBackTypeSMap.put(
                 MedicalRecordFragment.class.getSimpleName(),
                 FragOperManager.POP_BACK_STACK);
+        sFragmentBackTypeSMap.put(
+                HorizontalCardFragment.class.getSimpleName(),
+                FragOperManager.POP_BACK_STACK);
     }
 
     @Override
@@ -196,14 +200,23 @@ public class MainActivity1 extends BaseActivity
         main2Fragment = new Main2Fragment();
         main3Fragment = new Main3Fragment();
         main4Fragment = new Main4Fragment();
-        mCurShowMainFragment = main1Fragment;
-        mPreShowMainFragment = main1Fragment;
+
+//        mCurShowMainFragment = main1Fragment;
+//        mPreShowMainFragment = main1Fragment;
+        mCurShowMainFragment = main4Fragment;
+        mPreShowMainFragment = main4Fragment;
+
         FragOperManager.getInstance().setCurUsedFragment(
                 mCurShowMainFragment);
-        FragOperManager.getInstance().enter2(main4Fragment);
-        FragOperManager.getInstance().enter2(main3Fragment);
-        FragOperManager.getInstance().enter2(main2Fragment);
+
+//        FragOperManager.getInstance().enter2(main4Fragment);
+//        FragOperManager.getInstance().enter2(main3Fragment);
+//        FragOperManager.getInstance().enter2(main2Fragment);
+//        FragOperManager.getInstance().enter2(main1Fragment);
         FragOperManager.getInstance().enter2(main1Fragment);
+        FragOperManager.getInstance().enter2(main2Fragment);
+        FragOperManager.getInstance().enter2(main3Fragment);
+        FragOperManager.getInstance().enter2(main4Fragment);
 
         findViewById(R.id.main1_btn).setOnClickListener(mViewOnClickListener);
         findViewById(R.id.main2_btn).setOnClickListener(mViewOnClickListener);
@@ -212,7 +225,9 @@ public class MainActivity1 extends BaseActivity
         findViewById(R.id.debug_test_btn).setOnClickListener(mViewOnClickListener);
         findViewById(R.id.back_btn).setOnClickListener(mViewOnClickListener);
 
-        findViewById(R.id.main1_btn).setBackgroundColor(
+//        findViewById(R.id.main1_btn).setBackgroundColor(
+//                getResources().getColor(android.R.color.holo_green_light));
+        findViewById(R.id.main4_btn).setBackgroundColor(
                 getResources().getColor(android.R.color.holo_green_light));
 
         if (mHomeWatcherReceiver == null) {

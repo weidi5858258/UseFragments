@@ -224,6 +224,6 @@ public class MedicalRecordAdapter extends RecyclerView.Adapter {
                     R.id.medical_record_remarks);
         }
 
-    }// MedicalRecordViewHolder end
+    }// HorizontalCardViewHolder end
 
 }
