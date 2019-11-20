@@ -6,26 +6,18 @@ import android.content.res.Configuration;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
-import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
-import com.weidi.dbutil.SimpleDao2;
-import com.weidi.recycler_view.HorizontalCard2LayoutManager;
-import com.weidi.recycler_view.HorizontalCardLayoutManager;
+import com.weidi.recycler_view.Horizontal2LayoutManager;
 import com.weidi.usefragments.R;
-import com.weidi.usefragments.business.medical_record.MedicalRecordAdapter;
-import com.weidi.usefragments.business.medical_record.MedicalRecordBean;
-import com.weidi.usefragments.business.medical_record.MedicalRecordDialogFragment;
 import com.weidi.usefragments.fragment.base.BaseFragment;
-import com.weidi.usefragments.inject.InjectOnClick;
 import com.weidi.usefragments.inject.InjectView;
 import com.weidi.usefragments.tool.MLog;
 
 import java.util.ArrayList;
-import java.util.List;
 
 /***
 
@@ -271,6 +263,7 @@ public class HorizontalCardFragment extends BaseFragment {
 
     /////////////////////////////////////////////////////////////////
 
+    private Horizontal2LayoutManager mLayoutManager;
     private HorizontalCardAdapter mAdapter;
     @InjectView(R.id.horizontal_card_rv)
     private RecyclerView mRecyclerView;
@@ -308,21 +301,27 @@ public class HorizontalCardFragment extends BaseFragment {
                 new HorizontalCardAdapter.OnItemClickListener() {
                     @Override
                     public void onItemClick(int position, int number) {
+                        if (!mLayoutManager.isSelected(position)) {
+                            mLayoutManager.onItemClick(position);
+                        } else {
+                            // do something
+                            MLog.d(TAG, "alexander onItemClick() do something");
+                        }
                     }
                 });
     }
 
     private void initView(View view, Bundle savedInstanceState) {
-        HorizontalCard2LayoutManager layoutManager =
-                new HorizontalCard2LayoutManager() {
-                    @Override
-                    public void onLayoutCompleted(RecyclerView.State state) {
-                        super.onLayoutCompleted(state);
-                        if (DEBUG)
-                            MLog.d(TAG, "alexander onLayoutCompleted()");
-                    }
-                };
-        mRecyclerView.setLayoutManager(layoutManager);
+        mLayoutManager = new Horizontal2LayoutManager() {
+            @Override
+            public void onLayoutCompleted(RecyclerView.State state) {
+                super.onLayoutCompleted(state);
+                if (DEBUG)
+                    MLog.d(TAG, "alexander onLayoutCompleted()");
+            }
+        };
+        mLayoutManager.setRecyclerView(mRecyclerView);
+        mRecyclerView.setLayoutManager(mLayoutManager);
         mRecyclerView.setAdapter(mAdapter);
     }
 

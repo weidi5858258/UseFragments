@@ -12,7 +12,6 @@ import android.os.Looper;
 import android.os.Message;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
-import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.text.TextUtils;
 import android.view.LayoutInflater;
@@ -22,7 +21,7 @@ import android.widget.EditText;
 import android.widget.Toast;
 
 import com.weidi.eventbus.EventBusUtils;
-import com.weidi.recycler_view.AlexanderLayoutManager;
+import com.weidi.recycler_view.VerticalLayoutManager;
 import com.weidi.usefragments.BaseActivity;
 import com.weidi.usefragments.PlayerActivity;
 import com.weidi.usefragments.R;
@@ -455,7 +454,7 @@ public class ContentsFragment extends BaseFragment {
                     }
                 };
         mRecyclerView.setLayoutManager(linearLayoutManager);*/
-        mRecyclerView.setLayoutManager(new AlexanderLayoutManager());
+        mRecyclerView.setLayoutManager(new VerticalLayoutManager());
         mRecyclerView.setAdapter(mAdapter);
 
         // 文件下载完的才显示其文件名
