@@ -6,6 +6,7 @@ import android.content.res.Configuration;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -18,6 +19,8 @@ import com.weidi.usefragments.inject.InjectView;
 import com.weidi.usefragments.tool.MLog;
 
 import java.util.ArrayList;
+
+import static com.weidi.usefragments.business.test_horizontal_card.HorizontalCardAdapter.ON_CLICK;
 
 /***
 
@@ -300,12 +303,19 @@ public class HorizontalCardFragment extends BaseFragment {
         mAdapter.setOnItemClickListener(
                 new HorizontalCardAdapter.OnItemClickListener() {
                     @Override
-                    public void onItemClick(int position, int number) {
+                    public void onItemClick(int type, int position, int number) {
                         if (!mLayoutManager.isSelected(position)) {
                             mLayoutManager.onItemClick(position);
-                        } else {
+                            return;
+                        }
+
+                        if (type == ON_CLICK) {
                             // do something
                             MLog.d(TAG, "alexander onItemClick() do something");
+                            // mAdapter.addItem(position + 1, mAdapter.getItemCount());
+                        } else {
+                            MLog.d(TAG, "alexander onItemLongClick() do something");
+                            // mAdapter.removeItem(position);
                         }
                     }
                 });
@@ -322,6 +332,7 @@ public class HorizontalCardFragment extends BaseFragment {
         };
         mLayoutManager.setRecyclerView(mRecyclerView);
         mRecyclerView.setLayoutManager(mLayoutManager);
+        mRecyclerView.setItemAnimator(new DefaultItemAnimator());
         mRecyclerView.setAdapter(mAdapter);
     }
 

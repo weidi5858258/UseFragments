@@ -28,8 +28,11 @@ public class HorizontalCardAdapter extends RecyclerView.Adapter {
     private Context mContext;
     private LayoutInflater mLayoutInflater;
 
+    public static final int ON_CLICK = 0x0001;
+    public static final int ON_LONG_CLICK = 0x0002;
+
     public interface OnItemClickListener {
-        void onItemClick(int position, int number);
+        void onItemClick(int type, int position, int number);
     }
 
     private OnItemClickListener mOnItemClickListener;
@@ -66,8 +69,20 @@ public class HorizontalCardAdapter extends RecyclerView.Adapter {
                     public void onClick(View view) {
                         MLog.d(TAG, "alexander onClick() position: " + position + " " + number);
                         if (mOnItemClickListener != null) {
-                            mOnItemClickListener.onItemClick(position, number);
+                            mOnItemClickListener.onItemClick(ON_CLICK, position, number);
                         }
+                    }
+                });
+        horizontalCardViewHolder.itemView.setOnLongClickListener(
+                new View.OnLongClickListener() {
+                    @Override
+                    public boolean onLongClick(View v) {
+                        MLog.d(TAG, "alexander onLongClick() position: " + position +
+                                " " + number);
+                        if (mOnItemClickListener != null) {
+                            mOnItemClickListener.onItemClick(ON_LONG_CLICK, position, number);
+                        }
+                        return false;
                     }
                 });
     }
@@ -94,6 +109,33 @@ public class HorizontalCardAdapter extends RecyclerView.Adapter {
 
             mBeans.add(number);
         }
+    }
+
+    public void addItem(int position, int content) {
+        if (position < 0
+                || position >= getItemCount()
+                || mBeans.contains(content)) {
+            return;
+        }
+
+        mBeans.add(position, content);
+        notifyItemChanged(position);
+        notifyItemRangeChanged(position, getItemCount());
+
+        // notifyItemChanged(position, content);
+        // notifyItemRangeChanged(position, getItemCount(), content);
+    }
+
+    public void removeItem(int position) {
+        if (position < 0
+                || position >= getItemCount()
+                || !mBeans.contains(position)) {
+            return;
+        }
+
+        mBeans.remove(position);
+        notifyItemRemoved(position);
+        notifyItemRangeChanged(position, getItemCount());
     }
 
     public void register() {
