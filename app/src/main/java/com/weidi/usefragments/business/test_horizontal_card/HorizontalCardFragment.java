@@ -295,7 +295,7 @@ public class HorizontalCardFragment extends BaseFragment {
 
     private void initData() {
         ArrayList<Integer> data = new ArrayList<Integer>();
-        for (int i = 0; i < 200; i++) {
+        for (int i = 0; i < 4; i++) {
             data.add(i);
         }
         mAdapter = new HorizontalCardAdapter(getContext());
