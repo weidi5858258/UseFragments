@@ -47,16 +47,16 @@ android {
             keyPassword 'android'
             storePassword 'android'
 //            storeFile file('D:\\Tools\\weidi_keystore\\debug.keystore')
-            storeFile file('/root/mydev/workspace_github/myfiles/android/weidi_keystore/debug.keystore')
-//            storeFile file('/Users/alexander/mydev/workspace_github/myfiles/android/weidi_keystore/debug.keystore')
+//            storeFile file('/root/mydev/workspace_github/myfiles/android/weidi_keystore/debug.keystore')
+            storeFile file('/Users/alexander/mydev/workspace_github/myfiles/android/weidi_keystore/debug.keystore')
         }
         release {
             keyAlias 'weidi'
             keyPassword 'android'
             storePassword 'android'
 //            storeFile file('D:\\Tools\\weidi_keystore\\debug.keystore')
-            storeFile file('/root/mydev/workspace_github/myfiles/android/weidi_keystore/debug.keystore')
-//            storeFile file('/Users/alexander/mydev/workspace_github/myfiles/android/weidi_keystore/debug.keystore')
+//            storeFile file('/root/mydev/workspace_github/myfiles/android/weidi_keystore/debug.keystore')
+            storeFile file('/Users/alexander/mydev/workspace_github/myfiles/android/weidi_keystore/debug.keystore')
         }
     }
 }
@@ -64,7 +64,7 @@ android {
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
 
-    compile project(":weidi_library")
+    implementation project(":weidi_library")
     //implementation 'androidx.annotation:annotation:1.1.0'
-    implementation 'com.android.support:support-annotations:28.0.0'
-}
+    //implementation 'com.android.support:support-annotations:28.0.0'
+}// dependencies compile
