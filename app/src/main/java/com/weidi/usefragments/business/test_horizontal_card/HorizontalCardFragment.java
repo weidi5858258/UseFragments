@@ -12,6 +12,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
+import com.weidi.recycler_view.CascadeLayoutManager;
 import com.weidi.recycler_view.Horizontal2LayoutManager;
 import com.weidi.usefragments.R;
 import com.weidi.usefragments.fragment.base.BaseFragment;
@@ -266,7 +267,7 @@ public class HorizontalCardFragment extends BaseFragment {
 
     /////////////////////////////////////////////////////////////////
 
-    private Horizontal2LayoutManager mLayoutManager;
+    private RecyclerView.LayoutManager mLayoutManager;
     private HorizontalCardAdapter mAdapter;
     @InjectView(R.id.horizontal_card_rv)
     private RecyclerView mRecyclerView;
@@ -295,7 +296,7 @@ public class HorizontalCardFragment extends BaseFragment {
 
     private void initData() {
         ArrayList<Integer> data = new ArrayList<Integer>();
-        for (int i = 0; i < 4; i++) {
+        for (int i = 0; i < 5; i++) {
             data.add(i);
         }
         mAdapter = new HorizontalCardAdapter(getContext());
@@ -304,8 +305,16 @@ public class HorizontalCardFragment extends BaseFragment {
                 new HorizontalCardAdapter.OnItemClickListener() {
                     @Override
                     public void onItemClick(int type, int position, int number) {
-                        if (!mLayoutManager.isSelected(position)) {
-                            mLayoutManager.onItemClick(position);
+
+                    }
+                });
+
+        /*mAdapter.setOnItemClickListener(
+                new HorizontalCardAdapter.OnItemClickListener() {
+                    @Override
+                    public void onItemClick(int type, int position, int number) {
+                        if (!((Horizontal2LayoutManager)mLayoutManager).isSelected(position)) {
+                            ((Horizontal2LayoutManager)mLayoutManager).onItemClick(position);
                             return;
                         }
 
@@ -318,11 +327,11 @@ public class HorizontalCardFragment extends BaseFragment {
                             // mAdapter.removeItem(position);
                         }
                     }
-                });
+                });*/
     }
 
     private void initView(View view, Bundle savedInstanceState) {
-        mLayoutManager = new Horizontal2LayoutManager() {
+        /*mLayoutManager = new Horizontal2LayoutManager() {
             @Override
             public void onLayoutCompleted(RecyclerView.State state) {
                 super.onLayoutCompleted(state);
@@ -330,7 +339,17 @@ public class HorizontalCardFragment extends BaseFragment {
                     MLog.d(TAG, "alexander onLayoutCompleted()");
             }
         };
-        mLayoutManager.setRecyclerView(mRecyclerView);
+        ((Horizontal2LayoutManager)mLayoutManager).setRecyclerView(mRecyclerView);*/
+
+        mLayoutManager = new CascadeLayoutManager() {
+            @Override
+            public void onLayoutCompleted(RecyclerView.State state) {
+                super.onLayoutCompleted(state);
+                if (DEBUG)
+                    MLog.d(TAG, "alexander onLayoutCompleted()");
+            }
+        };
+
         mRecyclerView.setLayoutManager(mLayoutManager);
         mRecyclerView.setItemAnimator(new DefaultItemAnimator());
         mRecyclerView.setAdapter(mAdapter);

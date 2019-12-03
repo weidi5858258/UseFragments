@@ -62,6 +62,11 @@ public class HorizontalCardAdapter extends RecyclerView.Adapter {
         int number = mBeans.get(position);
         MLog.d(TAG, "onBindViewHolder() position: " + position + " " + number);
 
+        if (position % 2 != 0) {
+            horizontalCardViewHolder.itemView.setBackgroundColor(
+                    mContext.getResources().getColor(R.color.firebrick));
+        }
+
         horizontalCardViewHolder.showNumberTv.setText(String.valueOf(number));
         horizontalCardViewHolder.itemView.setOnClickListener(
                 new View.OnClickListener() {

@@ -1,6 +1,6 @@
 # 根目录的CMakeLists.txt文件中主要负责：
 # 1.声明CMake最低版本
-# 2.编译出的so库文件,存放的位置
+# 2.编译出的so库文件存放的位置
 # 3.各个子目录的路径
 
 cmake_minimum_required(VERSION 3.4.1)
@@ -16,7 +16,8 @@ cmake_minimum_required(VERSION 3.4.1)
 # LINK_DIRECTORIES(/usr/local/lib)
 
 # 添加子目录,将自动找到子目录中的CMakeLists.txt
+ADD_SUBDIRECTORY(${PROJECT_SOURCE_DIR}/src/main/cpp/ffmpeg)
+# 测试用
 ADD_SUBDIRECTORY(${PROJECT_SOURCE_DIR}/src/main/cpp/module1)
 ADD_SUBDIRECTORY(${PROJECT_SOURCE_DIR}/src/main/cpp/module2)
-ADD_SUBDIRECTORY(${PROJECT_SOURCE_DIR}/src/main/cpp/ffmpeg)
 #################################################################

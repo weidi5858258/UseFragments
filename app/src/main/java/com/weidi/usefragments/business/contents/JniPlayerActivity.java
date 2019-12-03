@@ -23,6 +23,7 @@ import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
+import android.view.WindowManager;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
@@ -54,6 +55,9 @@ public class JniPlayerActivity extends BaseActivity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        getWindow().setFlags(
+                WindowManager.LayoutParams.FLAG_FULLSCREEN,
+                WindowManager.LayoutParams.FLAG_FULLSCREEN);
         setContentView(R.layout.activity_player);
         if (DEBUG)
             MLog.d(TAG, "onCreate(): " + printThis()
@@ -551,12 +555,18 @@ public class JniPlayerActivity extends BaseActivity {
                 new Thread(new Runnable() {
                     @Override
                     public void run() {
+                        if (isDestroyed()) {
+                            return;
+                        }
                         mFFMPEGPlayer.audioHandleData();
                     }
                 }).start();
                 new Thread(new Runnable() {
                     @Override
                     public void run() {
+                        if (isDestroyed()) {
+                            return;
+                        }
                         mFFMPEGPlayer.videoHandleData();
                     }
                 }).start();
@@ -564,6 +574,9 @@ public class JniPlayerActivity extends BaseActivity {
                     @Override
                     public void run() {
                         SystemClock.sleep(500);
+                        if (isDestroyed()) {
+                            return;
+                        }
                         mFFMPEGPlayer.audioReadData();
                     }
                 }).start();
@@ -571,6 +584,9 @@ public class JniPlayerActivity extends BaseActivity {
                     @Override
                     public void run() {
                         SystemClock.sleep(500);
+                        if (isDestroyed()) {
+                            return;
+                        }
                         mFFMPEGPlayer.videoReadData();
                     }
                 }).start();
