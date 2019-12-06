@@ -22,6 +22,7 @@ android {
                 abiFilters 'armeabi-v7a'
             }
         }
+        signingConfig signingConfigs.debug
     }
     externalNativeBuild {
         cmake {
@@ -31,33 +32,37 @@ android {
     lintOptions {
         abortOnError false
     }
-    buildTypes {
-        release {
-            minifyEnabled false
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
-        }
-    }
-    compileOptions {
-        sourceCompatibility JavaVersion.VERSION_1_8
-        targetCompatibility JavaVersion.VERSION_1_8
-    }
     signingConfigs {
         debug {
             keyAlias 'weidi'
             keyPassword 'android'
             storePassword 'android'
 //            storeFile file('D:\\Tools\\weidi_keystore\\debug.keystore')
-            storeFile file('/root/mydev/workspace_github/myfiles/android/weidi_keystore/debug.keystore')
-//            storeFile file('/Users/alexander/mydev/workspace_github/myfiles/android/weidi_keystore/debug.keystore')
+//            storeFile file('/root/mydev/workspace_github/myfiles/android/weidi_keystore/debug.keystore')
+            storeFile file('/Users/alexander/mydev/workspace_github/myfiles/android/weidi_keystore/debug.keystore')
         }
         release {
             keyAlias 'weidi'
             keyPassword 'android'
             storePassword 'android'
 //            storeFile file('D:\\Tools\\weidi_keystore\\debug.keystore')
-            storeFile file('/root/mydev/workspace_github/myfiles/android/weidi_keystore/debug.keystore')
-//            storeFile file('/Users/alexander/mydev/workspace_github/myfiles/android/weidi_keystore/debug.keystore')
+//            storeFile file('/root/mydev/workspace_github/myfiles/android/weidi_keystore/debug.keystore')
+            storeFile file('/Users/alexander/mydev/workspace_github/myfiles/android/weidi_keystore/debug.keystore')
         }
+    }
+    buildTypes {
+        debug {
+            signingConfig signingConfigs.debug
+        }
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            signingConfig signingConfigs.release
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
     }
 }
 
