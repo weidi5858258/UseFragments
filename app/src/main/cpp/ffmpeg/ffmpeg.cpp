@@ -36,7 +36,7 @@ jint JNI_OnLoad(JavaVM *vm, void *reserved) {
     return JNI_VERSION_1_6;
 }
 
-// 这个方法只有放在这个文件里才有效,在其他文件调用失败
+// 这个方法只有放在这个文件里才有效,在其他文件调用失效
 bool getEnv(JNIEnv **env) {
     bool isAttached = false;
     jint jResult = gJavaVm->GetEnv((void **) env, JNI_VERSION_1_6);
