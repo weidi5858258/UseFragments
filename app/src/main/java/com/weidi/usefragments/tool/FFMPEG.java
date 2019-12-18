@@ -41,17 +41,13 @@ public class FFMPEG {
     public native int initAudio();
 
     public native int initVideo();
-
-    // 开线程
+    // 开线程1
     public native int audioReadData();
-
-    // 开线程
+    // 开线程2
     public native int audioHandleData();
-
-    // 开线程
+    // 开线程3
     public native int videoReadData();
-
-    // 开线程
+    // 开线程4
     public native int videoHandleData();
 
     public native int play();
@@ -65,11 +61,10 @@ public class FFMPEG {
     public native boolean isRunning();
 
     public native boolean isPlaying();
-
+    // 快进
     public native void stepAdd();
-
+    // 快退
     public native void stepSubtract();
-
     // 单位: 秒
     public native int seekTo(long timestamp);
 
@@ -141,7 +136,7 @@ public class FFMPEG {
     public void setHandler(Handler handler) {
         mUiHandler = handler;
     }
-
+    // 供jni层调用
     public Callback mCallback = new Callback() {
         @Override
         public void onReady() {

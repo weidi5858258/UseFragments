@@ -4,6 +4,72 @@
 
 #include "SimpleVideoPlayer.h"
 
+// 需要引入native绘制的头文件
+#include <android/native_window.h>
+#include <android/native_window_jni.h>
+
+extern "C" {// 不能少
+// ffmpeg使用MediaCodec进行硬解码(需要编译出支持硬解码的so库)
+#include <libavcodec/jni.h>
+#include <libavcodec/avcodec.h>
+#include <libavformat/avformat.h>
+#include <libavformat/avio.h>
+#include "libswresample/swresample.h"
+// libswscale是一个主要用于处理图片像素数据的类库.可以完成图片像素格式的转换,图片的拉伸等工作.
+#include <libswscale/swscale.h>
+#include <libavfilter/avfilter.h>
+#include <libavfilter/buffersink.h>
+#include <libavfilter/buffersrc.h>
+#include <libavutil/channel_layout.h>
+#include <libavutil/mathematics.h>
+#include <libavutil/samplefmt.h>
+// 这里是做分片时候重采样编码音频用的
+#include <libavutil/audio_fifo.h>
+#include <libavutil/imgutils.h>
+#include <libavutil/avutil.h>
+#include <libavutil/avassert.h>
+#include <libavutil/avstring.h>
+#include <libavutil/frame.h>
+#include <libavutil/hwcontext.h>
+#include <libavutil/parseutils.h>
+#include <libavutil/pixdesc.h>
+#include <libavutil/pixfmt.h>
+#include <libavutil/fifo.h>
+#include <libavutil/log.h>
+#include <libavutil/opt.h>
+#include <libavutil/mem.h>
+#include <libavutil/error.h>
+#include <libavutil/time.h>
+
+// 使用libyuv,将YUV转换RGB
+#include <libyuv/basic_types.h>
+#include <libyuv/compare.h>
+#include <libyuv/convert.h>
+#include <libyuv/convert_argb.h>
+#include <libyuv/convert_from.h>
+#include <libyuv/convert_from_argb.h>
+#include <libyuv/cpu_id.h>
+#include <libyuv/mjpeg_decoder.h>
+#include <libyuv/planar_functions.h>
+#include <libyuv/rotate.h>
+#include <libyuv/rotate_argb.h>
+#include <libyuv/row.h>
+#include <libyuv/scale.h>
+#include <libyuv/scale_argb.h>
+#include <libyuv/scale_row.h>
+#include <libyuv/version.h>
+#include <libyuv/video_common.h>
+
+//    #include <jconfig.h>
+//    #include <jerror.h>
+//    #include <jmorecfg.h>
+//    #include <jpeglib.h>
+//    #include <turbojpeg.h>
+
+};// extern "C" end
+
+#define LOG "alexander"
+
 /***
  https://www.cnblogs.com/azraelly/archive/2013/01/01/2841269.html
  图文详解YUV420数据格式
@@ -50,11 +116,178 @@
  height:          [in]申请scr内存时指定的高度.
  align:           [in]申请src内存时指定的对齐字节数.
 
+// 在jni层或者其他cpp文件中创建线程是不行的
+pthread_t audioReadDataThread, audioHandleDataThread;
+// 创建线程
+pthread_create(&audioReadDataThread, NULL, readData, audioWrapper->father);
+pthread_create(&audioHandleDataThread, NULL, handleAudioData, NULL);
+// 等待线程执行完
+pthread_join(audioReadDataThread, NULL);
+pthread_join(audioHandleDataThread, NULL);
+// 取消线程
+//pthread_cancel(audioReadDataThread);
+//pthread_cancel(audioHandleDataThread);
+
+pthread_t videoReadDataThread, videoHandleDataThread;
+// 创建线程
+pthread_create(&videoReadDataThread, NULL, readData, videoWrapper->father);
+pthread_create(&videoHandleDataThread, NULL, handleVideoData, NULL);
+// 等待线程执行完
+pthread_join(videoReadDataThread, NULL);
+pthread_join(videoHandleDataThread, NULL);
+// 取消线程
+//pthread_cancel(videoReadDataThread);
+//pthread_cancel(videoHandleDataThread);
  */
 namespace alexander {
 
-    int getAVPacketFromQueue(struct AVPacketQueue *packet_queue,
-                             AVPacket *avpacket);
+    // 1 second of 48khz 32bit audio
+#define MAX_AUDIO_FRAME_SIZE 192000
+
+#define TYPE_UNKNOW -1
+#define TYPE_AUDIO 1
+#define TYPE_VIDEO 2
+
+#define NEXT_READ_UNKNOW -1
+#define NEXT_READ_QUEUE1 1
+#define NEXT_READ_QUEUE2 2
+
+#define NEXT_HANDLE_UNKNOW -1
+#define NEXT_HANDLE_QUEUE1 1
+#define NEXT_HANDLE_QUEUE2 2
+
+#define MAX_AVPACKET_COUNT_AUDIO_HTTP 3000
+#define MAX_AVPACKET_COUNT_VIDEO_HTTP 3000
+
+#define MAX_AVPACKET_COUNT_AUDIO_LOCAL 100
+#define MAX_AVPACKET_COUNT_VIDEO_LOCAL 100
+
+    typedef struct AVPacketQueue {
+        AVPacketList *firstAVPacketList = NULL;
+        AVPacketList *lastAVPacketList = NULL;
+        // 有多少个AVPacketList
+        int allAVPacketsCount = 0;
+        // 所有AVPacket占用的空间大小
+        int64_t allAVPacketsSize = 0;
+    };
+
+// 子类都要用到的部分
+    struct Wrapper {
+        int type = TYPE_UNKNOW;
+        AVFormatContext *avFormatContext = NULL;
+        AVCodecContext *avCodecContext = NULL;
+        // 有些东西需要通过它去得到
+        AVCodecParameters *avCodecParameters = NULL;
+        // 解码器
+        AVCodec *decoderAVCodec = NULL;
+        // 编码器(没用到,因为是播放,所以不需要编码)
+        AVCodec *encoderAVCodec = NULL;
+
+        unsigned char *outBuffer1 = NULL;
+        unsigned char *outBuffer2 = NULL;
+        unsigned char *outBuffer3 = NULL;
+        size_t outBufferSize = 0;
+
+        int streamIndex = -1;
+        // 总共读取了多少个AVPacket
+        int readFramesCount = 0;
+        // 总共处理了多少个AVPacket
+        int handleFramesCount = 0;
+
+        // C++中也可以使用list来做
+        struct AVPacketQueue *queue1 = NULL;
+        struct AVPacketQueue *queue2 = NULL;
+        bool isReadQueue1Full = false;
+        bool isReadQueue2Full = false;
+        int nextRead = NEXT_READ_UNKNOW;
+        int nextHandle = NEXT_HANDLE_UNKNOW;
+        // 队列中最多保存多少个AVPacket
+        int maxAVPacketsCount = 0;
+
+        bool isStarted = false;
+        bool isReading = false;
+        bool isHandling = false;
+        // 因为user所以pause
+        bool isPausedForUser = false;
+        // 因为cache所以pause
+        bool isPausedForCache = false;
+        // seek的初始化条件有没有完成,true表示完成
+        bool seekToInit = false;
+
+        // 单位: 秒
+        int64_t duration = 0;
+        // 单位: 秒
+        int64_t timestamp = 0;
+        // 跟线程有关
+        pthread_mutex_t readLockMutex;
+        pthread_cond_t readLockCondition;
+        pthread_mutex_t handleLockMutex;
+        pthread_cond_t handleLockCondition;
+
+        // 存储压缩数据(视频对应H.264等码流数据,音频对应AAC/MP3等码流数据)
+        // AVPacket *avPacket = NULL;
+        // 视频使用到sws_scale函数时需要定义这些变量,音频也要用到
+        // unsigned char *srcData[4] = {NULL}, dstData[4] = {NULL};
+    };
+
+    struct AudioWrapper {
+        struct Wrapper *father = NULL;
+        SwrContext *swrContext = NULL;
+        // 存储非压缩数据(视频对应RGB/YUV像素数据,音频对应PCM采样数据)
+        AVFrame *decodedAVFrame = NULL;
+        // 从音频源或视频源中得到
+        // 采样率
+        int srcSampleRate = 0;
+        int dstSampleRate = 0;
+        // 声道数
+        int srcNbChannels = 0;
+        // 由dstChannelLayout去获到
+        int dstNbChannels = 0;
+        int srcNbSamples = 0;
+        int dstNbSamples = 0;
+        // 由srcNbChannels能得到srcChannelLayout,也能由srcChannelLayout得到srcNbChannels
+        int srcChannelLayout = 0;
+        // 双声道输出
+        int dstChannelLayout = 0;
+        // 从音频源或视频源中得到(采样格式)
+        enum AVSampleFormat srcAVSampleFormat = AV_SAMPLE_FMT_NONE;
+        // 输出的采样格式16bit PCM
+        enum AVSampleFormat dstAVSampleFormat = AV_SAMPLE_FMT_S16;
+    };
+
+    struct VideoWrapper {
+        struct Wrapper *father = NULL;
+        SwsContext *swsContext = NULL;
+        // 从视频源中得到
+        enum AVPixelFormat srcAVPixelFormat = AV_PIX_FMT_NONE;
+        // 从原来的像素格式转换为想要的视频格式(可能应用于不需要播放视频的场景)
+        // 播放时dstAVPixelFormat必须跟srcAVPixelFormat的值一样,不然画面有问题
+        enum AVPixelFormat dstAVPixelFormat = AV_PIX_FMT_RGBA;
+        // 一个视频没有解码之前读出的数据是压缩数据,把压缩数据解码后就是原始数据
+        // 解码后的原始数据(像素格式可能不是我们想要的,如果是想要的,那么没必要再调用sws_scale函数了)
+        AVFrame *decodedAVFrame = NULL;
+        // 解码后的原始数据(像素格式是我们想要的)
+        AVFrame *rgbAVFrame = NULL;
+        // 从视频源中得到的宽高
+        int srcWidth = 0, srcHeight = 0;
+        size_t srcArea = 0;
+        // 想要播放的窗口大小,可以直接使用srcWidth和srcHeight
+        int dstWidth = 720, dstHeight = 360;
+        size_t dstArea = 0;
+        // 使用到sws_scale函数时需要定义这些变量
+        int srcLineSize[4] = {NULL}, dstLineSize[4] = {NULL};
+    };
+
+    static struct AudioWrapper *audioWrapper = NULL;
+    static struct VideoWrapper *videoWrapper = NULL;
+    static bool isLocal = false;
+
+    static char inFilePath[2048];
+    static ANativeWindow *pANativeWindow = NULL;
+
+    int getAVPacketFromQueue(struct AVPacketQueue *packet_queue, AVPacket *avpacket);
+
+    char *getStrAVPixelFormat(AVPixelFormat format);
 
     // 已经不需要调用了
     void initAV() {
@@ -76,6 +309,7 @@ namespace alexander {
             av_free(audioWrapper);
             audioWrapper = NULL;
         }
+        // 这里是先有儿子,再有父亲了.其实应该先构造父亲,再把父亲信息传给儿子.
         audioWrapper = (struct AudioWrapper *) av_mallocz(sizeof(struct AudioWrapper));
         memset(audioWrapper, 0, sizeof(struct AudioWrapper));
         audioWrapper->father = (struct Wrapper *) av_mallocz(sizeof(struct Wrapper));
@@ -90,7 +324,6 @@ namespace alexander {
             audioWrapper->father->maxAVPacketsCount = MAX_AVPACKET_COUNT_AUDIO_HTTP;
         }
         LOGD("initAudio() maxAVPacketsCount: %d\n", audioWrapper->father->maxAVPacketsCount);
-
         audioWrapper->father->streamIndex = -1;
         audioWrapper->father->readFramesCount = 0;
         audioWrapper->father->handleFramesCount = 0;
@@ -104,11 +337,6 @@ namespace alexander {
         audioWrapper->father->isReadQueue2Full = false;
         audioWrapper->father->duration = -1;
         audioWrapper->father->timestamp = -1;
-
-        audioWrapper->dstSampleRate = 44100;
-        audioWrapper->dstAVSampleFormat = AV_SAMPLE_FMT_S16;
-        audioWrapper->dstChannelLayout = AV_CH_LAYOUT_STEREO;
-
         audioWrapper->father->queue1 =
                 (struct AVPacketQueue *) av_mallocz(sizeof(struct AVPacketQueue));
         audioWrapper->father->queue2 =
@@ -119,11 +347,14 @@ namespace alexander {
         audioWrapper->father->queue1->allAVPacketsSize = 0;
         audioWrapper->father->queue2->allAVPacketsCount = 0;
         audioWrapper->father->queue2->allAVPacketsSize = 0;
-
         audioWrapper->father->readLockMutex = PTHREAD_MUTEX_INITIALIZER;
         audioWrapper->father->readLockCondition = PTHREAD_COND_INITIALIZER;
         audioWrapper->father->handleLockMutex = PTHREAD_MUTEX_INITIALIZER;
         audioWrapper->father->handleLockCondition = PTHREAD_COND_INITIALIZER;
+
+        audioWrapper->dstSampleRate = 44100;
+        audioWrapper->dstAVSampleFormat = AV_SAMPLE_FMT_S16;
+        audioWrapper->dstChannelLayout = AV_CH_LAYOUT_STEREO;
     }
 
     void initVideo() {
@@ -135,6 +366,7 @@ namespace alexander {
             av_free(videoWrapper);
             videoWrapper = NULL;
         }
+
         videoWrapper = (struct VideoWrapper *) av_mallocz(sizeof(struct VideoWrapper));
         memset(videoWrapper, 0, sizeof(struct VideoWrapper));
         videoWrapper->father = (struct Wrapper *) av_mallocz(sizeof(struct Wrapper));
@@ -149,7 +381,6 @@ namespace alexander {
             videoWrapper->father->maxAVPacketsCount = MAX_AVPACKET_COUNT_VIDEO_HTTP;
         }
         LOGW("initVideo() maxAVPacketsCount: %d\n", videoWrapper->father->maxAVPacketsCount);
-
         videoWrapper->father->streamIndex = -1;
         videoWrapper->father->readFramesCount = 0;
         videoWrapper->father->handleFramesCount = 0;
@@ -163,11 +394,6 @@ namespace alexander {
         videoWrapper->father->isReadQueue2Full = false;
         videoWrapper->father->duration = -1;
         videoWrapper->father->timestamp = -1;
-
-        // Android支持的目标像素格式
-        // AV_PIX_FMT_RGB32
-        videoWrapper->dstAVPixelFormat = AV_PIX_FMT_RGBA;
-
         videoWrapper->father->queue1 =
                 (struct AVPacketQueue *) av_mallocz(sizeof(struct AVPacketQueue));
         videoWrapper->father->queue2 =
@@ -178,11 +404,15 @@ namespace alexander {
         videoWrapper->father->queue1->allAVPacketsSize = 0;
         videoWrapper->father->queue2->allAVPacketsCount = 0;
         videoWrapper->father->queue2->allAVPacketsSize = 0;
-
         videoWrapper->father->readLockMutex = PTHREAD_MUTEX_INITIALIZER;
         videoWrapper->father->readLockCondition = PTHREAD_COND_INITIALIZER;
         videoWrapper->father->handleLockMutex = PTHREAD_MUTEX_INITIALIZER;
         videoWrapper->father->handleLockCondition = PTHREAD_COND_INITIALIZER;
+
+        // Android支持的目标像素格式
+        // AV_PIX_FMT_RGB32
+        // AV_PIX_FMT_RGBA
+        videoWrapper->dstAVPixelFormat = AV_PIX_FMT_RGBA;
     }
 
     int openAndFindAVFormatContextForAudio() {
@@ -495,9 +725,8 @@ namespace alexander {
                          audioFormat);
         LOGI("%s\n", "createSwrContent() createAudioTrack end");
 
-        // avPacket ---> srcAVFrame ---> dstAVFrame ---> 播放声音
-        audioWrapper->father->srcAVFrame = av_frame_alloc();
-        // audioWrapper->father->dstAVFrame = av_frame_alloc();
+        // avPacket ---> decodedAVFrame ---> dstAVFrame ---> 播放声音
+        audioWrapper->decodedAVFrame = av_frame_alloc();
         // 16bit 44100 PCM 数据,16bit是2个字节
         audioWrapper->father->outBuffer1 = (unsigned char *) av_malloc(MAX_AUDIO_FRAME_SIZE);
         audioWrapper->father->outBufferSize = MAX_AUDIO_FRAME_SIZE;
@@ -518,8 +747,10 @@ namespace alexander {
         LOGI("---------------------------------\n");
         LOGI("srcWidth            : %d\n", videoWrapper->srcWidth);
         LOGI("srcHeight           : %d\n", videoWrapper->srcHeight);
-        LOGI("srcAVPixelFormat    : %d\n", videoWrapper->srcAVPixelFormat);
-        LOGI("dstAVPixelFormat    : %d\n", videoWrapper->dstAVPixelFormat);
+        LOGI("srcAVPixelFormat    : %d %s\n",
+             videoWrapper->srcAVPixelFormat, getStrAVPixelFormat(videoWrapper->srcAVPixelFormat));
+        LOGI("dstAVPixelFormat    : %d %s\n",
+             videoWrapper->dstAVPixelFormat, getStrAVPixelFormat(videoWrapper->dstAVPixelFormat));
         videoWrapper->dstWidth = videoWrapper->srcWidth;
         videoWrapper->dstHeight = videoWrapper->srcHeight;
         videoWrapper->srcArea = videoWrapper->srcWidth * videoWrapper->srcHeight;
@@ -549,12 +780,12 @@ namespace alexander {
             LOGI("imageFillArrays     : %d\n", imageFillArrays);
             return -1;
         }
-        // 由于解码出来的帧格式不是RGBA的,在渲染之前需要进行格式转换
+        // 由于解码出来的帧格式不是RGBA,在渲染之前需要进行格式转换
         // 现在swsContext知道程序员想要得到什么样的像素格式了
         videoWrapper->swsContext = sws_getContext(
                 videoWrapper->srcWidth, videoWrapper->srcHeight, videoWrapper->srcAVPixelFormat,
                 videoWrapper->srcWidth, videoWrapper->srcHeight, videoWrapper->dstAVPixelFormat,
-                SWS_BICUBIC,// SWS_BICUBIC SWS_BILINEAR
+                SWS_BICUBIC,// SWS_BICUBIC SWS_BILINEAR 使用什么转换算法
                 NULL, NULL, NULL);
         if (videoWrapper->swsContext == NULL) {
             LOGI("%s\n", "videoSwsContext is NULL.");
@@ -636,7 +867,7 @@ namespace alexander {
         }
         Wrapper *wrapper = NULL;
         int *type = (int *) opaque;
-        if (*type == 1) {
+        if (*type == TYPE_AUDIO) {
 #ifdef USE_AUDIO
             wrapper = audioWrapper->father;
 #endif
@@ -645,7 +876,7 @@ namespace alexander {
             wrapper = videoWrapper->father;
 #endif
         }
-        //Wrapper *wrapper = (Wrapper *) opaque;
+        // Wrapper *wrapper = (Wrapper *) opaque;
         if (wrapper == NULL) {
             LOGI("%s\n", "wrapper is NULL");
             return NULL;
@@ -700,8 +931,8 @@ namespace alexander {
                         wrapper->timestamp / av_q2d(stream->time_base),
                         AVSEEK_FLAG_BACKWARD | AVSEEK_FLAG_FRAME);
 
-                //千万不能调用
-                //avcodec_flush_buffers(wrapper->avCodecContext);
+                // 千万不能调用
+                // avcodec_flush_buffers(wrapper->avCodecContext);
 
                 preProgress = 0;
                 wrapper->timestamp = -1;
@@ -827,13 +1058,16 @@ namespace alexander {
 
             wrapper->readFramesCount++;
             // 非常非常非常重要
-            av_copy_packet(dstAVPacket, srcAVPacket);
+            // av_copy_packet(dstAVPacket, srcAVPacket);
+            av_packet_ref(dstAVPacket, srcAVPacket);
 
             if (wrapper->nextRead == NEXT_READ_QUEUE1
                 && !wrapper->isReadQueue1Full) {
+                // 保存到队列去,然后取出来进行解码播放
                 putAVPacketToQueue(wrapper->queue1, dstAVPacket);
                 if (wrapper->queue1->allAVPacketsCount == wrapper->maxAVPacketsCount) {
                     wrapper->isReadQueue1Full = true;
+                    // queue1满了,接着存到queue2去
                     wrapper->nextRead = NEXT_READ_QUEUE2;
                     if (isLocal && needLocalLog) {
                         if (wrapper->type == TYPE_AUDIO) {
@@ -848,7 +1082,7 @@ namespace alexander {
                             LOGW("readData() video signal() handleLockCondition\n");
                         }
                     }
-                    // 唤醒线程
+                    // 唤醒"解码"线程(几种情况需要唤醒:开始播放时,cache缓存时)
                     pthread_mutex_lock(&wrapper->handleLockMutex);
                     pthread_cond_signal(&wrapper->handleLockCondition);
                     pthread_mutex_unlock(&wrapper->handleLockMutex);
@@ -884,7 +1118,7 @@ namespace alexander {
                             LOGW("readData() video signal() handleLockCondition\n");
                         }
                     }
-                    // 唤醒线程
+                    // 唤醒"解码"线程
                     pthread_mutex_lock(&wrapper->handleLockMutex);
                     pthread_cond_signal(&wrapper->handleLockCondition);
                     pthread_mutex_unlock(&wrapper->handleLockMutex);
@@ -901,6 +1135,7 @@ namespace alexander {
                         LOGW("readData() video wait() readLockCondition start\n");
                     }
                 }
+                // 读数据线程等待
                 pthread_mutex_lock(&wrapper->readLockMutex);
                 pthread_cond_wait(&wrapper->readLockCondition, &wrapper->readLockMutex);
                 pthread_mutex_unlock(&wrapper->readLockMutex);
@@ -967,10 +1202,10 @@ namespace alexander {
         int ret = 0, out_buffer_size = 0;
         AVStream *stream =
                 audioWrapper->father->avFormatContext->streams[audioWrapper->father->streamIndex];
-        // 压缩数据
+        // 压缩数据(原始数据)
         AVPacket *avPacket = av_packet_alloc();
         // decodedAVFrame为解码后的数据
-        AVFrame *decodedAVFrame = audioWrapper->father->srcAVFrame;
+        AVFrame *decodedAVFrame = audioWrapper->decodedAVFrame;
         audioWrapper->father->isHandling = true;
         LOGD("handleAudioData() for (;;) start\n");
         for (;;) {
@@ -1230,7 +1465,7 @@ namespace alexander {
 
         LOGW("handleVideoData() ANativeWindow_setBuffersGeometry() start\n");
         // 2.设置缓冲区的属性（宽、高、像素格式）,像素格式要和SurfaceView的像素格式一直
-        ANativeWindow_setBuffersGeometry(nativeWindow,
+        ANativeWindow_setBuffersGeometry(pANativeWindow,
                                          videoWrapper->srcWidth,
                                          videoWrapper->srcHeight,
                                          WINDOW_FORMAT_RGBA_8888);
@@ -1242,6 +1477,8 @@ namespace alexander {
                 videoWrapper->father->avFormatContext->streams[videoWrapper->father->streamIndex];
         // 必须创建(存放压缩数据,如H264)
         AVPacket *avPacket = av_packet_alloc();
+        // decodedAVFrame为解码后的数据
+        AVFrame *decodedAVFrame = videoWrapper->decodedAVFrame;
         videoWrapper->father->isHandling = true;
         LOGW("handleVideoData() for (;;) start\n");
         for (;;) {
@@ -1392,7 +1629,7 @@ namespace alexander {
             }
             while (1) {
                 ret = avcodec_receive_frame(videoWrapper->father->avCodecContext,
-                                            videoWrapper->decodedAVFrame);
+                                            decodedAVFrame);
                 switch (ret) {
                     case AVERROR(EAGAIN):
                         break;
@@ -1417,17 +1654,21 @@ namespace alexander {
                             && onlyOne) {
                             LOGW("handleVideoData() 音视频都已经准备好,开始播放!!!\n");
                             onlyOne = false;
+                            // 回调(通知到java层)
                             onPlayed();
                         }
 #endif
-                        nowPts = videoWrapper->decodedAVFrame->pts;
+                        nowPts = decodedAVFrame->pts;
                         timeDifference = (nowPts - prePts) * av_q2d(stream->time_base);
                         prePts = nowPts;
 #ifdef USE_AUDIO
+                        // video nowPts    : 258.600000
+                        // video nowPts    : 274.800000
+                        // video - audio   : 16.773333
                         videoTimeDifference =
                                 nowPts * av_q2d(stream->time_base);
-                        //LOGD("handleVideoData() audio nowPts : %lf\n", audioTimeDifference);
-                        //LOGW("handleVideoData() video nowPts : %lf\n", videoTimeDifference);
+                        //LOGD("handleVideoData() audio nowPts    : %lf\n", audioTimeDifference);
+                        //LOGW("handleVideoData() video nowPts    : %lf\n", videoTimeDifference);
                         // 显示时间进度
                         long progress = (long) videoTimeDifference;
                         //LOGW("handleVideoData() progress    : %ld\n", progress);
@@ -1457,9 +1698,10 @@ namespace alexander {
 #endif
                         if (videoWrapper->father->isHandling) {
                             // 3.lock锁定下一个即将要绘制的Surface
-                            ANativeWindow_lock(nativeWindow, &outBuffer, NULL);
+                            ANativeWindow_lock(pANativeWindow, &outBuffer, NULL);
 
-                            /*// 第一种方式(一般情况下这种方式是可以的,但是在我的一加手机上不行,画面是花屏)
+                            /*
+                            // 第一种方式(一般情况下这种方式是可以的,但是在我的一加手机上不行,画面是花屏)
                             // 4.读取帧画面放入缓冲区,指定RGB的AVFrame的像素格式、宽高和缓冲区
                             av_image_fill_arrays(rgbAVFrame->data,
                                                  rgbAVFrame->linesize,
@@ -1473,20 +1715,20 @@ namespace alexander {
                                                decodedAVFrame->data[2], decodedAVFrame->linesize[2],
                                                decodedAVFrame->data[1], decodedAVFrame->linesize[1],
                                                rgbAVFrame->data[0], rgbAVFrame->linesize[0],
-                                               videoWrapper->srcWidth, videoWrapper->srcHeight);*/
+                                               videoWrapper->srcWidth, videoWrapper->srcHeight);
+                             */
 
                             // 第二种方式(我的一加手机就能正常显示画面了)
                             // https://blog.csdn.net/u013898698/article/details/79430202
                             // 格式转换
                             // 把decodedAVFrame的数据经过格式转换后保存到rgbAVFrame中
                             sws_scale(videoWrapper->swsContext,
-                                      (uint8_t const *const *) videoWrapper->decodedAVFrame->data,
-                                      videoWrapper->decodedAVFrame->linesize,
+                                      (uint8_t const *const *) decodedAVFrame->data,
+                                      decodedAVFrame->linesize,
                                       0,
                                       videoWrapper->srcHeight,
                                       videoWrapper->rgbAVFrame->data,
                                       videoWrapper->rgbAVFrame->linesize);
-
                             // 这段代码非常关键,还看不懂啥意思
                             // 把rgbAVFrame里面的数据复制到outBuffer中就能渲染画面了
                             // 获取stride
@@ -1520,7 +1762,7 @@ namespace alexander {
                             }
 
                             // 6.unlock绘制
-                            ANativeWindow_unlockAndPost(nativeWindow);
+                            ANativeWindow_unlockAndPost(pANativeWindow);
                         }
                         break;
                     }
@@ -1589,25 +1831,21 @@ namespace alexander {
             av_free(audioWrapper->father->outBuffer3);
             audioWrapper->father->outBuffer3 = NULL;
         }
-        if (audioWrapper->father->srcData[0] != NULL) {
+        /*if (audioWrapper->father->srcData[0] != NULL) {
             av_freep(&audioWrapper->father->srcData[0]);
             audioWrapper->father->srcData[0] = NULL;
         }
         if (audioWrapper->father->dstData[0] != NULL) {
             av_freep(&audioWrapper->father->dstData[0]);
             audioWrapper->father->dstData[0] = NULL;
-        }
+        }*/
         if (audioWrapper->swrContext != NULL) {
             swr_free(&audioWrapper->swrContext);
             audioWrapper->swrContext = NULL;
         }
-        if (audioWrapper->father->srcAVFrame != NULL) {
-            av_frame_free(&audioWrapper->father->srcAVFrame);
-            audioWrapper->father->srcAVFrame = NULL;
-        }
-        if (audioWrapper->father->dstAVFrame != NULL) {
-            av_frame_free(&audioWrapper->father->dstAVFrame);
-            audioWrapper->father->dstAVFrame = NULL;
+        if (audioWrapper->decodedAVFrame != NULL) {
+            av_frame_free(&audioWrapper->decodedAVFrame);
+            audioWrapper->decodedAVFrame = NULL;
         }
         if (audioWrapper->father->avCodecParameters != NULL) {
             avcodec_parameters_free(&audioWrapper->father->avCodecParameters);
@@ -1654,10 +1892,10 @@ namespace alexander {
 
     void closeVideo() {
         // video
-        if (nativeWindow != NULL) {
+        if (pANativeWindow != NULL) {
             // 7.释放资源
-            ANativeWindow_release(nativeWindow);
-            nativeWindow = NULL;
+            ANativeWindow_release(pANativeWindow);
+            pANativeWindow = NULL;
         }
         if (videoWrapper == NULL || videoWrapper->father == NULL) {
             return;
@@ -1675,25 +1913,17 @@ namespace alexander {
             av_free(videoWrapper->father->outBuffer3);
             videoWrapper->father->outBuffer3 = NULL;
         }
-        if (videoWrapper->father->srcData[0] != NULL) {
+        /*if (videoWrapper->father->srcData[0] != NULL) {
             av_freep(&videoWrapper->father->srcData[0]);
             videoWrapper->father->srcData[0] = NULL;
         }
         if (videoWrapper->father->dstData[0] != NULL) {
             av_freep(&videoWrapper->father->dstData[0]);
             videoWrapper->father->dstData[0] = NULL;
-        }
+        }*/
         if (videoWrapper->swsContext != NULL) {
             sws_freeContext(videoWrapper->swsContext);
             videoWrapper->swsContext = NULL;
-        }
-        if (videoWrapper->father->srcAVFrame != NULL) {
-            av_frame_free(&videoWrapper->father->srcAVFrame);
-            videoWrapper->father->srcAVFrame = NULL;
-        }
-        if (videoWrapper->father->dstAVFrame != NULL) {
-            av_frame_free(&videoWrapper->father->dstAVFrame);
-            videoWrapper->father->dstAVFrame = NULL;
         }
         if (videoWrapper->decodedAVFrame != NULL) {
             av_frame_free(&videoWrapper->decodedAVFrame);
@@ -1787,26 +2017,6 @@ namespace alexander {
         }
 #endif
 
-/*#ifdef USE_AUDIO
-        pthread_t audioReadDataThread, audioHandleDataThread;
-#endif
-#ifdef USE_AUDIO
-        // 创建线程
-        pthread_create(&audioReadDataThread, NULL, readData, audioWrapper->father);
-        pthread_create(&audioHandleDataThread, NULL, handleAudioData, NULL);
-#endif
-#ifdef USE_AUDIO
-        // 等待线程执行完
-        pthread_join(audioReadDataThread, NULL);
-        pthread_join(audioHandleDataThread, NULL);
-#endif
-#ifdef USE_AUDIO
-        // 取消线程
-        //pthread_cancel(audioReadDataThread);
-        //pthread_cancel(audioHandleDataThread);
-        closeAudio();
-#endif*/
-
         LOGI("%s\n", "initAudioPlayer() end");
 
         return 0;
@@ -1841,26 +2051,6 @@ namespace alexander {
         }
 #endif
 
-/*#ifdef USE_VIDEO
-        pthread_t videoReadDataThread, videoHandleDataThread;
-#endif
-#ifdef USE_VIDEO
-        // 创建线程
-        pthread_create(&videoReadDataThread, NULL, readData, videoWrapper->father);
-        pthread_create(&videoHandleDataThread, NULL, handleVideoData, NULL);
-#endif
-#ifdef USE_VIDEO
-        // 等待线程执行完
-        pthread_join(videoReadDataThread, NULL);
-        pthread_join(videoHandleDataThread, NULL);
-#endif
-#ifdef USE_VIDEO
-        // 取消线程
-        //pthread_cancel(videoReadDataThread);
-        //pthread_cancel(videoHandleDataThread);
-        closeVideo();
-#endif*/
-
         LOGI("%s\n", "initVideoPlayer() end");
 
         return 0;
@@ -1891,11 +2081,11 @@ namespace alexander {
 
 #ifdef USE_VIDEO
         // 1.获取一个关联Surface的NativeWindow窗体
-        nativeWindow = ANativeWindow_fromSurface(env, surfaceJavaObject);
-        if (nativeWindow == NULL) {
-            LOGI("handleVideoData() nativeWindow is NULL\n");
+        pANativeWindow = ANativeWindow_fromSurface(env, surfaceJavaObject);
+        if (pANativeWindow == NULL) {
+            LOGI("handleVideoData() pANativeWindow is NULL\n");
         } else {
-            LOGI("handleVideoData() nativeWindow isn't NULL\n");
+            LOGI("handleVideoData() pANativeWindow isn't NULL\n");
         }
 #endif
     }
@@ -2210,5 +2400,151 @@ namespace alexander {
      printf("%d\n", strlen(buf));// 5
      printf("%d\n", sizeof(buf));// 100
      */
+
+    char *getStrAVPixelFormat(AVPixelFormat format) {
+        char info[25] = {0};
+        switch (format) {
+            case AV_PIX_FMT_NONE:
+                strncpy(info, "AV_PIX_FMT_NONE", strlen("AV_PIX_FMT_NONE"));
+                break;
+            case AV_PIX_FMT_YUV420P:// 0
+                strncpy(info, "AV_PIX_FMT_YUV420P", strlen("AV_PIX_FMT_YUV420P"));
+                break;
+            case AV_PIX_FMT_YUYV422:
+                strncpy(info, "AV_PIX_FMT_YUYV422", strlen("AV_PIX_FMT_YUYV422"));
+                break;
+            case AV_PIX_FMT_RGB24:
+                strncpy(info, "AV_PIX_FMT_RGB24", strlen("AV_PIX_FMT_RGB24"));
+                break;
+            case AV_PIX_FMT_BGR24:
+                strncpy(info, "AV_PIX_FMT_BGR24", strlen("AV_PIX_FMT_BGR24"));
+                break;
+            case AV_PIX_FMT_YUV422P:
+                strncpy(info, "AV_PIX_FMT_YUV422P", strlen("AV_PIX_FMT_YUV422P"));
+                break;
+            case AV_PIX_FMT_YUV444P:
+                strncpy(info, "AV_PIX_FMT_YUV444P", strlen("AV_PIX_FMT_YUV444P"));
+                break;
+            case AV_PIX_FMT_YUV410P:
+                strncpy(info, "AV_PIX_FMT_YUV410P", strlen("AV_PIX_FMT_YUV410P"));
+                break;
+            case AV_PIX_FMT_YUV411P:
+                strncpy(info, "AV_PIX_FMT_YUV411P", strlen("AV_PIX_FMT_YUV411P"));
+                break;
+            case AV_PIX_FMT_GRAY8:
+                strncpy(info, "AV_PIX_FMT_GRAY8", strlen("AV_PIX_FMT_GRAY8"));
+                break;
+            case AV_PIX_FMT_MONOWHITE:
+                strncpy(info, "AV_PIX_FMT_MONOWHITE", strlen("AV_PIX_FMT_MONOWHITE"));
+                break;
+            case AV_PIX_FMT_MONOBLACK:
+                strncpy(info, "AV_PIX_FMT_MONOBLACK", strlen("AV_PIX_FMT_MONOBLACK"));
+                break;
+            case AV_PIX_FMT_PAL8:
+                strncpy(info, "AV_PIX_FMT_PAL8", strlen("AV_PIX_FMT_PAL8"));
+                break;
+            case AV_PIX_FMT_YUVJ420P:
+                strncpy(info, "AV_PIX_FMT_YUVJ420P", strlen("AV_PIX_FMT_YUVJ420P"));
+                break;
+            case AV_PIX_FMT_YUVJ422P:
+                strncpy(info, "AV_PIX_FMT_YUVJ422P", strlen("AV_PIX_FMT_YUVJ422P"));
+                break;
+            case AV_PIX_FMT_YUVJ444P:
+                strncpy(info, "AV_PIX_FMT_YUVJ444P", strlen("AV_PIX_FMT_YUVJ444P"));
+                break;
+            case AV_PIX_FMT_UYVY422:
+                strncpy(info, "AV_PIX_FMT_UYVY422", strlen("AV_PIX_FMT_UYVY422"));
+                break;
+            case AV_PIX_FMT_UYYVYY411:
+                strncpy(info, "AV_PIX_FMT_UYYVYY411", strlen("AV_PIX_FMT_UYYVYY411"));
+                break;
+            case AV_PIX_FMT_BGR8:
+                strncpy(info, "AV_PIX_FMT_BGR8", strlen("AV_PIX_FMT_BGR8"));
+                break;
+            case AV_PIX_FMT_BGR4:
+                strncpy(info, "AV_PIX_FMT_BGR4", strlen("AV_PIX_FMT_BGR4"));
+                break;
+            case AV_PIX_FMT_BGR4_BYTE:
+                strncpy(info, "AV_PIX_FMT_BGR4_BYTE", strlen("AV_PIX_FMT_BGR4_BYTE"));
+                break;
+            case AV_PIX_FMT_RGB8:
+                strncpy(info, "AV_PIX_FMT_RGB8", strlen("AV_PIX_FMT_RGB8"));
+                break;
+            case AV_PIX_FMT_RGB4:
+                strncpy(info, "AV_PIX_FMT_RGB4", strlen("AV_PIX_FMT_RGB4"));
+                break;
+            case AV_PIX_FMT_RGB4_BYTE:
+                strncpy(info, "AV_PIX_FMT_RGB4_BYTE", strlen("AV_PIX_FMT_RGB4_BYTE"));
+                break;
+            case AV_PIX_FMT_NV12:
+                strncpy(info, "AV_PIX_FMT_NV12", strlen("AV_PIX_FMT_NV12"));
+                break;
+            case AV_PIX_FMT_NV21:
+                strncpy(info, "AV_PIX_FMT_NV21", strlen("AV_PIX_FMT_NV21"));
+                break;
+            case AV_PIX_FMT_ARGB:
+                strncpy(info, "AV_PIX_FMT_ARGB", strlen("AV_PIX_FMT_ARGB"));
+                break;
+            case AV_PIX_FMT_RGBA:
+                strncpy(info, "AV_PIX_FMT_RGBA", strlen("AV_PIX_FMT_RGBA"));
+                break;
+            case AV_PIX_FMT_ABGR:
+                strncpy(info, "AV_PIX_FMT_ABGR", strlen("AV_PIX_FMT_ABGR"));
+                break;
+            case AV_PIX_FMT_BGRA:
+                strncpy(info, "AV_PIX_FMT_BGRA", strlen("AV_PIX_FMT_BGRA"));
+                break;
+            case AV_PIX_FMT_GRAY16BE:
+                strncpy(info, "AV_PIX_FMT_GRAY16BE", strlen("AV_PIX_FMT_GRAY16BE"));
+                break;
+            case AV_PIX_FMT_GRAY16LE:
+                strncpy(info, "AV_PIX_FMT_GRAY16LE", strlen("AV_PIX_FMT_GRAY16LE"));
+                break;
+            case AV_PIX_FMT_YUV440P:
+                strncpy(info, "AV_PIX_FMT_YUV440P", strlen("AV_PIX_FMT_YUV440P"));
+                break;
+            case AV_PIX_FMT_YUVJ440P:
+                strncpy(info, "AV_PIX_FMT_YUVJ440P", strlen("AV_PIX_FMT_YUVJ440P"));
+                break;
+            case AV_PIX_FMT_YUVA420P:
+                strncpy(info, "AV_PIX_FMT_YUVA420P", strlen("AV_PIX_FMT_YUVA420P"));
+                break;
+            case AV_PIX_FMT_RGB48BE:
+                strncpy(info, "AV_PIX_FMT_RGB48BE", strlen("AV_PIX_FMT_RGB48BE"));
+                break;
+            case AV_PIX_FMT_RGB48LE:
+                strncpy(info, "AV_PIX_FMT_RGB48LE", strlen("AV_PIX_FMT_RGB48LE"));
+                break;
+            case AV_PIX_FMT_RGB565BE:
+                strncpy(info, "AV_PIX_FMT_RGB565BE", strlen("AV_PIX_FMT_RGB565BE"));
+                break;
+            case AV_PIX_FMT_RGB565LE:
+                strncpy(info, "AV_PIX_FMT_RGB565LE", strlen("AV_PIX_FMT_RGB565LE"));
+                break;
+            case AV_PIX_FMT_RGB555BE:
+                strncpy(info, "AV_PIX_FMT_RGB555BE", strlen("AV_PIX_FMT_RGB555BE"));
+                break;
+            case AV_PIX_FMT_RGB555LE:
+                strncpy(info, "AV_PIX_FMT_RGB555LE", strlen("AV_PIX_FMT_RGB555LE"));
+                break;
+            case AV_PIX_FMT_BGR565BE:
+                strncpy(info, "AV_PIX_FMT_BGR565BE", strlen("AV_PIX_FMT_BGR565BE"));
+                break;
+            case AV_PIX_FMT_BGR565LE:
+                strncpy(info, "AV_PIX_FMT_BGR565LE", strlen("AV_PIX_FMT_BGR565LE"));
+                break;
+            case AV_PIX_FMT_BGR555BE:
+                strncpy(info, "AV_PIX_FMT_BGR555BE", strlen("AV_PIX_FMT_BGR555BE"));
+                break;
+            case AV_PIX_FMT_BGR555LE:
+                strncpy(info, "AV_PIX_FMT_BGR555LE", strlen("AV_PIX_FMT_BGR555LE"));
+                break;
+            default:
+                strncpy(info, "AV_PIX_FMT_NONE", strlen("AV_PIX_FMT_NONE"));
+                break;
+        }
+
+        return info;
+    }
 
 }

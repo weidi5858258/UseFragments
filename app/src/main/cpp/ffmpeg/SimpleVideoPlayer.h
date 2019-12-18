@@ -7,20 +7,11 @@
 
 #include "ffmpeg.h"
 #include "MyHeader.h"
-
-#define LOG "alexander"
+extern "C" {
+#include <libavcodec/avcodec.h>
+};
 
 namespace alexander {
-
-#define USE_AUDIO
-#define USE_VIDEO
-
-    static struct AudioWrapper *audioWrapper = NULL;
-    static struct VideoWrapper *videoWrapper = NULL;
-    static bool isLocal = false;
-
-    static char inFilePath[2048];
-    static ANativeWindow *nativeWindow = NULL;
 
     void *readData(void *opaque);
 
@@ -90,7 +81,7 @@ namespace alexander {
         // char *inFilePath = "/storage/2430-1702/BaiduNetdisk/music/谭咏麟 - 水中花.mp3";
         char *inFilePath = NULL;
 
-        ANativeWindow *nativeWindow = NULL;
+        ANativeWindow *pANativeWindow = NULL;
 
     public:
     };*/

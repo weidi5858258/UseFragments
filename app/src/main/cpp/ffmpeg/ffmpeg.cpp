@@ -10,11 +10,13 @@
 #define LOG "alexander"
 
 static JavaVM *gJavaVm = NULL;
+// 下面的jobject,jmethodID按照java的反射过程去理解,套路(jni层调用java层方法)跟反射是一样的
+// java层FFMPEG对象
 jobject ffmpegJavaObject = NULL;
 jmethodID createAudioTrackMethodID = NULL;
 jmethodID writeMethodID = NULL;
 jmethodID sleepMethodID = NULL;
-
+// java层Callback对象
 jobject callbackJavaObject = NULL;
 struct Callback {
     jmethodID onReadyMethodID = NULL;
@@ -31,8 +33,8 @@ struct Callback {
  这个方法只有放在这个文件里才有效,在其他文件不会被回调
  */
 jint JNI_OnLoad(JavaVM *vm, void *reserved) {
-    gJavaVm = vm;
     LOGD("JNI_OnLoad\n");
+    gJavaVm = vm;
     return JNI_VERSION_1_6;
 }
 
@@ -63,7 +65,9 @@ void createAudioTrack(int sampleRateInHz,
                       int audioFormat) {
     JNIEnv *audioEnv;
     bool isAttached = getEnv(&audioEnv);
-    if (audioEnv != NULL && ffmpegJavaObject != NULL && createAudioTrackMethodID != NULL) {
+    if (audioEnv != NULL
+        && ffmpegJavaObject != NULL
+        && createAudioTrackMethodID != NULL) {
         audioEnv->CallVoidMethod(ffmpegJavaObject, createAudioTrackMethodID,
                                  (jint) sampleRateInHz, (jint) channelCount, (jint) audioFormat);
     }
@@ -77,7 +81,9 @@ void write(unsigned char *pcmData,
            int sizeInBytes) {
     JNIEnv *audioEnv;
     bool audioIsAttached = getEnv(&audioEnv);
-    if (audioEnv != NULL && ffmpegJavaObject != NULL && writeMethodID != NULL) {
+    if (audioEnv != NULL
+        && ffmpegJavaObject != NULL
+        && writeMethodID != NULL) {
         jbyteArray audioData = audioEnv->NewByteArray(sizeInBytes);
         // 拷贝数组需要对指针操作
         jbyte *cache = audioEnv->GetByteArrayElements(audioData, NULL);
@@ -233,6 +239,12 @@ void onInfo(char *info) {
 
 /////////////////////////////////////////////////////////////////////////
 
+/***
+ setSurface方法在java层因为不是static方法,
+ 所以每个方法里至少有两个参数,即:
+ JNIEnv *env和jobject ffmpegObject
+ 其中jobject ffmpegObject代表java层定义setSurface方法的类对象.
+ */
 extern "C"
 JNIEXPORT jint JNICALL
 Java_com_weidi_usefragments_tool_FFMPEG_setSurface(JNIEnv *env,
@@ -252,7 +264,7 @@ Java_com_weidi_usefragments_tool_FFMPEG_setSurface(JNIEnv *env,
     alexander::setJniParameters(env, filePath, surfaceObject);
     env->ReleaseStringUTFChars(path, filePath);
 
-    // 直接赋值是不行的
+    // 直接赋值是不OK的
     // ffmpegJavaObject = ffmpegObject;
     ffmpegJavaObject = reinterpret_cast<jobject>(env->NewGlobalRef(ffmpegObject));
     createAudioTrackMethodID = createAudioTrack;

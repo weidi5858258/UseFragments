@@ -148,9 +148,10 @@ JNIEXPORT jobjectArray JNICALL Java_com_weidi_usefragments_tool_JniUtils_getStri
     for (i = 0; i < leng; i++) {
         jobject obj = (*env)->GetObjectArrayElement(env, objA, i);
         jstring jstr = (jstring) obj;
+        // const char *cStr = (*env)->GetStringUTFChars(env, jstr, 0);
         const char *cStr = (*env)->GetStringUTFChars(env, jstr, 0);
         LOGI("jobjectArray:%s", cStr);
-        (*env)->ReleaseStringChars(env, jstr, cStr);
+        (*env)->ReleaseStringChars(env, jstr, (jchar *)cStr);
     }
 
     // 创造对象数组返回到java端
