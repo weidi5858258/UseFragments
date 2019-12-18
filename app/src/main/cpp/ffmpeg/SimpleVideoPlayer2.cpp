@@ -4,71 +4,10 @@
 
 #include "SimpleVideoPlayer2.h"
 
-// 需要引入native绘制的头文件
-#include <android/native_window.h>
-#include <android/native_window_jni.h>
 
-extern "C" {// 不能少
-// ffmpeg使用MediaCodec进行硬解码(需要编译出支持硬解码的so库)
-#include <libavcodec/jni.h>
-#include <libavcodec/avcodec.h>
-#include <libavformat/avformat.h>
-#include <libavformat/avio.h>
-#include "libswresample/swresample.h"
-// libswscale是一个主要用于处理图片像素数据的类库.可以完成图片像素格式的转换,图片的拉伸等工作.
-#include <libswscale/swscale.h>
-#include <libavfilter/avfilter.h>
-#include <libavfilter/buffersink.h>
-#include <libavfilter/buffersrc.h>
-#include <libavutil/channel_layout.h>
-#include <libavutil/mathematics.h>
-#include <libavutil/samplefmt.h>
-// 这里是做分片时候重采样编码音频用的
-#include <libavutil/audio_fifo.h>
-#include <libavutil/imgutils.h>
-#include <libavutil/avutil.h>
-#include <libavutil/avassert.h>
-#include <libavutil/avstring.h>
-#include <libavutil/frame.h>
-#include <libavutil/hwcontext.h>
-#include <libavutil/parseutils.h>
-#include <libavutil/pixdesc.h>
-#include <libavutil/pixfmt.h>
-#include <libavutil/fifo.h>
-#include <libavutil/log.h>
-#include <libavutil/opt.h>
-#include <libavutil/mem.h>
-#include <libavutil/error.h>
-#include <libavutil/time.h>
 
-// 使用libyuv,将YUV转换RGB
-#include <libyuv/basic_types.h>
-#include <libyuv/compare.h>
-#include <libyuv/convert.h>
-#include <libyuv/convert_argb.h>
-#include <libyuv/convert_from.h>
-#include <libyuv/convert_from_argb.h>
-#include <libyuv/cpu_id.h>
-#include <libyuv/mjpeg_decoder.h>
-#include <libyuv/planar_functions.h>
-#include <libyuv/rotate.h>
-#include <libyuv/rotate_argb.h>
-#include <libyuv/row.h>
-#include <libyuv/scale.h>
-#include <libyuv/scale_argb.h>
-#include <libyuv/scale_row.h>
-#include <libyuv/version.h>
-#include <libyuv/video_common.h>
 
-//    #include <jconfig.h>
-//    #include <jerror.h>
-//    #include <jmorecfg.h>
-//    #include <jpeglib.h>
-//    #include <turbojpeg.h>
 
-};// extern "C" end
-
-#define LOG "alexander"
 
 /***
  https://www.cnblogs.com/azraelly/archive/2013/01/01/2841269.html
@@ -139,28 +78,10 @@ pthread_join(videoHandleDataThread, NULL);
 //pthread_cancel(videoReadDataThread);
 //pthread_cancel(videoHandleDataThread);
  */
+
+#define LOG "alexander"
+
 namespace alexander {
-
-    // 1 second of 48khz 32bit audio
-#define MAX_AUDIO_FRAME_SIZE 192000
-
-#define TYPE_UNKNOW -1
-#define TYPE_AUDIO 1
-#define TYPE_VIDEO 2
-
-#define NEXT_READ_UNKNOW -1
-#define NEXT_READ_QUEUE1 1
-#define NEXT_READ_QUEUE2 2
-
-#define NEXT_HANDLE_UNKNOW -1
-#define NEXT_HANDLE_QUEUE1 1
-#define NEXT_HANDLE_QUEUE2 2
-
-#define MAX_AVPACKET_COUNT_AUDIO_HTTP 3000
-#define MAX_AVPACKET_COUNT_VIDEO_HTTP 3000
-
-#define MAX_AVPACKET_COUNT_AUDIO_LOCAL 100
-#define MAX_AVPACKET_COUNT_VIDEO_LOCAL 100
 
     typedef struct AVPacketQueue {
         AVPacketList *firstAVPacketList = NULL;
@@ -169,113 +90,6 @@ namespace alexander {
         int allAVPacketsCount = 0;
         // 所有AVPacket占用的空间大小
         int64_t allAVPacketsSize = 0;
-    };
-
-// 子类都要用到的部分
-    struct Wrapper {
-        int type = TYPE_UNKNOW;
-        AVFormatContext *avFormatContext = NULL;
-        AVCodecContext *avCodecContext = NULL;
-        // 有些东西需要通过它去得到
-        AVCodecParameters *avCodecParameters = NULL;
-        // 解码器
-        AVCodec *decoderAVCodec = NULL;
-        // 编码器(没用到,因为是播放,所以不需要编码)
-        AVCodec *encoderAVCodec = NULL;
-
-        unsigned char *outBuffer1 = NULL;
-        unsigned char *outBuffer2 = NULL;
-        unsigned char *outBuffer3 = NULL;
-        size_t outBufferSize = 0;
-
-        int streamIndex = -1;
-        // 总共读取了多少个AVPacket
-        int readFramesCount = 0;
-        // 总共处理了多少个AVPacket
-        int handleFramesCount = 0;
-
-        // C++中也可以使用list来做
-        struct AVPacketQueue *queue1 = NULL;
-        struct AVPacketQueue *queue2 = NULL;
-        bool isReadQueue1Full = false;
-        bool isReadQueue2Full = false;
-        int nextRead = NEXT_READ_UNKNOW;
-        int nextHandle = NEXT_HANDLE_UNKNOW;
-        // 队列中最多保存多少个AVPacket
-        int maxAVPacketsCount = 0;
-
-        bool isStarted = false;
-        bool isReading = false;
-        bool isHandling = false;
-        // 因为user所以pause
-        bool isPausedForUser = false;
-        // 因为cache所以pause
-        bool isPausedForCache = false;
-        // seek的初始化条件有没有完成,true表示完成
-        bool seekToInit = false;
-
-        // 单位: 秒
-        int64_t duration = 0;
-        // 单位: 秒
-        int64_t timestamp = 0;
-        // 跟线程有关
-        pthread_mutex_t readLockMutex;
-        pthread_cond_t readLockCondition;
-        pthread_mutex_t handleLockMutex;
-        pthread_cond_t handleLockCondition;
-
-        // 存储压缩数据(视频对应H.264等码流数据,音频对应AAC/MP3等码流数据)
-        // AVPacket *avPacket = NULL;
-        // 视频使用到sws_scale函数时需要定义这些变量,音频也要用到
-        // unsigned char *srcData[4] = {NULL}, dstData[4] = {NULL};
-    };
-
-    struct AudioWrapper {
-        struct Wrapper *father = NULL;
-        SwrContext *swrContext = NULL;
-        // 存储非压缩数据(视频对应RGB/YUV像素数据,音频对应PCM采样数据)
-        AVFrame *decodedAVFrame = NULL;
-        // 从音频源或视频源中得到
-        // 采样率
-        int srcSampleRate = 0;
-        int dstSampleRate = 0;
-        // 声道数
-        int srcNbChannels = 0;
-        // 由dstChannelLayout去获到
-        int dstNbChannels = 0;
-        int srcNbSamples = 0;
-        int dstNbSamples = 0;
-        // 由srcNbChannels能得到srcChannelLayout,也能由srcChannelLayout得到srcNbChannels
-        int srcChannelLayout = 0;
-        // 双声道输出
-        int dstChannelLayout = 0;
-        // 从音频源或视频源中得到(采样格式)
-        enum AVSampleFormat srcAVSampleFormat = AV_SAMPLE_FMT_NONE;
-        // 输出的采样格式16bit PCM
-        enum AVSampleFormat dstAVSampleFormat = AV_SAMPLE_FMT_S16;
-    };
-
-    struct VideoWrapper {
-        struct Wrapper *father = NULL;
-        SwsContext *swsContext = NULL;
-        // 从视频源中得到
-        enum AVPixelFormat srcAVPixelFormat = AV_PIX_FMT_NONE;
-        // 从原来的像素格式转换为想要的视频格式(可能应用于不需要播放视频的场景)
-        // 播放时dstAVPixelFormat必须跟srcAVPixelFormat的值一样,不然画面有问题
-        enum AVPixelFormat dstAVPixelFormat = AV_PIX_FMT_RGBA;
-        // 一个视频没有解码之前读出的数据是压缩数据,把压缩数据解码后就是原始数据
-        // 解码后的原始数据(像素格式可能不是我们想要的,如果是想要的,那么没必要再调用sws_scale函数了)
-        AVFrame *decodedAVFrame = NULL;
-        // 解码后的原始数据(像素格式是我们想要的)
-        AVFrame *rgbAVFrame = NULL;
-        // 从视频源中得到的宽高
-        int srcWidth = 0, srcHeight = 0;
-        size_t srcArea = 0;
-        // 想要播放的窗口大小,可以直接使用srcWidth和srcHeight
-        int dstWidth = 720, dstHeight = 360;
-        size_t dstArea = 0;
-        // 使用到sws_scale函数时需要定义这些变量
-        int srcLineSize[4] = {NULL}, dstLineSize[4] = {NULL};
     };
 
     static struct AudioWrapper *audioWrapper = NULL;
@@ -288,6 +102,14 @@ namespace alexander {
     int getAVPacketFromQueue(struct AVPacketQueue *packet_queue, AVPacket *avpacket);
 
     char *getStrAVPixelFormat(AVPixelFormat format);
+
+    AudioWrapper *getAudioWrapper() {
+        return audioWrapper;
+    }
+
+    VideoWrapper *getVideoWrapper() {
+        return videoWrapper;
+    }
 
     // 已经不需要调用了
     void initAV() {
@@ -316,14 +138,14 @@ namespace alexander {
         memset(audioWrapper->father, 0, sizeof(struct Wrapper));
 
         audioWrapper->father->type = TYPE_AUDIO;
-        audioWrapper->father->nextRead = NEXT_READ_QUEUE1;
-        audioWrapper->father->nextHandle = NEXT_HANDLE_QUEUE1;
+        audioWrapper->father->nextRead = NEXT_READ_VECTOR1;
+        audioWrapper->father->nextHandle = NEXT_HANDLE_VECTOR1;
         if (isLocal) {
-            audioWrapper->father->maxAVPacketsCount = MAX_AVPACKET_COUNT_AUDIO_LOCAL;
+            audioWrapper->father->maxAVFramesCount = MAX_AVPACKET_COUNT_AUDIO_LOCAL;
         } else {
-            audioWrapper->father->maxAVPacketsCount = MAX_AVPACKET_COUNT_AUDIO_HTTP;
+            audioWrapper->father->maxAVFramesCount = MAX_AVPACKET_COUNT_AUDIO_HTTP;
         }
-        LOGD("initAudio() maxAVPacketsCount: %d\n", audioWrapper->father->maxAVPacketsCount);
+        LOGD("initAudio() maxAVFramesCount: %d\n", audioWrapper->father->maxAVFramesCount);
         audioWrapper->father->streamIndex = -1;
         audioWrapper->father->readFramesCount = 0;
         audioWrapper->father->handleFramesCount = 0;
@@ -337,7 +159,7 @@ namespace alexander {
         audioWrapper->father->isReadQueue2Full = false;
         audioWrapper->father->duration = -1;
         audioWrapper->father->timestamp = -1;
-        audioWrapper->father->queue1 =
+        /*audioWrapper->father->queue1 =
                 (struct AVPacketQueue *) av_mallocz(sizeof(struct AVPacketQueue));
         audioWrapper->father->queue2 =
                 (struct AVPacketQueue *) av_mallocz(sizeof(struct AVPacketQueue));
@@ -346,11 +168,16 @@ namespace alexander {
         audioWrapper->father->queue1->allAVPacketsCount = 0;
         audioWrapper->father->queue1->allAVPacketsSize = 0;
         audioWrapper->father->queue2->allAVPacketsCount = 0;
-        audioWrapper->father->queue2->allAVPacketsSize = 0;
+        audioWrapper->father->queue2->allAVPacketsSize = 0;*/
         audioWrapper->father->readLockMutex = PTHREAD_MUTEX_INITIALIZER;
         audioWrapper->father->readLockCondition = PTHREAD_COND_INITIALIZER;
         audioWrapper->father->handleLockMutex = PTHREAD_MUTEX_INITIALIZER;
         audioWrapper->father->handleLockCondition = PTHREAD_COND_INITIALIZER;
+
+        //audioWrapper->father->vector1 = (vector *) av_mallocz(sizeof(vector));
+        //audioWrapper->father->vector2 = (vector *) av_mallocz(sizeof(vector));
+        audioWrapper->father->vector1 = new std::vector<AVFrame>();
+        audioWrapper->father->vector2 = new std::vector<AVFrame>();
 
         audioWrapper->dstSampleRate = 44100;
         audioWrapper->dstAVSampleFormat = AV_SAMPLE_FMT_S16;
@@ -373,14 +200,14 @@ namespace alexander {
         memset(videoWrapper->father, 0, sizeof(struct Wrapper));
 
         videoWrapper->father->type = TYPE_VIDEO;
-        videoWrapper->father->nextRead = NEXT_READ_QUEUE1;
-        videoWrapper->father->nextHandle = NEXT_HANDLE_QUEUE1;
+        videoWrapper->father->nextRead = NEXT_READ_VECTOR1;
+        videoWrapper->father->nextHandle = NEXT_HANDLE_VECTOR1;
         if (isLocal) {
-            videoWrapper->father->maxAVPacketsCount = MAX_AVPACKET_COUNT_VIDEO_LOCAL;
+            videoWrapper->father->maxAVFramesCount = MAX_AVPACKET_COUNT_VIDEO_LOCAL;
         } else {
-            videoWrapper->father->maxAVPacketsCount = MAX_AVPACKET_COUNT_VIDEO_HTTP;
+            videoWrapper->father->maxAVFramesCount = MAX_AVPACKET_COUNT_VIDEO_HTTP;
         }
-        LOGW("initVideo() maxAVPacketsCount: %d\n", videoWrapper->father->maxAVPacketsCount);
+        LOGW("initVideo() maxAVFramesCount: %d\n", videoWrapper->father->maxAVFramesCount);
         videoWrapper->father->streamIndex = -1;
         videoWrapper->father->readFramesCount = 0;
         videoWrapper->father->handleFramesCount = 0;
@@ -394,7 +221,7 @@ namespace alexander {
         videoWrapper->father->isReadQueue2Full = false;
         videoWrapper->father->duration = -1;
         videoWrapper->father->timestamp = -1;
-        videoWrapper->father->queue1 =
+        /*videoWrapper->father->queue1 =
                 (struct AVPacketQueue *) av_mallocz(sizeof(struct AVPacketQueue));
         videoWrapper->father->queue2 =
                 (struct AVPacketQueue *) av_mallocz(sizeof(struct AVPacketQueue));
@@ -403,11 +230,16 @@ namespace alexander {
         videoWrapper->father->queue1->allAVPacketsCount = 0;
         videoWrapper->father->queue1->allAVPacketsSize = 0;
         videoWrapper->father->queue2->allAVPacketsCount = 0;
-        videoWrapper->father->queue2->allAVPacketsSize = 0;
+        videoWrapper->father->queue2->allAVPacketsSize = 0;*/
         videoWrapper->father->readLockMutex = PTHREAD_MUTEX_INITIALIZER;
         videoWrapper->father->readLockCondition = PTHREAD_COND_INITIALIZER;
         videoWrapper->father->handleLockMutex = PTHREAD_MUTEX_INITIALIZER;
         videoWrapper->father->handleLockCondition = PTHREAD_COND_INITIALIZER;
+
+        //videoWrapper->father->vector1 = (vector *) av_mallocz(sizeof(vector));
+        //videoWrapper->father->vector2 = (vector *) av_mallocz(sizeof(vector));
+        videoWrapper->father->vector1 = new std::vector<AVFrame>();
+        videoWrapper->father->vector2 = new std::vector<AVFrame>();
 
         // Android支持的目标像素格式
         // AV_PIX_FMT_RGB32
@@ -506,7 +338,7 @@ namespace alexander {
             LOGE("Didn't find audio stream.\n");
             return -1;
         } else {
-            LOGI("audioStreamIndex: %d\n", audioWrapper->father->streamIndex);
+            LOGD("audioStreamIndex: %d\n", audioWrapper->father->streamIndex);
             return 0;
         }
     }
@@ -534,7 +366,7 @@ namespace alexander {
             LOGE("Didn't find video stream.\n");
             return -1;
         } else {
-            LOGI("videoStreamIndex: %d\n", videoWrapper->father->streamIndex);
+            LOGW("videoStreamIndex: %d\n", videoWrapper->father->streamIndex);
             return 0;
         }
     }
@@ -616,17 +448,17 @@ namespace alexander {
         audioWrapper->srcNbChannels = audioWrapper->father->avCodecContext->channels;
         audioWrapper->srcChannelLayout = audioWrapper->father->avCodecContext->channel_layout;
         audioWrapper->srcAVSampleFormat = audioWrapper->father->avCodecContext->sample_fmt;
-        LOGI("---------------------------------\n");
-        LOGI("srcSampleRate       : %d\n", audioWrapper->srcSampleRate);
-        LOGI("srcNbChannels       : %d\n", audioWrapper->srcNbChannels);
-        LOGI("srcAVSampleFormat   : %d\n", audioWrapper->srcAVSampleFormat);
-        LOGI("srcNbSamples        : %d\n", audioWrapper->srcNbSamples);
-        LOGI("srcChannelLayout1   : %d\n", audioWrapper->srcChannelLayout);
+        LOGD("---------------------------------\n");
+        LOGD("srcSampleRate       : %d\n", audioWrapper->srcSampleRate);
+        LOGD("srcNbChannels       : %d\n", audioWrapper->srcNbChannels);
+        LOGD("srcAVSampleFormat   : %d\n", audioWrapper->srcAVSampleFormat);
+        LOGD("srcNbSamples        : %d\n", audioWrapper->srcNbSamples);
+        LOGD("srcChannelLayout1   : %d\n", audioWrapper->srcChannelLayout);
         // 有些视频从源视频中得到的channel_layout与使用函数得到的channel_layout结果是一样的
         // 但是还是要使用函数得到的channel_layout为好
         audioWrapper->srcChannelLayout = av_get_default_channel_layout(audioWrapper->srcNbChannels);
-        LOGI("srcChannelLayout2   : %d\n", audioWrapper->srcChannelLayout);
-        LOGI("---------------------------------\n");
+        LOGD("srcChannelLayout2   : %d\n", audioWrapper->srcChannelLayout);
+        LOGD("---------------------------------\n");
         if (audioWrapper->srcNbSamples <= 0) {
             audioWrapper->srcNbSamples = 1024;
         }
@@ -640,11 +472,11 @@ namespace alexander {
         audioWrapper->dstNbChannels = av_get_channel_layout_nb_channels(
                 audioWrapper->dstChannelLayout);
 
-        LOGI("dstSampleRate       : %d\n", audioWrapper->dstSampleRate);
-        LOGI("dstNbChannels       : %d\n", audioWrapper->dstNbChannels);
-        LOGI("dstAVSampleFormat   : %d\n", audioWrapper->dstAVSampleFormat);
-        LOGI("dstNbSamples        : %d\n", audioWrapper->dstNbSamples);
-        LOGI("---------------------------------\n");
+        LOGD("dstSampleRate       : %d\n", audioWrapper->dstSampleRate);
+        LOGD("dstNbChannels       : %d\n", audioWrapper->dstNbChannels);
+        LOGD("dstAVSampleFormat   : %d\n", audioWrapper->dstAVSampleFormat);
+        LOGD("dstNbSamples        : %d\n", audioWrapper->dstNbSamples);
+        LOGD("---------------------------------\n");
 
         audioWrapper->swrContext = swr_alloc();
         swr_alloc_set_opts(audioWrapper->swrContext,
@@ -657,16 +489,16 @@ namespace alexander {
                            0,                               // log_offset
                            NULL);                           // log_ctx
         if (audioWrapper->swrContext == NULL) {
-            LOGI("%s\n", "createSwrContent() swrContext is NULL");
+            LOGE("%s\n", "createSwrContent() swrContext is NULL");
             return -1;
         }
 
         int ret = swr_init(audioWrapper->swrContext);
         if (ret != 0) {
-            LOGI("%s\n", "createSwrContent() swrContext swr_init failed");
+            LOGE("%s\n", "createSwrContent() swrContext swr_init failed");
             return -1;
         } else {
-            LOGI("%s\n", "createSwrContent() swrContext swr_init success");
+            LOGD("%s\n", "createSwrContent() swrContext swr_init success");
         }
 
         // 这个对应关系还不知道怎么弄
@@ -719,11 +551,11 @@ namespace alexander {
                 break;
         }
 
-        LOGI("%s\n", "createSwrContent() createAudioTrack start");
+        LOGD("%s\n", "createSwrContent() createAudioTrack start");
         createAudioTrack(audioWrapper->dstSampleRate,
                          audioWrapper->dstNbChannels,
                          audioFormat);
-        LOGI("%s\n", "createSwrContent() createAudioTrack end");
+        LOGD("%s\n", "createSwrContent() createAudioTrack end");
 
         // avPacket ---> decodedAVFrame ---> dstAVFrame ---> 播放声音
         audioWrapper->decodedAVFrame = av_frame_alloc();
@@ -744,12 +576,12 @@ namespace alexander {
         videoWrapper->srcWidth = videoWrapper->father->avCodecContext->width;
         videoWrapper->srcHeight = videoWrapper->father->avCodecContext->height;
         videoWrapper->srcAVPixelFormat = videoWrapper->father->avCodecContext->pix_fmt;
-        LOGI("---------------------------------\n");
-        LOGI("srcWidth            : %d\n", videoWrapper->srcWidth);
-        LOGI("srcHeight           : %d\n", videoWrapper->srcHeight);
-        LOGI("srcAVPixelFormat    : %d %s\n",
+        LOGW("---------------------------------\n");
+        LOGW("srcWidth            : %d\n", videoWrapper->srcWidth);
+        LOGW("srcHeight           : %d\n", videoWrapper->srcHeight);
+        LOGW("srcAVPixelFormat    : %d %s\n",
              videoWrapper->srcAVPixelFormat, getStrAVPixelFormat(videoWrapper->srcAVPixelFormat));
-        LOGI("dstAVPixelFormat    : %d %s\n",
+        LOGW("dstAVPixelFormat    : %d %s\n",
              videoWrapper->dstAVPixelFormat, getStrAVPixelFormat(videoWrapper->dstAVPixelFormat));
         videoWrapper->dstWidth = videoWrapper->srcWidth;
         videoWrapper->dstHeight = videoWrapper->srcHeight;
@@ -764,8 +596,8 @@ namespace alexander {
         int imageGetBufferSize = av_image_get_buffer_size(
                 videoWrapper->dstAVPixelFormat, videoWrapper->srcWidth, videoWrapper->srcHeight, 1);
         videoWrapper->father->outBufferSize = imageGetBufferSize * sizeof(unsigned char);
-        LOGI("imageGetBufferSize1 : %d\n", imageGetBufferSize);
-        LOGI("imageGetBufferSize2 : %d\n", videoWrapper->father->outBufferSize);
+        LOGW("imageGetBufferSize1 : %d\n", imageGetBufferSize);
+        LOGW("imageGetBufferSize2 : %d\n", videoWrapper->father->outBufferSize);
         videoWrapper->father->outBuffer1 =
                 (unsigned char *) av_malloc(videoWrapper->father->outBufferSize);
         int imageFillArrays = av_image_fill_arrays(
@@ -777,7 +609,7 @@ namespace alexander {
                 videoWrapper->srcHeight,
                 1);
         if (imageFillArrays < 0) {
-            LOGI("imageFillArrays     : %d\n", imageFillArrays);
+            LOGE("imageFillArrays     : %d\n", imageFillArrays);
             return -1;
         }
         // 由于解码出来的帧格式不是RGBA,在渲染之前需要进行格式转换
@@ -788,10 +620,10 @@ namespace alexander {
                 SWS_BICUBIC,// SWS_BICUBIC SWS_BILINEAR 使用什么转换算法
                 NULL, NULL, NULL);
         if (videoWrapper->swsContext == NULL) {
-            LOGI("%s\n", "videoSwsContext is NULL.");
+            LOGE("%s\n", "videoSwsContext is NULL.");
             return -1;
         }
-        LOGI("---------------------------------\n");
+        LOGW("---------------------------------\n");
 
         if (videoWrapper->father->avFormatContext->duration != AV_NOPTS_VALUE) {
             int64_t duration = videoWrapper->father->avFormatContext->duration + 5000;
@@ -893,18 +725,27 @@ namespace alexander {
         if (wrapper->type == TYPE_AUDIO) {
             LOGD("%s\n", "readData() audio start");
             // 单位: 秒
-            LOGD("readData() audio seconds: %d\n", (int) audioWrapper->father->duration);
+            LOGD("readData() audio seconds: %d\n", (int) wrapper->duration);
             LOGD("readData() audio          %02d:%02d:%02d\n", hours, mins, seconds);
         } else {
             LOGW("%s\n", "readData() video start");
-            LOGW("readData() video seconds: %d\n", (int) videoWrapper->father->duration);
+            LOGW("readData() video seconds: %d\n", (int) wrapper->duration);
             LOGW("readData() video          %02d:%02d:%02d\n", hours, mins, seconds);
         }
 
         AVPacket *srcAVPacket = av_packet_alloc();
-        AVPacket *dstAVPacket = av_packet_alloc();
+        //AVPacket *dstAVPacket = av_packet_alloc();
+        // decodedAVFrame为解码后的数据
+        AVFrame *decodedAVFrame = NULL;
+        if (wrapper->type == TYPE_AUDIO) {
+            decodedAVFrame = audioWrapper->decodedAVFrame;
+        } else {
+            decodedAVFrame = videoWrapper->decodedAVFrame;
+        }
+        AVFrame *dstAVFrame = av_frame_alloc();
 
         int readFrame = -1;
+        int ret = -1;
         wrapper->isReading = true;
         for (;;) {
             // seekTo
@@ -996,18 +837,18 @@ namespace alexander {
                         } else {
                             LOGF("readData() video AVERROR_EOF readFrame: %d\n", readFrame);
                         }
-                        if (wrapper->queue1->allAVPacketsCount > 0) {
+                        if (wrapper->vector1->size() > 0) {
                             wrapper->isReadQueue1Full = true;
                         }
-                        if (wrapper->queue2->allAVPacketsCount > 0) {
+                        if (wrapper->vector2->size() > 0) {
                             wrapper->isReadQueue2Full = true;
                         }
 
                         // 说明歌曲长度比较短,达不到"规定值",因此处理数据线程还在等待
                         if ((wrapper->isReadQueue1Full
                              && !wrapper->isReadQueue2Full
-                             && wrapper->queue1->allAVPacketsCount > 0
-                             && wrapper->queue2->allAVPacketsCount == 0)
+                             && wrapper->vector1->size() > 0
+                             && wrapper->vector2->size() == 0)
                             || wrapper->isPausedForCache) {
                             if (wrapper->type == TYPE_AUDIO) {
                                 LOGD("readData() audio signal() handleLockCondition break\n");
@@ -1057,124 +898,182 @@ namespace alexander {
             }*/
 
             wrapper->readFramesCount++;
-            // 非常非常非常重要
-            // av_copy_packet(dstAVPacket, srcAVPacket);
-            av_packet_ref(dstAVPacket, srcAVPacket);
 
-            if (wrapper->nextRead == NEXT_READ_QUEUE1
-                && !wrapper->isReadQueue1Full) {
-                // 保存到队列去,然后取出来进行解码播放
-                putAVPacketToQueue(wrapper->queue1, dstAVPacket);
-                if (wrapper->queue1->allAVPacketsCount == wrapper->maxAVPacketsCount) {
-                    wrapper->isReadQueue1Full = true;
-                    // queue1满了,接着存到queue2去
-                    wrapper->nextRead = NEXT_READ_QUEUE2;
-                    if (isLocal && needLocalLog) {
-                        if (wrapper->type == TYPE_AUDIO) {
-                            LOGD("readData() audio Queue1 満了\n");
-                            LOGD("readData() audio Queue1 Size : %ld\n",
-                                 wrapper->queue1->allAVPacketsSize);
-                            LOGD("readData() audio signal() handleLockCondition\n");
-                        } else {
-                            LOGW("readData() video Queue1 満了\n");
-                            LOGW("readData() video Queue1 Size : %ld\n",
-                                 wrapper->queue1->allAVPacketsSize);
-                            LOGW("readData() video signal() handleLockCondition\n");
-                        }
-                    }
-                    // 唤醒"解码"线程(几种情况需要唤醒:开始播放时,cache缓存时)
-                    pthread_mutex_lock(&wrapper->handleLockMutex);
-                    pthread_cond_signal(&wrapper->handleLockCondition);
-                    pthread_mutex_unlock(&wrapper->handleLockMutex);
-                }
-            } else if (wrapper->nextRead == NEXT_READ_QUEUE2
-                       && !wrapper->isReadQueue2Full) {
-                putAVPacketToQueue(wrapper->queue2, dstAVPacket);
-                if (wrapper->queue2->allAVPacketsCount == wrapper->maxAVPacketsCount) {
-                    wrapper->isReadQueue2Full = true;
-                    wrapper->nextRead = NEXT_READ_QUEUE1;
+            ret = avcodec_send_packet(wrapper->avCodecContext, srcAVPacket);
+            switch (ret) {
+                case AVERROR(EAGAIN):
+                    continue;
+                case AVERROR(EINVAL):
+                case AVERROR(ENOMEM):
+                case AVERROR_EOF:
                     if (wrapper->type == TYPE_AUDIO) {
-                        if (isLocal && needLocalLog) {
-                            LOGD("readData() audio Queue2 満了\n");
-                            LOGD("readData() audio Queue2 Size : %ld\n",
-                                 wrapper->queue2->allAVPacketsSize);
-                        }
-                        if (audioWrapper != NULL
-                            && audioWrapper->father != NULL
-                            && !audioWrapper->father->isPausedForCache) {
-                            if (srcAVPacket->data) {
-                                av_packet_unref(srcAVPacket);
-                            }
-                            continue;
-                        }
-                        if (isLocal && needLocalLog) {
-                            LOGD("readData() audio signal() handleLockCondition\n");
-                        }
+                        LOGE("audio 发送数据包到解码器时出错 %d", ret);
                     } else {
-                        if (isLocal && needLocalLog) {
-                            LOGW("readData() video Queue2 満了\n");
-                            LOGW("readData() video Queue2 Size : %ld\n",
-                                 wrapper->queue2->allAVPacketsSize);
-                            LOGW("readData() video signal() handleLockCondition\n");
-                        }
+                        LOGE("video 发送数据包到解码器时出错 %d", ret);
                     }
-                    // 唤醒"解码"线程
-                    pthread_mutex_lock(&wrapper->handleLockMutex);
-                    pthread_cond_signal(&wrapper->handleLockCondition);
-                    pthread_mutex_unlock(&wrapper->handleLockMutex);
-                }
-            } else if (wrapper->isReadQueue1Full
-                       && wrapper->isReadQueue2Full) {
-                // 两个队列都满的话,就进行等待
-                if (isLocal && needLocalLog) {
-                    if (wrapper->type == TYPE_AUDIO) {
-                        LOGD("readData() audio Queue1和Queue2都満了,好开心( ^_^ )\n");
-                        LOGD("readData() audio wait() readLockCondition start\n");
-                    } else {
-                        LOGW("readData() video Queue1和Queue2都満了,好开心( ^_^ )\n");
-                        LOGW("readData() video wait() readLockCondition start\n");
-                    }
-                }
-                // 读数据线程等待
-                pthread_mutex_lock(&wrapper->readLockMutex);
-                pthread_cond_wait(&wrapper->readLockCondition, &wrapper->readLockMutex);
-                pthread_mutex_unlock(&wrapper->readLockMutex);
-                if (isLocal && needLocalLog) {
-                    if (wrapper->type == TYPE_AUDIO) {
-                        LOGD("readData() audio wait() readLockCondition end\n");
-                    } else {
-                        LOGW("readData() video wait() readLockCondition end\n");
-                    }
-                }
-
-                // 保存"等待前的一帧"
-                if (wrapper->nextRead == NEXT_READ_QUEUE1
-                    && !wrapper->isReadQueue1Full) {
-                    if (isLocal && needLocalLog) {
-                        if (wrapper->type == TYPE_AUDIO) {
-                            LOGD("readData() audio next QUEUE1\n");
-                        } else {
-                            LOGW("readData() video next QUEUE1\n");
-                        }
-                    }
-                    putAVPacketToQueue(wrapper->queue1, dstAVPacket);
-                } else if (wrapper->nextRead == NEXT_READ_QUEUE2
-                           && !wrapper->isReadQueue2Full) {
-                    if (isLocal && needLocalLog) {
-                        if (wrapper->type == TYPE_AUDIO) {
-                            LOGD("readData() audio next QUEUE2\n");
-                        } else {
-                            LOGW("readData() video next QUEUE2\n");
-                        }
-                    }
-                    putAVPacketToQueue(wrapper->queue2, dstAVPacket);
-                }
+                    wrapper->isReading = false;
+                    break;
+                case 0:
+                default:
+                    break;
             }
+            if (!wrapper->isReading) {
+                // for (;;) end
+                break;
+            }
+            while (1) {
+                ret = avcodec_receive_frame(
+                        wrapper->avCodecContext, decodedAVFrame);
+                switch (ret) {
+                    // 输出是不可用的,必须发送新的输入
+                    case AVERROR(EAGAIN):
+                        break;
+                        // codec打不开,或者是一个encoder
+                    case AVERROR(EINVAL):
+                        // 已经完全刷新,不会再有输出帧了
+                    case AVERROR_EOF:
+                        wrapper->isReading = false;
+                        break;
+                    case 0: {
+                        // 成功,返回一个输出帧
+
+                        ///////////////////////////////////////////////////////////////////
+
+                        av_frame_copy(dstAVFrame, decodedAVFrame);
+
+                        if (wrapper->nextRead == NEXT_READ_VECTOR1
+                            && !wrapper->isReadQueue1Full) {
+                            // 保存到队列去,然后取出来进行解码播放
+                            wrapper->vector1->push_back(*dstAVFrame);
+                            if (wrapper->vector1->size() == wrapper->maxAVFramesCount) {
+                                // 排序
+
+                                wrapper->isReadQueue1Full = true;
+                                // queue1满了,接着存到queue2去
+                                wrapper->nextRead = NEXT_READ_VECTOR2;
+                                if (isLocal && needLocalLog) {
+                                    if (wrapper->type == TYPE_AUDIO) {
+                                        LOGD("readData() audio Queue1 満了\n");
+                                        LOGD("readData() audio Queue1 Size : %ld\n",
+                                             wrapper->vector1->size());
+                                        LOGD("readData() audio signal() handleLockCondition\n");
+                                    } else {
+                                        LOGW("readData() video Queue1 満了\n");
+                                        LOGW("readData() video Queue1 Size : %ld\n",
+                                             wrapper->vector1->size());
+                                        LOGW("readData() video signal() handleLockCondition\n");
+                                    }
+                                }
+                                // 唤醒"解码"线程(几种情况需要唤醒:开始播放时,cache缓存时)
+                                pthread_mutex_lock(&wrapper->handleLockMutex);
+                                pthread_cond_signal(&wrapper->handleLockCondition);
+                                pthread_mutex_unlock(&wrapper->handleLockMutex);
+                            }
+                        } else if (wrapper->nextRead == NEXT_READ_VECTOR2
+                                   && !wrapper->isReadQueue2Full) {
+                            wrapper->vector2->push_back(*dstAVFrame);
+                            if (wrapper->vector1->size() == wrapper->maxAVFramesCount) {
+                                // 排序
+
+                                wrapper->isReadQueue2Full = true;
+                                wrapper->nextRead = NEXT_READ_VECTOR1;
+                                if (wrapper->type == TYPE_AUDIO) {
+                                    if (isLocal && needLocalLog) {
+                                        LOGD("readData() audio Queue2 満了\n");
+                                        LOGD("readData() audio Queue2 Size : %ld\n",
+                                             wrapper->vector2->size());
+                                    }
+                                    if (audioWrapper != NULL
+                                        && audioWrapper->father != NULL
+                                        && !audioWrapper->father->isPausedForCache) {
+                                        if (srcAVPacket->data) {
+                                            av_packet_unref(srcAVPacket);
+                                            av_frame_unref(decodedAVFrame);
+                                        }
+                                        continue;
+                                    }
+                                    if (isLocal && needLocalLog) {
+                                        LOGD("readData() audio signal() handleLockCondition\n");
+                                    }
+                                } else {
+                                    if (isLocal && needLocalLog) {
+                                        LOGW("readData() video Queue2 満了\n");
+                                        LOGW("readData() video Queue2 Size : %ld\n",
+                                             wrapper->vector2->size());
+                                        LOGW("readData() video signal() handleLockCondition\n");
+                                    }
+                                }
+                                // 唤醒"解码"线程
+                                pthread_mutex_lock(&wrapper->handleLockMutex);
+                                pthread_cond_signal(&wrapper->handleLockCondition);
+                                pthread_mutex_unlock(&wrapper->handleLockMutex);
+                            }
+                        } else if (wrapper->isReadQueue1Full
+                                   && wrapper->isReadQueue2Full) {
+                            // 两个队列都满的话,就进行等待
+                            if (isLocal && needLocalLog) {
+                                if (wrapper->type == TYPE_AUDIO) {
+                                    LOGD("readData() audio Queue1和Queue2都満了,好开心( ^_^ )\n");
+                                    LOGD("readData() audio wait() readLockCondition start\n");
+                                } else {
+                                    LOGW("readData() video Queue1和Queue2都満了,好开心( ^_^ )\n");
+                                    LOGW("readData() video wait() readLockCondition start\n");
+                                }
+                            }
+                            // 读数据线程等待
+                            pthread_mutex_lock(&wrapper->readLockMutex);
+                            pthread_cond_wait(&wrapper->readLockCondition, &wrapper->readLockMutex);
+                            pthread_mutex_unlock(&wrapper->readLockMutex);
+                            if (isLocal && needLocalLog) {
+                                if (wrapper->type == TYPE_AUDIO) {
+                                    LOGD("readData() audio wait() readLockCondition end\n");
+                                } else {
+                                    LOGW("readData() video wait() readLockCondition end\n");
+                                }
+                            }
+
+                            // 保存"等待前的一帧"
+                            if (wrapper->nextRead == NEXT_READ_VECTOR1
+                                && !wrapper->isReadQueue1Full) {
+                                if (isLocal && needLocalLog) {
+                                    if (wrapper->type == TYPE_AUDIO) {
+                                        LOGD("readData() audio next QUEUE1\n");
+                                    } else {
+                                        LOGW("readData() video next QUEUE1\n");
+                                    }
+                                }
+                                wrapper->vector1->push_back(*dstAVFrame);
+                            } else if (wrapper->nextRead == NEXT_READ_VECTOR2
+                                       && !wrapper->isReadQueue2Full) {
+                                if (isLocal && needLocalLog) {
+                                    if (wrapper->type == TYPE_AUDIO) {
+                                        LOGD("readData() audio next QUEUE2\n");
+                                    } else {
+                                        LOGW("readData() video next QUEUE2\n");
+                                    }
+                                }
+                                wrapper->vector2->push_back(*dstAVFrame);
+                            }
+                        }
+
+                        ///////////////////////////////////////////////////////////////////
+
+                        break;
+                    }
+                    default:
+                        // 合法的解码错误
+                        LOGE("从解码器接收帧时出错 %d", ret);
+                        break;
+                }
+                break;
+            }//while(1) end
 
             av_packet_unref(srcAVPacket);
+            av_frame_unref(decodedAVFrame);
         }// for(;;) end
 
         av_packet_unref(srcAVPacket);
+        av_frame_unref(decodedAVFrame);
 
         if (wrapper->type == TYPE_AUDIO) {
             LOGD("readData() audio readFramesCount          : %d\n",
@@ -1186,6 +1085,247 @@ namespace alexander {
             LOGW("%s\n", "readData() video end");
         }
         return NULL;
+    }
+
+    void *handleData(void *opaque) {
+        if (opaque == NULL) {
+            return NULL;
+        }
+        Wrapper *wrapper = NULL;
+        int *type = (int *) opaque;
+        if (*type == TYPE_AUDIO) {
+#ifdef USE_AUDIO
+            wrapper = audioWrapper->father;
+#endif
+        } else {
+#ifdef USE_VIDEO
+            wrapper = videoWrapper->father;
+#endif
+        }
+        // Wrapper *wrapper = (Wrapper *) opaque;
+        if (wrapper == NULL) {
+            LOGE("%s\n", "wrapper is NULL");
+            return NULL;
+        }
+
+        // 线程等待
+        if (wrapper->type == TYPE_AUDIO) {
+            LOGD("%s\n", "handleData() audio start");
+            LOGD("handleData() wait() audio start\n");
+        } else {
+            LOGW("%s\n", "handleData() video start");
+            LOGW("handleData() wait() video start\n");
+        }
+        pthread_mutex_lock(&wrapper->handleLockMutex);
+        pthread_cond_wait(&wrapper->handleLockCondition, &wrapper->handleLockMutex);
+        pthread_mutex_unlock(&wrapper->handleLockMutex);
+        if (wrapper->type == TYPE_AUDIO) {
+            LOGD("handleData() wait() audio end\n");
+        } else {
+            LOGW("handleData() wait() video end\n");
+        }
+
+        if (wrapper->type == TYPE_AUDIO) {
+            LOGD("handleData() for (;;) audio start\n");
+        } else {
+            LOGW("handleData() for (;;) video start\n");
+        }
+
+        wrapper->isHandling = true;
+        int ret = 0, out_buffer_size = 0;
+        AVStream *stream =
+                wrapper->avFormatContext->streams[wrapper->streamIndex];
+        // decodedAVFrame为解码后的数据
+        AVFrame *decodedAVFrame = NULL;
+        /*if (wrapper->type == TYPE_AUDIO) {
+            decodedAVFrame = audioWrapper->decodedAVFrame;
+        } else {
+            decodedAVFrame = videoWrapper->decodedAVFrame;
+        }*/
+        for (;;) {
+            // 暂停装置
+            if (wrapper->isPausedForUser
+                || wrapper->isPausedForCache) {
+                bool isPausedForUser = wrapper->isPausedForUser;
+                if (isPausedForUser) {
+                    if (wrapper->type == TYPE_AUDIO) {
+                        LOGD("handleData() wait() User  audio start\n");
+                    } else {
+                        LOGW("handleData() wait() User  video start\n");
+                    }
+                } else {
+                    if (wrapper->type == TYPE_AUDIO) {
+                        LOGD("handleData() wait() Cache audio start\n");
+                    } else {
+                        LOGW("handleData() wait() Cache video start\n");
+                    }
+                }
+                pthread_mutex_lock(&wrapper->handleLockMutex);
+                pthread_cond_wait(&wrapper->handleLockCondition, &wrapper->handleLockMutex);
+                pthread_mutex_unlock(&wrapper->handleLockMutex);
+                if (isPausedForUser) {
+                    if (wrapper->type == TYPE_AUDIO) {
+                        LOGD("handleData() wait() User  audio end\n");
+                    } else {
+                        LOGW("handleData() wait() User  video end\n");
+                    }
+                } else {
+                    if (wrapper->type == TYPE_AUDIO) {
+                        LOGD("handleData() wait() Cache audio end\n");
+                    } else {
+                        LOGW("handleData() wait() Cache video end\n");
+                    }
+                }
+            }
+
+            if (!wrapper->isHandling) {
+                // for (;;) end
+                break;
+            }
+
+            //memset(avPacket, 0, sizeof(*avPacket));
+            if (wrapper->nextHandle == NEXT_HANDLE_VECTOR1
+                && wrapper->isReadQueue1Full
+                && wrapper->vector1->size() > 0) {
+                wrapper->handleFramesCount++;
+                decodedAVFrame = &(wrapper->vector1->front());
+                if (wrapper->vector1->empty()) {
+                    wrapper->vector1->clear();
+                    wrapper->isReadQueue1Full = false;
+                    wrapper->nextHandle = NEXT_HANDLE_VECTOR2;
+                    if (isLocal && needLocalLog) {
+                        LOGD("handleAudioData() Queue1 用完了\n");
+                        LOGD("handleAudioData() Queue2 isReadQueue2Full : %d\n",
+                             wrapper->isReadQueue2Full);
+                        LOGD("handleAudioData() Queue2 allAVPacketsCount: %d\n",
+                             wrapper->vector2->size());
+                    }
+                    if (wrapper->isReading) {
+                        if (isLocal && needLocalLog) {
+                            LOGD("handleAudioData() signal() readLockCondition\n");
+                        }
+                        pthread_mutex_lock(&wrapper->readLockMutex);
+                        pthread_cond_signal(&wrapper->readLockCondition);
+                        pthread_mutex_unlock(&wrapper->readLockMutex);
+                    }
+                }
+            } else if (wrapper->nextHandle == NEXT_HANDLE_VECTOR2
+                       && wrapper->isReadQueue2Full
+                       && wrapper->vector2->size() > 0) {
+                wrapper->handleFramesCount++;
+                decodedAVFrame = &(wrapper->vector2->front());
+                if (wrapper->vector2->empty()) {
+                    //memset(wrapper->queue2, 0, sizeof(struct AVPacketQueue));
+                    wrapper->vector2->clear();
+                    wrapper->isReadQueue2Full = false;
+                    wrapper->nextHandle = NEXT_HANDLE_VECTOR1;
+                    if (isLocal && needLocalLog) {
+                        LOGD("handleAudioData() Queue2 用完了\n");
+                        LOGD("handleAudioData() Queue1 isReadQueue1Full : %d\n",
+                             wrapper->isReadQueue1Full);
+                        LOGD("handleAudioData() Queue1 allAVPacketsCount: %d\n",
+                             wrapper->vector1->size());
+                    }
+                    if (wrapper->isReading) {
+                        if (isLocal && needLocalLog) {
+                            LOGD("handleAudioData() signal() readLockCondition\n");
+                        }
+                        pthread_mutex_lock(&wrapper->readLockMutex);
+                        pthread_cond_signal(&wrapper->readLockCondition);
+                        pthread_mutex_unlock(&wrapper->readLockMutex);
+                    }
+                }
+            } else if (wrapper->isReading
+                       && !wrapper->isReadQueue1Full
+                       && !wrapper->isReadQueue2Full) {
+                onPaused();
+                // 音频Cache引起的暂停
+#ifdef USE_VIDEO
+                // 让视频也同时暂停
+                if (videoWrapper != NULL && videoWrapper->father != NULL) {
+                    videoWrapper->father->isPausedForCache = true;
+                }
+#endif
+                wrapper->isPausedForCache = true;
+                LOGE("handleAudioData() wait() Cache start\n");
+                pthread_mutex_lock(&wrapper->handleLockMutex);
+                pthread_cond_wait(&wrapper->handleLockCondition, &wrapper->handleLockMutex);
+                pthread_mutex_unlock(&wrapper->handleLockMutex);
+                LOGE("handleAudioData() wait() Cache end\n");
+                wrapper->isPausedForCache = false;
+                // 通知视频结束暂停
+#ifdef USE_VIDEO
+                if (videoWrapper != NULL && videoWrapper->father != NULL) {
+                    videoWrapper->father->isPausedForCache = false;
+                    pthread_mutex_lock(&videoWrapper->father->handleLockMutex);
+                    pthread_cond_signal(&videoWrapper->father->handleLockCondition);
+                    pthread_mutex_unlock(&videoWrapper->father->handleLockMutex);
+                }
+#endif
+                onPlayed();
+                continue;
+            } else if (!wrapper->isReading
+                       && wrapper->vector1->empty()
+                       && wrapper->vector2->empty()) {
+                wrapper->isHandling = false;
+                // for (;;) end
+                break;
+            }
+
+            if (!decodedAVFrame) {
+                if (!wrapper->isReading
+                    && wrapper->vector1->empty()
+                    && wrapper->vector2->empty()) {
+                    // for (;;) end
+                    break;
+                }
+                continue;
+            }
+
+            if (wrapper->type == TYPE_AUDIO) {
+                audioSleep(100);
+            } else {
+                videoSleep(100);
+            }
+
+            av_frame_free(&decodedAVFrame);
+            decodedAVFrame = NULL;
+        }//for(;;) end
+        if (wrapper->type == TYPE_AUDIO) {
+            LOGD("handleData() for (;;) audio end\n");
+        } else {
+            LOGW("handleData() for (;;) video end\n");
+        }
+
+        av_frame_free(&decodedAVFrame);
+        decodedAVFrame = NULL;
+
+        if (wrapper->type == TYPE_AUDIO) {
+            LOGD("handleData() audio handleFramesCount : %d\n", wrapper->handleFramesCount);
+        } else {
+            LOGW("handleData() video handleFramesCount : %d\n", wrapper->handleFramesCount);
+        }
+        if (wrapper->readFramesCount == wrapper->handleFramesCount) {
+            if (wrapper->type == TYPE_AUDIO) {
+                LOGD("%s\n", "handleData() audio正常播放完毕");
+            } else {
+                LOGW("%s\n", "handleData() video正常播放完毕");
+            }
+        }
+        stop();
+        if (wrapper->type == TYPE_AUDIO) {
+            closeAudio();
+        } else {
+            closeVideo();
+        }
+
+        if (wrapper->type == TYPE_AUDIO) {
+            LOGD("%s\n", "handleData() audio end");
+        } else {
+            LOGW("%s\n", "handleData() video end");
+        }
+        return NULL;
+
     }
 
     void *handleAudioData(void *opaque) {
@@ -1235,7 +1375,7 @@ namespace alexander {
             }
 
             memset(avPacket, 0, sizeof(*avPacket));
-            if (audioWrapper->father->nextHandle == NEXT_HANDLE_QUEUE1
+            if (audioWrapper->father->nextHandle == NEXT_HANDLE_VECTOR1
                 && audioWrapper->father->isReadQueue1Full
                 && audioWrapper->father->queue1->allAVPacketsCount > 0) {
                 audioWrapper->father->handleFramesCount++;
@@ -1243,7 +1383,7 @@ namespace alexander {
                 if (audioWrapper->father->queue1->allAVPacketsCount == 0) {
                     memset(audioWrapper->father->queue1, 0, sizeof(struct AVPacketQueue));
                     audioWrapper->father->isReadQueue1Full = false;
-                    audioWrapper->father->nextHandle = NEXT_HANDLE_QUEUE2;
+                    audioWrapper->father->nextHandle = NEXT_HANDLE_VECTOR2;
                     if (isLocal && needLocalLog) {
                         LOGD("handleAudioData() Queue1 用完了\n");
                         LOGD("handleAudioData() Queue2 isReadQueue2Full : %d\n",
@@ -1260,7 +1400,7 @@ namespace alexander {
                         pthread_mutex_unlock(&audioWrapper->father->readLockMutex);
                     }
                 }
-            } else if (audioWrapper->father->nextHandle == NEXT_HANDLE_QUEUE2
+            } else if (audioWrapper->father->nextHandle == NEXT_HANDLE_VECTOR2
                        && audioWrapper->father->isReadQueue2Full
                        && audioWrapper->father->queue2->allAVPacketsCount > 0) {
                 audioWrapper->father->handleFramesCount++;
@@ -1268,7 +1408,7 @@ namespace alexander {
                 if (audioWrapper->father->queue2->allAVPacketsCount == 0) {
                     memset(audioWrapper->father->queue2, 0, sizeof(struct AVPacketQueue));
                     audioWrapper->father->isReadQueue2Full = false;
-                    audioWrapper->father->nextHandle = NEXT_HANDLE_QUEUE1;
+                    audioWrapper->father->nextHandle = NEXT_HANDLE_VECTOR1;
                     if (isLocal && needLocalLog) {
                         LOGD("handleAudioData() Queue2 用完了\n");
                         LOGD("handleAudioData() Queue1 isReadQueue1Full : %d\n",
@@ -1508,7 +1648,7 @@ namespace alexander {
             }
 
             memset(avPacket, 0, sizeof(*avPacket));
-            if (videoWrapper->father->nextHandle == NEXT_HANDLE_QUEUE1
+            if (videoWrapper->father->nextHandle == NEXT_HANDLE_VECTOR1
                 && videoWrapper->father->isReadQueue1Full
                 && videoWrapper->father->queue1->allAVPacketsCount > 0) {
                 videoWrapper->father->handleFramesCount++;
@@ -1516,7 +1656,7 @@ namespace alexander {
                 if (videoWrapper->father->queue1->allAVPacketsCount == 0) {
                     memset(videoWrapper->father->queue1, 0, sizeof(struct AVPacketQueue));
                     videoWrapper->father->isReadQueue1Full = false;
-                    videoWrapper->father->nextHandle = NEXT_HANDLE_QUEUE2;
+                    videoWrapper->father->nextHandle = NEXT_HANDLE_VECTOR2;
                     if (isLocal && needLocalLog) {
                         LOGW("handleVideoData() Queue1 用完了\n");
                         LOGW("handleVideoData() Queue2 isReadQueue2Full : %d\n",
@@ -1533,7 +1673,7 @@ namespace alexander {
                         pthread_mutex_unlock(&videoWrapper->father->readLockMutex);
                     }
                 }
-            } else if (videoWrapper->father->nextHandle == NEXT_HANDLE_QUEUE2
+            } else if (videoWrapper->father->nextHandle == NEXT_HANDLE_VECTOR2
                        && videoWrapper->father->isReadQueue2Full
                        && videoWrapper->father->queue2->allAVPacketsCount > 0) {
                 videoWrapper->father->handleFramesCount++;
@@ -1541,7 +1681,7 @@ namespace alexander {
                 if (videoWrapper->father->queue2->allAVPacketsCount == 0) {
                     memset(videoWrapper->father->queue2, 0, sizeof(struct AVPacketQueue));
                     videoWrapper->father->isReadQueue2Full = false;
-                    videoWrapper->father->nextHandle = NEXT_HANDLE_QUEUE1;
+                    videoWrapper->father->nextHandle = NEXT_HANDLE_VECTOR1;
                     if (isLocal && needLocalLog) {
                         LOGW("handleVideoData() Queue2 用完了\n");
                         LOGW("handleVideoData() Queue1 isReadQueue1Full : %d\n",
@@ -1860,7 +2000,7 @@ namespace alexander {
         pthread_cond_destroy(&audioWrapper->father->readLockCondition);
         pthread_mutex_destroy(&audioWrapper->father->handleLockMutex);
         pthread_cond_destroy(&audioWrapper->father->handleLockCondition);
-        int count = audioWrapper->father->queue1->allAVPacketsCount;
+        /*int count = audioWrapper->father->queue1->allAVPacketsCount;
         if (count > 0) {
             AVPacket *avPacket = av_packet_alloc();
             for (int i = 0; i < count; i++) {
@@ -1881,7 +2021,21 @@ namespace alexander {
         av_free(audioWrapper->father->queue1);
         av_free(audioWrapper->father->queue2);
         audioWrapper->father->queue1 = NULL;
-        audioWrapper->father->queue2 = NULL;
+        audioWrapper->father->queue2 = NULL;*/
+
+        //av_free(audioWrapper->father->vector1);
+        //av_free(audioWrapper->father->vector2);
+        if (!audioWrapper->father->vector1->empty()) {
+            LOGI("%s\n", "closeAudio() vector1 is not empty");
+        }
+        if (!audioWrapper->father->vector2->empty()) {
+            LOGI("%s\n", "closeAudio() vector1 is not empty");
+        }
+        delete (audioWrapper->father->vector1);
+        delete (audioWrapper->father->vector2);
+        audioWrapper->father->vector1 = NULL;
+        audioWrapper->father->vector2 = NULL;
+
         av_free(audioWrapper->father);
         audioWrapper->father = NULL;
         av_free(audioWrapper);
@@ -1946,7 +2100,7 @@ namespace alexander {
         pthread_cond_destroy(&videoWrapper->father->readLockCondition);
         pthread_mutex_destroy(&videoWrapper->father->handleLockMutex);
         pthread_cond_destroy(&videoWrapper->father->handleLockCondition);
-        int count = videoWrapper->father->queue1->allAVPacketsCount;
+        /*int count = videoWrapper->father->queue1->allAVPacketsCount;
         if (count > 0) {
             AVPacket *avPacket = av_packet_alloc();
             for (int i = 0; i < count; i++) {
@@ -1967,7 +2121,21 @@ namespace alexander {
         av_free(videoWrapper->father->queue1);
         av_free(videoWrapper->father->queue2);
         videoWrapper->father->queue1 = NULL;
-        videoWrapper->father->queue2 = NULL;
+        videoWrapper->father->queue2 = NULL;*/
+
+        //av_free(videoWrapper->father->vector1);
+        //av_free(videoWrapper->father->vector2);
+        if (!audioWrapper->father->vector1->empty()) {
+            LOGI("%s\n", "closeVideo() vector1 is not empty");
+        }
+        if (!audioWrapper->father->vector2->empty()) {
+            LOGI("%s\n", "closeVideo() vector2 is not empty");
+        }
+        delete (videoWrapper->father->vector1);
+        delete (videoWrapper->father->vector2);
+        videoWrapper->father->vector1 = NULL;
+        videoWrapper->father->vector2 = NULL;
+
         av_free(videoWrapper->father);
         videoWrapper->father = NULL;
         av_free(videoWrapper);
@@ -1990,7 +2158,7 @@ namespace alexander {
     }
 
     int initAudioPlayer() {
-        LOGI("%s\n", "initAudioPlayer() start");
+        LOGD("%s\n", "initAudioPlayer() start");
 
 #ifdef USE_AUDIO
         // audio
@@ -2017,14 +2185,14 @@ namespace alexander {
         }
 #endif
 
-        LOGI("%s\n", "initAudioPlayer() end");
+        LOGD("%s\n", "initAudioPlayer() end");
 
         return 0;
     }
 
 
     int initVideoPlayer() {
-        LOGI("%s\n", "initVideoPlayer() start");
+        LOGW("%s\n", "initVideoPlayer() start");
 
 #ifdef USE_VIDEO
         // video
@@ -2051,7 +2219,7 @@ namespace alexander {
         }
 #endif
 
-        LOGI("%s\n", "initVideoPlayer() end");
+        LOGW("%s\n", "initVideoPlayer() end");
 
         return 0;
     }
@@ -2225,8 +2393,8 @@ namespace alexander {
             pthread_cond_signal(&audioWrapper->father->readLockCondition);
             pthread_mutex_unlock(&audioWrapper->father->readLockMutex);
 
-            audioWrapper->father->nextRead = NEXT_READ_QUEUE1;
-            audioWrapper->father->nextHandle = NEXT_HANDLE_QUEUE1;
+            audioWrapper->father->nextRead = NEXT_READ_VECTOR1;
+            audioWrapper->father->nextHandle = NEXT_HANDLE_VECTOR1;
             audioWrapper->father->isReadQueue1Full = false;
             audioWrapper->father->isReadQueue2Full = false;
 
@@ -2285,8 +2453,8 @@ namespace alexander {
             pthread_cond_signal(&videoWrapper->father->readLockCondition);
             pthread_mutex_unlock(&videoWrapper->father->readLockMutex);
 
-            videoWrapper->father->nextRead = NEXT_READ_QUEUE1;
-            videoWrapper->father->nextHandle = NEXT_HANDLE_QUEUE1;
+            videoWrapper->father->nextRead = NEXT_READ_VECTOR1;
+            videoWrapper->father->nextHandle = NEXT_HANDLE_VECTOR1;
             videoWrapper->father->isReadQueue1Full = false;
             videoWrapper->father->isReadQueue2Full = false;
 
