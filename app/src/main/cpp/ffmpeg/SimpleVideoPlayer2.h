@@ -8,7 +8,7 @@
 // 需要引入native绘制的头文件
 #include <android/native_window.h>
 #include <android/native_window_jni.h>
-#include <vector>
+#include <list>
 
 extern "C" {// 不能少
 // ffmpeg使用MediaCodec进行硬解码(需要编译出支持硬解码的so库)
@@ -83,12 +83,12 @@ namespace alexander {
 #define TYPE_VIDEO 2
 
 #define NEXT_READ_UNKNOW -1
-#define NEXT_READ_VECTOR1 1
-#define NEXT_READ_VECTOR2 2
+#define NEXT_READ_LIST1 1
+#define NEXT_READ_LIST2 2
 
 #define NEXT_HANDLE_UNKNOW -1
-#define NEXT_HANDLE_VECTOR1 1
-#define NEXT_HANDLE_VECTOR2 2
+#define NEXT_HANDLE_LIST1 1
+#define NEXT_HANDLE_LIST2 2
 
 #define MAX_AVPACKET_COUNT_AUDIO_HTTP 3000
 #define MAX_AVPACKET_COUNT_VIDEO_HTTP 3000
@@ -122,16 +122,15 @@ namespace alexander {
         // C++中也可以使用list来做
         struct AVPacketQueue *queue1 = NULL;
         struct AVPacketQueue *queue2 = NULL;
-        // 队列中最多保存多少个AVPacket
-        int maxAVPacketsCount = 0;
-        bool isReadQueue1Full = false;
-        bool isReadQueue2Full = false;
+        bool isReadList1Full = false;
+        bool isReadList2Full = false;
         int nextRead = NEXT_READ_UNKNOW;
         int nextHandle = NEXT_HANDLE_UNKNOW;
 
-        std::vector<AVFrame> *vector1 = NULL;
-        std::vector<AVFrame> *vector2 = NULL;
-        std::vector<AVFrame> *vector3 = NULL;
+        std::list<AVFrame> *list1 = NULL;
+        std::list<AVFrame> *list2 = NULL;
+        std::list<AVFrame> *list3 = NULL;
+        // 队列中最多保存多少个AVFrame
         int maxAVFramesCount = 0;
 
         bool isStarted = false;

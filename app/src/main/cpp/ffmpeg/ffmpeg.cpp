@@ -5,7 +5,7 @@
 #include "SimpleVideoPlayer2.h"
 
 // 这个是自定义的LOG的标识
-#define LOG "alexander"
+#define LOG "Player_alexander"
 
 static JavaVM *gJavaVm = NULL;
 // 下面的jobject,jmethodID按照java的反射过程去理解,套路(jni层调用java层方法)跟反射是一样的
@@ -166,6 +166,7 @@ void onPaused() {
     if (isAttached) {
         gJavaVm->DetachCurrentThread();
     }
+    LOGD("onPaused()\n");
 }
 
 void onPlayed() {
@@ -179,6 +180,7 @@ void onPlayed() {
     if (isAttached) {
         gJavaVm->DetachCurrentThread();
     }
+    LOGD("onPlayed()\n");
 }
 
 void onFinished() {
@@ -316,7 +318,7 @@ extern "C"
 JNIEXPORT jint JNICALL
 Java_com_weidi_usefragments_tool_FFMPEG_audioReadData(JNIEnv *env, jobject ffmpegObject) {
 #ifdef USE_AUDIO
-    int type = 1;
+    int type = TYPE_AUDIO;
     //alexander::readData(&type);
 #endif
     return (jint) 0;
@@ -326,8 +328,8 @@ extern "C"
 JNIEXPORT jint JNICALL
 Java_com_weidi_usefragments_tool_FFMPEG_audioHandleData(JNIEnv *env, jobject ffmpegObject) {
 #ifdef USE_AUDIO
-    //alexander::handleAudioData(NULL);
-    //alexander::handleData(alexander::getAudioWrapper());
+    int type = TYPE_AUDIO;
+    //alexander::handleData(&type);
 #endif
     return (jint) 0;
 }
@@ -336,7 +338,7 @@ extern "C"
 JNIEXPORT jint JNICALL
 Java_com_weidi_usefragments_tool_FFMPEG_videoReadData(JNIEnv *env, jobject ffmpegObject) {
 #ifdef USE_VIDEO
-    int type = 2;
+    int type = TYPE_VIDEO;
     alexander::readData(&type);
 #endif
     return (jint) 0;
@@ -346,8 +348,8 @@ extern "C"
 JNIEXPORT jint JNICALL
 Java_com_weidi_usefragments_tool_FFMPEG_videoHandleData(JNIEnv *env, jobject ffmpegObject) {
 #ifdef USE_VIDEO
-    //alexander::handleVideoData(NULL);
-    //alexander::handleData(alexander::getVideoWrapper());
+    int type = TYPE_VIDEO;
+    alexander::handleData(&type);
 #endif
     return (jint) 0;
 }
