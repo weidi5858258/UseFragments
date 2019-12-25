@@ -1342,7 +1342,7 @@ public class SimpleVideoPlayer {
                          */
                         /*while (roomInfo.presentationTimeUs1 / 1000
                                 > System.currentTimeMillis() - startTimeMs) {
-                            SystemClock.sleep(10);
+                            SystemClock.videoSleepTime(10);
                         }*/
 
                         mVideoDncoderMediaCodec.releaseOutputBuffer(roomIndex, true);

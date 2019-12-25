@@ -10,7 +10,13 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.res.Configuration;
+import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
+import android.os.PowerManager;
+import android.provider.Settings;
+import android.support.annotation.RequiresApi;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.KeyEvent;
@@ -49,6 +55,7 @@ import com.weidi.usefragments.tool.MLog;
 import com.weidi.usefragments.tool.SimpleAudioPlayer;
 import com.weidi.usefragments.tool.SimpleVideoPlayer;
 
+import java.io.File;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -662,6 +669,7 @@ public class MainActivity1 extends BaseActivity
         return super.onKeyDown(keyCode, event);
     }
 
+    @RequiresApi(api = Build.VERSION_CODES.M)
     private void test() {
         // 传递基本数据类型
         MLog.i(TAG, "from C String: " + JniUtils.getStringFromC("王力伟weidi5858258"));
@@ -735,6 +743,113 @@ public class MainActivity1 extends BaseActivity
             for (int i = 0; i < persons_2.length; i++) {
                 MLog.i(TAG, "" + persons_2[i].toString());
             }
+        }
+
+        /***
+         {@link android.os.Environment#DIRECTORY_MUSIC}
+         {@link android.os.Environment#DIRECTORY_MOVIES}
+         {@link android.os.Environment#DIRECTORY_PICTURES}
+         {@link android.os.Environment#DIRECTORY_PODCASTS}
+         {@link android.os.Environment#DIRECTORY_RINGTONES}
+         {@link android.os.Environment#DIRECTORY_ALARMS}
+         {@link android.os.Environment#DIRECTORY_NOTIFICATIONS}
+
+         访问的还是手机本身的存储卡,不是外置的SD卡
+         getFilesDir            : /data/user/0/com.weidi.usefragments/files
+         getCacheDir            : /data/user/0/com.weidi.usefragments/cache
+         getExternalCacheDir    : /storage/emulated/0/Android/data/com.weidi.usefragments/cache
+         DIRECTORY_MUSIC        : /storage/emulated/0/Android/data/com.weidi.usefragments/files/Music
+         DIRECTORY_MOVIES       : /storage/emulated/0/Android/data/com.weidi.usefragments/files/Movies
+         DIRECTORY_PICTURES     : /storage/emulated/0/Android/data/com.weidi.usefragments/files/Pictures
+         DIRECTORY_PODCASTS     : /storage/emulated/0/Android/data/com.weidi.usefragments/files/Podcasts
+         DIRECTORY_RINGTONES    : /storage/emulated/0/Android/data/com.weidi.usefragments/files/Ringtones
+         DIRECTORY_ALARMS       : /storage/emulated/0/Android/data/com.weidi.usefragments/files/Alarms
+         DIRECTORY_NOTIFICATIONS: /storage/emulated/0/Android/data/com.weidi.usefragments/files/Notifications
+         */
+        MLog.i(TAG, "getFilesDir            : " + getFilesDir().getAbsolutePath());
+        MLog.i(TAG, "getCacheDir            : " + getCacheDir().getAbsolutePath());
+        MLog.i(TAG, "getExternalCacheDir    : " + getExternalCacheDir().getAbsolutePath());
+        MLog.i(TAG, "DIRECTORY_MUSIC        : " + getExternalFilesDir(android.os.Environment.DIRECTORY_MUSIC).getAbsolutePath());
+        MLog.i(TAG, "DIRECTORY_MOVIES       : " + getExternalFilesDir(android.os.Environment.DIRECTORY_MOVIES).getAbsolutePath());
+        MLog.i(TAG, "DIRECTORY_PICTURES     : " + getExternalFilesDir(android.os.Environment.DIRECTORY_PICTURES).getAbsolutePath());
+        MLog.i(TAG, "DIRECTORY_PODCASTS     : " + getExternalFilesDir(android.os.Environment.DIRECTORY_PODCASTS).getAbsolutePath());
+        MLog.i(TAG, "DIRECTORY_RINGTONES    : " + getExternalFilesDir(android.os.Environment.DIRECTORY_RINGTONES).getAbsolutePath());
+        MLog.i(TAG, "DIRECTORY_ALARMS       : " + getExternalFilesDir(android.os.Environment.DIRECTORY_ALARMS).getAbsolutePath());
+        MLog.i(TAG, "DIRECTORY_NOTIFICATIONS: " + getExternalFilesDir(android.os.Environment.DIRECTORY_NOTIFICATIONS).getAbsolutePath());
+        MLog.i(TAG, "DIRECTORY_MOVIES       : " + Environment.getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_MOVIES).getAbsolutePath());
+
+        File file = new File(getFilesDir().getAbsolutePath());
+        MLog.i(TAG, "canWrite1              : " + file.canWrite());
+        file = new File(getCacheDir().getAbsolutePath());
+        MLog.i(TAG, "canWrite2              : " + file.canWrite());
+        file = new File(getExternalCacheDir().getAbsolutePath());
+        MLog.i(TAG, "canWrite3              : " + file.canWrite());
+        file = new File(getExternalFilesDir(android.os.Environment.DIRECTORY_MUSIC).getAbsolutePath());
+        MLog.i(TAG, "canWrite4              : " + file.canWrite());
+        file = new File(getExternalFilesDir(android.os.Environment.DIRECTORY_MOVIES).getAbsolutePath());
+        MLog.i(TAG, "canWrite5              : " + file.canWrite());
+        file = new File(getExternalFilesDir(android.os.Environment.DIRECTORY_PICTURES).getAbsolutePath());
+        MLog.i(TAG, "canWrite6              : " + file.canWrite());
+        file = new File(getExternalFilesDir(android.os.Environment.DIRECTORY_PODCASTS).getAbsolutePath());
+        MLog.i(TAG, "canWrite7              : " + file.canWrite());
+        file = new File(getExternalFilesDir(android.os.Environment.DIRECTORY_RINGTONES).getAbsolutePath());
+        MLog.i(TAG, "canWrite8              : " + file.canWrite());
+        file = new File(getExternalFilesDir(android.os.Environment.DIRECTORY_RINGTONES).getAbsolutePath());
+        MLog.i(TAG, "canWrite9              : " + file.canWrite());
+        file = new File(getExternalFilesDir(android.os.Environment.DIRECTORY_ALARMS).getAbsolutePath());
+        MLog.i(TAG, "canWrite10             : " + file.canWrite());
+        file = new File(getExternalFilesDir(android.os.Environment.DIRECTORY_NOTIFICATIONS).getAbsolutePath());
+        MLog.i(TAG, "canWrite11             : " + file.canWrite());
+        file = new File(Environment.getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_MOVIES).getAbsolutePath());
+        MLog.i(TAG, "canWrite12             : " + file.canWrite());// false
+
+        /***
+         Environment.DIRECTORY_MOVIES: /storage/emulated/0/Android/data/com.weidi.usefragments/files/Movies
+         canWrite                    : true
+         Environment.DIRECTORY_MOVIES: /storage/2430-1702/Android/data/com.weidi.usefragments/files/Movies
+         canWrite                    : true
+         Environment.MEDIA_MOUNTED   : /storage/emulated/0/Android/data/com.weidi.usefragments/files/mounted
+         canWrite                    : true
+         Environment.MEDIA_MOUNTED   : /storage/2430-1702/Android/data/com.weidi.usefragments/files/mounted
+         canWrite                    : true
+         Environment.MEDIA_SHARED    : /storage/emulated/0/Android/data/com.weidi.usefragments/files/shared
+         canWrite                    : true
+         Environment.MEDIA_SHARED    : /storage/2430-1702/Android/data/com.weidi.usefragments/files/shared
+         canWrite                    : true
+         */
+        File[] files;
+        files = getExternalFilesDirs(Environment.DIRECTORY_MOVIES);
+        for (File f : files) {
+            MLog.i(TAG, "Environment.DIRECTORY_MOVIES: " + f.getAbsolutePath());
+            MLog.i(TAG, "canWrite                    : " + f.canWrite());
+        }
+        files = getExternalFilesDirs(Environment.MEDIA_MOUNTED);
+        for (File f : files) {
+            MLog.i(TAG, "Environment.MEDIA_MOUNTED   : " + f.getAbsolutePath());
+            MLog.i(TAG, "canWrite                    : " + f.canWrite());
+        }
+        files = getExternalFilesDirs(Environment.MEDIA_SHARED);
+        for (File f : files) {
+            MLog.i(TAG, "Environment.MEDIA_SHARED    : " + f.getAbsolutePath());
+            MLog.i(TAG, "canWrite                    : " + f.canWrite());
+        }
+
+        PowerManager powerManager = (PowerManager) getSystemService(POWER_SERVICE);
+        boolean hasIgnored = powerManager.isIgnoringBatteryOptimizations(getPackageName());
+        // 判断当前APP是否有加入电池优化的白名单，如果没有，弹出加入电池优化的白名单的设置对话框。
+        if (!hasIgnored) {
+            Intent intent = new Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS);
+            intent.setData(Uri.parse("package:" + getPackageName()));
+            startActivity(intent);
+        }
+
+        // com.eg.android.AlipayGphone com.tencent.mm tv.danmaku.bili
+        hasIgnored = powerManager.isIgnoringBatteryOptimizations("tv.danmaku.bili");
+        // 判断当前APP是否有加入电池优化的白名单，如果没有，弹出加入电池优化的白名单的设置对话框。
+        if (!hasIgnored) {
+            Intent intent = new Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS);
+            intent.setData(Uri.parse("package:tv.danmaku.bili"));
+            startActivity(intent);
         }
     }
 

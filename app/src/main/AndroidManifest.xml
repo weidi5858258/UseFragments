@@ -23,6 +23,8 @@
     <!-- 这个权限是必须有的，否则操作不了硬件,google的文档没有说出来，据说是因为有过滤器后自动获得，但是我的项目没这句话不成功。 -->
     <uses-permission android:name="android.permission.HARDWARE_TEST"/>
     <uses-permission android:name="android.permission.WAKE_LOCK"/>
+    <!--加入电池白名单-->
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS"/>
 
     <application
         android:name="com.weidi.usefragments.MyApplication"

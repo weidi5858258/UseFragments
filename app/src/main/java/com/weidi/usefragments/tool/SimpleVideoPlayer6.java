@@ -788,9 +788,9 @@ public class SimpleVideoPlayer6 {
         return feedInputBufferResult && drainOutputBufferResult;
 
         /*// Input
-        SystemClock.sleep(1);
+        SystemClock.videoSleepTime(1);
         // Output
-        SystemClock.sleep(1);*/
+        SystemClock.videoSleepTime(1);*/
     }
 
     private void audioReadData() {

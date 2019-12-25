@@ -319,7 +319,7 @@ JNIEXPORT jint JNICALL
 Java_com_weidi_usefragments_tool_FFMPEG_audioReadData(JNIEnv *env, jobject ffmpegObject) {
 #ifdef USE_AUDIO
     int type = TYPE_AUDIO;
-    //alexander::readData(&type);
+    alexander::readData(&type);
 #endif
     return (jint) 0;
 }
@@ -329,7 +329,7 @@ JNIEXPORT jint JNICALL
 Java_com_weidi_usefragments_tool_FFMPEG_audioHandleData(JNIEnv *env, jobject ffmpegObject) {
 #ifdef USE_AUDIO
     int type = TYPE_AUDIO;
-    //alexander::handleData(&type);
+    alexander::handleData(&type);
 #endif
     return (jint) 0;
 }

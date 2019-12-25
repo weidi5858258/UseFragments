@@ -13,6 +13,7 @@ import android.os.Message;
 import android.os.storage.StorageManager;
 import android.support.annotation.Nullable;
 import android.text.TextUtils;
+import android.util.Log;
 
 import com.weidi.eventbus.EventBusUtils;
 import com.weidi.usefragments.business.contents.Contents;
@@ -88,6 +89,7 @@ public class DownloadFileService extends Service {
     public static final int MSG_IS_DOWNLOADING = 4;
     public static final int MSG_SET_CALLBACK = 5;
     public static final int MSG_GET_CONTENT_LENGTH = 6;
+    public static final int MSG_TEST = 1000;
     private static final int BUFFER = 1024 * 1024 * 2;
 
     public static String PATH =
@@ -134,6 +136,9 @@ public class DownloadFileService extends Service {
                 DownloadFileService.this.uiHandleMessage(msg);
             }
         };
+
+        // test
+        mThreadHandler.sendEmptyMessage(MSG_TEST);
     }
 
     private boolean isVideoExist(String fileName) {
@@ -236,6 +241,9 @@ public class DownloadFileService extends Service {
         return result;
     }
 
+    // test
+    long testCount = 0;
+
     private void threadHandleMessage(Message msg) {
         if (msg == null) {
             return;
@@ -246,6 +254,10 @@ public class DownloadFileService extends Service {
                 if (!mIsDownloading) {
                     downloadStart();
                 }
+                break;
+            case MSG_TEST:
+                Log.d(TAG, "threadHandleMessage() testCount: " + (++testCount));
+                mThreadHandler.sendEmptyMessageDelayed(MSG_TEST, 1000);
                 break;
             default:
                 break;

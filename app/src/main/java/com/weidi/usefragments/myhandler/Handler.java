@@ -297,7 +297,7 @@ public class Handler {
      * Enqueue a message into the message queue after all pending messages
      * before the absolute time (in milliseconds) <var>uptimeMillis</var>.
      * <b>The time-base is {@link android.os.SystemClock#uptimeMillis}.</b>
-     * Time spent in deep sleep will add an additional delay to execution.
+     * Time spent in deep videoSleepTime will add an additional delay to execution.
      * You will receive it in {@link #handleMessage}, in the thread attached
      * to this handler.
      *

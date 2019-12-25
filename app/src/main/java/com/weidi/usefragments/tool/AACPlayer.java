@@ -490,9 +490,9 @@ public class AACPlayer {
                 mAudioDecoderMediaCodec, false, callback);
 
         /*// Input
-        SystemClock.sleep(1);
+        SystemClock.videoSleepTime(1);
         // Output
-        SystemClock.sleep(1);*/
+        SystemClock.videoSleepTime(1);*/
     }
 
     /***

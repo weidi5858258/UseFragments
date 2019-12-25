@@ -766,9 +766,9 @@ public class SimpleVideoPlayer3 {
                 mediaCodec, render, needToSleep, callback);
 
         /*// Input
-        SystemClock.sleep(1);
+        SystemClock.videoSleepTime(1);
         // Output
-        SystemClock.sleep(1);*/
+        SystemClock.videoSleepTime(1);*/
     }
 
     private void audioReadData() {

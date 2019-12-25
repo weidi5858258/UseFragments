@@ -1690,7 +1690,7 @@ public class MediaUtils {
                             - MediaUtils.paustTimeMs
                             + MediaUtils.progressTimeMs
                             - MediaUtils.variableValues) {
-                        SystemClock.sleep(1);
+                        SystemClock.videoSleepTime(1);
                     }
                 }*/
 
