@@ -315,11 +315,11 @@ namespace alexander {
         audioWrapper->father->nextRead = NEXT_READ_LIST1;
         audioWrapper->father->nextHandle = NEXT_HANDLE_LIST1;
         if (isLocal) {
-            audioWrapper->father->maxAVPacketsCount = MAX_AVPACKET_COUNT_AUDIO_LOCAL;
+            audioWrapper->father->list1LimitCounts = MAX_AVPACKET_COUNT_AUDIO_LOCAL;
         } else {
-            audioWrapper->father->maxAVPacketsCount = MAX_AVPACKET_COUNT_AUDIO_HTTP;
+            audioWrapper->father->list1LimitCounts = MAX_AVPACKET_COUNT_AUDIO_HTTP;
         }
-        LOGD("initAudio() maxAVPacketsCount: %d\n", audioWrapper->father->maxAVPacketsCount);
+        LOGD("initAudio() list1LimitCounts: %d\n", audioWrapper->father->list1LimitCounts);
         audioWrapper->father->streamIndex = -1;
         audioWrapper->father->readFramesCount = 0;
         audioWrapper->father->handleFramesCount = 0;
@@ -378,11 +378,11 @@ namespace alexander {
         videoWrapper->father->nextRead = NEXT_READ_LIST1;
         videoWrapper->father->nextHandle = NEXT_HANDLE_LIST1;
         if (isLocal) {
-            videoWrapper->father->maxAVPacketsCount = MAX_AVPACKET_COUNT_VIDEO_LOCAL;
+            videoWrapper->father->list1LimitCounts = MAX_AVPACKET_COUNT_VIDEO_LOCAL;
         } else {
-            videoWrapper->father->maxAVPacketsCount = MAX_AVPACKET_COUNT_VIDEO_HTTP;
+            videoWrapper->father->list1LimitCounts = MAX_AVPACKET_COUNT_VIDEO_HTTP;
         }
-        LOGW("initVideo() maxAVPacketsCount: %d\n", videoWrapper->father->maxAVPacketsCount);
+        LOGW("initVideo() list1LimitCounts: %d\n", videoWrapper->father->list1LimitCounts);
         videoWrapper->father->streamIndex = -1;
         videoWrapper->father->readFramesCount = 0;
         videoWrapper->father->handleFramesCount = 0;
@@ -872,7 +872,7 @@ namespace alexander {
             // 保存到队列去,然后取出来进行解码播放
             wrapper->list1->push_back(*dstAVPacket);
             //LOGW("readData() video wrapper->list1->size(): %d\n", wrapper->list1->size());
-            if (wrapper->list1->size() == wrapper->maxAVPacketsCount) {
+            if (wrapper->list1->size() == wrapper->list1LimitCounts) {
                 // 不能排序,不然画面很模糊
                 // wrapper->list1->sort(AVPacketNode());
 
@@ -896,7 +896,7 @@ namespace alexander {
                    && !wrapper->isReadList2Full) {
             wrapper->list2->push_back(*dstAVPacket);
             //LOGW("readData() video wrapper->list2->size(): %d\n", wrapper->list2->size());
-            if (wrapper->list2->size() == wrapper->maxAVPacketsCount) {
+            if (wrapper->list2->size() == wrapper->list1LimitCounts) {
                 // wrapper->list2->sort(AVPacketNode());
 
                 wrapper->isReadList2Full = true;

@@ -256,7 +256,7 @@ public class DownloadFileService extends Service {
                 }
                 break;
             case MSG_TEST:
-                Log.d(TAG, "threadHandleMessage() testCount: " + (++testCount));
+                //Log.d(TAG, "threadHandleMessage() testCount: " + (++testCount));
                 mThreadHandler.sendEmptyMessageDelayed(MSG_TEST, 1000);
                 break;
             default:

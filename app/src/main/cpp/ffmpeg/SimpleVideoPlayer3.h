@@ -101,7 +101,6 @@ namespace alexander {
     // 子类都要用到的部分
     struct Wrapper {
         int type = TYPE_UNKNOW;
-        AVFormatContext *avFormatContext = NULL;
         AVCodecContext *avCodecContext = NULL;
         // 有些东西需要通过它去得到
         AVCodecParameters *avCodecParameters = NULL;
@@ -131,9 +130,10 @@ namespace alexander {
 
         std::list<AVPacket> *list1 = NULL;
         std::list<AVPacket> *list2 = NULL;
-        std::list<AVFrame> *tempList = NULL;
+        std::list<AVFrame*> *tempList = NULL;
         // 队列中最多保存多少个AVFrame
-        int maxAVPacketsCount = 0;
+        int list1LimitCounts = 0;
+        int list2LimitCounts = 0;
 
         bool isStarted = false;
         bool isReading = false;
@@ -231,13 +231,17 @@ namespace alexander {
 
     int putAVPacketToQueue(struct AVPacketQueue *packet_queue, AVPacket *avpacket);
 
-    int openAndFindAVFormatContextForAudio();
+    int openAndFindAVFormatContext();
 
-    int openAndFindAVFormatContextForVideo();
+//    int openAndFindAVFormatContextForAudio();
+//
+//    int openAndFindAVFormatContextForVideo();
 
-    int findStreamIndexForAudio();
+    int findStreamIndex();
 
-    int findStreamIndexForVideo();
+//    int findStreamIndexForAudio();
+//
+//    int findStreamIndexForVideo();
 
     int findAndOpenAVCodecForAudio();
 
@@ -251,9 +255,11 @@ namespace alexander {
 
     void closeVideo();
 
-    int initAudioPlayer();
+    int initPlayer();
 
-    int initVideoPlayer();
+//    int initAudioPlayer();
+//
+//    int initVideoPlayer();
 
     void setJniParameters(JNIEnv *env, const char *filePath, jobject surfaceJavaObject);
 

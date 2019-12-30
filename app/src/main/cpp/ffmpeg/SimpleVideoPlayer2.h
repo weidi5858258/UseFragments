@@ -133,7 +133,7 @@ namespace alexander {
         std::list<AVPacket> *list2 = NULL;
         std::list<AVFrame> *tempList = NULL;
         // 队列中最多保存多少个AVFrame
-        int maxAVPacketsCount = 0;
+        int list1LimitCounts = 0;
 
         bool isStarted = false;
         bool isReading = false;

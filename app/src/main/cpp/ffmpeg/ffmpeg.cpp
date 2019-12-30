@@ -2,7 +2,7 @@
 // Created by ex-wangliwei on 2016/2/14.
 //
 
-#include "SimpleVideoPlayer2.h"
+#include "SimpleVideoPlayer3.h"
 
 // 这个是自定义的LOG的标识
 #define LOG "Player_alexander"
@@ -303,15 +303,13 @@ Java_com_weidi_usefragments_tool_FFMPEG_setCallback(JNIEnv *env,
 extern "C"
 JNIEXPORT jint JNICALL
 Java_com_weidi_usefragments_tool_FFMPEG_initAudio(JNIEnv *env, jobject ffmpegObject) {
-    return (jint) alexander::initAudioPlayer();
+    return (jint) 0;
 }
 
 extern "C"
 JNIEXPORT jint JNICALL
 Java_com_weidi_usefragments_tool_FFMPEG_initVideo(JNIEnv *env, jobject ffmpegObject) {
-    onReady();
-    alexander::initAV();
-    return (jint) alexander::initVideoPlayer();
+    return (jint) alexander::initPlayer();
 }
 
 extern "C"
@@ -319,7 +317,7 @@ JNIEXPORT jint JNICALL
 Java_com_weidi_usefragments_tool_FFMPEG_audioReadData(JNIEnv *env, jobject ffmpegObject) {
 #ifdef USE_AUDIO
     int type = TYPE_AUDIO;
-    alexander::readData(&type);
+//    alexander::readData(&type);
 #endif
     return (jint) 0;
 }

@@ -202,7 +202,7 @@ namespace alexander {
         int nextRead = NEXT_READ_UNKNOW;
         int nextHandle = NEXT_HANDLE_UNKNOW;
         // 队列中最多保存多少个AVPacket
-        int maxAVPacketsCount = 0;
+        int list1LimitCounts = 0;
 
         bool isStarted = false;
         bool isReading = false;
@@ -319,11 +319,11 @@ namespace alexander {
         audioWrapper->father->nextRead = NEXT_READ_LIST1;
         audioWrapper->father->nextHandle = NEXT_HANDLE_LIST1;
         if (isLocal) {
-            audioWrapper->father->maxAVPacketsCount = MAX_AVPACKET_COUNT_AUDIO_LOCAL;
+            audioWrapper->father->list1LimitCounts = MAX_AVPACKET_COUNT_AUDIO_LOCAL;
         } else {
-            audioWrapper->father->maxAVPacketsCount = MAX_AVPACKET_COUNT_AUDIO_HTTP;
+            audioWrapper->father->list1LimitCounts = MAX_AVPACKET_COUNT_AUDIO_HTTP;
         }
-        LOGD("initAudio() maxAVPacketsCount: %d\n", audioWrapper->father->maxAVPacketsCount);
+        LOGD("initAudio() list1LimitCounts: %d\n", audioWrapper->father->list1LimitCounts);
         audioWrapper->father->streamIndex = -1;
         audioWrapper->father->readFramesCount = 0;
         audioWrapper->father->handleFramesCount = 0;
@@ -376,11 +376,11 @@ namespace alexander {
         videoWrapper->father->nextRead = NEXT_READ_LIST1;
         videoWrapper->father->nextHandle = NEXT_HANDLE_LIST1;
         if (isLocal) {
-            videoWrapper->father->maxAVPacketsCount = MAX_AVPACKET_COUNT_VIDEO_LOCAL;
+            videoWrapper->father->list1LimitCounts = MAX_AVPACKET_COUNT_VIDEO_LOCAL;
         } else {
-            videoWrapper->father->maxAVPacketsCount = MAX_AVPACKET_COUNT_VIDEO_HTTP;
+            videoWrapper->father->list1LimitCounts = MAX_AVPACKET_COUNT_VIDEO_HTTP;
         }
-        LOGW("initVideo() maxAVPacketsCount: %d\n", videoWrapper->father->maxAVPacketsCount);
+        LOGW("initVideo() list1LimitCounts: %d\n", videoWrapper->father->list1LimitCounts);
         videoWrapper->father->streamIndex = -1;
         videoWrapper->father->readFramesCount = 0;
         videoWrapper->father->handleFramesCount = 0;
@@ -1065,7 +1065,7 @@ namespace alexander {
                 && !wrapper->isReadList1Full) {
                 // 保存到队列去,然后取出来进行解码播放
                 putAVPacketToQueue(wrapper->queue1, dstAVPacket);
-                if (wrapper->queue1->allAVPacketsCount == wrapper->maxAVPacketsCount) {
+                if (wrapper->queue1->allAVPacketsCount == wrapper->list1LimitCounts) {
                     wrapper->isReadList1Full = true;
                     // queue1满了,接着存到queue2去
                     wrapper->nextRead = NEXT_READ_LIST2;
@@ -1090,7 +1090,7 @@ namespace alexander {
             } else if (wrapper->nextRead == NEXT_READ_LIST2
                        && !wrapper->isReadList2Full) {
                 putAVPacketToQueue(wrapper->queue2, dstAVPacket);
-                if (wrapper->queue2->allAVPacketsCount == wrapper->maxAVPacketsCount) {
+                if (wrapper->queue2->allAVPacketsCount == wrapper->list1LimitCounts) {
                     wrapper->isReadList2Full = true;
                     wrapper->nextRead = NEXT_READ_LIST1;
                     if (wrapper->type == TYPE_AUDIO) {
