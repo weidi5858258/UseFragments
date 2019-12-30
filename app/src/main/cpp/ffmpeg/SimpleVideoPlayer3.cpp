@@ -804,7 +804,11 @@ namespace alexander {
     int readDataImpl(Wrapper *wrapper, AVPacket *srcAVPacket, AVPacket *copyAVPacket) {
         av_packet_ref(copyAVPacket, srcAVPacket);
         av_packet_unref(srcAVPacket);
+
+        pthread_mutex_lock(&wrapper->readLockMutex);
         wrapper->list2->push_back(*copyAVPacket);
+        pthread_mutex_unlock(&wrapper->readLockMutex);
+
         wrapper->readFramesCount++;
         // 只执行一次
         if (wrapper->list2->size() == wrapper->list1LimitCounts) {
@@ -842,7 +846,7 @@ namespace alexander {
          队列空了,那么就填充数据
          如果这里的通知消息执行速度比等待消息快一步,那么可能造成处理数据那里一直等待了,没法再往下走了
          */
-        if (!wrapper->isReadList1Full
+        /*if (!wrapper->isReadList1Full
             && wrapper->list2->size() > wrapper->list1LimitCounts) {
             if (wrapper->type == TYPE_AUDIO) {
                 LOGD("readDataImpl() audio list2: %d\n", wrapper->list2->size());
@@ -857,7 +861,7 @@ namespace alexander {
             wrapper->isReadList1Full = true;
             notifyToHandle(audioWrapper->father);
             notifyToHandle(videoWrapper->father);
-        }
+        }*/
     }
 
     void *readData(void *opaque) {
@@ -1224,7 +1228,54 @@ namespace alexander {
                 break;
             }
 
-            if (!wrapper->isReadList1Full) {
+            if (wrapper->list1->size() > 0) {
+                srcAVPacket = &(wrapper->list1->front());
+                // 内容copy
+                av_packet_ref(copyAVPacket, srcAVPacket);
+                av_packet_unref(srcAVPacket);
+                wrapper->list1->pop_front();
+                wrapper->handleFramesCount++;
+            }
+
+            size_t list2Size = wrapper->list2->size();
+            if (wrapper->isReading) {
+                if (wrapper->list1->size() == 0) {
+                    wrapper->isReadList1Full = false;
+                    if (list2Size > 0) {
+                        if (wrapper->type == TYPE_AUDIO) {
+                            LOGD("handleData() audio list2: %d\n", list2Size);
+                        } else {
+                            LOGW("handleData() video list2: %d\n", list2Size);
+                        }
+                        pthread_mutex_lock(&wrapper->readLockMutex);
+                        wrapper->list1->clear();
+                        wrapper->list1->assign(wrapper->list2->begin(), wrapper->list2->end());
+                        wrapper->list2->clear();
+                        wrapper->isReadList1Full = true;
+                        pthread_mutex_unlock(&wrapper->readLockMutex);
+                    }
+                }
+            } else {
+                if (wrapper->list1->size() > 0) {
+                    // 还有数据,先用完再说
+                } else {
+                    if (wrapper->type == TYPE_AUDIO) {
+                        LOGD("readData() audio list2最后还有: %d\n", list2Size);
+                    } else {
+                        LOGW("readData() video list2最后还有: %d\n", list2Size);
+                    }
+                    if (list2Size > 0) {
+                        // 把剩余的数据全部复制过来
+                        wrapper->list1->clear();
+                        wrapper->list1->assign(wrapper->list2->begin(), wrapper->list2->end());
+                        wrapper->list2->clear();
+                    }
+                    // 读线程已经结束,所以不需要再暂停
+                    wrapper->isReadList1Full = true;
+                }
+            }
+
+            if (wrapper->isReading && !wrapper->isReadList1Full) {
                 // 开始暂停
                 onPaused();
 
@@ -1271,40 +1322,6 @@ namespace alexander {
             if (!wrapper->isHandling) {
                 // for (;;) end
                 break;
-            }
-
-            srcAVPacket = &(wrapper->list1->front());
-            // 内容copy
-            av_packet_ref(copyAVPacket, srcAVPacket);
-            av_packet_unref(srcAVPacket);
-            wrapper->list1->pop_front();
-            wrapper->handleFramesCount++;
-
-            if (wrapper->isReading) {
-                if (wrapper->list1->size() == 0) {
-                    wrapper->isReadList1Full = false;
-                }
-            } else {
-                if (wrapper->list2->size() > 0) {
-                    if (wrapper->list1->size() == 0) {
-                        if (wrapper->type == TYPE_AUDIO) {
-                            LOGD("readData() audio list2最后还有: %d\n", wrapper->list2->size());
-                        } else {
-                            LOGW("readData() video list2最后还有: %d\n", wrapper->list2->size());
-                        }
-                        // 把剩余的数据全部复制过来
-                        wrapper->list1->clear();
-                        wrapper->list1->assign(wrapper->list2->begin(), wrapper->list2->end());
-                        wrapper->list2->clear();
-                        wrapper->isReadList1Full = true;
-                    } else {
-                        // 还有数据,先用完再说
-                    }
-                }
-            }
-
-            if (!copyAVPacket) {
-                continue;
             }
 
             // 解码过程
@@ -1441,6 +1458,13 @@ namespace alexander {
                 }*/
             }
 
+            // 设置结束标志
+            if (!wrapper->isReading
+                && wrapper->list1->size() == 0
+                && wrapper->list2->size() == 0) {
+                wrapper->isHandling = false;
+            }
+
             ///////////////////////////////////////////////////////////////////
         }//for(;;) end
         if (wrapper->type == TYPE_AUDIO) {
@@ -1448,16 +1472,6 @@ namespace alexander {
         } else {
             LOGW("handleData() for (;;) video end\n");
         }
-
-        av_packet_unref(srcAVPacket);
-        av_packet_free(&srcAVPacket);
-        srcAVPacket = NULL;
-//        av_frame_unref(decodedAVFrame);
-//        av_frame_free(&decodedAVFrame);
-//        decodedAVFrame = NULL;
-        av_frame_unref(dstAVFrame);
-        av_frame_free(&dstAVFrame);
-        dstAVFrame = NULL;
 
         if (wrapper->type == TYPE_AUDIO) {
             LOGD("handleData() audio handleFramesCount : %d\n", wrapper->handleFramesCount);
@@ -1477,6 +1491,15 @@ namespace alexander {
         } else {
             closeVideo();
         }
+
+        av_packet_unref(srcAVPacket);
+        av_packet_free(&srcAVPacket);
+        srcAVPacket = NULL;
+        av_packet_free(&copyAVPacket);
+        copyAVPacket = NULL;
+        av_frame_unref(dstAVFrame);
+        av_frame_free(&dstAVFrame);
+        dstAVFrame = NULL;
 
         if (wrapper->type == TYPE_AUDIO) {
             LOGD("%s\n", "handleData() audio end");

@@ -42,6 +42,12 @@ public class Contents {
                 "生死时速",
                 "http://xunlei.jingpin88.com/20171028/6WQ5SFS2/mp4/6WQ5SFS2.mp4");
         movieMap.put(
+                "焦点",
+                "http://vip.zuiku8.com/1807/%E7%84%A6%E7%82%B92015.BD1280%E9%AB%98%E6%B8%85%E4%B8%AD%E8%8B%B1%E5%8F%8C%E5%AD%97%E7%89%88.mp4");
+        movieMap.put(
+                "中国机长",
+                "http://ok.renzuida.com/1912/ZG%E6%9C%BA%E9%95%BF.HD1280%E9%AB%98%E6%B8%85%E5%9B%BD%E8%AF%AD%E4%B8%AD%E5%AD%97%E7%89%88.mp4");
+        movieMap.put(
                 "生死时速2-海上惊情",
                 "http://xunlei.jingpin88.com/20171028/2JJsfDHh/mp4/2JJsfDHh.mp4");
         movieMap.put(
@@ -97,7 +103,8 @@ public class Contents {
                 "http://anning.luanniao-zuida.com/1907/%E7%A7%A6%E6%98%8E%C2%B7%E7%94%9F%E6%AD%BB%E8%AF%AD%E8%80%85.HD1280%E9%AB%98%E6%B8%85%E5%9B%BD%E8%AF%AD%E4%B8%AD%E5%AD%97%E7%89%88.mp4");
         movieMap.put(
                 "复仇者联盟4-终局之战",
-                "http://okxxzy.xzokzyzy.com/20190728/23849_9b8076fd/AvengersEndgame.2019.1080p.mp4");
+                "http://xunlei.zuidaxunlei.com/1907/FCZ%E8%81%94%E7%9B%9F4%EF%BC%9A%E7%BB%88%E5%B1%80%E4%B9%8B%E6%88%98.BD1280%E9%AB%98%E6%B8%85%E7%89%B9%E6%95%88%E4%B8%AD%E8%8B%B1%E5%8F%8C%E5%AD%97%E7%89%88.mp4");
+                //"http://okxxzy.xzokzyzy.com/20190728/23849_9b8076fd/AvengersEndgame.2019.1080p.mp4");
                 //"http://xunlei.zuidaxunlei.com/1907/FCZ%E8%81%94%E7%9B%9F4%EF%BC%9A%E7%BB%88%E5%B1%80%E4%B9%8B%E6%88%98.HD1280%E9%AB%98%E6%B8%85%E4%B8%AD%E5%AD%97%E7%89%88.mp4");
         movieMap.put(
                 "忍者刺客",
@@ -108,9 +115,6 @@ public class Contents {
         movieMap.put(
                 "魔精攻击",
                 "http://anning.luanniao-zuida.com/1907/%E9%AD%94%E7%B2%BE%E6%94%BB%E5%87%BB.BD1280%E9%AB%98%E6%B8%85%E4%B8%AD%E8%8B%B1%E5%8F%8C%E5%AD%97%E7%89%88.mp4");
-        movieMap.put(
-                "哥斯拉2-怪兽之王",
-                "http://okxxzy.xzokzyzy.com/20190726/23836_8f001b98/%E5%93%A5%E6%96%AF%E6%8B%892%E9%9F%A9%E7%89%88.mp4");
         movieMap.put(
                 "城市猎人2019",
                 "http://xunlei.zuidaxunlei.com/1907/%E5%9F%8E%E5%B8%82%E7%8C%8E%E4%BA%BA2019.BD1280%E9%AB%98%E6%B8%85%E4%B8%AD%E5%AD%97%E7%89%88.mp4");
