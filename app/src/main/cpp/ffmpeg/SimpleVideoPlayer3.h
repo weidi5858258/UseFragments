@@ -128,9 +128,10 @@ namespace alexander {
         int nextRead = NEXT_READ_UNKNOW;
         int nextHandle = NEXT_HANDLE_UNKNOW;
 
+        // 不能这样定义
+        // std::list<AVPacket*> *list1 = NULL;
         std::list<AVPacket> *list1 = NULL;
         std::list<AVPacket> *list2 = NULL;
-        std::list<AVFrame*> *tempList = NULL;
         // 队列中最多保存多少个AVFrame
         int list1LimitCounts = 0;
         int list2LimitCounts = 0;

@@ -356,7 +356,6 @@ namespace alexander {
         //audioWrapper->father->list2 = (vector *) av_mallocz(sizeof(vector));
         audioWrapper->father->list1 = new std::list<AVPacket>();
         audioWrapper->father->list2 = new std::list<AVPacket>();
-        audioWrapper->father->tempList = new std::list<AVFrame *>();
 
         audioWrapper->dstSampleRate = 44100;
         audioWrapper->dstAVSampleFormat = AV_SAMPLE_FMT_S16;
@@ -419,7 +418,6 @@ namespace alexander {
         //videoWrapper->father->list2 = (vector *) av_mallocz(sizeof(vector));
         videoWrapper->father->list1 = new std::list<AVPacket>();
         videoWrapper->father->list2 = new std::list<AVPacket>();
-        videoWrapper->father->tempList = new std::list<AVFrame *>();
 
         // Android支持的目标像素格式
         // AV_PIX_FMT_RGB32
@@ -869,6 +867,61 @@ namespace alexander {
         }*/
     }
 
+    int seekToWithRead() {
+        // seekTo
+        if (audioWrapper->father != NULL
+            && audioWrapper->father->timestamp != -1) {
+            if (audioWrapper->father->type == TYPE_AUDIO) {
+                LOGD("%s\n", "readData() audio seek start");
+            } else {
+                LOGW("%s\n", "readData() video seek start");
+            }
+
+            if (!audioWrapper->father->seekToInit) {
+                notifyToReadWait(audioWrapper->father);
+            }
+            audioWrapper->father->seekToInit = false;
+
+            AVStream *stream =
+                    avFormatContext->streams[audioWrapper->father->streamIndex];
+            av_seek_frame(
+                    avFormatContext,
+                    audioWrapper->father->streamIndex,
+                    //wrapper->timestamp * AV_TIME_BASE,
+                    audioWrapper->father->timestamp / av_q2d(stream->time_base),
+                    AVSEEK_FLAG_BACKWARD | AVSEEK_FLAG_FRAME);
+
+            // 千万不能调用
+            // avcodec_flush_buffers(wrapper->avCodecContext);
+
+            preProgress = 0;
+            audioWrapper->father->timestamp = -1;
+            //av_packet_unref(srcAVPacket);
+            if (audioWrapper->father->type == TYPE_AUDIO) {
+                LOGD("%s\n", "readData() audio seek end");
+            } else {
+                LOGW("%s\n", "readData() video seek end");
+            }
+            if (audioWrapper->father->type == TYPE_AUDIO) {
+#ifdef USE_VIDEO
+                if (videoWrapper != NULL && videoWrapper->father != NULL) {
+                    while (videoWrapper->father->timestamp != -1) {
+                        audioSleep(1);
+                    }
+                }
+#endif
+            } else {
+#ifdef USE_AUDIO
+                if (audioWrapper != NULL && audioWrapper->father != NULL) {
+                    while (audioWrapper->father->timestamp != -1) {
+                        videoSleep(1);
+                    }
+                }
+#endif
+            }
+        }// seekTo end
+    }
+
     void *readData(void *opaque) {
         int hours, mins, seconds;
         // 得到的是秒数
@@ -903,6 +956,7 @@ namespace alexander {
             }
 
             // seekTo
+            // seekToWithRead();
 
             // exit
             if (!audioWrapper->father->isReading
@@ -1238,7 +1292,7 @@ namespace alexander {
             }
 
             if (wrapper->list1->size() > 0) {
-                srcAVPacket = &(wrapper->list1->front());
+                srcAVPacket = &wrapper->list1->front();
                 // 内容copy
                 av_packet_ref(copyAVPacket, srcAVPacket);
                 av_packet_unref(srcAVPacket);
