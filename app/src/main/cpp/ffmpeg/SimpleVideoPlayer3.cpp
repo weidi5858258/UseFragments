@@ -188,17 +188,8 @@ pthread_join(videoHandleDataThread, NULL);
 
 namespace alexander {
 
-#define CACHE_COUNT 100
+    // 不要各自拥有一个指针,音视频共用一个就行了
     static AVFormatContext *avFormatContext = NULL;
-
-    typedef struct AVPacketQueue {
-        AVPacketList *firstAVPacketList = NULL;
-        AVPacketList *lastAVPacketList = NULL;
-        // 有多少个AVPacketList
-        int allAVPacketsCount = 0;
-        // 所有AVPacket占用的空间大小
-        int64_t allAVPacketsSize = 0;
-    };
 
     static struct AudioWrapper *audioWrapper = NULL;
     static struct VideoWrapper *videoWrapper = NULL;
@@ -234,8 +225,6 @@ namespace alexander {
     bool onlyOneVideo = true;
     int64_t curAVFramePtsVideo = 0;
     int64_t preAVFramePtsVideo = 0;
-
-    int getAVPacketFromQueue(struct AVPacketQueue *packet_queue, AVPacket *avpacket);
 
     char *getStrAVPixelFormat(AVPixelFormat format);
 
@@ -315,14 +304,13 @@ namespace alexander {
         memset(audioWrapper->father, 0, sizeof(struct Wrapper));
 
         audioWrapper->father->type = TYPE_AUDIO;
-        audioWrapper->father->nextRead = NEXT_READ_LIST1;
-        audioWrapper->father->nextHandle = NEXT_HANDLE_LIST1;
         if (isLocal) {
             audioWrapper->father->list1LimitCounts = MAX_AVPACKET_COUNT_AUDIO_LOCAL;
         } else {
             audioWrapper->father->list1LimitCounts = MAX_AVPACKET_COUNT_AUDIO_HTTP;
         }
         LOGD("initAudio() list1LimitCounts: %d\n", audioWrapper->father->list1LimitCounts);
+        audioWrapper->father->list2LimitCounts = 0;
         audioWrapper->father->streamIndex = -1;
         audioWrapper->father->readFramesCount = 0;
         audioWrapper->father->handleFramesCount = 0;
@@ -334,28 +322,15 @@ namespace alexander {
         audioWrapper->father->seekToInit = false;
         audioWrapper->father->isReadList1Full = false;
         audioWrapper->father->isReadList2Full = false;
+        audioWrapper->father->list1 = new std::list<AVPacket>();
+        audioWrapper->father->list2 = new std::list<AVPacket>();
 
         audioWrapper->father->duration = -1;
         audioWrapper->father->timestamp = -1;
-        /*audioWrapper->father->queue1 =
-                (struct AVPacketQueue *) av_mallocz(sizeof(struct AVPacketQueue));
-        audioWrapper->father->queue2 =
-                (struct AVPacketQueue *) av_mallocz(sizeof(struct AVPacketQueue));
-        memset(audioWrapper->father->queue1, 0, sizeof(struct AVPacketQueue));
-        memset(audioWrapper->father->queue2, 0, sizeof(struct AVPacketQueue));
-        audioWrapper->father->queue1->allAVPacketsCount = 0;
-        audioWrapper->father->queue1->allAVPacketsSize = 0;
-        audioWrapper->father->queue2->allAVPacketsCount = 0;
-        audioWrapper->father->queue2->allAVPacketsSize = 0;*/
         audioWrapper->father->readLockMutex = PTHREAD_MUTEX_INITIALIZER;
         audioWrapper->father->readLockCondition = PTHREAD_COND_INITIALIZER;
         audioWrapper->father->handleLockMutex = PTHREAD_MUTEX_INITIALIZER;
         audioWrapper->father->handleLockCondition = PTHREAD_COND_INITIALIZER;
-
-        //audioWrapper->father->list1 = (vector *) av_mallocz(sizeof(vector));
-        //audioWrapper->father->list2 = (vector *) av_mallocz(sizeof(vector));
-        audioWrapper->father->list1 = new std::list<AVPacket>();
-        audioWrapper->father->list2 = new std::list<AVPacket>();
 
         audioWrapper->dstSampleRate = 44100;
         audioWrapper->dstAVSampleFormat = AV_SAMPLE_FMT_S16;
@@ -378,14 +353,13 @@ namespace alexander {
         memset(videoWrapper->father, 0, sizeof(struct Wrapper));
 
         videoWrapper->father->type = TYPE_VIDEO;
-        videoWrapper->father->nextRead = NEXT_READ_LIST1;
-        videoWrapper->father->nextHandle = NEXT_HANDLE_LIST1;
         if (isLocal) {
             videoWrapper->father->list1LimitCounts = MAX_AVPACKET_COUNT_VIDEO_LOCAL;
         } else {
             videoWrapper->father->list1LimitCounts = MAX_AVPACKET_COUNT_VIDEO_HTTP;
         }
         LOGW("initVideo() list1LimitCounts: %d\n", videoWrapper->father->list1LimitCounts);
+        videoWrapper->father->list2LimitCounts = 0;
         videoWrapper->father->streamIndex = -1;
         videoWrapper->father->readFramesCount = 0;
         videoWrapper->father->handleFramesCount = 0;
@@ -397,27 +371,15 @@ namespace alexander {
         videoWrapper->father->seekToInit = false;
         videoWrapper->father->isReadList1Full = false;
         videoWrapper->father->isReadList2Full = false;
+        videoWrapper->father->list1 = new std::list<AVPacket>();
+        videoWrapper->father->list2 = new std::list<AVPacket>();
+
         videoWrapper->father->duration = -1;
         videoWrapper->father->timestamp = -1;
-        /*videoWrapper->father->queue1 =
-                (struct AVPacketQueue *) av_mallocz(sizeof(struct AVPacketQueue));
-        videoWrapper->father->queue2 =
-                (struct AVPacketQueue *) av_mallocz(sizeof(struct AVPacketQueue));
-        memset(videoWrapper->father->queue1, 0, sizeof(struct AVPacketQueue));
-        memset(videoWrapper->father->queue2, 0, sizeof(struct AVPacketQueue));
-        videoWrapper->father->queue1->allAVPacketsCount = 0;
-        videoWrapper->father->queue1->allAVPacketsSize = 0;
-        videoWrapper->father->queue2->allAVPacketsCount = 0;
-        videoWrapper->father->queue2->allAVPacketsSize = 0;*/
         videoWrapper->father->readLockMutex = PTHREAD_MUTEX_INITIALIZER;
         videoWrapper->father->readLockCondition = PTHREAD_COND_INITIALIZER;
         videoWrapper->father->handleLockMutex = PTHREAD_MUTEX_INITIALIZER;
         videoWrapper->father->handleLockCondition = PTHREAD_COND_INITIALIZER;
-
-        //videoWrapper->father->list1 = (vector *) av_mallocz(sizeof(vector));
-        //videoWrapper->father->list2 = (vector *) av_mallocz(sizeof(vector));
-        videoWrapper->father->list1 = new std::list<AVPacket>();
-        videoWrapper->father->list2 = new std::list<AVPacket>();
 
         // Android支持的目标像素格式
         // AV_PIX_FMT_RGB32
@@ -493,13 +455,39 @@ namespace alexander {
         if (audioWrapper->father->streamIndex != -1) {
             // 获取音频解码器
             // 先通过AVCodecParameters找到AVCodec
-            audioWrapper->father->decoderAVCodec = avcodec_find_decoder(
-                    audioWrapper->father->avCodecParameters->codec_id);
+            AVCodecID codecID = audioWrapper->father->avCodecParameters->codec_id;
+            // audio是没有下面这些东西的
+            switch (codecID) {
+                case AV_CODEC_ID_HEVC: {
+                    LOGD("findAndOpenAVCodecForAudio() hevc_mediacodec\n");
+                    // 硬解码265
+                    audioWrapper->father->decoderAVCodec = avcodec_find_decoder_by_name("hevc_mediacodec");
+                    break;
+                }
+                case AV_CODEC_ID_H264: {
+                    LOGD("findAndOpenAVCodecForAudio() h264_mediacodec\n");
+                    // 硬解码264
+                    audioWrapper->father->decoderAVCodec = avcodec_find_decoder_by_name("h264_mediacodec");
+                    break;
+                }
+                case AV_CODEC_ID_MPEG4: {
+                    LOGD("findAndOpenAVCodecForAudio() mpeg4_mediacodec\n");
+                    // 硬解码mpeg4
+                    audioWrapper->father->decoderAVCodec = avcodec_find_decoder_by_name("mpeg4_mediacodec");
+                    break;
+                }
+                default: {
+                    LOGD("findAndOpenAVCodecForAudio() codecID\n");
+                    // 软解
+                    // audioWrapper->father->decoderAVCodec = avcodec_find_decoder(codecID);
+                    break;
+                }
+            }
+            audioWrapper->father->decoderAVCodec = avcodec_find_decoder(codecID);
             if (audioWrapper->father->decoderAVCodec != NULL) {
                 // 获取解码器上下文
                 // 再通过AVCodec得到AVCodecContext
-                audioWrapper->father->avCodecContext = avcodec_alloc_context3(
-                        audioWrapper->father->decoderAVCodec);
+                audioWrapper->father->avCodecContext = avcodec_alloc_context3(audioWrapper->father->decoderAVCodec);
                 if (audioWrapper->father->avCodecContext != NULL) {
                     // 关联操作
                     if (avcodec_parameters_to_context(
@@ -530,11 +518,37 @@ namespace alexander {
         // video
         if (videoWrapper->father->streamIndex != -1) {
             // avcodec_find_decoder_by_name
-            videoWrapper->father->decoderAVCodec = avcodec_find_decoder(
-                    videoWrapper->father->avCodecParameters->codec_id);
+            AVCodecID codecID = videoWrapper->father->avCodecParameters->codec_id;
+            switch (codecID) {
+                case AV_CODEC_ID_HEVC: {
+                    LOGW("findAndOpenAVCodecForVideo() hevc_mediacodec\n");
+                    // 硬解码265
+                    videoWrapper->father->decoderAVCodec = avcodec_find_decoder_by_name("hevc_mediacodec");
+                    break;
+                }
+                case AV_CODEC_ID_H264: {
+                    LOGW("findAndOpenAVCodecForVideo() h264_mediacodec\n");
+                    // 硬解码264
+                    videoWrapper->father->decoderAVCodec = avcodec_find_decoder_by_name("h264_mediacodec");
+                    break;
+                }
+                case AV_CODEC_ID_MPEG4: {
+                    LOGW("findAndOpenAVCodecForVideo() mpeg4_mediacodec\n");
+                    // 硬解码mpeg4
+                    videoWrapper->father->decoderAVCodec = avcodec_find_decoder_by_name("mpeg4_mediacodec");
+                    break;
+                }
+                default: {
+                    LOGW("findAndOpenAVCodecForVideo() codecID\n");
+                    // 软解
+                    // videoWrapper->father->decoderAVCodec = avcodec_find_decoder(codecID);
+                    break;
+                }
+            }
+            // 有相应的so库时这句就不要执行了
+            videoWrapper->father->decoderAVCodec = avcodec_find_decoder(codecID);
             if (videoWrapper->father->decoderAVCodec != NULL) {
-                videoWrapper->father->avCodecContext = avcodec_alloc_context3(
-                        videoWrapper->father->decoderAVCodec);
+                videoWrapper->father->avCodecContext = avcodec_alloc_context3(videoWrapper->father->decoderAVCodec);
                 if (videoWrapper->father->avCodecContext != NULL) {
                     if (avcodec_parameters_to_context(
                             videoWrapper->father->avCodecContext,
@@ -751,55 +765,6 @@ namespace alexander {
         return 0;
     }
 
-    int putAVPacketToQueue(struct AVPacketQueue *packet_queue,
-                           AVPacket *avpacket) {
-        // 需要把AVPacket类型构造成AVPacketList类型,因此先要构造一个AVPacketList指针
-        AVPacketList *avpacket_list = NULL;
-        avpacket_list = (AVPacketList *) av_malloc(sizeof(AVPacketList));
-        if (!avpacket_list) {
-            return -1;
-        }
-        avpacket_list->pkt = *avpacket;
-        avpacket_list->next = NULL;
-
-        // 第一次为NULL
-        if (!packet_queue->lastAVPacketList) {
-            packet_queue->firstAVPacketList = avpacket_list;
-            /*fLOGI(stdout,
-                    "packet_queue->first_pkt->pkt.pos = %ld\n",
-                    packet_queue->firstAVPacketList->pkt.pos);*/
-        } else {
-            packet_queue->lastAVPacketList->next = avpacket_list;
-        }
-        packet_queue->lastAVPacketList = avpacket_list;
-        packet_queue->allAVPacketsCount++;
-        packet_queue->allAVPacketsSize += avpacket->size;
-        //packet_queue->allAVPacketsSize += avpacket_list->pkt.size;
-
-        return 0;
-    }
-
-    int getAVPacketFromQueue(struct AVPacketQueue *packet_queue,
-                             AVPacket *avpacket) {
-        AVPacketList *avpacket_list = packet_queue->firstAVPacketList;
-        if (avpacket_list) {
-            packet_queue->firstAVPacketList = avpacket_list->next;
-            if (!packet_queue->firstAVPacketList) {
-                packet_queue->lastAVPacketList = NULL;
-                // LOGI("%s\n", "没有数据了");
-            }
-            *avpacket = avpacket_list->pkt;
-            packet_queue->allAVPacketsCount--;
-            packet_queue->allAVPacketsSize -= avpacket->size;
-            //packet_queue->allAVPacketsSize -= avpacket_list->pkt.size;
-
-            av_free(avpacket_list);
-            return 0;
-        }
-
-        return -1;
-    }
-
     int readDataImpl(Wrapper *wrapper, AVPacket *srcAVPacket, AVPacket *copyAVPacket) {
         av_packet_ref(copyAVPacket, srcAVPacket);
         av_packet_unref(srcAVPacket);
@@ -809,8 +774,17 @@ namespace alexander {
         pthread_mutex_unlock(&wrapper->readLockMutex);
 
         wrapper->readFramesCount++;
-        // 只执行一次
-        if (wrapper->list2->size() == wrapper->list1LimitCounts) {
+        if (wrapper->isPausedForCache
+            && wrapper->list2->size() == CACHE_COUNT) {
+            notifyToHandle(wrapper);
+        }
+        /*if (wrapper->list2->size() >= wrapper->list2LimitCounts) {
+            // 这里要做的事是list2中达到一定数量的时候暂停一下,现在不做这功能
+            return 0;
+        }*/
+        // 只会执行一次
+        if (wrapper->list1LimitCounts != 0
+            && wrapper->list2->size() == wrapper->list1LimitCounts) {
             /*std::list<AVPacket>::iterator iter;
             for (iter = wrapper->list2->begin();
                  iter != wrapper->list2->end();
@@ -836,35 +810,7 @@ namespace alexander {
                  ++iter) {
                 LOGI("handleData() video list1: %d\n", (*iter).size);
             }*/
-            return 0;
         }
-        if (wrapper->isPausedForCache
-            && wrapper->list2->size() == CACHE_COUNT) {
-            notifyToHandle(wrapper);
-        }
-        if (wrapper->list2->size() == wrapper->list2LimitCounts) {
-            // 这里要做的事是list2中达到一定数量的时候暂停一下,现在不做这功能
-        }
-        /***
-         队列空了,那么就填充数据
-         如果这里的通知消息执行速度比等待消息快一步,那么可能造成处理数据那里一直等待了,没法再往下走了
-         */
-        /*if (!wrapper->isReadList1Full
-            && wrapper->list2->size() > wrapper->list1LimitCounts) {
-            if (wrapper->type == TYPE_AUDIO) {
-                LOGD("readDataImpl() audio list2: %d\n", wrapper->list2->size());
-            } else {
-                LOGW("readDataImpl() video list2: %d\n", wrapper->list2->size());
-            }
-            // 把list2中的内容全部复制给list1
-            wrapper->list1->clear();
-            wrapper->list1->assign(wrapper->list2->begin(), wrapper->list2->end());
-            wrapper->list2->clear();
-
-            wrapper->isReadList1Full = true;
-            notifyToHandle(audioWrapper->father);
-            notifyToHandle(videoWrapper->father);
-        }*/
     }
 
     int seekToWithRead() {
@@ -903,21 +849,17 @@ namespace alexander {
                 LOGW("%s\n", "readData() video seek end");
             }
             if (audioWrapper->father->type == TYPE_AUDIO) {
-#ifdef USE_VIDEO
                 if (videoWrapper != NULL && videoWrapper->father != NULL) {
                     while (videoWrapper->father->timestamp != -1) {
                         audioSleep(1);
                     }
                 }
-#endif
             } else {
-#ifdef USE_AUDIO
                 if (audioWrapper != NULL && audioWrapper->father != NULL) {
                     while (audioWrapper->father->timestamp != -1) {
                         videoSleep(1);
                     }
                 }
-#endif
             }
         }// seekTo end
     }
@@ -969,8 +911,8 @@ namespace alexander {
             int readFrame = av_read_frame(avFormatContext, srcAVPacket);
             //LOGI("readFrame           : %d\n", readFrame);
             if (readFrame < 0) {
-                // -12
-                LOGF("readData() readFrame            : %d\n", readFrame);
+                // 有些视频一直返回-12
+                // LOGF("readData() readFrame            : %d\n", readFrame);
                 if (readFrame != AVERROR_EOF) {
                     continue;
                 }
@@ -1032,8 +974,6 @@ namespace alexander {
             if (!audioWrapper->father->isStarted) {
                 audioWrapper->father->isStarted = true;
             }
-
-#ifdef USE_VIDEO
             while (videoWrapper != NULL
                    && videoWrapper->father != NULL
                    && !videoWrapper->father->isStarted) {
@@ -1043,7 +983,6 @@ namespace alexander {
             audioTimeDifference =
                     decodedAVFrame->pts * av_q2d(stream->time_base);
             //LOGD("handleData() audio audioTimeDifference: %lf\n", audioTimeDifference);
-#endif
             // 显示时间进度
             long progress = (long) audioTimeDifference;
             if (progress > preProgress) {
@@ -1071,7 +1010,6 @@ namespace alexander {
         if (!videoWrapper->father->isStarted) {
             videoWrapper->father->isStarted = true;
         }
-#ifdef USE_AUDIO
         while (audioWrapper != NULL
                && audioWrapper->father != NULL
                && !audioWrapper->father->isStarted) {
@@ -1087,9 +1025,7 @@ namespace alexander {
             // 回调(通知到java层)
             onPlayed();
         }
-#endif
 
-#ifdef USE_AUDIO
         /***
          以音频为基准,同步视频到音频
          1.视频慢了则加快播放或丢掉部分视频帧
@@ -1117,7 +1053,6 @@ namespace alexander {
         while (videoTimeDifference - audioTimeDifference > TIME_DIFFERENCE) {
             videoSleep(1);
         }
-#endif
 
         //int64_t curAVFramePts = decodedAVFrame->pts;
         //videoTimeDifference = curAVFramePtsVideo * av_q2d(stream->time_base);
@@ -1184,13 +1119,9 @@ namespace alexander {
         Wrapper *wrapper = NULL;
         int *type = (int *) opaque;
         if (*type == TYPE_AUDIO) {
-#ifdef USE_AUDIO
             wrapper = audioWrapper->father;
-#endif
         } else {
-#ifdef USE_VIDEO
             wrapper = videoWrapper->father;
-#endif
         }
         if (wrapper == NULL) {
             LOGE("%s\n", "wrapper is NULL");
@@ -1481,10 +1412,10 @@ namespace alexander {
                     if (tempMaxVideoTimeDifference > maxVideoTimeDifference) {
                         maxVideoTimeDifference = tempMaxVideoTimeDifference;
                         maxVideoTimeDifference_l = round(maxVideoTimeDifference * 1000000);
-                        LOGW("handleData() video maxVideoTimeDifference: %lf\n", maxVideoTimeDifference);
+                        // LOGW("handleData() video maxVideoTimeDifference: %lf\n", maxVideoTimeDifference);
                     }
                     timeDifferenceWithAV = videoTimeDifference - audioTimeDifference;
-                    LOGW("handleData() video timeDifferenceWithAV  : %lf\n", timeDifferenceWithAV);
+                    // LOGW("handleData() video timeDifferenceWithAV  : %lf\n", timeDifferenceWithAV);
                 }
 
                 // 0.016667
@@ -1857,7 +1788,6 @@ namespace alexander {
         }
         LOGI("setJniParameters() isLocal   : %d", isLocal);
 
-#ifdef USE_VIDEO
         if (pANativeWindow != NULL) {
             ANativeWindow_release(pANativeWindow);
             pANativeWindow = 0;
@@ -1869,45 +1799,35 @@ namespace alexander {
         } else {
             LOGI("handleVideoData() pANativeWindow isn't NULL\n");
         }
-#endif
     }
 
     int play() {
-#ifdef USE_AUDIO
         if (audioWrapper != NULL && audioWrapper->father != NULL) {
             audioWrapper->father->isPausedForUser = false;
             pthread_mutex_lock(&audioWrapper->father->handleLockMutex);
             pthread_cond_signal(&audioWrapper->father->handleLockCondition);
             pthread_mutex_unlock(&audioWrapper->father->handleLockMutex);
         }
-#endif
-#ifdef USE_VIDEO
         if (videoWrapper != NULL && videoWrapper->father != NULL) {
             videoWrapper->father->isPausedForUser = false;
             pthread_mutex_lock(&videoWrapper->father->handleLockMutex);
             pthread_cond_signal(&videoWrapper->father->handleLockCondition);
             pthread_mutex_unlock(&videoWrapper->father->handleLockMutex);
         }
-#endif
         return 0;
     }
 
     int pause() {
-#ifdef USE_AUDIO
         if (audioWrapper != NULL && audioWrapper->father != NULL) {
             audioWrapper->father->isPausedForUser = true;
         }
-#endif
-#ifdef USE_VIDEO
         if (videoWrapper != NULL && videoWrapper->father != NULL) {
             videoWrapper->father->isPausedForUser = true;
         }
-#endif
         return 0;
     }
 
     int stop() {
-#ifdef USE_AUDIO
         if (audioWrapper != NULL && audioWrapper->father != NULL) {
             LOGI("stop() audio start\n");
             audioWrapper->father->isStarted = false;
@@ -1927,8 +1847,6 @@ namespace alexander {
             pthread_mutex_unlock(&audioWrapper->father->handleLockMutex);
             LOGI("stop() audio end\n");
         }
-#endif
-#ifdef USE_VIDEO
         if (videoWrapper != NULL && videoWrapper->father != NULL) {
             LOGI("stop() video start\n");
             videoWrapper->father->isStarted = false;
@@ -1948,7 +1866,6 @@ namespace alexander {
             pthread_mutex_unlock(&videoWrapper->father->handleLockMutex);
             LOGI("stop() video end\n");
         }
-#endif
         return 0;
     }
 
@@ -1960,55 +1877,44 @@ namespace alexander {
     bool isRunning() {
         bool audioRunning = false;
         bool videoRunning = false;
-#ifdef USE_AUDIO
         if (audioWrapper != NULL && audioWrapper->father != NULL) {
             audioRunning = audioWrapper->father->isReading
                            || audioWrapper->father->isHandling;
         }
-#endif
-#ifdef USE_VIDEO
         if (videoWrapper != NULL && videoWrapper->father != NULL) {
             videoRunning = videoWrapper->father->isReading
                            || videoWrapper->father->isHandling;
         }
-#endif
         return audioRunning || videoRunning;
     }
 
     bool isPlaying() {
         bool audioPlaying = false;
         bool videoPlaying = false;
-#ifdef USE_AUDIO
         if (audioWrapper != NULL && audioWrapper->father != NULL) {
             audioPlaying = audioWrapper->father->isStarted
                            && audioWrapper->father->isHandling
                            && !audioWrapper->father->isPausedForUser
                            && !audioWrapper->father->isPausedForCache;
         }
-#endif
-#ifdef USE_VIDEO
         if (videoWrapper != NULL && videoWrapper->father != NULL) {
             videoPlaying = videoWrapper->father->isStarted
                            && videoWrapper->father->isHandling
                            && !videoWrapper->father->isPausedForUser
                            && !videoWrapper->father->isPausedForCache;
         }
-#endif
         return audioPlaying && videoPlaying;
     }
 
     int seekTo(int64_t timestamp) {
         LOGI("==================================================================\n");
         LOGI("seekTo() timestamp: %ld\n", timestamp);
-#ifdef USE_AUDIO
         if (audioWrapper != NULL && audioWrapper->father != NULL) {
             audioWrapper->father->timestamp = timestamp;
             pthread_mutex_lock(&audioWrapper->father->readLockMutex);
             pthread_cond_signal(&audioWrapper->father->readLockCondition);
             pthread_mutex_unlock(&audioWrapper->father->readLockMutex);
 
-            audioWrapper->father->nextRead = NEXT_READ_LIST1;
-            audioWrapper->father->nextHandle = NEXT_HANDLE_LIST1;
             audioWrapper->father->isReadList1Full = false;
             audioWrapper->father->isReadList2Full = false;
 
@@ -2021,36 +1927,6 @@ namespace alexander {
                 pthread_mutex_unlock(&audioWrapper->father->handleLockMutex);
             }
 
-            // 把Queue1和Queue2队列清空
-            int count = audioWrapper->father->queue1->allAVPacketsCount;
-            if (count > 0) {
-                AVPacket *avPacket = av_packet_alloc();
-                for (int i = 0; i < count; i++) {
-                    getAVPacketFromQueue(audioWrapper->father->queue1, avPacket);
-                    av_packet_unref(avPacket);
-                }
-                av_packet_unref(avPacket);
-            }
-            audioWrapper->father->queue1->firstAVPacketList = NULL;
-            audioWrapper->father->queue1->lastAVPacketList = NULL;
-            audioWrapper->father->queue1->allAVPacketsCount = 0;
-            audioWrapper->father->queue1->allAVPacketsSize = 0;
-            memset(audioWrapper->father->queue1, 0, sizeof(struct AVPacketQueue));
-            count = audioWrapper->father->queue2->allAVPacketsCount;
-            if (count > 0) {
-                AVPacket *avPacket = av_packet_alloc();
-                for (int i = 0; i < count; i++) {
-                    getAVPacketFromQueue(audioWrapper->father->queue2, avPacket);
-                    av_packet_unref(avPacket);
-                }
-                av_packet_unref(avPacket);
-            }
-            audioWrapper->father->queue2->firstAVPacketList = NULL;
-            audioWrapper->father->queue2->lastAVPacketList = NULL;
-            audioWrapper->father->queue2->allAVPacketsCount = 0;
-            audioWrapper->father->queue2->allAVPacketsSize = 0;
-            memset(audioWrapper->father->queue2, 0, sizeof(struct AVPacketQueue));
-
             // 通知开始seek
             LOGD("seekTo() audio signal() handleLockCondition\n");
             pthread_mutex_lock(&audioWrapper->father->readLockMutex);
@@ -2059,16 +1935,12 @@ namespace alexander {
 
             audioWrapper->father->seekToInit = true;
         }
-#endif
-#ifdef USE_VIDEO
         if (videoWrapper != NULL && videoWrapper->father != NULL) {
             videoWrapper->father->timestamp = timestamp;
             pthread_mutex_lock(&videoWrapper->father->readLockMutex);
             pthread_cond_signal(&videoWrapper->father->readLockCondition);
             pthread_mutex_unlock(&videoWrapper->father->readLockMutex);
 
-            videoWrapper->father->nextRead = NEXT_READ_LIST1;
-            videoWrapper->father->nextHandle = NEXT_HANDLE_LIST1;
             videoWrapper->father->isReadList1Full = false;
             videoWrapper->father->isReadList2Full = false;
 
@@ -2081,36 +1953,6 @@ namespace alexander {
                 pthread_mutex_unlock(&videoWrapper->father->handleLockMutex);
             }
 
-            // 把Queue1和Queue2队列清空
-            int count = videoWrapper->father->queue1->allAVPacketsCount;
-            if (count > 0) {
-                AVPacket *avPacket = av_packet_alloc();
-                for (int i = 0; i < count; i++) {
-                    getAVPacketFromQueue(videoWrapper->father->queue1, avPacket);
-                    av_packet_unref(avPacket);
-                }
-                av_packet_unref(avPacket);
-            }
-            videoWrapper->father->queue1->firstAVPacketList = NULL;
-            videoWrapper->father->queue1->lastAVPacketList = NULL;
-            videoWrapper->father->queue1->allAVPacketsCount = 0;
-            videoWrapper->father->queue1->allAVPacketsSize = 0;
-            memset(videoWrapper->father->queue1, 0, sizeof(struct AVPacketQueue));
-            count = videoWrapper->father->queue2->allAVPacketsCount;
-            if (count > 0) {
-                AVPacket *avPacket = av_packet_alloc();
-                for (int i = 0; i < count; i++) {
-                    getAVPacketFromQueue(videoWrapper->father->queue2, avPacket);
-                    av_packet_unref(avPacket);
-                }
-                av_packet_unref(avPacket);
-            }
-            videoWrapper->father->queue2->firstAVPacketList = NULL;
-            videoWrapper->father->queue2->lastAVPacketList = NULL;
-            videoWrapper->father->queue2->allAVPacketsCount = 0;
-            videoWrapper->father->queue2->allAVPacketsSize = 0;
-            memset(videoWrapper->father->queue2, 0, sizeof(struct AVPacketQueue));
-
             // 通知开始seek
             LOGW("seekTo() video signal() handleLockCondition\n");
             pthread_mutex_lock(&videoWrapper->father->readLockMutex);
@@ -2119,7 +1961,6 @@ namespace alexander {
 
             videoWrapper->father->seekToInit = true;
         }
-#endif
         return 0;
     }
 
@@ -2129,16 +1970,12 @@ namespace alexander {
         int64_t videoDuration = 0;
         int64_t duration = 0;
 
-#ifdef USE_AUDIO
         if (audioWrapper != NULL && audioWrapper->father != NULL) {
             audioDuration = audioWrapper->father->duration;
         }
-#endif
-#ifdef USE_VIDEO
         if (videoWrapper != NULL && videoWrapper->father != NULL) {
             videoDuration = videoWrapper->father->duration;
         }
-#endif
         if (audioDuration != 0 && videoDuration != 0) {
             duration = audioDuration > videoDuration ? videoDuration : audioDuration;
         } else if (audioDuration != 0 && videoDuration == 0) {

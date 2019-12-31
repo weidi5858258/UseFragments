@@ -84,19 +84,13 @@ namespace alexander {
 #define TYPE_AUDIO 1
 #define TYPE_VIDEO 2
 
-#define NEXT_READ_UNKNOW -1
-#define NEXT_READ_LIST1 1
-#define NEXT_READ_LIST2 2
-
-#define NEXT_HANDLE_UNKNOW -1
-#define NEXT_HANDLE_LIST1 1
-#define NEXT_HANDLE_LIST2 2
-
 #define MAX_AVPACKET_COUNT_AUDIO_HTTP 3000
 #define MAX_AVPACKET_COUNT_VIDEO_HTTP 3000
 
 #define MAX_AVPACKET_COUNT_AUDIO_LOCAL 100
 #define MAX_AVPACKET_COUNT_VIDEO_LOCAL 100
+
+#define CACHE_COUNT 100
 
     // 子类都要用到的部分
     struct Wrapper {
@@ -120,21 +114,15 @@ namespace alexander {
         // 总共处理了多少个AVPacket
         int handleFramesCount = 0;
 
-        // C++中也可以使用list来做
-        struct AVPacketQueue *queue1 = NULL;
-        struct AVPacketQueue *queue2 = NULL;
-        bool isReadList1Full = false;
-        bool isReadList2Full = false;
-        int nextRead = NEXT_READ_UNKNOW;
-        int nextHandle = NEXT_HANDLE_UNKNOW;
-
         // 不能这样定义
         // std::list<AVPacket*> *list1 = NULL;
         std::list<AVPacket> *list1 = NULL;
         std::list<AVPacket> *list2 = NULL;
-        // 队列中最多保存多少个AVFrame
+        // 队列中最多保存多少个AVPacket
         int list1LimitCounts = 0;
         int list2LimitCounts = 0;
+        bool isReadList1Full = false;
+        bool isReadList2Full = false;
 
         bool isStarted = false;
         bool isReading = false;
