@@ -188,6 +188,7 @@ pthread_join(videoHandleDataThread, NULL);
 
 namespace alexander {
 
+#define CACHE_COUNT 100
     static AVFormatContext *avFormatContext = NULL;
 
     typedef struct AVPacketQueue {
@@ -839,8 +840,12 @@ namespace alexander {
             }*/
             return 0;
         }
+        if (wrapper->isPausedForCache
+            && wrapper->list2->size() == CACHE_COUNT) {
+            notifyToHandle(wrapper);
+        }
         if (wrapper->list2->size() == wrapper->list2LimitCounts) {
-
+            // 这里要做的事是list2中达到一定数量的时候暂停一下,现在不做这功能
         }
         /***
          队列空了,那么就填充数据
@@ -1088,8 +1093,10 @@ namespace alexander {
                 memcpy(dst + h * dstStride, src + h * srcStride, srcStride);
             }
 
-            double timeDifference = (curAVFramePtsVideo - preAVFramePtsVideo) * av_q2d(stream->time_base);
-            preAVFramePtsVideo = curAVFramePtsVideo;
+//            double timeDifference = (curAVFramePtsVideo - preAVFramePtsVideo) * av_q2d(stream->time_base);
+//            preAVFramePtsVideo = curAVFramePtsVideo;
+
+            double timeDifference = videoTimeDifference - videoTimeDifferencePre;
             // timeDifference = 0.040000
             // 单位: 毫秒
             long tempSleep = timeDifference * 1000;
@@ -1098,8 +1105,10 @@ namespace alexander {
             if (videoSleepTime != tempSleep) {
                 videoSleepTime = tempSleep;
             }
+            //LOGW("handleVideoDataImpl() timeDifference     : %lf\n", timeDifference);
+            //LOGW("handleVideoDataImpl() timeDifference     : %ld\n", tempSleep);
             //LOGW("handleVideoDataImpl() videoSleepTime     : %ld\n", videoSleepTime);
-            if (videoSleepTime < 15 && videoSleepTime > 0) {
+            if (videoSleepTime < 13 && videoSleepTime > 0) {
                 videoSleep(videoSleepTime);
             } else {
                 if (videoSleepTime > 0) {
@@ -1281,6 +1290,7 @@ namespace alexander {
 
                 if (wrapper->type == TYPE_AUDIO) {
                     // 音频Cache引起的暂停
+                    audioWrapper->father->isPausedForCache = true;
 
                     // 让视频也同时暂停
                     if (videoWrapper != NULL && videoWrapper->father != NULL) {
@@ -1291,6 +1301,7 @@ namespace alexander {
                     notifyToHandleWait(audioWrapper->father);
                     LOGE("handleData() wait() Cache audio end   主动暂停\n");
 
+                    audioWrapper->father->isPausedForCache = false;
                     // 通知视频结束暂停
                     if (videoWrapper != NULL && videoWrapper->father != NULL) {
                         videoWrapper->father->isPausedForCache = false;
@@ -1298,6 +1309,7 @@ namespace alexander {
                     notifyToHandle(videoWrapper->father);
                 } else {
                     // 视频Cache引起的暂停
+                    videoWrapper->father->isPausedForCache = true;
 
                     // 让音频也同时暂停
                     if (audioWrapper != NULL && audioWrapper->father != NULL) {
@@ -1308,6 +1320,7 @@ namespace alexander {
                     notifyToHandleWait(videoWrapper->father);
                     LOGE("handleData() wait() Cache video end   主动暂停\n");
 
+                    videoWrapper->father->isPausedForCache = false;
                     // 通知音频结束暂停
                     if (audioWrapper != NULL && audioWrapper->father != NULL) {
                         audioWrapper->father->isPausedForCache = false;
