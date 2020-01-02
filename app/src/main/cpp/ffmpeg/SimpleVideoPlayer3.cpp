@@ -184,7 +184,7 @@ pthread_join(videoHandleDataThread, NULL);
 //pthread_cancel(videoHandleDataThread);
  */
 
-#define LOG "Player_alexander"
+#define LOG "player_alexander"
 
 namespace alexander {
 
@@ -881,7 +881,7 @@ namespace alexander {
         AVPacket *srcAVPacket = av_packet_alloc();
         AVPacket *copyAVPacket = av_packet_alloc();
 
-        int _12_count = 0;
+        int count_12 = 0;
         /***
          有几种情况:
          1.list1中先存满n个,然后list2多次存取
@@ -914,9 +914,9 @@ namespace alexander {
                 // LOGF("readData() readFrame            : %d\n", readFrame);
                 if (readFrame != AVERROR_EOF) {
                     if (readFrame == -12) {
-                        ++_12_count;
+                        ++count_12;
                     }
-                    if (_12_count <= 500) {
+                    if (count_12 <= 500) {
                         continue;
                     }
                 }
@@ -1881,8 +1881,17 @@ namespace alexander {
 
     // 有没有在运行,即使暂停状态也是运行状态
     bool isRunning() {
-        return (audioWrapper->father->isStarted && audioWrapper->father->isHandling)
-               || (videoWrapper->father->isStarted && videoWrapper->father->isHandling);
+        bool audioRunning = false;
+        bool videoRunning = false;
+        if (audioWrapper != NULL && audioWrapper->father != NULL) {
+            audioRunning = audioWrapper->father->isStarted
+                           && audioWrapper->father->isHandling;
+        }
+        if (videoWrapper != NULL && videoWrapper->father != NULL) {
+            videoRunning = videoWrapper->father->isStarted
+                           && videoWrapper->father->isHandling;
+        }
+        return audioRunning || videoRunning;
     }
 
     // 有没有在播放,暂停状态不算播放状态

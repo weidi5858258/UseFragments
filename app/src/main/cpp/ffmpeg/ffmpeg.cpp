@@ -5,7 +5,7 @@
 #include "SimpleVideoPlayer3.h"
 
 // 这个是自定义的LOG的标识
-#define LOG "Player_alexander"
+#define LOG "player_alexander"
 
 static JavaVM *gJavaVm = NULL;
 // 下面的jobject,jmethodID按照java的反射过程去理解,套路(jni层调用java层方法)跟反射是一样的
