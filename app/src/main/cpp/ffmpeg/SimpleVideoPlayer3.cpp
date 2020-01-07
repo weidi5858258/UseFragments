@@ -196,6 +196,7 @@ namespace alexander {
     static struct AudioWrapper *audioWrapper = NULL;
     static struct VideoWrapper *videoWrapper = NULL;
     static bool isLocal = false;
+    static bool needOutputAudio = true;
 
     static char inFilePath[2048];
     static ANativeWindow *pANativeWindow = NULL;
@@ -214,13 +215,12 @@ namespace alexander {
     // 正常播放情况下,视频时间戳减去音频时间戳
     double timeDifferenceWithAV = 0;
 
-
     double totalTimeDifference = 0;
     long totalTimeDifferenceCount = 0;
-    long preProgress = 0;
-    long videoSleepTime = 0;
-    long step = 0;
-    bool needLocalLog = true;
+
+    static long preProgress = 0;
+    static int videoSleepTime = 11;
+    static bool needLocalLog = true;
 
     // 绘制时的缓冲区
     ANativeWindow_Buffer outBuffer;
@@ -339,6 +339,8 @@ namespace alexander {
         avformat_network_init();
         // 注册设备的函数,如用获取摄像头数据或音频等,需要此函数先注册
         // avdevice_register_all();
+
+        videoSleepTime = 11;
     }
 
     void initAudio() {
@@ -1024,41 +1026,48 @@ namespace alexander {
                 // 一个通道中可用的输入采样数量
                 decodedAVFrame->nb_samples);
         if (ret < 0) {
-            LOGE("转换时出错 %d", ret);
-        } else {
-            if (!audioWrapper->father->isStarted) {
-                audioWrapper->father->isStarted = true;
-            }
-            while (videoWrapper != NULL
-                   && videoWrapper->father != NULL
-                   && !videoWrapper->father->isStarted) {
-                // usleep(1000);
-                audioSleep(1);
-            }
-            audioTimeDifference =
-                    decodedAVFrame->pts * av_q2d(stream->time_base);
-            //LOGD("handleData() audio audioTimeDifference: %lf\n", audioTimeDifference);
-            // 显示时间进度
-            long progress = (long) audioTimeDifference;
-            if (progress > preProgress) {
-                preProgress = progress;
-                onProgressUpdated(progress);
-            }
+            LOGE("audio 转换时出错 %d", ret);
+            return ret;
+        }
 
-            // 获取给定音频参数所需的缓冲区大小
-            int out_buffer_size = av_samples_get_buffer_size(
-                    NULL,
-                    // 输出的声道个数
-                    audioWrapper->dstNbChannels,
-                    // 一个通道中音频采样数量
-                    decodedAVFrame->nb_samples,
-                    // 输出采样格式16bit
-                    audioWrapper->dstAVSampleFormat,
-                    // 缓冲区大小对齐（0 = 默认值,1 = 不对齐）
-                    1);
+        if (!audioWrapper->father->isStarted) {
+            audioWrapper->father->isStarted = true;
+        }
+        while (videoWrapper != NULL
+               && videoWrapper->father != NULL
+               && !videoWrapper->father->isStarted) {
+            // usleep(1000);
+            audioSleep(1);
+        }
 
+        audioTimeDifference =
+                decodedAVFrame->pts * av_q2d(stream->time_base);
+        //LOGD("handleData() audio audioTimeDifference: %lf\n", audioTimeDifference);
+
+        // 显示时间进度
+        long progress = (long) audioTimeDifference;
+        if (progress > preProgress) {
+            preProgress = progress;
+            onProgressUpdated(progress);
+        }
+
+        // 获取给定音频参数所需的缓冲区大小
+        int out_buffer_size = av_samples_get_buffer_size(
+                NULL,
+                // 输出的声道个数
+                audioWrapper->dstNbChannels,
+                // 一个通道中音频采样数量
+                decodedAVFrame->nb_samples,
+                // 输出采样格式16bit
+                audioWrapper->dstAVSampleFormat,
+                // 缓冲区大小对齐（0 = 默认值,1 = 不对齐）
+                1);
+
+        if (needOutputAudio) {
             write(audioWrapper->father->outBuffer1, 0, out_buffer_size);
         }
+
+        return ret;
     }
 
     int handleVideoDataImpl(AVStream *stream, AVFrame *decodedAVFrame) {
@@ -1140,8 +1149,8 @@ namespace alexander {
 //            double timeDifference = (curAVFramePtsVideo - preAVFramePtsVideo) * av_q2d(stream->time_base);
 //            preAVFramePtsVideo = curAVFramePtsVideo;
 
-            double timeDifference = videoTimeDifference - videoTimeDifferencePre;
             // timeDifference = 0.040000
+            /*double timeDifference = videoTimeDifference - videoTimeDifferencePre;
             // 单位: 毫秒
             long tempSleep = timeDifference * 1000;
             tempSleep -= 30;
@@ -1160,6 +1169,12 @@ namespace alexander {
                     videoSleep(11);
                 }
                 // videoSleepTime <= 0时不需要sleep
+            }*/
+
+            if (videoSleepTime > 0) {
+                videoSleep(videoSleepTime);
+            } else {
+                videoSleep(11);
             }
 
             ////////////////////////////////////////////////////////
@@ -1520,15 +1535,6 @@ namespace alexander {
                     timeDifferenceWithAV = videoTimeDifference - audioTimeDifference;
                     // LOGW("handleData() video timeDifferenceWithAV  : %lf\n", timeDifferenceWithAV);
                 }
-
-                // 0.016667
-                // 0.100000 0.116667 0.133333 0.150000 0.166667 0.183333 0.200000
-                /***
-                 如果有10几帧解码失败了,然后出现下一帧的时间戳很大
-                 videoTimeDifferencePre: 406.583333
-                 maxVideoTimeDifference: 0.125000
-                 videoTimeDifference   : 425.541667
-                 */
 
                 if (wrapper->type == TYPE_AUDIO) {
                 } else {
@@ -2093,19 +2099,19 @@ namespace alexander {
     }
 
     void stepAdd() {
-        step++;
+        ++videoSleepTime;
         char dest[50];
-        sprintf(dest, "videoSleepTime: %ld, step: %ld\n", videoSleepTime, step);
+        sprintf(dest, "videoSleepTime: %d\n", videoSleepTime);
         onInfo(dest);
-        LOGI("stepAdd()      videoSleepTime: %ld, step: %ld\n", videoSleepTime, step);
+        LOGF("stepAdd()      videoSleepTime: %d\n", videoSleepTime);
     }
 
     void stepSubtract() {
-        step--;
+        --videoSleepTime;
         char dest[50];
-        sprintf(dest, "videoSleepTime: %ld, step: %ld\n", videoSleepTime, step);
+        sprintf(dest, "videoSleepTime: %d\n", videoSleepTime);
         onInfo(dest);
-        LOGI("stepSubtract() videoSleepTime: %ld, step: %ld\n", videoSleepTime, step);
+        LOGF("stepSubtract() videoSleepTime: %d\n", videoSleepTime);
     }
 
     /***

@@ -12,7 +12,11 @@
 #include <iostream>
 #include <iomanip>
 
-extern "C" {// 不能少
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+//extern "C" {// 不能少
 // ffmpeg使用MediaCodec进行硬解码(需要编译出支持硬解码的so库)
 #include <libavcodec/jni.h>
 #include <libavcodec/avcodec.h>
@@ -70,10 +74,15 @@ extern "C" {// 不能少
 //    #include <jpeglib.h>
 //    #include <turbojpeg.h>
 
-};// extern "C" end
+//};// extern "C" end
+
+#ifdef __cplusplus
+}
+#endif
 
 #include "ffmpeg.h"
-#include "MyHeader.h"
+//#include "MyHeader.h"
+#include "../include/Log.h"
 
 namespace alexander {
 

@@ -325,9 +325,9 @@ Java_com_weidi_usefragments_tool_FFMPEG_audioReadData(JNIEnv *env, jobject ffmpe
 extern "C"
 JNIEXPORT jint JNICALL
 Java_com_weidi_usefragments_tool_FFMPEG_audioHandleData(JNIEnv *env, jobject ffmpegObject) {
-#ifdef USE_AUDIO
     int type = TYPE_AUDIO;
     alexander::handleData(&type);
+#ifdef USE_AUDIO
 #endif
     return (jint) 0;
 }
@@ -335,9 +335,9 @@ Java_com_weidi_usefragments_tool_FFMPEG_audioHandleData(JNIEnv *env, jobject ffm
 extern "C"
 JNIEXPORT jint JNICALL
 Java_com_weidi_usefragments_tool_FFMPEG_videoReadData(JNIEnv *env, jobject ffmpegObject) {
-#ifdef USE_VIDEO
     int type = TYPE_VIDEO;
     alexander::readData(&type);
+#ifdef USE_VIDEO
 #endif
     return (jint) 0;
 }
@@ -345,9 +345,9 @@ Java_com_weidi_usefragments_tool_FFMPEG_videoReadData(JNIEnv *env, jobject ffmpe
 extern "C"
 JNIEXPORT jint JNICALL
 Java_com_weidi_usefragments_tool_FFMPEG_videoHandleData(JNIEnv *env, jobject ffmpegObject) {
-#ifdef USE_VIDEO
     int type = TYPE_VIDEO;
     alexander::handleData(&type);
+#ifdef USE_VIDEO
 #endif
     return (jint) 0;
 }
