@@ -2,7 +2,7 @@
 // Created by root on 19-8-8.
 //
 
-#include "SimpleVideoPlayer3.h"
+
 
 
 
@@ -184,6 +184,8 @@ pthread_join(videoHandleDataThread, NULL);
 //pthread_cancel(videoHandleDataThread);
  */
 
+#include "SimpleVideoPlayer3.h"
+
 #define LOG "player_alexander"
 
 namespace alexander {
@@ -227,6 +229,31 @@ namespace alexander {
     int64_t preAVFramePtsVideo = 0;
 
     char *getStrAVPixelFormat(AVPixelFormat format);
+
+    /////////////////////////////////////////////////////
+
+    double
+    //上一帧的播放时间
+            pre_play_time = 0,
+    //当前帧的播放时间
+            cur_play_time = 0,
+    // 上一次播放视频的两帧视频间隔时间
+            last_delay = 0,
+    //两帧视频间隔时间
+            delay = 0,
+    //音频轨道 实际播放时间
+            audio_clock = 0,
+            video_clock = 0,
+    //音频帧与视频帧相差时间
+            diff = 0,
+            sync_threshold = 0,
+    //从第一帧开始的绝对时间
+            start_time = 0,
+            pts = 0,
+    //真正需要延迟时间
+            actual_delay = 0;
+
+    /////////////////////////////////////////////////////
 
     AudioWrapper *getAudioWrapper() {
         return audioWrapper;
@@ -276,6 +303,32 @@ namespace alexander {
             return frame_a.pts <= frame_b.pts;
         }
     };
+
+    double synchronize(AVFrame *frame, double play) {
+        //clock是当前播放的时间位置
+        if (play != 0) {
+            video_clock = play;
+        } else {
+            //pst为0 则先把pts设为上一帧时间
+            play = video_clock;
+        }
+        //可能有pts为0 则主动增加clock
+        //frame->repeat_pict = 当解码时，这张图片需要要延迟多少
+        //需要求出扩展延时：
+        //extra_delay = repeat_pict / (2*fps) 显示这样图片需要延迟这么久来显示
+        double repeat_pict = frame->repeat_pict;
+        //使用AvCodecContext的而不是stream的
+        double frame_delay = av_q2d(videoWrapper->father->avCodecContext->time_base);
+        //如果time_base是1,25 把1s分成25份，则fps为25
+        //fps = 1/(1/25)
+        double fps = 1 / frame_delay;
+        //pts 加上 这个延迟 是显示时间
+        double extra_delay = repeat_pict / (2 * fps);
+        double delay = extra_delay + frame_delay;
+        //    LOGI("extra_delay:%f",extra_delay);
+        video_clock += delay;
+        return play;
+    }
 
     // 已经不需要调用了
     void initAV() {
@@ -1109,6 +1162,42 @@ namespace alexander {
                 // videoSleepTime <= 0时不需要sleep
             }
 
+            ////////////////////////////////////////////////////////
+
+            /*if ((pts = decodedAVFrame->best_effort_timestamp) == AV_NOPTS_VALUE) {
+                pts = 0;
+            }
+            cur_play_time = pts * av_q2d(stream->time_base);
+            // 纠正时间
+            cur_play_time = synchronize(decodedAVFrame, cur_play_time);
+            delay = cur_play_time - pre_play_time;
+            if (delay <= 0 || delay > 1) {
+                delay = last_delay;
+            }
+            // audio_clock = ffmpegVideo->ffmpegMusic->clock;
+            last_delay = delay;
+            pre_play_time = cur_play_time;
+            // 音频与视频的时间差
+            diff = video_clock - audio_clock;
+            //        在合理范围外  才会延迟  加快
+            sync_threshold = (delay > 0.01 ? 0.01 : delay);
+
+            if (fabs(diff) < 10) {
+                if (diff <= -sync_threshold) {
+                    delay = 0;
+                } else if (diff >= sync_threshold) {
+                    delay = 2 * delay;
+                }
+            }
+            start_time += delay;
+            actual_delay = start_time - av_gettime() / 1000000.0;
+            if (actual_delay < 0.01) {
+                actual_delay = 0.01;
+            }
+            av_usleep(actual_delay * 1000000.0 + 6000);*/
+
+            ////////////////////////////////////////////////////////
+
             // 6.unlock绘制
             ANativeWindow_unlockAndPost(pANativeWindow);
         }
@@ -1327,6 +1416,13 @@ namespace alexander {
             if (!wrapper->isHandling) {
                 // for (;;) end
                 break;
+            }
+
+            if (wrapper->type == TYPE_AUDIO) {
+                // 时间矫正
+                if (copyAVPacket->pts != AV_NOPTS_VALUE) {
+                    audio_clock = av_q2d(stream->time_base) * copyAVPacket->pts;
+                }
             }
 
             // 解码过程

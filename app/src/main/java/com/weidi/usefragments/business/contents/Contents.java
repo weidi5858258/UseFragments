@@ -11,7 +11,8 @@ public class Contents {
 
     public static Map<String, String> movieMap = new LinkedHashMap<>();
     private static String mPath;
-    private static final String PATH = "/storage/2430-1702/BaiduNetdisk/video/";
+    private static final String PATH = "/storage/emulated/0/Download/";
+//    private static final String PATH = "/storage/2430-1702/BaiduNetdisk/video/";
 //    private static final String PATH = "/storage/emulated/0/BaiduNetdisk/video/";
 
     static {
@@ -41,6 +42,9 @@ public class Contents {
         movieMap.put(
                 "生死时速",
                 "http://xunlei.jingpin88.com/20171028/6WQ5SFS2/mp4/6WQ5SFS2.mp4");
+        movieMap.put(
+                "三傻大闹宝莱坞",
+                "http://xunleib.zuida360.com/1811/%E4%B8%89%E5%82%BB%E5%A4%A7%E9%97%B9%E5%AE%9D%E8%8E%B1%E5%9D%9E.BD1280%E9%AB%98%E6%B8%85%E4%B8%AD%E5%AD%97%E7%89%88.mp4");
         movieMap.put(
                 "焦点",
                 "http://vip.zuiku8.com/1807/%E7%84%A6%E7%82%B92015.BD1280%E9%AB%98%E6%B8%85%E4%B8%AD%E8%8B%B1%E5%8F%8C%E5%AD%97%E7%89%88.mp4");
@@ -532,6 +536,15 @@ public class Contents {
 
 
         // 本地视频
+        movieMap.put(
+                "三傻大闹宝莱坞-local",
+                PATH + "三傻大闹宝莱坞.mp4");
+        movieMap.put(
+                "index.m3u8",
+                PATH + "index.m3u8.mp4");
+        movieMap.put(
+                "videoplayback",
+                PATH + "videoplayback.mp4");
         movieMap.put(
                 "地狱男爵-血皇后崛起-local",
                 PATH + "地狱男爵-血皇后崛起.mp4");
