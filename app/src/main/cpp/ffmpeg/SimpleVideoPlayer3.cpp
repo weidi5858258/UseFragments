@@ -1096,32 +1096,24 @@ namespace alexander {
          2.视频快了则延迟播放,继续渲染上一帧
          音频需要正常播放才是好的体验
          */
+        videoTimeDifference = decodedAVFrame->pts * av_q2d(stream->time_base);
         if (videoTimeDifference < audioTimeDifference) {
             // 正常情况下videoTimeDifference比audioTimeDifference大一些
             // 如果发现小了,说明视频播放慢了,应丢弃这些帧
             // break后videoTimeDifference增长的速度会加快
             return 0;
         }
-        double tempTimeDifference = videoTimeDifference - audioTimeDifference;
-        if (tempTimeDifference > 2.000000) {
+        if (videoTimeDifference - audioTimeDifference > 2.000000) {
             // 不好的现象.为什么会出现这种情况还不知道?
             LOGE("handleVideoDataImpl() audioTimeDifference: %lf\n", audioTimeDifference);
             LOGE("handleVideoDataImpl() videoTimeDifference: %lf\n", videoTimeDifference);
-            LOGE("handleVideoDataImpl() video - audio      : %lf\n", tempTimeDifference);
-            videoTimeDifference = videoTimeDifferencePre + maxVideoTimeDifference;
-            //videoTimeDifference = videoTimeDifferencePre + maxVideoTimeDifference + timeDifferenceWithAV;
-            LOGE("handleVideoDataImpl() videoTimeDifference: %lf\n", videoTimeDifference);
+            LOGE("handleVideoDataImpl() video - audio      : %lf\n", (videoTimeDifference - audioTimeDifference));
         }
         // 如果videoTimeDifference比audioTimeDifference大出了一定的范围
         // 那么说明视频播放快了,应等待音频
         while (videoTimeDifference - audioTimeDifference > TIME_DIFFERENCE) {
             videoSleep(1);
         }
-
-        //int64_t curAVFramePts = decodedAVFrame->pts;
-        //videoTimeDifference = curAVFramePtsVideo * av_q2d(stream->time_base);
-        /*double timeDifference = (curAVFramePtsVideo - preAVFramePtsVideo) * av_q2d(stream->time_base);
-        preAVFramePtsVideo = curAVFramePtsVideo;*/
 
         if (videoWrapper->father->isHandling) {
             // 3.lock锁定下一个即将要绘制的Surface
@@ -1145,9 +1137,6 @@ namespace alexander {
             for (int h = 0; h < videoWrapper->srcHeight; h++) {
                 memcpy(dst + h * dstStride, src + h * srcStride, srcStride);
             }
-
-//            double timeDifference = (curAVFramePtsVideo - preAVFramePtsVideo) * av_q2d(stream->time_base);
-//            preAVFramePtsVideo = curAVFramePtsVideo;
 
             // timeDifference = 0.040000
             /*double timeDifference = videoTimeDifference - videoTimeDifferencePre;
@@ -1272,7 +1261,6 @@ namespace alexander {
         curAVFramePtsVideo = 0;
         preAVFramePtsVideo = 0;
 
-        int MaxRunTimes = 0;
         int ret = 0, out_buffer_size = 0;
 
         AVStream *stream = avFormatContext->streams[wrapper->streamIndex];
@@ -1516,53 +1504,12 @@ namespace alexander {
 
             ///////////////////////////////////////////////////////////////////
 
-            if (wrapper->type == TYPE_AUDIO) {
-            } else {
-                curAVFramePtsVideo = decodedAVFrame->pts;
-                videoTimeDifference = curAVFramePtsVideo * av_q2d(stream->time_base);
-                videoTimeDifference_l = round(videoTimeDifference * 1000000);
-                if (videoTimeDifference > 0
-                    && audioTimeDifference > 0
-                    && videoTimeDifference > audioTimeDifference
-                    && MaxRunTimes <= 10) {
-                    MaxRunTimes++;
-                    double tempMaxVideoTimeDifference = videoTimeDifference - videoTimeDifferencePre;
-                    if (tempMaxVideoTimeDifference > maxVideoTimeDifference) {
-                        maxVideoTimeDifference = tempMaxVideoTimeDifference;
-                        maxVideoTimeDifference_l = round(maxVideoTimeDifference * 1000000);
-                        // LOGW("handleData() video maxVideoTimeDifference: %lf\n", maxVideoTimeDifference);
-                    }
-                    timeDifferenceWithAV = videoTimeDifference - audioTimeDifference;
-                    // LOGW("handleData() video timeDifferenceWithAV  : %lf\n", timeDifferenceWithAV);
-                }
-
-                if (wrapper->type == TYPE_AUDIO) {
-                } else {
-//                    LOGI("handleData() videoTimeDifferencePre: %lf\n", videoTimeDifferencePre);
-//                    LOGD("handleData() audioTimeDifference   : %lf\n", audioTimeDifference);
-//                    LOGW("handleData() videoTimeDifference   : %lf\n", videoTimeDifference);
-                }
-                if ((maxVideoTimeDifference_l + videoTimeDifferencePre_l) >= videoTimeDifference_l
-                    || (videoTimeDifference_l - (maxVideoTimeDifference_l + videoTimeDifferencePre_l)) <= 100000) {
-                    // 当前帧的时间戳正常
-                } else {
-
-                };
-            }
-
             // 播放声音和渲染画面
             if (wrapper->type == TYPE_AUDIO) {
                 handleAudioDataImpl(stream, decodedAVFrame);
             } else {
                 handleVideoDataImpl(stream, decodedAVFrame);
-            }
-
-            if (wrapper->type == TYPE_AUDIO) {
-            } else {
                 videoTimeDifferencePre = videoTimeDifference;
-                videoTimeDifferencePre_l = round(videoTimeDifferencePre * 1000000);
-                /*if (videoTimeDifference > videoTimeDifferencePre) {
-                }*/
             }
 
             // 设置结束标志
