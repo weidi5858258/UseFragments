@@ -93,6 +93,7 @@ namespace alexander {
 #define TYPE_AUDIO 1
 #define TYPE_VIDEO 2
 
+    // 不能无限制读取数据进行保存,这样要出错的(能播放,但不是想要的结果)
 #define MAX_AVPACKET_COUNT         10000
 
 #define MAX_AVPACKET_COUNT_AUDIO_HTTP 3000

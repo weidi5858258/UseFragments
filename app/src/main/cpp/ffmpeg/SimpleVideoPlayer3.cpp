@@ -854,8 +854,10 @@ namespace alexander {
             notifyToHandle(wrapper);
         }
 
-        if (/*wrapper->type == TYPE_VIDEO
-            && */list2Size >= wrapper->list2LimitCounts) {
+        if (wrapper->type == TYPE_VIDEO
+            && list2Size >= wrapper->list2LimitCounts) {
+            LOGD("readDataImpl() audio list1: %d\n", audioWrapper->father->list1->size());
+            LOGW("readDataImpl() video list1: %d\n", videoWrapper->father->list1->size());
             LOGD("readDataImpl() audio list2: %d\n", audioWrapper->father->list2->size());
             LOGW("readDataImpl() video list2: %d\n", videoWrapper->father->list2->size());
             LOGI("readDataImpl() notifyToReadWait start\n");
@@ -1461,11 +1463,6 @@ namespace alexander {
                 if (wrapper->list1->size() == 0) {
                     wrapper->isReadList1Full = false;
                     if (list2Size > 0) {
-                        if (wrapper->type == TYPE_AUDIO) {
-                            LOGD("handleData() audio list2: %d\n", list2Size);
-                        } else {
-                            LOGW("handleData() video list2: %d\n", list2Size);
-                        }
                         pthread_mutex_lock(&readLockMutex);
                         wrapper->list1->clear();
                         wrapper->list1->assign(wrapper->list2->begin(), wrapper->list2->end());
@@ -1473,7 +1470,12 @@ namespace alexander {
                         wrapper->isReadList1Full = true;
                         pthread_mutex_unlock(&readLockMutex);
 
-                        notifyToRead();
+                        if (wrapper->type == TYPE_AUDIO) {
+                            LOGD("handleData() audio 接下去要处理的数据有 list1: %d\n", wrapper->list1->size());
+                        } else {
+                            LOGW("handleData() video 接下去要处理的数据有 list1: %d\n", wrapper->list1->size());
+                            notifyToRead();
+                        }
                     }
                 }
             } else {
@@ -1481,11 +1483,6 @@ namespace alexander {
                     // 还有数据,先用完再说
                 } else {
                     if (list2Size > 0) {
-                        if (wrapper->type == TYPE_AUDIO) {
-                            LOGD("handleData() audio list2最后还有: %d\n", list2Size);
-                        } else {
-                            LOGW("handleData() video list2最后还有: %d\n", list2Size);
-                        }
                         // 把剩余的数据全部复制过来
                         pthread_mutex_lock(&readLockMutex);
                         wrapper->list1->clear();
@@ -1493,7 +1490,12 @@ namespace alexander {
                         wrapper->list2->clear();
                         pthread_mutex_unlock(&readLockMutex);
 
-                        notifyToRead();
+                        if (wrapper->type == TYPE_AUDIO) {
+                            LOGD("handleData() audio 最后要处理的数据还有 list1: %d\n", wrapper->list1->size());
+                        } else {
+                            LOGW("handleData() video 最后要处理的数据还有 list1: %d\n", wrapper->list1->size());
+                            notifyToRead();
+                        }
                     }
                     // 读线程已经结束,所以不需要再暂停
                     wrapper->isReadList1Full = true;
