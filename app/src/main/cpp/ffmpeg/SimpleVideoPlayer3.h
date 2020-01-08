@@ -93,6 +93,8 @@ namespace alexander {
 #define TYPE_AUDIO 1
 #define TYPE_VIDEO 2
 
+#define MAX_AVPACKET_COUNT         10000
+
 #define MAX_AVPACKET_COUNT_AUDIO_HTTP 3000
 #define MAX_AVPACKET_COUNT_VIDEO_HTTP 3000
 

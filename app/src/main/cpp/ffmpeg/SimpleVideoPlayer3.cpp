@@ -196,6 +196,7 @@ namespace alexander {
     static struct AudioWrapper *audioWrapper = NULL;
     static struct VideoWrapper *videoWrapper = NULL;
     static pthread_mutex_t readLockMutex = PTHREAD_MUTEX_INITIALIZER;
+    static pthread_cond_t readLockCondition = PTHREAD_COND_INITIALIZER;
     static bool isLocal = false;
     static bool needOutputAudio = true;
 
@@ -262,6 +263,18 @@ namespace alexander {
 
     VideoWrapper *getVideoWrapper() {
         return videoWrapper;
+    }
+
+    void notifyToRead() {
+        pthread_mutex_lock(&readLockMutex);
+        pthread_cond_signal(&readLockCondition);
+        pthread_mutex_unlock(&readLockMutex);
+    }
+
+    void notifyToReadWait() {
+        pthread_mutex_lock(&readLockMutex);
+        pthread_cond_wait(&readLockCondition, &readLockMutex);
+        pthread_mutex_unlock(&readLockMutex);
     }
 
     // 通知读线程开始读(其中有一个队列空的情况)
@@ -366,8 +379,9 @@ namespace alexander {
         } else {
             audioWrapper->father->list1LimitCounts = MAX_AVPACKET_COUNT_AUDIO_HTTP;
         }
+        audioWrapper->father->list2LimitCounts = MAX_AVPACKET_COUNT;
         LOGD("initAudio() list1LimitCounts: %d\n", audioWrapper->father->list1LimitCounts);
-        audioWrapper->father->list2LimitCounts = 0;
+        LOGD("initAudio() list2LimitCounts: %d\n", audioWrapper->father->list2LimitCounts);
         audioWrapper->father->streamIndex = -1;
         audioWrapper->father->readFramesCount = 0;
         audioWrapper->father->handleFramesCount = 0;
@@ -415,8 +429,9 @@ namespace alexander {
         } else {
             videoWrapper->father->list1LimitCounts = MAX_AVPACKET_COUNT_VIDEO_HTTP;
         }
+        videoWrapper->father->list2LimitCounts = MAX_AVPACKET_COUNT;
         LOGW("initVideo() list1LimitCounts: %d\n", videoWrapper->father->list1LimitCounts);
-        videoWrapper->father->list2LimitCounts = 0;
+        LOGW("initVideo() list2LimitCounts: %d\n", videoWrapper->father->list2LimitCounts);
         videoWrapper->father->streamIndex = -1;
         videoWrapper->father->readFramesCount = 0;
         videoWrapper->father->handleFramesCount = 0;
@@ -829,22 +844,29 @@ namespace alexander {
         pthread_mutex_lock(&readLockMutex);
         // 存数据
         wrapper->list2->push_back(*copyAVPacket);
+        size_t list2Size = wrapper->list2->size();
+        pthread_mutex_unlock(&readLockMutex);
+
         // 如果发现是因为Cache问题而暂停了,那么发送一个通知
         wrapper->readFramesCount++;
         if (wrapper->isPausedForCache
-            && wrapper->list2->size() == CACHE_COUNT) {
+            && list2Size == CACHE_COUNT) {
             notifyToHandle(wrapper);
         }
-        pthread_mutex_unlock(&readLockMutex);
 
-        /*if (wrapper->list2->size() >= wrapper->list2LimitCounts) {
-            // 这里要做的事是list2中达到一定数量的时候暂停一下,现在不做这功能
-            return 0;
-        }*/
+        if (/*wrapper->type == TYPE_VIDEO
+            && */list2Size >= wrapper->list2LimitCounts) {
+            LOGD("readDataImpl() audio list2: %d\n", audioWrapper->father->list2->size());
+            LOGW("readDataImpl() video list2: %d\n", videoWrapper->father->list2->size());
+            LOGI("readDataImpl() notifyToReadWait start\n");
+            notifyToReadWait();
+            LOGI("readDataImpl() notifyToReadWait end\n");
+        }
 
         // 只会执行一次
-        if (wrapper->list1LimitCounts != 0
-            && wrapper->list2->size() == wrapper->list1LimitCounts) {
+        if (/*wrapper->list1LimitCounts != 0
+            && */!wrapper->isReadList1Full
+                 && list2Size == wrapper->list1LimitCounts) {
             // 下面两个都不行
             // std::move(wrapper->list2->begin(), wrapper->list2->end(), std::back_inserter(wrapper->list1));
             // wrapper->list1->swap((std::list<AVPacket> &) wrapper->list2);
@@ -853,10 +875,12 @@ namespace alexander {
             wrapper->list1->assign(wrapper->list2->begin(), wrapper->list2->end());
             wrapper->list2->clear();
 
-            wrapper->list1LimitCounts = 0;
+            // wrapper->list1LimitCounts = 0;
             wrapper->isReadList1Full = true;
             notifyToHandle(wrapper);
         }
+
+        return 0;
     }
 
     int seekToWithRead() {
@@ -976,8 +1000,6 @@ namespace alexander {
                 videoWrapper->father->isReadList1Full = true;
 
                 LOGF("readData() 文件已经读完了\n");
-                LOGD("readData() audio list2: %d\n", audioWrapper->father->list2->size());
-                LOGW("readData() video list2: %d\n", videoWrapper->father->list2->size());
                 // 说明歌曲长度比较短,达不到"规定值",因此处理数据线程还在等待
                 notifyToHandle(audioWrapper->father);
                 notifyToHandle(videoWrapper->father);
@@ -991,9 +1013,11 @@ namespace alexander {
             }
 
             if (srcAVPacket->stream_index == audioWrapper->father->streamIndex) {
-                readDataImpl(audioWrapper->father, srcAVPacket, copyAVPacket);
+                if (audioWrapper->father->isReading)
+                    readDataImpl(audioWrapper->father, srcAVPacket, copyAVPacket);
             } else if (srcAVPacket->stream_index == videoWrapper->father->streamIndex) {
-                readDataImpl(videoWrapper->father, srcAVPacket, copyAVPacket);
+                if (videoWrapper->father->isReading)
+                    readDataImpl(videoWrapper->father, srcAVPacket, copyAVPacket);
             }
         }// for(;;) end
 
@@ -1002,6 +1026,8 @@ namespace alexander {
             srcAVPacket = NULL;
         }
 
+        LOGD("readData() audio list2: %d\n", audioWrapper->father->list2->size());
+        LOGW("readData() video list2: %d\n", videoWrapper->father->list2->size());
         LOGD("%s\n", "readData() end");
         return NULL;
     }
@@ -1200,6 +1226,96 @@ namespace alexander {
         }
     }
 
+    int decodeData(Wrapper *wrapper, AVStream *stream, AVPacket *copyAVPacket, AVFrame *decodedAVFrame) {
+        // 解码过程
+        int ret = avcodec_send_packet(wrapper->avCodecContext, copyAVPacket);
+        av_packet_unref(copyAVPacket);
+        switch (ret) {
+            case AVERROR(EAGAIN):
+                if (wrapper->type == TYPE_AUDIO) {
+                    LOGE("readData() audio avcodec_send_packet   ret: %d\n", ret);
+                } else {
+                    LOGE("readData() video avcodec_send_packet   ret: %d\n", ret);
+                }
+                break;
+            case AVERROR(EINVAL):
+            case AVERROR(ENOMEM):
+            case AVERROR_EOF:
+                if (wrapper->type == TYPE_AUDIO) {
+                    LOGE("audio 发送数据包到解码器时出错 %d", ret);
+                } else {
+                    LOGE("video 发送数据包到解码器时出错 %d", ret);
+                }
+                wrapper->isHandling = false;
+                break;
+            case 0:
+            default:
+                break;
+        }// switch (ret) end
+
+        if (!wrapper->isHandling) {
+            // for (;;) end
+            return -1;
+        }
+
+        if (ret != 0) {
+            return -2;
+        }
+
+        ret = avcodec_receive_frame(wrapper->avCodecContext, decodedAVFrame);
+        switch (ret) {
+            // 输出是不可用的,必须发送新的输入
+            case AVERROR(EAGAIN):
+                if (wrapper->type == TYPE_AUDIO) {
+                    LOGE("readData() audio avcodec_receive_frame ret: %d\n", ret);
+                } else {
+                    LOGE("readData() video avcodec_receive_frame ret: %d\n", ret);
+                }
+                break;
+            case AVERROR(EINVAL):
+                // codec打不开,或者是一个encoder
+            case AVERROR_EOF:
+                // 已经完全刷新,不会再有输出帧了
+                wrapper->isHandling = false;
+                break;
+            case 0: {
+                // 解码成功,返回一个输出帧
+                break;
+            }
+            default:
+                // 合法的解码错误
+                if (wrapper->type == TYPE_AUDIO) {
+                    LOGE("audio 从解码器接收帧时出错 %d", ret);
+                } else {
+                    LOGE("video 从解码器接收帧时出错 %d", ret);
+                }
+                break;
+        }// switch (ret) end
+
+        if (!wrapper->isHandling) {
+            // for (;;) end
+            return -1;
+        }
+
+        if (ret != 0) {
+            return -2;
+        }
+
+        ///////////////////////////////////////////////////////////////////
+
+        // 播放声音和渲染画面
+        if (wrapper->type == TYPE_AUDIO) {
+            handleAudioDataImpl(stream, decodedAVFrame);
+        } else {
+            handleVideoDataImpl(stream, decodedAVFrame);
+            videoTimeDifferencePre = videoTimeDifference;
+        }
+
+        ///////////////////////////////////////////////////////////////////
+
+        return 0;
+    }
+
     void *handleData(void *opaque) {
         if (opaque == NULL) {
             return NULL;
@@ -1313,6 +1429,25 @@ namespace alexander {
             }
 
             if (wrapper->list1->size() > 0) {
+                /*std::list<AVPacket>::iterator it; //声明一个迭代器
+                for (auto it = wrapper->list1->begin(); it != wrapper->list1->end(); ++it) {
+                    AVPacket avPacket = *it;
+                    decodeData(wrapper, stream, &avPacket, decodedAVFrame);
+                    av_packet_unref(&avPacket);
+                }*/
+
+                /*srcAVPacket = &wrapper->list1->front();
+                av_packet_ref(copyAVPacket, srcAVPacket);
+                ret = decodeData(wrapper, stream, copyAVPacket, decodedAVFrame);
+                if (ret == -1) {
+                    break;
+                } else if (ret == -2) {
+                    continue;
+                }
+                av_packet_unref(srcAVPacket);
+                wrapper->list1->pop_front();
+                wrapper->handleFramesCount++;*/
+
                 srcAVPacket = &wrapper->list1->front();
                 // 内容copy
                 av_packet_ref(copyAVPacket, srcAVPacket);
@@ -1337,6 +1472,8 @@ namespace alexander {
                         wrapper->list2->clear();
                         wrapper->isReadList1Full = true;
                         pthread_mutex_unlock(&readLockMutex);
+
+                        notifyToRead();
                     }
                 }
             } else {
@@ -1355,6 +1492,8 @@ namespace alexander {
                         wrapper->list1->assign(wrapper->list2->begin(), wrapper->list2->end());
                         wrapper->list2->clear();
                         pthread_mutex_unlock(&readLockMutex);
+
+                        notifyToRead();
                     }
                     // 读线程已经结束,所以不需要再暂停
                     wrapper->isReadList1Full = true;
@@ -1429,9 +1568,9 @@ namespace alexander {
             switch (ret) {
                 case AVERROR(EAGAIN):
                     if (wrapper->type == TYPE_AUDIO) {
-                        LOGE("readData() audio avcodec_send_packet   ret: %d\n", ret);
+                        LOGE("handleData() audio avcodec_send_packet   ret: %d\n", ret);
                     } else {
-                        LOGE("readData() video avcodec_send_packet   ret: %d\n", ret);
+                        LOGE("handleData() video avcodec_send_packet   ret: %d\n", ret);
                     }
                     break;
                 case AVERROR(EINVAL):
@@ -1463,9 +1602,9 @@ namespace alexander {
                 // 输出是不可用的,必须发送新的输入
                 case AVERROR(EAGAIN):
                     if (wrapper->type == TYPE_AUDIO) {
-                        LOGE("readData() audio avcodec_receive_frame ret: %d\n", ret);
+                        LOGE("handleData() audio avcodec_receive_frame ret: %d\n", ret);
                     } else {
-                        LOGE("readData() video avcodec_receive_frame ret: %d\n", ret);
+                        LOGE("handleData() video avcodec_receive_frame ret: %d\n", ret);
                     }
                     break;
                 case AVERROR(EINVAL):
@@ -1560,6 +1699,7 @@ namespace alexander {
             av_frame_free(&dstAVFrame);
             dstAVFrame = NULL;
             pthread_mutex_destroy(&readLockMutex);
+            pthread_cond_destroy(&readLockCondition);
             LOGW("%s\n", "handleData() video end");
         }
 
