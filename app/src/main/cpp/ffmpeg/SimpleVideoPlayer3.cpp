@@ -195,6 +195,7 @@ namespace alexander {
 
     static struct AudioWrapper *audioWrapper = NULL;
     static struct VideoWrapper *videoWrapper = NULL;
+    static pthread_mutex_t readLockMutex = PTHREAD_MUTEX_INITIALIZER;
     static bool isLocal = false;
     static bool needOutputAudio = true;
 
@@ -340,6 +341,7 @@ namespace alexander {
         // 注册设备的函数,如用获取摄像头数据或音频等,需要此函数先注册
         // avdevice_register_all();
 
+        readLockMutex = PTHREAD_MUTEX_INITIALIZER;
         videoSleepTime = 11;
     }
 
@@ -824,30 +826,25 @@ namespace alexander {
         av_packet_ref(copyAVPacket, srcAVPacket);
         av_packet_unref(srcAVPacket);
 
-        pthread_mutex_lock(&wrapper->readLockMutex);
+        pthread_mutex_lock(&readLockMutex);
+        // 存数据
         wrapper->list2->push_back(*copyAVPacket);
-        pthread_mutex_unlock(&wrapper->readLockMutex);
-
+        // 如果发现是因为Cache问题而暂停了,那么发送一个通知
         wrapper->readFramesCount++;
         if (wrapper->isPausedForCache
             && wrapper->list2->size() == CACHE_COUNT) {
             notifyToHandle(wrapper);
         }
+        pthread_mutex_unlock(&readLockMutex);
+
         /*if (wrapper->list2->size() >= wrapper->list2LimitCounts) {
             // 这里要做的事是list2中达到一定数量的时候暂停一下,现在不做这功能
             return 0;
         }*/
+
         // 只会执行一次
         if (wrapper->list1LimitCounts != 0
             && wrapper->list2->size() == wrapper->list1LimitCounts) {
-            /*std::list<AVPacket>::iterator iter;
-            for (iter = wrapper->list2->begin();
-                 iter != wrapper->list2->end();
-                 ++iter) {
-                LOGI("handleData() video list2: %d\n", (*iter).size);
-            }
-            LOGI("handleData()=======================================");*/
-
             // 下面两个都不行
             // std::move(wrapper->list2->begin(), wrapper->list2->end(), std::back_inserter(wrapper->list1));
             // wrapper->list1->swap((std::list<AVPacket> &) wrapper->list2);
@@ -859,12 +856,6 @@ namespace alexander {
             wrapper->list1LimitCounts = 0;
             wrapper->isReadList1Full = true;
             notifyToHandle(wrapper);
-
-            /*for (iter = wrapper->list1->begin();
-                 iter != wrapper->list1->end();
-                 ++iter) {
-                LOGI("handleData() video list1: %d\n", (*iter).size);
-            }*/
         }
     }
 
@@ -985,6 +976,8 @@ namespace alexander {
                 videoWrapper->father->isReadList1Full = true;
 
                 LOGF("readData() 文件已经读完了\n");
+                LOGD("readData() audio list2: %d\n", audioWrapper->father->list2->size());
+                LOGW("readData() video list2: %d\n", videoWrapper->father->list2->size());
                 // 说明歌曲长度比较短,达不到"规定值",因此处理数据线程还在等待
                 notifyToHandle(audioWrapper->father);
                 notifyToHandle(videoWrapper->father);
@@ -1027,43 +1020,43 @@ namespace alexander {
                 decodedAVFrame->nb_samples);
         if (ret < 0) {
             LOGE("audio 转换时出错 %d", ret);
-            return ret;
-        }
+//            return ret;
+        } else {
+            if (!audioWrapper->father->isStarted) {
+                audioWrapper->father->isStarted = true;
+            }
+            while (videoWrapper != NULL
+                   && videoWrapper->father != NULL
+                   && !videoWrapper->father->isStarted) {
+                // usleep(1000);
+                audioSleep(1);
+            }
 
-        if (!audioWrapper->father->isStarted) {
-            audioWrapper->father->isStarted = true;
-        }
-        while (videoWrapper != NULL
-               && videoWrapper->father != NULL
-               && !videoWrapper->father->isStarted) {
-            // usleep(1000);
-            audioSleep(1);
-        }
+            audioTimeDifference =
+                    decodedAVFrame->pts * av_q2d(stream->time_base);
+            //LOGD("handleData() audio audioTimeDifference: %lf\n", audioTimeDifference);
 
-        audioTimeDifference =
-                decodedAVFrame->pts * av_q2d(stream->time_base);
-        //LOGD("handleData() audio audioTimeDifference: %lf\n", audioTimeDifference);
+            // 显示时间进度
+            long progress = (long) audioTimeDifference;
+            if (progress > preProgress) {
+                preProgress = progress;
+                onProgressUpdated(progress);
+            }
 
-        // 显示时间进度
-        long progress = (long) audioTimeDifference;
-        if (progress > preProgress) {
-            preProgress = progress;
-            onProgressUpdated(progress);
-        }
+            // 获取给定音频参数所需的缓冲区大小
+            int out_buffer_size = av_samples_get_buffer_size(
+                    NULL,
+                    // 输出的声道个数
+                    audioWrapper->dstNbChannels,
+                    // 一个通道中音频采样数量
+                    decodedAVFrame->nb_samples,
+                    // 输出采样格式16bit
+                    audioWrapper->dstAVSampleFormat,
+                    // 缓冲区大小对齐（0 = 默认值,1 = 不对齐）
+                    1);
 
-        // 获取给定音频参数所需的缓冲区大小
-        int out_buffer_size = av_samples_get_buffer_size(
-                NULL,
-                // 输出的声道个数
-                audioWrapper->dstNbChannels,
-                // 一个通道中音频采样数量
-                decodedAVFrame->nb_samples,
-                // 输出采样格式16bit
-                audioWrapper->dstAVSampleFormat,
-                // 缓冲区大小对齐（0 = 默认值,1 = 不对齐）
-                1);
-
-        if (needOutputAudio) {
+            /*if (needOutputAudio) {
+            }*/
             write(audioWrapper->father->outBuffer1, 0, out_buffer_size);
         }
 
@@ -1338,12 +1331,12 @@ namespace alexander {
                         } else {
                             LOGW("handleData() video list2: %d\n", list2Size);
                         }
-                        pthread_mutex_lock(&wrapper->readLockMutex);
+                        pthread_mutex_lock(&readLockMutex);
                         wrapper->list1->clear();
                         wrapper->list1->assign(wrapper->list2->begin(), wrapper->list2->end());
                         wrapper->list2->clear();
                         wrapper->isReadList1Full = true;
-                        pthread_mutex_unlock(&wrapper->readLockMutex);
+                        pthread_mutex_unlock(&readLockMutex);
                     }
                 }
             } else {
@@ -1352,14 +1345,16 @@ namespace alexander {
                 } else {
                     if (list2Size > 0) {
                         if (wrapper->type == TYPE_AUDIO) {
-                            LOGD("readData() audio list2最后还有: %d\n", list2Size);
+                            LOGD("handleData() audio list2最后还有: %d\n", list2Size);
                         } else {
-                            LOGW("readData() video list2最后还有: %d\n", list2Size);
+                            LOGW("handleData() video list2最后还有: %d\n", list2Size);
                         }
                         // 把剩余的数据全部复制过来
+                        pthread_mutex_lock(&readLockMutex);
                         wrapper->list1->clear();
                         wrapper->list1->assign(wrapper->list2->begin(), wrapper->list2->end());
                         wrapper->list2->clear();
+                        pthread_mutex_unlock(&readLockMutex);
                     }
                     // 读线程已经结束,所以不需要再暂停
                     wrapper->isReadList1Full = true;
@@ -1421,12 +1416,12 @@ namespace alexander {
                 break;
             }
 
-            if (wrapper->type == TYPE_AUDIO) {
+            /*if (wrapper->type == TYPE_AUDIO) {
                 // 时间矫正
                 if (copyAVPacket->pts != AV_NOPTS_VALUE) {
                     audio_clock = av_q2d(stream->time_base) * copyAVPacket->pts;
                 }
-            }
+            }*/
 
             // 解码过程
             ret = avcodec_send_packet(wrapper->avCodecContext, copyAVPacket);
@@ -1564,6 +1559,7 @@ namespace alexander {
             av_frame_unref(dstAVFrame);
             av_frame_free(&dstAVFrame);
             dstAVFrame = NULL;
+            pthread_mutex_destroy(&readLockMutex);
             LOGW("%s\n", "handleData() video end");
         }
 

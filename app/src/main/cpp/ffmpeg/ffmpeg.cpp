@@ -315,9 +315,9 @@ Java_com_weidi_usefragments_tool_FFMPEG_initVideo(JNIEnv *env, jobject ffmpegObj
 extern "C"
 JNIEXPORT jint JNICALL
 Java_com_weidi_usefragments_tool_FFMPEG_audioReadData(JNIEnv *env, jobject ffmpegObject) {
-#ifdef USE_AUDIO
     int type = TYPE_AUDIO;
 //    alexander::readData(&type);
+#ifdef USE_AUDIO
 #endif
     return (jint) 0;
 }
