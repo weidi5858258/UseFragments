@@ -134,7 +134,7 @@ namespace alexander {
         int list1LimitCounts = 0;
         int list2LimitCounts = 0;
         bool isReadList1Full = false;
-        bool isReadList2Full = false;
+//        bool isReadList2Full = false;
 
         bool isStarted = false;
         bool isReading = false;
@@ -143,12 +143,14 @@ namespace alexander {
         bool isPausedForUser = false;
         // 因为cache所以pause
         bool isPausedForCache = false;
+        // 因为seek所以pause
+        bool isPausedForSeek = false;
         // seek的初始化条件有没有完成,true表示完成
         bool seekToInit = false;
 
         // 单位: 秒
         int64_t duration = 0;
-        // 单位: 秒
+        // 单位: 秒 seekTo到某个时间点
         int64_t timestamp = 0;
         // 跟线程有关
         pthread_mutex_t readLockMutex;

@@ -731,7 +731,7 @@ public class JniPlayerActivity extends BaseActivity {
                 case R.id.content_tv:
                     mNeedToSyncProgressBar = true;
                     mBubblePopupWindow.dismiss();
-                    MLog.d(TAG, "onClick() mProgress: " + mProgress +
+                    MLog.d("player_alexander", "onClick() mProgress: " + mProgress +
                             " " + DateUtils.formatElapsedTime(mProgress));
                     if (mProgress >= 0 && mProgress <= mFFMPEGPlayer.getDuration()) {
                         mFFMPEGPlayer.seekTo(mProgress);
