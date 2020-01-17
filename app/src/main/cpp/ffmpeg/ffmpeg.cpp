@@ -141,7 +141,7 @@ void videoSleep(long ms) {
         gJavaVm->DetachCurrentThread();
     }
 }
-
+// 回调java端FFMPEG类中的有关方法
 void onReady() {
     JNIEnv *jniEnv;
     bool isAttached = getEnv(&jniEnv);
@@ -153,6 +153,7 @@ void onReady() {
     if (isAttached) {
         gJavaVm->DetachCurrentThread();
     }
+    LOGI("onReady()\n");
 }
 
 void onPaused() {
@@ -166,7 +167,7 @@ void onPaused() {
     if (isAttached) {
         gJavaVm->DetachCurrentThread();
     }
-    LOGD("onPaused()\n");
+    LOGI("onPaused()\n");
 }
 
 void onPlayed() {
@@ -180,7 +181,7 @@ void onPlayed() {
     if (isAttached) {
         gJavaVm->DetachCurrentThread();
     }
-    LOGD("onPlayed()\n");
+    LOGI("onPlayed()\n");
 }
 
 void onFinished() {
@@ -194,6 +195,7 @@ void onFinished() {
     if (isAttached) {
         gJavaVm->DetachCurrentThread();
     }
+    LOGI("onFinished()\n");
 }
 
 void onProgressUpdated(long seconds) {

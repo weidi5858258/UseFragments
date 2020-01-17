@@ -412,17 +412,17 @@ public class ContentsFragment extends BaseFragment {
 
                         switch (viewId) {
                             case R.id.item_root_layout:
-                                /*Intent intent = new Intent();
-                                intent.setClass(getContext(), PlayerActivity.class);
-                                intent.putExtra(PlayerActivity.CONTENT_PATH, path);
-                                getAttachedActivity().startActivity(intent);
-                                ((BaseActivity) getAttachedActivity()).enterActivity();*/
-
                                 Intent intent = new Intent();
+                                intent.setClass(getContext(), PlayerActivity.class);
+                                intent.putExtra(PlayerActivity.CONTENT_PATH, videoPlaybackPath);
+                                getAttachedActivity().startActivity(intent);
+                                ((BaseActivity) getAttachedActivity()).enterActivity();
+
+                                /*Intent intent = new Intent();
                                 intent.setClass(getContext(), JniPlayerActivity.class);
                                 intent.putExtra(JniPlayerActivity.CONTENT_PATH, videoPlaybackPath);
                                 getAttachedActivity().startActivity(intent);
-                                ((BaseActivity) getAttachedActivity()).enterActivity();
+                                ((BaseActivity) getAttachedActivity()).enterActivity();*/
                                 break;
                             case R.id.item_download_btn:
                                 EventBusUtils.post(

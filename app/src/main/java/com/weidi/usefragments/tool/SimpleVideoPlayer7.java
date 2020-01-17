@@ -1997,6 +1997,7 @@ public class SimpleVideoPlayer7 {
                     wrapper.frameData,
                     0,
                     wrapper.frameDataLength,
+                    //System.nanoTime() / 1000);
                     wrapper.presentationTimeUs1);
             // Output
             drainOutputBufferResult = MediaUtils.drainOutputBuffer(

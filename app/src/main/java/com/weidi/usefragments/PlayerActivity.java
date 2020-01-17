@@ -17,6 +17,7 @@ import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
+import android.view.WindowManager;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
@@ -32,7 +33,7 @@ import com.weidi.usefragments.business.contents.Contents;
 import com.weidi.usefragments.tool.DownloadCallback;
 import com.weidi.usefragments.tool.MLog;
 import com.weidi.usefragments.tool.PermissionsUtils;
-import com.weidi.usefragments.tool.SimpleVideoPlayer7;
+import com.weidi.usefragments.tool.SimpleVideoPlayer8;
 
 /***
 
@@ -46,6 +47,9 @@ public class PlayerActivity extends BaseActivity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        getWindow().setFlags(
+                WindowManager.LayoutParams.FLAG_FULLSCREEN,
+                WindowManager.LayoutParams.FLAG_FULLSCREEN);
         setContentView(R.layout.activity_player);
         if (DEBUG)
             MLog.d(TAG, "onCreate(): " + printThis()
@@ -175,9 +179,9 @@ public class PlayerActivity extends BaseActivity {
     private Surface mSurface;
     private PowerManager.WakeLock mPowerWakeLock;
     // private SimpleVideoPlayer mSampleVideoPlayer;
-     private SimpleVideoPlayer7 mSampleVideoPlayer;
+    private SimpleVideoPlayer8 mSampleVideoPlayer;
     private String mPath;
-    private long mProgress;
+    private long mProgressUs;
     private long mPresentationTimeUs;
     private int mDownloadProgress = -1;
     private long contentLength = -1;
@@ -275,7 +279,7 @@ public class PlayerActivity extends BaseActivity {
         });
 
         // mSampleVideoPlayer = new SimpleVideoPlayer();
-        mSampleVideoPlayer = new SimpleVideoPlayer7();
+        mSampleVideoPlayer = new SimpleVideoPlayer8();
 
         int duration = (int) mSampleVideoPlayer.getDurationUs() / 1000;
         int currentPosition = (int) mPresentationTimeUs / 1000;
@@ -295,7 +299,7 @@ public class PlayerActivity extends BaseActivity {
                 if (fromTouch) {
                     long tempProgress =
                             (long) ((progress / 3840.00) * mSampleVideoPlayer.getDurationUs());
-                    mProgress = tempProgress;
+                    mProgressUs = tempProgress;
                     String elapsedTime =
                             DateUtils.formatElapsedTime(tempProgress / 1000 / 1000);
                     mShowTimeTV.setText(elapsedTime);
@@ -385,10 +389,9 @@ public class PlayerActivity extends BaseActivity {
                 }
                 break;
             case PLAYBACK_PROGRESS_CHANGED:
-                long process = (long) ((mProgress / 3840.00) * mSampleVideoPlayer.getDurationUs());
-                mSampleVideoPlayer.setProgressUs(process);
-                MLog.d(TAG, "uiHandleMessage() process: " + process +
-                        " " + DateUtils.formatElapsedTime(process / 1000 / 1000));
+                long progressUs = (long) ((mProgressUs / 3840.00) * mSampleVideoPlayer
+                        .getDurationUs());
+                mSampleVideoPlayer.setProgressUs(progressUs);
                 break;
             case MSG_ON_READY:
                 String durationTime = DateUtils.formatElapsedTime(
@@ -418,6 +421,8 @@ public class PlayerActivity extends BaseActivity {
     }
 
     private Callback mCallback = new Callback() {
+        private boolean onlyOne = true;
+
         @Override
         public void onReady() {
             mUiHandler.removeMessages(MSG_ON_READY);
@@ -434,6 +439,17 @@ public class PlayerActivity extends BaseActivity {
         public void onPlayed() {
             mUiHandler.removeMessages(MSG_LOADING_HIDE);
             mUiHandler.sendEmptyMessage(MSG_LOADING_HIDE);
+            if (onlyOne) {
+                onlyOne = false;
+                mUiHandler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        String durationTime = DateUtils.formatElapsedTime(
+                                (mSampleVideoPlayer.getDurationUs() / 1000) / 1000);
+                        mDurationTimeTV.setText(durationTime);
+                    }
+                });
+            }
         }
 
         @Override
@@ -551,7 +567,7 @@ public class PlayerActivity extends BaseActivity {
                     break;
                 case R.id.content_tv:
                     mNeedToSyncProgressBar = true;
-                    mSampleVideoPlayer.setProgressUs(mProgress);
+                    mSampleVideoPlayer.setProgressUs(mProgressUs);
                     mBubblePopupWindow.dismiss();
                     break;
                 default:

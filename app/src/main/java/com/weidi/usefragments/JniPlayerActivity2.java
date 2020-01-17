@@ -178,7 +178,7 @@ public class JniPlayerActivity2 extends BaseActivity {
                     holder.setFormat(PixelFormat.RGBA_8888);
 
                     // Test
-                    FFMPEG ffmpeg = new FFMPEG();
+                    FFMPEG ffmpeg = null;//new FFMPEG();
                     ffmpeg.setSurface("/storage/2430-1702/BaiduNetdisk/video/05.mp4", mSurface);
 
                     int videoResult = ffmpeg.initVideo();

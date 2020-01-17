@@ -45,6 +45,18 @@ import android.support.annotation.NonNull;
 
 /***
  mimeType是已知的,都是通过mimeType去得到各种对象
+
+ MediaCodec可以处理的数据
+ 压缩数据（即为经过H264,H265等编码的视频数据或AAC等编码的音频数据）
+ 原始音频数据
+ 原始视频数据
+
+ audio:
+ audio/mp4a-latm
+ audio/raw
+
+ video:
+ video/avc
  */
 
 public class MediaUtils {

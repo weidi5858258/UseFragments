@@ -48,8 +48,9 @@ import com.weidi.utils.MyToast;
  */
 public class JniPlayerActivity extends BaseActivity {
 
-    private static final String TAG =
-            JniPlayerActivity.class.getSimpleName();
+    //    private static final String TAG =
+    //            JniPlayerActivity.class.getSimpleName();
+    private static final String TAG = "player_alexander";
     private static final boolean DEBUG = true;
 
     @Override
@@ -197,6 +198,7 @@ public class JniPlayerActivity extends BaseActivity {
     private int mDownloadProgress = -1;
     private long contentLength = -1;
     private boolean mNeedToSyncProgressBar = true;
+    private boolean mIsScreenPress = false;
     private ProgressBar mLoadingView;
     private LinearLayout mControllerPanelLayout;
     private TextView mFileNameTV;
@@ -324,14 +326,14 @@ public class JniPlayerActivity extends BaseActivity {
     }
 
     private void internalResume() {
-        contentLength = (Long) EventBusUtils.post(
+        /*contentLength = (Long) EventBusUtils.post(
                 DownloadFileService.class,
                 DownloadFileService.MSG_GET_CONTENT_LENGTH,
                 null);
         EventBusUtils.post(
                 DownloadFileService.class,
                 DownloadFileService.MSG_SET_CALLBACK,
-                new Object[]{mDownloadCallback});
+                new Object[]{mDownloadCallback});*/
 
         if (mSurface == null) {
             // 没有图像出来,就是由于没有设置PixelFormat.RGBA_8888
@@ -364,6 +366,7 @@ public class JniPlayerActivity extends BaseActivity {
                                     @Override
                                     public void run() {
                                         finish();
+                                        exitActivity();
                                     }
                                 });
                                 return;
@@ -376,12 +379,13 @@ public class JniPlayerActivity extends BaseActivity {
                                     @Override
                                     public void run() {
                                         finish();
+                                        exitActivity();
                                     }
                                 });
                                 return;
                             }
 
-                            MyToast.show("音视频初始化都成功");
+                            MyToast.show("音视频初始化成功");
                             mUiHandler.removeMessages(MSG_START_PLAYBACK);
                             mUiHandler.sendEmptyMessage(MSG_START_PLAYBACK);
                         }
@@ -399,6 +403,7 @@ public class JniPlayerActivity extends BaseActivity {
                     MLog.d(TAG, "surfaceDestroyed()");
                     if (mFFMPEGPlayer != null) {
                         mFFMPEGPlayer.releaseAll();
+                        mFFMPEGPlayer = null;
                     }
                 }
             });
@@ -430,6 +435,10 @@ public class JniPlayerActivity extends BaseActivity {
     }
 
     private void internalDestroy() {
+        if (mPowerWakeLock != null && mPowerWakeLock.isHeld()) {
+            mPowerWakeLock.release();
+            mPowerWakeLock = null;
+        }
         unregisterHeadsetPlugReceiver();
         EventBusUtils.unregister(this);
     }
@@ -493,6 +502,8 @@ public class JniPlayerActivity extends BaseActivity {
                 mControllerPanelLayout.setVisibility(View.INVISIBLE);
                 break;
             case MSG_ON_FINISHED:
+                finish();
+                exitActivity();
                 break;
             case MSG_LOADING_SHOW:
                 mLoadingView.setVisibility(View.VISIBLE);
@@ -503,10 +514,17 @@ public class JniPlayerActivity extends BaseActivity {
             case MSG_ON_PROGRESS_UPDATED:
                 mProgressBar.setSecondaryProgress(mDownloadProgress);
                 break;
-            case KeyEvent.KEYCODE_HEADSETHOOK:
+            case KeyEvent.KEYCODE_HEADSETHOOK:// 单击事件
                 if (firstFlag && secondFlag && threeFlag) {
                     if (DEBUG)
                         Log.d(TAG, "onKeyDown() 3");
+
+                    if (mControllerPanelLayout.getVisibility() == View.VISIBLE) {
+                        mNeedToSyncProgressBar = true;
+                        mControllerPanelLayout.setVisibility(View.INVISIBLE);
+                    } else {
+                        mControllerPanelLayout.setVisibility(View.VISIBLE);
+                    }
                 } else if (firstFlag && secondFlag) {
                     if (DEBUG)
                         Log.d(TAG, "onKeyDown() 2");
@@ -519,22 +537,25 @@ public class JniPlayerActivity extends BaseActivity {
                     if (DEBUG)
                         Log.d(TAG, "onKeyDown() 1");
 
-                    // 播放与暂停
-                    if (mFFMPEGPlayer != null) {
-                        if (mFFMPEGPlayer.isRunning()) {
-                            if (mFFMPEGPlayer.isPlaying()) {
-                                mPlayIB.setVisibility(View.GONE);
-                                mPauseIB.setVisibility(View.VISIBLE);
-                                mControllerPanelLayout.setVisibility(View.VISIBLE);
-                                mFFMPEGPlayer.pause();
-                            } else {
-                                mPlayIB.setVisibility(View.VISIBLE);
-                                mPauseIB.setVisibility(View.GONE);
-                                mControllerPanelLayout.setVisibility(View.INVISIBLE);
-                                mFFMPEGPlayer.play();
+                    if (!mIsScreenPress) {
+                        // 播放与暂停
+                        if (mFFMPEGPlayer != null) {
+                            if (mFFMPEGPlayer.isRunning()) {
+                                if (mFFMPEGPlayer.isPlaying()) {
+                                    mPlayIB.setVisibility(View.GONE);
+                                    mPauseIB.setVisibility(View.VISIBLE);
+                                    mControllerPanelLayout.setVisibility(View.VISIBLE);
+                                    mFFMPEGPlayer.pause();
+                                } else {
+                                    mPlayIB.setVisibility(View.VISIBLE);
+                                    mPauseIB.setVisibility(View.GONE);
+                                    mControllerPanelLayout.setVisibility(View.INVISIBLE);
+                                    mFFMPEGPlayer.play();
+                                }
                             }
                         }
                     }
+                    mIsScreenPress = false;
                 }
                 firstFlag = false;
                 secondFlag = false;
@@ -599,18 +620,21 @@ public class JniPlayerActivity extends BaseActivity {
     private Callback mCallback = new Callback() {
         @Override
         public void onReady() {
+            Log.d(TAG, "onReady() java");
             mUiHandler.removeMessages(MSG_ON_READY);
             mUiHandler.sendEmptyMessage(MSG_ON_READY);
         }
 
         @Override
         public void onPaused() {
+            Log.d(TAG, "onPaused() java");
             mUiHandler.removeMessages(MSG_LOADING_SHOW);
             mUiHandler.sendEmptyMessage(MSG_LOADING_SHOW);
         }
 
         @Override
         public void onPlayed() {
+            Log.d(TAG, "onPlayed() java");
             mUiHandler.removeMessages(MSG_LOADING_HIDE);
             mUiHandler.sendEmptyMessage(MSG_LOADING_HIDE);
         }
@@ -618,6 +642,7 @@ public class JniPlayerActivity extends BaseActivity {
         @Override
         public void onFinished() {
             //mSampleVideoPlayer.play();
+            Log.d(TAG, "onFinished() java");
         }
 
         @Override
@@ -721,12 +746,16 @@ public class JniPlayerActivity extends BaseActivity {
                     }
                     break;
                 case R.id.surfaceView:
-                    if (mControllerPanelLayout.getVisibility() == View.VISIBLE) {
+                    /*if (mControllerPanelLayout.getVisibility() == View.VISIBLE) {
                         mNeedToSyncProgressBar = true;
                         mControllerPanelLayout.setVisibility(View.INVISIBLE);
                     } else {
                         mControllerPanelLayout.setVisibility(View.VISIBLE);
-                    }
+                    }*/
+
+                    mIsScreenPress = true;
+                    EventBusUtils.post(
+                            JniPlayerActivity.this, KeyEvent.KEYCODE_HEADSETHOOK, null);
                     break;
                 case R.id.content_tv:
                     mNeedToSyncProgressBar = true;

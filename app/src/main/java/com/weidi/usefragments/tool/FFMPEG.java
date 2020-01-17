@@ -30,6 +30,22 @@ public class FFMPEG {
         }
     }
 
+    private volatile static FFMPEG sFFMPEG;
+
+    public FFMPEG() {
+    }
+
+    /*public static FFMPEG getDefault() {
+        if (sFFMPEG == null) {
+            synchronized (FFMPEG.class) {
+                if (sFFMPEG == null) {
+                    sFFMPEG = new FFMPEG();
+                }
+            }
+        }
+        return sFFMPEG;
+    }*/
+
     private AudioTrack mAudioTrack;
     private float mVolume = 1.0f;
 

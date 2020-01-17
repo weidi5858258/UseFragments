@@ -41,6 +41,7 @@
         <activity
             android:name=".MainActivity1"
             android:configChanges="keyboardHidden|screenLayout|screenSize|smallestScreenSize|orientation"
+            android:enabled="true"
             android:launchMode="singleTop">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
@@ -209,6 +210,8 @@
             android:configChanges="uiMode|keyboard|keyboardHidden|screenSize|orientation|fontScale"
             android:windowSoftInputMode="stateAlwaysHidden|adjustPan"
             android:launchMode="singleTask"
+            android:enabled="true"
+            android:exported="true"
             android:theme="@style/Theme.AppCompat.Light">
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
