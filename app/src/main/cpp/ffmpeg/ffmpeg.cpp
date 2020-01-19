@@ -141,6 +141,7 @@ void videoSleep(long ms) {
         gJavaVm->DetachCurrentThread();
     }
 }
+
 // 回调java端FFMPEG类中的有关方法
 void onReady() {
     JNIEnv *jniEnv;
@@ -254,6 +255,9 @@ Java_com_weidi_usefragments_tool_FFMPEG_setSurface(JNIEnv *env,
                                                    jstring path,
                                                    jobject surfaceObject) {
     jclass FFMPEGClass = env->FindClass("com/weidi/usefragments/tool/FFMPEG");
+    //FFMPEGClass = env->GetObjectClass(ffmpegObject);
+    //CHECK(FFMPEGClass != NULL);
+
     // 第三个参数: 括号中是java端方法的参数签名,括号后面是java端方法的返回值签名(V表示void)
     jmethodID createAudioTrack = env->GetMethodID(
             FFMPEGClass, "createAudioTrack", "(III)V");

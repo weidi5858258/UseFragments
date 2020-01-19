@@ -25,6 +25,7 @@ import android.widget.SeekBar;
 import android.widget.TextView;
 
 import com.weidi.eventbus.EventBusUtils;
+import com.weidi.usefragments.business.video_player.MediaDataService;
 import com.weidi.usefragments.media.MediaUtils;
 import com.weidi.usefragments.service.DownloadFileService;
 import com.weidi.usefragments.test_view.BubblePopupWindow;
@@ -33,7 +34,7 @@ import com.weidi.usefragments.business.contents.Contents;
 import com.weidi.usefragments.tool.DownloadCallback;
 import com.weidi.usefragments.tool.MLog;
 import com.weidi.usefragments.tool.PermissionsUtils;
-import com.weidi.usefragments.tool.SimpleVideoPlayer8;
+import com.weidi.usefragments.business.video_player.SimpleVideoPlayer8;
 
 /***
 
@@ -151,6 +152,9 @@ public class PlayerActivity extends BaseActivity {
         super.onBackPressed();
         if (DEBUG)
             MLog.d(TAG, "onBackPressed(): " + printThis());
+        if (mSampleVideoPlayer != null) {
+            mSampleVideoPlayer.release();
+        }
         finish();
         exitActivity();
     }
@@ -206,6 +210,7 @@ public class PlayerActivity extends BaseActivity {
     private Handler mUiHandler;
 
     private void initData() {
+        // startService(new Intent(this, MediaDataService.class));
         // Volume change should always affect media volume
         setVolumeControlStream(AudioManager.STREAM_MUSIC);
 
@@ -359,9 +364,7 @@ public class PlayerActivity extends BaseActivity {
     }
 
     private void internalDestroy() {
-        if (mSampleVideoPlayer != null) {
-            mSampleVideoPlayer.release();
-        }
+
     }
 
     private void showBubbleView(String time, View view) {

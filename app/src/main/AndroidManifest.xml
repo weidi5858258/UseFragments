@@ -319,6 +319,11 @@
         <activity
             android:name=".MainActivity3"/>-->
 
+        <service android:name=".business.video_player.MediaDataService"
+                 android:process=":mediadata1"
+                 android:enabled="true"
+                 android:exported="true"/>
+
     </application>
 
 </manifest>

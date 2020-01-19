@@ -1,10 +1,6 @@
 package com.weidi.usefragments;
 
 import android.app.Fragment;
-
-import com.weidi.usefragments.business.test_horizontal_card.HorizontalCardFragment;
-import com.weidi.usefragments.javabean.Person;
-
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -24,31 +20,33 @@ import android.view.View;
 import android.view.WindowManager;
 import android.widget.FrameLayout;
 
-import com.weidi.usefragments.fragment.FragOperManager;
-import com.weidi.usefragments.fragment.base.BaseFragment;
-import com.weidi.usefragments.service.DownloadFileService;
 import com.weidi.usefragments.business.back_stack.ShowTitleDialogFragment;
-import com.weidi.usefragments.test_fragment.scene2.A2Fragment;
+import com.weidi.usefragments.business.contents.ContentsFragment;
 import com.weidi.usefragments.business.media.AudioFragment;
-import com.weidi.usefragments.test_fragment.scene2.B2Fragment;
-import com.weidi.usefragments.test_fragment.scene2.C2Fragment;
 import com.weidi.usefragments.business.media.Camera2Fragment;
 import com.weidi.usefragments.business.media.CameraPreviewFragment;
-import com.weidi.usefragments.business.contents.ContentsFragment;
-import com.weidi.usefragments.test_fragment.scene2.D2Fragment;
 import com.weidi.usefragments.business.media.DecodeAudioFragment;
 import com.weidi.usefragments.business.media.DecodePlayFragment;
 import com.weidi.usefragments.business.media.DecodeVideoFragment;
+import com.weidi.usefragments.business.media.RecordScreenFragment;
+import com.weidi.usefragments.business.media.ThrowingScreenFragment;
+import com.weidi.usefragments.business.media.VideoLiveBroadcastingFragment;
+import com.weidi.usefragments.business.medical_record.MedicalRecordFragment;
+import com.weidi.usefragments.business.test_horizontal_card.HorizontalCardFragment;
+import com.weidi.usefragments.fragment.FragOperManager;
+import com.weidi.usefragments.fragment.base.BaseFragment;
+import com.weidi.usefragments.javabean.Person;
+import com.weidi.usefragments.service.DownloadFileService;
+import com.weidi.usefragments.test_fragment.scene2.A2Fragment;
+import com.weidi.usefragments.test_fragment.scene2.B2Fragment;
+import com.weidi.usefragments.test_fragment.scene2.C2Fragment;
+import com.weidi.usefragments.test_fragment.scene2.D2Fragment;
 import com.weidi.usefragments.test_fragment.scene2.E2Fragment;
 import com.weidi.usefragments.test_fragment.scene2.Main1Fragment;
 import com.weidi.usefragments.test_fragment.scene2.Main2Fragment;
 import com.weidi.usefragments.test_fragment.scene2.Main3Fragment;
 import com.weidi.usefragments.test_fragment.scene2.Main4Fragment;
-import com.weidi.usefragments.business.medical_record.MedicalRecordFragment;
-import com.weidi.usefragments.business.media.RecordScreenFragment;
 import com.weidi.usefragments.test_fragment.scene2.TestMotionEventFragment;
-import com.weidi.usefragments.business.media.ThrowingScreenFragment;
-import com.weidi.usefragments.business.media.VideoLiveBroadcastingFragment;
 import com.weidi.usefragments.test_fragment.scene2.ViewPagerFragment;
 import com.weidi.usefragments.tool.JniUtils;
 import com.weidi.usefragments.tool.MLog;

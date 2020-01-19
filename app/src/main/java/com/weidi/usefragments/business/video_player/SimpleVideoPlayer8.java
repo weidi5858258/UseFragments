@@ -1,4 +1,4 @@
-package com.weidi.usefragments.tool;
+package com.weidi.usefragments.business.video_player;
 
 import android.annotation.TargetApi;
 import android.content.BroadcastReceiver;
@@ -6,6 +6,7 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.ServiceConnection;
 import android.media.AudioFormat;
 import android.media.AudioManager;
 import android.media.AudioTrack;
@@ -17,6 +18,7 @@ import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Handler;
 import android.os.HandlerThread;
+import android.os.IBinder;
 import android.os.Looper;
 import android.os.Message;
 import android.os.SystemClock;
@@ -29,11 +31,12 @@ import android.view.Surface;
 import com.weidi.eventbus.EventBusUtils;
 import com.weidi.usefragments.media.MediaUtils;
 import com.weidi.usefragments.receiver.MediaButtonReceiver;
+import com.weidi.usefragments.tool.AACPlayer;
+import com.weidi.usefragments.tool.MLog;
 
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -82,8 +85,8 @@ public class SimpleVideoPlayer8 {
             SimpleVideoPlayer8.class.getSimpleName();
     private static final boolean DEBUG = true;
 
-    private static final int MAX_CACHE_AUDIO_COUNT = 20000;
-    private static final int MAX_CACHE_VIDEO_COUNT = 10000;
+    public static final int MAX_CACHE_AUDIO_COUNT = 18000;
+    public static final int MAX_CACHE_VIDEO_COUNT = 10000;
     private static final int START_CACHE_COUNT_HTTP = 3000;
     private static final int START_CACHE_COUNT_LOCAL = 100;
 
@@ -92,8 +95,8 @@ public class SimpleVideoPlayer8 {
     // 视频一帧的大小不能超过这个值,不然出错
     private static final int VIDEO_FRAME_MAX_LENGTH = 1024 * 1024;
 
-    private static final int TYPE_AUDIO = 0x0001;
-    private static final int TYPE_VIDEO = 0x0002;
+    public static final int TYPE_AUDIO = 0x0001;
+    public static final int TYPE_VIDEO = 0x0002;
     private static final int TIME_OUT = 10000;
 
     private static final int BUFFER = 1024 * 1024 * 2;
@@ -140,6 +143,9 @@ public class SimpleVideoPlayer8 {
     private Context mContext = null;
     private String mPath = null;
     private float mVolume = 1.0f;
+    private boolean mIsLocal = false;
+
+    private IMediaDataInterface mIMediaDataStub;
 
     private Handler mUiHandler = null;
     private Handler mThreadHandler = null;
@@ -149,29 +155,12 @@ public class SimpleVideoPlayer8 {
     private AudioWrapper mAudioWrapper = new AudioWrapper(TYPE_AUDIO);
     private VideoWrapper mVideoWrapper = new VideoWrapper(TYPE_VIDEO);
 
-    private static class AVPacket {
-        public byte[] data;
-        public int size;
-        public long sampleTime;
-
-        public AVPacket(int size, long sampleTime) {
-            data = new byte[size];
-            this.size = size;
-            this.sampleTime = sampleTime;
-        }
-
-        public void clear() {
-            Arrays.fill(data, (byte) 0);
-            data = null;
-        }
-    }
-
     private static class SimpleWrapper {
         public String mime = null;
         public MediaExtractor extractor = null;
         public MediaCodec decoderMediaCodec = null;
         public MediaFormat decoderMediaFormat = null;
-        // 是否需要渲染图像(播放音频不需要,播放视频需要)
+        // 是否需要渲染图像(播放音频为false,播放视频为true)
         public boolean render = false;
         public int trackIndex = -1;
         // 使用于while条件判断
@@ -480,6 +469,7 @@ public class SimpleVideoPlayer8 {
     }
 
     public void release() {
+        internalRelease();
         mThreadHandler.removeMessages(MSG_RELEASE);
         mThreadHandler.sendEmptyMessage(MSG_RELEASE);
     }
@@ -568,7 +558,7 @@ public class SimpleVideoPlayer8 {
                 break;
             case MSG_RELEASE:
                 internalRelease();
-                internalDestroy();
+                //internalDestroy();
                 break;
             case MSG_HANDLE_DATA_LOCK_WAIT:
                 MLog.e(TAG, "卧槽!卧槽!卧槽!等了10分钟了还不能播放,爷不等了");
@@ -1055,6 +1045,7 @@ public class SimpleVideoPlayer8 {
 
             mAudioWrapper = null;
             mVideoWrapper = null;
+            internalDestroy();
             System.gc();
         }
     }
@@ -1377,6 +1368,10 @@ public class SimpleVideoPlayer8 {
         }
         MLog.i(TAG, "internalPrepare() start");
 
+        /*mContext.bindService(new Intent(mContext, MediaDataService.class),
+                serviceConnection,
+                Context.BIND_AUTO_CREATE);*/
+
         onlyOneStart = true;
         MediaUtils.startTimeMs = System.currentTimeMillis();
         MediaUtils.paustTimeMs = 0;
@@ -1391,7 +1386,7 @@ public class SimpleVideoPlayer8 {
         mAudioWrapper.isHandling = true;
         mVideoWrapper.isHandling = true;
 
-        boolean isLocal = false;
+        mIsLocal = false;
         mAudioWrapper.CACHE_START = START_CACHE_COUNT_HTTP;
         mVideoWrapper.CACHE_START = START_CACHE_COUNT_HTTP;
         if (!mPath.startsWith("http://")
@@ -1411,7 +1406,7 @@ public class SimpleVideoPlayer8 {
                 MLog.i(TAG, "internalPrepare() fileSize: " + fileSize);
             mAudioWrapper.CACHE_START = START_CACHE_COUNT_LOCAL;
             mVideoWrapper.CACHE_START = START_CACHE_COUNT_LOCAL;
-            isLocal = true;
+            mIsLocal = true;
         }
 
         String PATH = null;
@@ -1440,7 +1435,7 @@ public class SimpleVideoPlayer8 {
         mThreadHandler.sendEmptyMessageDelayed(
                 MSG_HANDLE_DATA_LOCK_WAIT, 1000 * 60 * 10);*/
 
-        if (isLocal) {
+        if (mIsLocal) {
             if (!prepareAudio()) {
                 return false;
             }
@@ -1559,6 +1554,7 @@ public class SimpleVideoPlayer8 {
             mHandlerThread = null;
         }
 
+        //mContext.unbindService(serviceConnection);
         unregisterHeadsetPlugReceiver();
         EventBusUtils.unregister(this);
     }
@@ -1651,6 +1647,9 @@ public class SimpleVideoPlayer8 {
         // 房间信息
         MediaCodec.BufferInfo roomInfo = new MediaCodec.BufferInfo();
         for (; ; ) {
+            if (!wrapper.isHandling) {
+                return false;
+            }
             try {
                 // 房间号
                 int roomIndex = wrapper.decoderMediaCodec.dequeueOutputBuffer(roomInfo, TIME_OUT);
@@ -2083,6 +2082,20 @@ public class SimpleVideoPlayer8 {
         @Override
         public void run() {
             readData(mVideoWrapper);
+        }
+    };
+
+    private ServiceConnection serviceConnection = new ServiceConnection() {
+        @Override
+        public void onServiceConnected(ComponentName name, IBinder service) {
+            MLog.d(TAG, "onServiceConnected()");
+            mIMediaDataStub = IMediaDataInterface.Stub.asInterface(service);
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName name) {
+            MLog.d(TAG, "onServiceDisconnected()");
+            mIMediaDataStub = null;
         }
     };
 
