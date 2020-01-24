@@ -296,6 +296,9 @@ public class RecordScreenFragment extends BaseFragment {
 
     /////////////////////////////////////////////////////////////////
 
+    private static final String PATH =
+            "/storage/2430-1702/Android/data/com.weidi.usefragments/files";
+
     private static final int REQUEST_CODE = 1000;
 
     private static final int PREPARE = 0x0001;
@@ -427,9 +430,7 @@ public class RecordScreenFragment extends BaseFragment {
     }
 
     private void prepare() {
-        File file = new File(
-                "/storage/2430-1702/Android/data/com.weidi.usefragments/files",
-                "test.mp4");
+        File file = new File(PATH, "test.mp4");
         if (file.exists()) {
             try {
                 file.delete();
@@ -456,8 +457,8 @@ public class RecordScreenFragment extends BaseFragment {
             return;
         }
         // MediaCodec
-        mVideoEncoderMediaCodec = MediaUtils.getVideoEncoderMediaCodec();
         mAudioEncoderMediaCodec = MediaUtils.getAudioEncoderMediaCodec();
+        mVideoEncoderMediaCodec = MediaUtils.getVideoEncoderMediaCodec();
         if (mVideoEncoderMediaCodec == null
                 || mAudioEncoderMediaCodec == null) {
             return;

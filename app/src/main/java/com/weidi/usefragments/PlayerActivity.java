@@ -25,8 +25,7 @@ import android.widget.SeekBar;
 import android.widget.TextView;
 
 import com.weidi.eventbus.EventBusUtils;
-import com.weidi.usefragments.business.audio_player.SimpleAudioPlayer;
-import com.weidi.usefragments.business.video_player.MediaDataService;
+import com.weidi.usefragments.business.video_player.SimpleVideoPlayer9;
 import com.weidi.usefragments.media.MediaUtils;
 import com.weidi.usefragments.service.DownloadFileService;
 import com.weidi.usefragments.test_view.BubblePopupWindow;
@@ -35,7 +34,6 @@ import com.weidi.usefragments.business.contents.Contents;
 import com.weidi.usefragments.tool.DownloadCallback;
 import com.weidi.usefragments.tool.MLog;
 import com.weidi.usefragments.tool.PermissionsUtils;
-import com.weidi.usefragments.business.video_player.SimpleVideoPlayer8;
 
 /***
 
@@ -184,8 +182,8 @@ public class PlayerActivity extends BaseActivity {
     private Surface mSurface;
     private PowerManager.WakeLock mPowerWakeLock;
     // private SimpleVideoPlayer mSampleVideoPlayer;
-    // private SimpleVideoPlayer8 mSampleVideoPlayer;
-    private SimpleAudioPlayer mSampleVideoPlayer;
+    private SimpleVideoPlayer9 mSampleVideoPlayer;
+    // private SimpleAudioPlayer mSampleVideoPlayer;
     private String mPath;
     private long mProgressUs;
     private long mPresentationTimeUs;
@@ -286,8 +284,8 @@ public class PlayerActivity extends BaseActivity {
         });
 
         // mSampleVideoPlayer = new SimpleVideoPlayer();
-        mSampleVideoPlayer = new SimpleAudioPlayer();
-        // mSampleVideoPlayer = new SimpleVideoPlayer8();
+        // mSampleVideoPlayer = new SimpleAudioPlayer();
+        mSampleVideoPlayer = new SimpleVideoPlayer9();
 
         int duration = (int) mSampleVideoPlayer.getDurationUs() / 1000;
         int currentPosition = (int) mPresentationTimeUs / 1000;

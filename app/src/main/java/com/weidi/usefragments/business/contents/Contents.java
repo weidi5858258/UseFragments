@@ -12,8 +12,8 @@ public class Contents {
     public static Map<String, String> movieMap = new LinkedHashMap<>();
     private static String mPath;
 //    private static final String PATH = "/storage/emulated/0/Download/";
-//    private static final String PATH = "/storage/1532-48AD/Android/data/com.weidi.usefragments/files/Movies/";
-    private static final String PATH = "/storage/2430-1702/BaiduNetdisk/video/";
+    private static final String PATH = "/storage/1532-48AD/Android/data/com.weidi.usefragments/files/Movies/";
+//    private static final String PATH = "/storage/2430-1702/BaiduNetdisk/video/";
 //    private static final String PATH = "/storage/emulated/0/BaiduNetdisk/video/";
 
     static {
@@ -29,6 +29,9 @@ public class Contents {
         movieMap.put(
                 "复仇者联盟4-终局之战-local",
                 PATH + "复仇者联盟4-终局之战.mp4");
+        movieMap.put(
+                "哪吒之魔童降世-local",
+                PATH + "哪吒之魔童降世.mp4");
         movieMap.put(
                 "三傻大闹宝莱坞-local",
                 PATH + "三傻大闹宝莱坞.mp4");
