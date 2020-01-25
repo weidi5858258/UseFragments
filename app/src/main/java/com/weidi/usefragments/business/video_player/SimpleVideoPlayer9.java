@@ -86,10 +86,11 @@ public class SimpleVideoPlayer9 {
     private static final boolean DEBUG = true;
 
     public static final int MAX_CACHE_AUDIO_COUNT = 18000;
-    public static final int MAX_CACHE_VIDEO_COUNT = 10000;
+    public static final int MAX_CACHE_VIDEO_COUNT = 1000;
     private static final int START_CACHE_COUNT_HTTP = 3000;
     private static final int START_CACHE_COUNT_LOCAL = 100;
 
+    // 只是设置为默认值
     // 音频一帧的大小不能超过这个值,不然出错(如果设成1024 * 1024会有杂音,不能过大,调查了好久才发现跟这个有关)
     private static final int AUDIO_FRAME_MAX_LENGTH = 1024 * 100;
     // 视频一帧的大小不能超过这个值,不然出错
@@ -98,8 +99,6 @@ public class SimpleVideoPlayer9 {
     public static final int TYPE_AUDIO = 0x0001;
     public static final int TYPE_VIDEO = 0x0002;
     private static final int TIME_OUT = 10000;
-
-    private static final int BUFFER = 1024 * 1024 * 2;
 
     /*private static final int PREPARE = 0x0001;
     private static final int PLAY = 0x0002;
@@ -361,15 +360,19 @@ public class SimpleVideoPlayer9 {
                 || progressUs > mVideoWrapper.durationUs) {
             return;
         }
+
+        mAudioWrapper.isPausedForSeek = true;
+        mVideoWrapper.isPausedForSeek = true;
+        notifyToHandle(mAudioWrapper);
+        notifyToHandle(mVideoWrapper);
+
         mIsSeeked = true;
         mProgressUs = progressUs;
         mAudioWrapper.durationUs = progressUs;
         mVideoWrapper.durationUs = progressUs;
-        mAudioWrapper.isPausedForSeek = true;
-        mVideoWrapper.isPausedForSeek = true;
         notifyToRead();
         notifyToRead(mAudioWrapper);
-        notifyToHandle(mVideoWrapper);
+        notifyToRead(mVideoWrapper);
     }
 
     private void seekTo() {
@@ -1846,15 +1849,19 @@ public class SimpleVideoPlayer9 {
 
     private boolean mIsSeeked = false;
     private int mCountWithSeek = 0;
-    //private long prePresentationTimeUs;
+    private long prePresentationTimeUs;
 
     // 最最最关键的一步
     private int handleVideoOutputBuffer(
             int roomIndex, ByteBuffer room, MediaCodec.BufferInfo roomInfo, int roomSize) {
         mVideoWrapper.presentationTimeUs2 = roomInfo.presentationTimeUs;
         /*MLog.w(TAG, "handleVideoOutputBuffer() 时间差: " +
-                (mVideoWrapper.presentationTimeUs2-prePresentationTimeUs));
+                (mVideoWrapper.presentationTimeUs2-prePresentationTimeUs));*/
+        /*int diffTime = (int)((mVideoWrapper.presentationTimeUs2 - prePresentationTimeUs)/1000);
+        SystemClock.sleep(diffTime);
         prePresentationTimeUs = mVideoWrapper.presentationTimeUs2;*/
+
+        // test
 
         // 不能执行,不然很卡顿
         /*if (roomInfo.presentationTimeUs / 1000
@@ -1864,6 +1871,7 @@ public class SimpleVideoPlayer9 {
 
         long timeUs = mVideoWrapper.presentationTimeUs2 / 1000
                 - mAudioWrapper.presentationTimeUs2 / 1000;
+        MLog.w(TAG, "handleVideoOutputBuffer() videoUs - audioUs: " + timeUs);
         if (mIsSeeked && (timeUs > 1000 || timeUs < 0)) {
             // MLog.e(TAG, "handleVideoOutputBuffer() videoUs - audioUs: " + timeUs);
             if (++mCountWithSeek <= 10) {

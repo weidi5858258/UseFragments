@@ -12,16 +12,12 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
-import com.weidi.recycler_view.CascadeLayoutManager;
-import com.weidi.recycler_view.Horizontal2LayoutManager;
 import com.weidi.usefragments.R;
 import com.weidi.usefragments.fragment.base.BaseFragment;
 import com.weidi.usefragments.inject.InjectView;
 import com.weidi.usefragments.tool.MLog;
 
 import java.util.ArrayList;
-
-import static com.weidi.usefragments.business.test_horizontal_card.HorizontalCardAdapter.ON_CLICK;
 
 /***
 
@@ -341,14 +337,14 @@ public class HorizontalCardFragment extends BaseFragment {
         };
         ((Horizontal2LayoutManager)mLayoutManager).setRecyclerView(mRecyclerView);*/
 
-        mLayoutManager = new CascadeLayoutManager() {
+        /*mLayoutManager = new CascadeLayoutManager() {
             @Override
             public void onLayoutCompleted(RecyclerView.State state) {
                 super.onLayoutCompleted(state);
                 if (DEBUG)
                     MLog.d(TAG, "alexander onLayoutCompleted()");
             }
-        };
+        };*/
 
         mRecyclerView.setLayoutManager(mLayoutManager);
         mRecyclerView.setItemAnimator(new DefaultItemAnimator());

@@ -12,8 +12,8 @@ public class Contents {
     public static Map<String, String> movieMap = new LinkedHashMap<>();
     private static String mPath;
 //    private static final String PATH = "/storage/emulated/0/Download/";
-    private static final String PATH = "/storage/1532-48AD/Android/data/com.weidi.usefragments/files/Movies/";
-//    private static final String PATH = "/storage/2430-1702/BaiduNetdisk/video/";
+//    private static final String PATH = "/storage/1532-48AD/Android/data/com.weidi.usefragments/files/Movies/";
+    private static final String PATH = "/storage/2430-1702/BaiduNetdisk/video/";
 //    private static final String PATH = "/storage/emulated/0/BaiduNetdisk/video/";
 
     static {
