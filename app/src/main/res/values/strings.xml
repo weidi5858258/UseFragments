@@ -14,6 +14,8 @@
         ]]>
     </string>
 
+    <string name="accessibilityimpl_info">我的手机我做主!!!</string>
+
     <string name="medical_record_date">日期</string>
     <string name="medical_record_leukocyte_count">白细胞计数\n3.97-9.15</string>
     <string name="medical_record_neutrophils">嗜中性粒细胞绝对值\n2.0-7.0</string>

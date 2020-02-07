@@ -19,20 +19,19 @@ import android.widget.ScrollView;
 import android.widget.SeekBar;
 import android.widget.TextView;
 
-import com.weidi.usefragments.MainActivity1;
+import com.weidi.eventbus.EventBusUtils;
 import com.weidi.usefragments.R;
+import com.weidi.usefragments.business.audio_player.MusicService;
 import com.weidi.usefragments.fragment.FragOperManager;
 import com.weidi.usefragments.fragment.base.BaseFragment;
 import com.weidi.usefragments.inject.InjectOnClick;
 import com.weidi.usefragments.inject.InjectView;
 import com.weidi.usefragments.media.MediaUtils;
-import com.weidi.usefragments.test_fragment.scene2.A2Fragment;
+import com.weidi.usefragments.tool.Callback;
 import com.weidi.usefragments.tool.MLog;
-import com.weidi.usefragments.tool.SimpleAudioPlayer;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 
@@ -290,6 +289,8 @@ public class DecodeAudioFragment extends BaseFragment {
     private static final int PLAYBACK_INFO = 0x001;
     private static final int PLAYBACK_PROGRESS_UPDATED = 0x002;
     private static final int PLAYBACK_PROGRESS_CHANGED = 0x003;
+    private static final int MSG_PREV = 9;
+    private static final int MSG_NEXT = 10;
 
     // 顺序播放
     private static final int SEQUENTIAL_PLAYBACK = 0x001;
@@ -323,18 +324,14 @@ public class DecodeAudioFragment extends BaseFragment {
     @InjectView(R.id.jump_btn)
     private Button mJumpBtn;
 
-    private SimpleAudioPlayer mSimpleAudioPlayer;
+    //private SimpleAudioPlayer mSimpleAudioPlayer;
+    private MusicService mSimpleAudioPlayer;
 
-    private List<File> musicFiles;
-    private int mCurMusicIndex;
-    private File mCurMusicFile;
     private int mProgress;
     private long mPresentationTimeUs;
 
     private StringBuilder mShowInoSB = new StringBuilder();
     private Handler mUiHandler;
-    private Random mRandom = new Random();
-    private List<Integer> mHasPlayed = new ArrayList<Integer>();
 
     /***
      代码执行的内容跟onStart(),onResume()一样,
@@ -363,94 +360,7 @@ public class DecodeAudioFragment extends BaseFragment {
             MLog.d(TAG, "onHide(): " + printThis());
     }
 
-    private static final String PATH = "/storage/2430-1702/BaiduNetdisk/music/mylove/";
-    //    private static final String PATH = "/storage/2430-1702/BaiduNetdisk/music/test_audio/";
-
     private void initData() {
-        File file = new File(PATH);
-        if (file.isDirectory()) {
-            File[] files = file.listFiles();
-            if (files != null && files.length > 0) {
-                musicFiles = new ArrayList<File>();
-                Collections.addAll(musicFiles, files);
-            }
-            // /storage/2430-1702/BaiduNetdisk/music/谭咏麟 - 水中花.mp3
-            /*for (File tempFile : files) {
-                if (DEBUG)
-                    MLog.d(TAG, "initData(): " + printThis() + " " + tempFile.getAbsolutePath());
-            }*/
-        }
-
-        mSimpleAudioPlayer = new SimpleAudioPlayer();
-        mSimpleAudioPlayer.setContext(getContext());
-        mSimpleAudioPlayer.setCallback(
-                new SimpleAudioPlayer.Callback() {
-                    @Override
-                    public void onPlaybackReady() {
-                        mUiHandler.post(new Runnable() {
-                            @Override
-                            public void run() {
-                                mShowProcessTimeTv.setText("00:00");
-                                mShowDurationTimeTv.setText("00:00");
-                                mPlayPositionSB.setProgress(0);
-                            }
-                        });
-                    }
-
-                    @Override
-                    public void onPlaybackPaused() {
-
-                    }
-
-                    @Override
-                    public void onPlaybackStarted() {
-                        long durationUs = mSimpleAudioPlayer.getDurationUs();
-                        String elapsedTime =
-                                DateUtils.formatElapsedTime(
-                                        (durationUs / 1000) / 1000);
-                        mUiHandler.post(new Runnable() {
-                            @Override
-                            public void run() {
-                                mShowDurationTimeTv.setText(elapsedTime);
-                            }
-                        });
-                    }
-
-                    @Override
-                    public void onPlaybackFinished() {
-                        next();
-                        mUiHandler.post(new Runnable() {
-                            @Override
-                            public void run() {
-                                mShowInoSB.delete(0, mShowInoSB.length() - 1);
-                                mShowInoSB.append(getName());
-                                mShowInoSB.append("\n");
-                                setText(mShowInoSB);
-                            }
-                        });
-                    }
-
-                    @Override
-                    public void onProgressUpdated(long presentationTimeUs) {
-                        mPresentationTimeUs = presentationTimeUs;
-                        mUiHandler.removeMessages(PLAYBACK_PROGRESS_UPDATED);
-                        mUiHandler.sendEmptyMessage(PLAYBACK_PROGRESS_UPDATED);
-                    }
-
-                    @Override
-                    public void onPlaybackError() {
-
-                    }
-
-                    @Override
-                    public void onPlaybackInfo(String info) {
-                        Message msg = mUiHandler.obtainMessage();
-                        msg.obj = info;
-                        msg.what = PLAYBACK_INFO;
-                        mUiHandler.sendMessage(msg);
-                    }
-                });
-
         mUiHandler = new Handler(Looper.getMainLooper()) {
             @Override
             public void handleMessage(Message msg) {
@@ -458,27 +368,29 @@ public class DecodeAudioFragment extends BaseFragment {
             }
         };
 
-        Activity activity = getAttachedActivity();
-        if (activity != null
-                && activity instanceof MainActivity1) {
-            MainActivity1 mainActivity1 = (MainActivity1) activity;
-            mainActivity1.setSampleAudioPlayer(mSimpleAudioPlayer);
+        Object object = EventBusUtils.post(
+                MusicService.class,
+                MusicService.GET_OBJECT_OF_MUSICSERVICE,
+                new Object[]{mCallback});
+        if (object != null && object instanceof MusicService) {
+            mSimpleAudioPlayer = (MusicService) object;
+            //mSimpleAudioPlayer = new SimpleAudioPlayer();
+            //mSimpleAudioPlayer.setContext(getContext());
+            mSimpleAudioPlayer.setCallback(mCallback);
+            mSimpleAudioPlayer.play();
         }
 
         MediaUtils.lookAtMe();
     }
 
+    // 刚进入时,横竖屏切换时,都会调用该方法
     private void initView(View view, Bundle savedInstanceState) {
         if (DEBUG)
             MLog.d(TAG, "initView(): " + printThis() +
                     " savedInstanceState: " + savedInstanceState);
-        // 刚进入时,横竖屏切换时,都会调用该方法
-        if (musicFiles != null
-                && !mSimpleAudioPlayer.isRunning()) {
-            next();
-            mShowInoSB.append(getName());
-            mShowInoSB.append("\n");
-        }
+
+        mShowInoSB.append(mSimpleAudioPlayer.getName());
+        mShowInoSB.append("\n");
         setText(mShowInoSB);
         mUiHandler.postDelayed(new Runnable() {
             @Override
@@ -530,13 +442,13 @@ public class DecodeAudioFragment extends BaseFragment {
     }
 
     private void destroy() {
-        mSimpleAudioPlayer.release();
-        mSimpleAudioPlayer.destroy();
+        //mSimpleAudioPlayer.release();
+        //mSimpleAudioPlayer.destroy();
+        mSimpleAudioPlayer.setCallback(null);
     }
 
     @InjectOnClick({R.id.play_btn, R.id.pause_btn, R.id.stop_btn,
-            R.id.prev_btn, R.id.next_btn,
-            R.id.jump_btn})
+            R.id.prev_btn, R.id.next_btn, R.id.jump_btn})
     private void onClick(View v) {
         switch (v.getId()) {
             case R.id.play_btn:
@@ -546,115 +458,28 @@ public class DecodeAudioFragment extends BaseFragment {
                 mSimpleAudioPlayer.pause();
                 break;
             case R.id.stop_btn:
-                mSimpleAudioPlayer.stop();
                 mShowProcessTimeTv.setText("00:00");
                 mShowDurationTimeTv.setText("00:00");
                 mPlayPositionSB.setProgress(0);
+                mSimpleAudioPlayer.stop();
                 break;
             case R.id.prev_btn:
-                prev();
-                mShowInoSB.delete(0, mShowInoSB.length());
-                mShowInoSB.append(getName());
-                mShowInoSB.append("\n");
-                setText(mShowInoSB);
+                mSimpleAudioPlayer.prev();
+                mUiHandler.removeMessages(MSG_PREV);
+                mUiHandler.sendEmptyMessageDelayed(MSG_PREV, 600);
                 break;
             case R.id.next_btn:
-                next();
-                mShowInoSB.delete(0, mShowInoSB.length());
-                mShowInoSB.append(getName());
-                mShowInoSB.append("\n");
-                setText(mShowInoSB);
+                mSimpleAudioPlayer.next();
+                mUiHandler.removeMessages(MSG_NEXT);
+                mUiHandler.sendEmptyMessageDelayed(MSG_NEXT, 600);
                 break;
             case R.id.jump_btn:
-                FragOperManager.getInstance().enter3(new A2Fragment());
+                //FragOperManager.getInstance().enter3(new A2Fragment());
+                FragOperManager.getInstance().enter3(new AudioFragment());
                 break;
             default:
                 break;
         }
-    }
-
-    private void prev() {
-        if (musicFiles == null
-                || musicFiles.isEmpty()) {
-            return;
-        }
-
-        switch (mPlayMode) {
-            case SEQUENTIAL_PLAYBACK:
-                mCurMusicIndex -= 1;
-                if (mCurMusicIndex < 0) {
-                    mCurMusicIndex = musicFiles.size() - 1;
-                }
-                mCurMusicFile = musicFiles.get(mCurMusicIndex);
-                break;
-            case RANDOM_PLAYBACK:
-                int size = musicFiles.size();
-                while (true) {
-                    int randomNumber = mRandom.nextInt(size);
-                    if (!mHasPlayed.contains(randomNumber)) {
-                        mHasPlayed.add(randomNumber);
-                        mCurMusicIndex = randomNumber;
-                        mCurMusicFile = musicFiles.get(mCurMusicIndex);
-                        break;
-                    } else {
-                        if (mHasPlayed.size() == size) {
-                            mHasPlayed.clear();
-                        }
-                    }
-                }
-                break;
-            case LOOP_PLAYBACK:
-                break;
-            default:
-                break;
-        }
-        mSimpleAudioPlayer.setPath(mCurMusicFile.getAbsolutePath());
-        if (DEBUG)
-            MLog.d(TAG, "prev() mCurMusicIndex: " + mCurMusicIndex +
-                    " " + mCurMusicFile.getAbsolutePath());
-        mSimpleAudioPlayer.prev();
-    }
-
-    private void next() {
-        if (musicFiles == null
-                || musicFiles.isEmpty()) {
-            return;
-        }
-
-        switch (mPlayMode) {
-            case SEQUENTIAL_PLAYBACK:
-                mCurMusicIndex += 1;
-                if (mCurMusicIndex >= musicFiles.size()) {
-                    mCurMusicIndex = 0;
-                }
-                mCurMusicFile = musicFiles.get(mCurMusicIndex);
-                break;
-            case RANDOM_PLAYBACK:
-                int size = musicFiles.size();
-                while (true) {
-                    int randomNumber = mRandom.nextInt(size);
-                    if (!mHasPlayed.contains(randomNumber)) {
-                        mHasPlayed.add(randomNumber);
-                        mCurMusicIndex = randomNumber;
-                        mCurMusicFile = musicFiles.get(mCurMusicIndex);
-                        break;
-                    } else {
-                        if (mHasPlayed.size() == size) {
-                            mHasPlayed.clear();
-                        }
-                    }
-                }
-                break;
-            case LOOP_PLAYBACK:
-                break;
-            default:
-                break;
-        }
-        mSimpleAudioPlayer.setPath(mCurMusicFile.getAbsolutePath());
-        if (DEBUG)
-            MLog.d(TAG, "nextHandle() mCurMusicIndex: " + mCurMusicIndex +
-                    " " + mCurMusicFile.getAbsolutePath());
-        mSimpleAudioPlayer.next();
     }
 
     private void uiHandleMessage(Message msg) {
@@ -698,17 +523,16 @@ public class DecodeAudioFragment extends BaseFragment {
                 MLog.d(TAG, "threadHandleMessage() process: " + process +
                         " " + DateUtils.formatElapsedTime(process / 1000 / 1000));
                 break;
+            case MSG_PREV:
+            case MSG_NEXT:
+                mShowInoSB.delete(0, mShowInoSB.length());
+                mShowInoSB.append(mSimpleAudioPlayer.getName());
+                mShowInoSB.append("\n");
+                setText(mShowInoSB);
+                break;
             default:
                 break;
         }
-    }
-
-    private String getName() {
-        if (mCurMusicFile != null) {
-            String name = mCurMusicFile.getAbsolutePath();
-            return name.substring(name.lastIndexOf("/") + 1, name.length());
-        }
-        return "@@@@@@@@@@@@";
     }
 
     private void setText(StringBuilder infoSB) {
@@ -716,5 +540,72 @@ public class DecodeAudioFragment extends BaseFragment {
             mShowInfoTv.setText(infoSB.toString());
         }
     }
+
+    private Callback mCallback = new Callback() {
+        @Override
+        public void onReady() {
+            mUiHandler.post(new Runnable() {
+                @Override
+                public void run() {
+                    mShowProcessTimeTv.setText("00:00");
+                    mShowDurationTimeTv.setText("00:00");
+                    mPlayPositionSB.setProgress(0);
+                }
+            });
+        }
+
+        @Override
+        public void onPaused() {
+
+        }
+
+        @Override
+        public void onPlayed() {
+            long durationUs = mSimpleAudioPlayer.getDurationUs();
+            String elapsedTime =
+                    DateUtils.formatElapsedTime(
+                            (durationUs / 1000) / 1000);
+            mUiHandler.post(new Runnable() {
+                @Override
+                public void run() {
+                    mShowDurationTimeTv.setText(elapsedTime);
+                }
+            });
+        }
+
+        @Override
+        public void onFinished() {
+            mSimpleAudioPlayer.next();
+            mUiHandler.post(new Runnable() {
+                @Override
+                public void run() {
+                    mShowInoSB.delete(0, mShowInoSB.length() - 1);
+                    mShowInoSB.append(mSimpleAudioPlayer.getName());
+                    mShowInoSB.append("\n");
+                    setText(mShowInoSB);
+                }
+            });
+        }
+
+        @Override
+        public void onProgressUpdated(long presentationTimeUs) {
+            mPresentationTimeUs = presentationTimeUs;
+            mUiHandler.removeMessages(PLAYBACK_PROGRESS_UPDATED);
+            mUiHandler.sendEmptyMessage(PLAYBACK_PROGRESS_UPDATED);
+        }
+
+        @Override
+        public void onError() {
+
+        }
+
+        @Override
+        public void onInfo(String info) {
+            Message msg = mUiHandler.obtainMessage();
+            msg.obj = info;
+            msg.what = PLAYBACK_INFO;
+            mUiHandler.sendMessage(msg);
+        }
+    };
 
 }

@@ -1,13 +1,18 @@
 package com.weidi.usefragments;
 
 import android.content.Context;
+import android.content.Intent;
 import android.os.AsyncTask;
-import android.text.TextUtils;
-import android.util.Log;
 
+import com.fanjun.keeplive.KeepLive;
+import com.fanjun.keeplive.config.ForegroundNotification;
+import com.fanjun.keeplive.config.ForegroundNotificationClickListener;
+import com.fanjun.keeplive.config.KeepLiveService;
 import com.weidi.application.WeidiApplication;
 import com.weidi.dbutil.DbUtils;
 import com.weidi.dbutil.SimpleDao2;
+import com.weidi.usefragments.business.audio_player.MusicService;
+import com.weidi.usefragments.business.keeplive.RemoteService;
 import com.weidi.usefragments.business.medical_record.MedicalRecordBean;
 import com.weidi.usefragments.tool.MLog;
 
@@ -27,6 +32,36 @@ public class MyApplication extends WeidiApplication {
     @Override
     public void onCreate() {
         super.onCreate();
+
+        // 启动保活服务
+        //KeepLive.startWork(this);
+
+        /*//定义前台服务的默认样式。即标题、描述和图标
+        ForegroundNotification foregroundNotification = new ForegroundNotification(
+                "测试", "描述", R.mipmap.ic_launcher,
+                //定义前台服务的通知点击事件
+                new ForegroundNotificationClickListener() {
+                    @Override
+                    public void foregroundNotificationClick(Context context, Intent intent) {
+                    }
+                });
+        //启动保活服务
+        KeepLive.startWork(this, KeepLive.RunMode.ENERGY, foregroundNotification,
+                //你需要保活的服务，如socket连接、定时任务等，建议不用匿名内部类的方式在这里写
+                new KeepLiveService() {
+                    @Override
+                    public void onWorking() {
+                        Intent localService =
+                                new Intent(getApplicationContext(), MusicService.class);
+                        startService(localService);
+                    }
+
+                    @Override
+                    public void onStop() {
+
+                    }
+                }
+        );*/
 
         new AsyncTask<Void, Void, Void>() {
             @Override

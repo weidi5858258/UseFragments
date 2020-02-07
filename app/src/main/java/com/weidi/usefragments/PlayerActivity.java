@@ -183,7 +183,7 @@ public class PlayerActivity extends BaseActivity {
     private PowerManager.WakeLock mPowerWakeLock;
     // private SimpleVideoPlayer mSampleVideoPlayer;
     private SimpleVideoPlayer9 mSampleVideoPlayer;
-    // private SimpleAudioPlayer mSampleVideoPlayer;
+    // private SimpleAudioPlayer2 mSampleVideoPlayer;
     private String mPath;
     private long mProgressUs;
     private long mPresentationTimeUs;
@@ -284,7 +284,7 @@ public class PlayerActivity extends BaseActivity {
         });
 
         // mSampleVideoPlayer = new SimpleVideoPlayer();
-        // mSampleVideoPlayer = new SimpleAudioPlayer();
+        // mSampleVideoPlayer = new SimpleAudioPlayer2();
         mSampleVideoPlayer = new SimpleVideoPlayer9();
 
         int duration = (int) mSampleVideoPlayer.getDurationUs() / 1000;

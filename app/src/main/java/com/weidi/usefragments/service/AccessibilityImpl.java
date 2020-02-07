@@ -16,7 +16,7 @@ public class AccessibilityImpl extends AccessibilityService {
 
     @Override
     public void onAccessibilityEvent(AccessibilityEvent event) {
-        MLog.d(TAG, "onAccessibilityEvent()");
+        //MLog.d(TAG, "onAccessibilityEvent()");
     }
 
     @Override

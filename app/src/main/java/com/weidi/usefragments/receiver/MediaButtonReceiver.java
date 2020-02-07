@@ -13,7 +13,7 @@ import com.weidi.usefragments.business.contents.JniPlayerActivity;
  Created by root on 19-7-2.
  这个广播需要两个地方注册才有效
  1.AndroidManifest.xml
- 2.SimpleAudioPlayer(AudioManager)
+ 2.SimpleAudioPlayer2(AudioManager)
  */
 
 public class MediaButtonReceiver extends BroadcastReceiver {
@@ -39,7 +39,7 @@ public class MediaButtonReceiver extends BroadcastReceiver {
                         EventBusUtils.post(
                                 JniPlayerActivity.class, KeyEvent.KEYCODE_HEADSETHOOK, null);
                         /*EventBusUtils.post(
-                                SimpleAudioPlayer.class, KeyEvent.KEYCODE_HEADSETHOOK, null);
+                                SimpleAudioPlayer2.class, KeyEvent.KEYCODE_HEADSETHOOK, null);
                         EventBusUtils.post(
                                 SimpleVideoPlayer7.class, KeyEvent.KEYCODE_HEADSETHOOK, null);*/
                     }

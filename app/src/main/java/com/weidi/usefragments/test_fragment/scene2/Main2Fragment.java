@@ -12,6 +12,7 @@ import android.widget.TextView;
 
 import com.weidi.usefragments.R;
 import com.weidi.usefragments.business.media.AudioFragment;
+import com.weidi.usefragments.business.media.DecodeAudioFragment;
 import com.weidi.usefragments.fragment.FragOperManager;
 import com.weidi.usefragments.fragment.base.BaseFragment;
 import com.weidi.usefragments.inject.InjectView;
@@ -76,8 +77,8 @@ public class Main2Fragment extends BaseFragment {
             @Override
             public void onClick(View v) {
                 //FragOperManager.getInstance().enter3(new ViewPagerFragment2());
-                FragOperManager.getInstance().enter3(new AudioFragment());
-                //FragOperManager.getInstance().enter3(new DecodeAudioFragment());
+                //FragOperManager.getInstance().enter3(new AudioFragment());
+                FragOperManager.getInstance().enter3(new DecodeAudioFragment());
             }
         });
     }

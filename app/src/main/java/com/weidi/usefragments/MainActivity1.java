@@ -1,5 +1,7 @@
 package com.weidi.usefragments;
 
+import android.accessibilityservice.AccessibilityServiceInfo;
+import android.app.ActivityManager;
 import android.app.Fragment;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -18,6 +20,7 @@ import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.WindowManager;
+import android.view.accessibility.AccessibilityManager;
 import android.widget.FrameLayout;
 
 import com.weidi.usefragments.business.back_stack.ShowTitleDialogFragment;
@@ -36,6 +39,7 @@ import com.weidi.usefragments.business.test_horizontal_card.HorizontalCardFragme
 import com.weidi.usefragments.fragment.FragOperManager;
 import com.weidi.usefragments.fragment.base.BaseFragment;
 import com.weidi.usefragments.javabean.Person;
+import com.weidi.usefragments.business.audio_player.MusicService;
 import com.weidi.usefragments.service.DownloadFileService;
 import com.weidi.usefragments.test_fragment.scene2.A2Fragment;
 import com.weidi.usefragments.test_fragment.scene2.B2Fragment;
@@ -50,7 +54,7 @@ import com.weidi.usefragments.test_fragment.scene2.TestMotionEventFragment;
 import com.weidi.usefragments.test_fragment.scene2.ViewPagerFragment;
 import com.weidi.usefragments.tool.JniUtils;
 import com.weidi.usefragments.tool.MLog;
-import com.weidi.usefragments.tool.SimpleAudioPlayer;
+import com.weidi.usefragments.business.audio_player.SimpleAudioPlayer;
 import com.weidi.usefragments.tool.SimpleVideoPlayer;
 
 import java.io.File;
@@ -198,8 +202,25 @@ public class MainActivity1 extends BaseActivity
 
         }
 
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
+            PowerManager powerManager = (PowerManager) getSystemService(POWER_SERVICE);
+            boolean hasIgnored = powerManager.isIgnoringBatteryOptimizations(getPackageName());
+            // 判断当前APP是否有加入电池优化的白名单，如果没有，弹出加入电池优化的白名单的设置对话框。
+            if (!hasIgnored) {
+                Intent intent = new Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS);
+                intent.setData(Uri.parse("package:" + getPackageName()));
+                startActivity(intent);
+            }
+        }
+
         // start service
-        startService(new Intent(this, DownloadFileService.class));
+        //startService(new Intent(this, DownloadFileService.class));
+        if (!isRunService(this, "com.weidi.usefragments.business.audio_player.MusicService")) {
+            startService(new Intent(this, MusicService.class));
+        }
+        /*if (!isAccessibilitySettingsOn(getApplicationContext())) {
+            startActivity(new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS));
+        }*/
 
         main1Fragment = new Main1Fragment();
         main2Fragment = new Main2Fragment();
@@ -208,8 +229,8 @@ public class MainActivity1 extends BaseActivity
 
         mCurShowMainFragment = main1Fragment;
         mPreShowMainFragment = main1Fragment;
-//        mCurShowMainFragment = main4Fragment;
-//        mPreShowMainFragment = main4Fragment;
+        //        mCurShowMainFragment = main4Fragment;
+        //        mPreShowMainFragment = main4Fragment;
 
         FragOperManager.getInstance().setCurUsedFragment(
                 mCurShowMainFragment);
@@ -218,10 +239,10 @@ public class MainActivity1 extends BaseActivity
         FragOperManager.getInstance().enter2(main3Fragment);
         FragOperManager.getInstance().enter2(main2Fragment);
         FragOperManager.getInstance().enter2(main1Fragment);
-//        FragOperManager.getInstance().enter2(main1Fragment);
-//        FragOperManager.getInstance().enter2(main2Fragment);
-//        FragOperManager.getInstance().enter2(main3Fragment);
-//        FragOperManager.getInstance().enter2(main4Fragment);
+        //        FragOperManager.getInstance().enter2(main1Fragment);
+        //        FragOperManager.getInstance().enter2(main2Fragment);
+        //        FragOperManager.getInstance().enter2(main3Fragment);
+        //        FragOperManager.getInstance().enter2(main4Fragment);
 
         findViewById(R.id.main1_btn).setOnClickListener(mViewOnClickListener);
         findViewById(R.id.main2_btn).setOnClickListener(mViewOnClickListener);
@@ -232,8 +253,8 @@ public class MainActivity1 extends BaseActivity
 
         findViewById(R.id.main1_btn).setBackgroundColor(
                 getResources().getColor(android.R.color.holo_green_light));
-//        findViewById(R.id.main4_btn).setBackgroundColor(
-//                getResources().getColor(android.R.color.holo_green_light));
+        //        findViewById(R.id.main4_btn).setBackgroundColor(
+        //                getResources().getColor(android.R.color.holo_green_light));
 
         if (mHomeWatcherReceiver == null) {
             mHomeWatcherReceiver = new HomeWatcherReceiver();
@@ -667,6 +688,83 @@ public class MainActivity1 extends BaseActivity
         return super.onKeyDown(keyCode, event);
     }
 
+    private boolean isAccessibilitySettingsOn(Context context) {
+        int accessibilityEnabled = 0;
+        final String service =
+                "com.weidi.usefragments/com.weidi.usefragments.service.AccessibilityImpl";
+        boolean accessibilityFound = false;
+        try {
+            accessibilityEnabled = Settings.Secure.getInt(
+                    context.getApplicationContext().getContentResolver(),
+                    android.provider.Settings.Secure.ACCESSIBILITY_ENABLED);
+            Log.v(TAG, "accessibilityEnabled = " + accessibilityEnabled);
+        } catch (Settings.SettingNotFoundException e) {
+            e.printStackTrace();
+            Log.e(TAG, "Error finding setting, default accessibility to not found: "
+                    + e.getMessage());
+        }
+        TextUtils.SimpleStringSplitter mStringColonSplitter =
+                new TextUtils.SimpleStringSplitter(':');
+
+        if (accessibilityEnabled == 1) {
+            Log.v(TAG, "***ACCESSIBILIY IS ENABLED*** -----------------");
+            String settingValue = Settings.Secure.getString(
+                    context.getApplicationContext().getContentResolver(),
+                    Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES);
+            if (settingValue != null) {
+                TextUtils.SimpleStringSplitter splitter = mStringColonSplitter;
+                splitter.setString(settingValue);
+                while (splitter.hasNext()) {
+                    String accessabilityService = splitter.next();
+
+                    Log.v(TAG, "-------------- > accessabilityService :: " + accessabilityService);
+                    if (accessabilityService.equalsIgnoreCase(service)) {
+                        Log.v(TAG, "We've found the correct setting - accessibility is switched " +
+                                "on!");
+                        return true;
+                    }
+                }
+            }
+        } else {
+            Log.v(TAG, "***ACCESSIBILIY IS DISABLED***");
+        }
+
+        return accessibilityFound;
+    }
+
+    /**
+     * 判断无障碍服务是否开启
+     *
+     * @param context
+     * @return
+     */
+    private boolean isStartAccessibilityServiceEnable(Context context) {
+        AccessibilityManager accessibilityManager =
+                (AccessibilityManager)
+                        context.getSystemService(Context.ACCESSIBILITY_SERVICE);
+        assert accessibilityManager != null;
+        List<AccessibilityServiceInfo> accessibilityServices =
+                accessibilityManager.getEnabledAccessibilityServiceList(
+                        AccessibilityServiceInfo.FEEDBACK_ALL_MASK);
+        for (AccessibilityServiceInfo info : accessibilityServices) {
+            if (info.getId().contains(context.getPackageName())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean isRunService(Context context, String serviceName) {
+        ActivityManager manager = (ActivityManager) context.getSystemService(ACTIVITY_SERVICE);
+        for (ActivityManager.RunningServiceInfo
+                service : manager.getRunningServices(Integer.MAX_VALUE)) {
+            if (serviceName.equals(service.service.getClassName())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     @RequiresApi(api = Build.VERSION_CODES.M)
     private void test() {
         // 传递基本数据类型
@@ -756,25 +854,40 @@ public class MainActivity1 extends BaseActivity
          getFilesDir            : /data/user/0/com.weidi.usefragments/files
          getCacheDir            : /data/user/0/com.weidi.usefragments/cache
          getExternalCacheDir    : /storage/emulated/0/Android/data/com.weidi.usefragments/cache
-         DIRECTORY_MUSIC        : /storage/emulated/0/Android/data/com.weidi.usefragments/files/Music
-         DIRECTORY_MOVIES       : /storage/emulated/0/Android/data/com.weidi.usefragments/files/Movies
-         DIRECTORY_PICTURES     : /storage/emulated/0/Android/data/com.weidi.usefragments/files/Pictures
-         DIRECTORY_PODCASTS     : /storage/emulated/0/Android/data/com.weidi.usefragments/files/Podcasts
-         DIRECTORY_RINGTONES    : /storage/emulated/0/Android/data/com.weidi.usefragments/files/Ringtones
-         DIRECTORY_ALARMS       : /storage/emulated/0/Android/data/com.weidi.usefragments/files/Alarms
-         DIRECTORY_NOTIFICATIONS: /storage/emulated/0/Android/data/com.weidi.usefragments/files/Notifications
+         DIRECTORY_MUSIC        : /storage/emulated/0/Android/data/com.weidi
+         .usefragments/files/Music
+         DIRECTORY_MOVIES       : /storage/emulated/0/Android/data/com.weidi
+         .usefragments/files/Movies
+         DIRECTORY_PICTURES     : /storage/emulated/0/Android/data/com.weidi
+         .usefragments/files/Pictures
+         DIRECTORY_PODCASTS     : /storage/emulated/0/Android/data/com.weidi
+         .usefragments/files/Podcasts
+         DIRECTORY_RINGTONES    : /storage/emulated/0/Android/data/com.weidi
+         .usefragments/files/Ringtones
+         DIRECTORY_ALARMS       : /storage/emulated/0/Android/data/com.weidi
+         .usefragments/files/Alarms
+         DIRECTORY_NOTIFICATIONS: /storage/emulated/0/Android/data/com.weidi
+         .usefragments/files/Notifications
          */
         MLog.i(TAG, "getFilesDir            : " + getFilesDir().getAbsolutePath());
         MLog.i(TAG, "getCacheDir            : " + getCacheDir().getAbsolutePath());
         MLog.i(TAG, "getExternalCacheDir    : " + getExternalCacheDir().getAbsolutePath());
-        MLog.i(TAG, "DIRECTORY_MUSIC        : " + getExternalFilesDir(android.os.Environment.DIRECTORY_MUSIC).getAbsolutePath());
-        MLog.i(TAG, "DIRECTORY_MOVIES       : " + getExternalFilesDir(android.os.Environment.DIRECTORY_MOVIES).getAbsolutePath());
-        MLog.i(TAG, "DIRECTORY_PICTURES     : " + getExternalFilesDir(android.os.Environment.DIRECTORY_PICTURES).getAbsolutePath());
-        MLog.i(TAG, "DIRECTORY_PODCASTS     : " + getExternalFilesDir(android.os.Environment.DIRECTORY_PODCASTS).getAbsolutePath());
-        MLog.i(TAG, "DIRECTORY_RINGTONES    : " + getExternalFilesDir(android.os.Environment.DIRECTORY_RINGTONES).getAbsolutePath());
-        MLog.i(TAG, "DIRECTORY_ALARMS       : " + getExternalFilesDir(android.os.Environment.DIRECTORY_ALARMS).getAbsolutePath());
-        MLog.i(TAG, "DIRECTORY_NOTIFICATIONS: " + getExternalFilesDir(android.os.Environment.DIRECTORY_NOTIFICATIONS).getAbsolutePath());
-        MLog.i(TAG, "DIRECTORY_MOVIES       : " + Environment.getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_MOVIES).getAbsolutePath());
+        MLog.i(TAG, "DIRECTORY_MUSIC        : " + getExternalFilesDir(android.os.Environment
+                .DIRECTORY_MUSIC).getAbsolutePath());
+        MLog.i(TAG, "DIRECTORY_MOVIES       : " + getExternalFilesDir(android.os.Environment
+                .DIRECTORY_MOVIES).getAbsolutePath());
+        MLog.i(TAG, "DIRECTORY_PICTURES     : " + getExternalFilesDir(android.os.Environment
+                .DIRECTORY_PICTURES).getAbsolutePath());
+        MLog.i(TAG, "DIRECTORY_PODCASTS     : " + getExternalFilesDir(android.os.Environment
+                .DIRECTORY_PODCASTS).getAbsolutePath());
+        MLog.i(TAG, "DIRECTORY_RINGTONES    : " + getExternalFilesDir(android.os.Environment
+                .DIRECTORY_RINGTONES).getAbsolutePath());
+        MLog.i(TAG, "DIRECTORY_ALARMS       : " + getExternalFilesDir(android.os.Environment
+                .DIRECTORY_ALARMS).getAbsolutePath());
+        MLog.i(TAG, "DIRECTORY_NOTIFICATIONS: " + getExternalFilesDir(android.os.Environment
+                .DIRECTORY_NOTIFICATIONS).getAbsolutePath());
+        MLog.i(TAG, "DIRECTORY_MOVIES       : " + Environment.getExternalStoragePublicDirectory
+                (android.os.Environment.DIRECTORY_MOVIES).getAbsolutePath());
 
         File file = new File(getFilesDir().getAbsolutePath());
         MLog.i(TAG, "canWrite1              : " + file.canWrite());
@@ -782,37 +895,52 @@ public class MainActivity1 extends BaseActivity
         MLog.i(TAG, "canWrite2              : " + file.canWrite());
         file = new File(getExternalCacheDir().getAbsolutePath());
         MLog.i(TAG, "canWrite3              : " + file.canWrite());
-        file = new File(getExternalFilesDir(android.os.Environment.DIRECTORY_MUSIC).getAbsolutePath());
+        file = new File(getExternalFilesDir(android.os.Environment.DIRECTORY_MUSIC)
+                .getAbsolutePath());
         MLog.i(TAG, "canWrite4              : " + file.canWrite());
-        file = new File(getExternalFilesDir(android.os.Environment.DIRECTORY_MOVIES).getAbsolutePath());
+        file = new File(getExternalFilesDir(android.os.Environment.DIRECTORY_MOVIES)
+                .getAbsolutePath());
         MLog.i(TAG, "canWrite5              : " + file.canWrite());
-        file = new File(getExternalFilesDir(android.os.Environment.DIRECTORY_PICTURES).getAbsolutePath());
+        file = new File(getExternalFilesDir(android.os.Environment.DIRECTORY_PICTURES)
+                .getAbsolutePath());
         MLog.i(TAG, "canWrite6              : " + file.canWrite());
-        file = new File(getExternalFilesDir(android.os.Environment.DIRECTORY_PODCASTS).getAbsolutePath());
+        file = new File(getExternalFilesDir(android.os.Environment.DIRECTORY_PODCASTS)
+                .getAbsolutePath());
         MLog.i(TAG, "canWrite7              : " + file.canWrite());
-        file = new File(getExternalFilesDir(android.os.Environment.DIRECTORY_RINGTONES).getAbsolutePath());
+        file = new File(getExternalFilesDir(android.os.Environment.DIRECTORY_RINGTONES)
+                .getAbsolutePath());
         MLog.i(TAG, "canWrite8              : " + file.canWrite());
-        file = new File(getExternalFilesDir(android.os.Environment.DIRECTORY_RINGTONES).getAbsolutePath());
+        file = new File(getExternalFilesDir(android.os.Environment.DIRECTORY_RINGTONES)
+                .getAbsolutePath());
         MLog.i(TAG, "canWrite9              : " + file.canWrite());
-        file = new File(getExternalFilesDir(android.os.Environment.DIRECTORY_ALARMS).getAbsolutePath());
+        file = new File(getExternalFilesDir(android.os.Environment.DIRECTORY_ALARMS)
+                .getAbsolutePath());
         MLog.i(TAG, "canWrite10             : " + file.canWrite());
-        file = new File(getExternalFilesDir(android.os.Environment.DIRECTORY_NOTIFICATIONS).getAbsolutePath());
+        file = new File(getExternalFilesDir(android.os.Environment.DIRECTORY_NOTIFICATIONS)
+                .getAbsolutePath());
         MLog.i(TAG, "canWrite11             : " + file.canWrite());
-        file = new File(Environment.getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_MOVIES).getAbsolutePath());
+        file = new File(Environment.getExternalStoragePublicDirectory(android.os.Environment
+                .DIRECTORY_MOVIES).getAbsolutePath());
         MLog.i(TAG, "canWrite12             : " + file.canWrite());// false
 
         /***
-         Environment.DIRECTORY_MOVIES: /storage/emulated/0/Android/data/com.weidi.usefragments/files/Movies
+         Environment.DIRECTORY_MOVIES: /storage/emulated/0/Android/data/com.weidi
+         .usefragments/files/Movies
          canWrite                    : true
-         Environment.DIRECTORY_MOVIES: /storage/2430-1702/Android/data/com.weidi.usefragments/files/Movies
+         Environment.DIRECTORY_MOVIES: /storage/2430-1702/Android/data/com.weidi
+         .usefragments/files/Movies
          canWrite                    : true
-         Environment.MEDIA_MOUNTED   : /storage/emulated/0/Android/data/com.weidi.usefragments/files/mounted
+         Environment.MEDIA_MOUNTED   : /storage/emulated/0/Android/data/com.weidi
+         .usefragments/files/mounted
          canWrite                    : true
-         Environment.MEDIA_MOUNTED   : /storage/2430-1702/Android/data/com.weidi.usefragments/files/mounted
+         Environment.MEDIA_MOUNTED   : /storage/2430-1702/Android/data/com.weidi
+         .usefragments/files/mounted
          canWrite                    : true
-         Environment.MEDIA_SHARED    : /storage/emulated/0/Android/data/com.weidi.usefragments/files/shared
+         Environment.MEDIA_SHARED    : /storage/emulated/0/Android/data/com.weidi
+         .usefragments/files/shared
          canWrite                    : true
-         Environment.MEDIA_SHARED    : /storage/2430-1702/Android/data/com.weidi.usefragments/files/shared
+         Environment.MEDIA_SHARED    : /storage/2430-1702/Android/data/com.weidi
+         .usefragments/files/shared
          canWrite                    : true
          */
         File[] files;
@@ -832,23 +960,14 @@ public class MainActivity1 extends BaseActivity
             MLog.i(TAG, "canWrite                    : " + f.canWrite());
         }
 
-        PowerManager powerManager = (PowerManager) getSystemService(POWER_SERVICE);
-        boolean hasIgnored = powerManager.isIgnoringBatteryOptimizations(getPackageName());
-        // 判断当前APP是否有加入电池优化的白名单，如果没有，弹出加入电池优化的白名单的设置对话框。
-        if (!hasIgnored) {
-            Intent intent = new Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS);
-            intent.setData(Uri.parse("package:" + getPackageName()));
-            startActivity(intent);
-        }
-
         // com.eg.android.AlipayGphone com.tencent.mm tv.danmaku.bili
-        hasIgnored = powerManager.isIgnoringBatteryOptimizations("tv.danmaku.bili");
         // 判断当前APP是否有加入电池优化的白名单，如果没有，弹出加入电池优化的白名单的设置对话框。
+        /*hasIgnored = powerManager.isIgnoringBatteryOptimizations("tv.danmaku.bili");
         if (!hasIgnored) {
             Intent intent = new Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS);
             intent.setData(Uri.parse("package:tv.danmaku.bili"));
             startActivity(intent);
-        }
+        }*/
     }
 
 }

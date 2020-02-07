@@ -28,6 +28,7 @@ import com.weidi.usefragments.fragment.base.BaseFragment;
 import com.weidi.usefragments.inject.InjectOnClick;
 import com.weidi.usefragments.inject.InjectView;
 import com.weidi.usefragments.media.MediaUtils;
+import com.weidi.usefragments.test_fragment.scene2.A2Fragment;
 import com.weidi.usefragments.tool.Callback;
 import com.weidi.usefragments.tool.MLog;
 import com.weidi.usefragments.tool.SeparateVideo;
@@ -445,7 +446,8 @@ public class AudioFragment extends BaseFragment {
                 mThreadHandler.sendEmptyMessage(PCM_TO_WAV);
                 break;
             case R.id.jump_btn:
-                FragOperManager.getInstance().enter3(new DecodeAudioFragment());
+                //FragOperManager.getInstance().enter3(new DecodeAudioFragment());
+                FragOperManager.getInstance().enter3(new A2Fragment());
                 break;
             default:
         }

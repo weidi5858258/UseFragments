@@ -111,6 +111,9 @@ public class SimpleAudioPlayer {
     private static final int MSG_PAUSE = 21;
     private static final int MSG_STOP = 6;
     private static final int MSG_RELEASE = 7;
+    private static final int MSG_DESTROY = 8;
+    private static final int MSG_PREV = 9;
+    private static final int MSG_NEXT = 10;
     private static final int MSG_REFRESH_SOURCE_INFO = 8;
     private static final int MSG_PERIOD_PREPARED = 9;
     private static final int MSG_SOURCE_CONTINUE_LOADING_REQUESTED = 10;
@@ -215,6 +218,8 @@ public class SimpleAudioPlayer {
             isPausedForUser = false;
             isPausedForCache = false;
             isPausedForSeek = false;
+            readDataFull = false;
+            handleDataFull = false;
             readData.clear();
             handleData.clear();
             durationUs = 0;
@@ -230,11 +235,8 @@ public class SimpleAudioPlayer {
                 }
             }
             savePath = null;
-            frameMaxLength = 0;
+            //frameMaxLength = 0;
             frameDataLength = 0;
-
-            /*progressUs = -1;
-            needToSeek = false;*/
         }
     }
 
@@ -246,6 +248,7 @@ public class SimpleAudioPlayer {
         }
 
         public void clear() {
+            MLog.d(TAG, "AudioWrapper clear()");
             if (mAudioTrack != null) {
                 mAudioTrack.release();
             }
@@ -289,15 +292,16 @@ public class SimpleAudioPlayer {
         MLog.i(TAG, "setProgressUs() progressUs: " + progressUs + " " + elapsedTime);
         MLog.i(TAG, "----------------------------------------------------------");
         if (progressUs < 0
-                || progressUs > mAudioWrapper.durationUs) {
+                || progressUs > mAudioWrapper.durationUs
+                || mAudioWrapper.isPausedForSeek) {
             return;
         }
         mProgressUs = progressUs;
         mAudioWrapper.isPausedForSeek = true;
         mAudioWrapper.progressUs = progressUs;
 
-        notifyToRead(mAudioWrapper);
         notifyToHandle(mAudioWrapper);
+        //notifyToRead(mAudioWrapper);
     }
 
     private void seekTo(SimpleWrapper wrapper) {
@@ -332,10 +336,10 @@ public class SimpleAudioPlayer {
                 wrapper.handleData.addAll(wrapper.readData.subList(index, size - 1));
                 wrapper.handleDataFull = true;
                 // 需要在notifyToHandle(...)调用之前
-                wrapper.isPausedForSeek = false;
+                //wrapper.isPausedForSeek = false;
                 wrapper.readData.clear();
-                notifyToHandle(wrapper);
             }
+            //notifyToHandle(wrapper);
         } else {
             synchronized (wrapper.readData) {
                 wrapper.readData.clear();
@@ -343,16 +347,8 @@ public class SimpleAudioPlayer {
             // SEEK_TO_PREVIOUS_SYNC SEEK_TO_CLOSEST_SYNC SEEK_TO_NEXT_SYNC
             wrapper.extractor.seekTo(
                     wrapper.progressUs, MediaExtractor.SEEK_TO_PREVIOUS_SYNC);
-            wrapper.isPausedForSeek = false;
+            //wrapper.isPausedForSeek = false;
         }
-
-        /*synchronized (wrapper.readData) {
-            wrapper.readData.clear();
-        }
-        // SEEK_TO_PREVIOUS_SYNC SEEK_TO_CLOSEST_SYNC SEEK_TO_NEXT_SYNC
-        wrapper.extractor.seekTo(
-                wrapper.progressUs, MediaExtractor.SEEK_TO_PREVIOUS_SYNC);*/
-
 
         MLog.d(TAG, "seekTo() audio end");
     }
@@ -384,17 +380,14 @@ public class SimpleAudioPlayer {
                         " " + DateUtils.formatElapsedTime(data.sampleTime / 1000 / 1000));
                 wrapper.handleData.addAll(wrapper.readData.subList(index, size - 1));
                 wrapper.handleDataFull = true;
-                wrapper.isPausedForSeek = false;
-                notifyToHandle(wrapper);
+                //wrapper.isPausedForSeek = false;
             }
         } else {
             wrapper.isReading = false;
             wrapper.isHandling = false;
-            wrapper.isPausedForSeek = false;
+            //wrapper.isPausedForSeek = false;
             notifyToRead(wrapper);
-            notifyToHandle(wrapper);
         }
-
         MLog.d(TAG, "seekTo2() audio end");
     }
 
@@ -418,24 +411,32 @@ public class SimpleAudioPlayer {
     }
 
     public void stop() {
-        /*mThreadHandler.removeMessages(STOP);
-        mThreadHandler.sendEmptyMessage(STOP);*/
+        mThreadHandler.removeMessages(MSG_STOP);
+        mThreadHandler.sendEmptyMessage(MSG_STOP);
     }
 
     public void prev() {
-        /*mThreadHandler.removeMessages(PREV);
-        mThreadHandler.sendEmptyMessageDelayed(PREV, 500);*/
+        release();
+
+        mThreadHandler.removeMessages(MSG_PREPARE);
+        mThreadHandler.sendEmptyMessageDelayed(MSG_PREPARE, 500);
     }
 
     public void next() {
-        /*mThreadHandler.removeMessages(NEXT);
-        mThreadHandler.sendEmptyMessageDelayed(NEXT, 500);*/
+        release();
+
+        mThreadHandler.removeMessages(MSG_PREPARE);
+        mThreadHandler.sendEmptyMessageDelayed(MSG_PREPARE, 500);
     }
 
     public void release() {
-        internalRelease();
         mThreadHandler.removeMessages(MSG_RELEASE);
         mThreadHandler.sendEmptyMessage(MSG_RELEASE);
+    }
+
+    public void destroy() {
+        mThreadHandler.removeMessages(MSG_DESTROY);
+        mThreadHandler.sendEmptyMessageDelayed(MSG_DESTROY, 1000);
     }
 
     public boolean isPlaying() {
@@ -515,9 +516,20 @@ public class SimpleAudioPlayer {
                 break;
             case MSG_DO_SOME_WORK:
                 break;
+            case MSG_STOP:
+                internalStop();
+                break;
             case MSG_RELEASE:
                 internalRelease();
-                //internalDestroy();
+                break;
+            case MSG_DESTROY:
+                internalDestroy();
+                break;
+            case MSG_PREV:
+                internalPrev();
+                break;
+            case MSG_NEXT:
+                internalNext();
                 break;
             case MSG_HANDLE_DATA_LOCK_WAIT:
                 MLog.e(TAG, "卧槽!卧槽!卧槽!等了10分钟了还不能播放,爷不等了");
@@ -699,6 +711,9 @@ public class SimpleAudioPlayer {
 
                     MLog.e(TAG, "readData() audio notifyToReadWait start");
                     // 需要seek,不能退出
+                    wrapper.isPausedForSeek = false;
+                    SystemClock.sleep(100);
+                    notifyToHandle(wrapper);
                     notifyToReadWait(wrapper);
                     MLog.e(TAG, "readData() audio notifyToReadWait end");
                     if (wrapper.isPausedForSeek) {
@@ -734,6 +749,7 @@ public class SimpleAudioPlayer {
                         wrapper.handleData.addAll(wrapper.readData);
                         wrapper.readData.clear();
                         wrapper.handleDataFull = true;
+                        wrapper.isPausedForSeek = false;
                     }
                     MLog.d(TAG, "readData() audio notifyToHandle");
                     notifyToHandle(wrapper);
@@ -756,7 +772,6 @@ public class SimpleAudioPlayer {
     @TargetApi(Build.VERSION_CODES.M)
     private void handleData(SimpleWrapper wrapper) {
         MLog.d(TAG, "handleData() audio notifyToHandleWait start");
-        wrapper.isHandling = true;
         notifyToHandleWait(wrapper);
         MLog.d(TAG, "handleData() audio notifyToHandleWait end");
         if (!wrapper.isHandling) {
@@ -764,6 +779,7 @@ public class SimpleAudioPlayer {
         }
 
         MLog.d(TAG, "handleData() audio start");
+        boolean isFinished = false;
         while (wrapper.isHandling) {
             // pause装置
             if (wrapper.isPausedForUser
@@ -776,6 +792,7 @@ public class SimpleAudioPlayer {
                     wrapper.handleDataFull = false;
                     wrapper.handleData.clear();
                     wrapper.needToSeek = true;
+                    notifyToRead(wrapper);
                     MLog.d(TAG, "handleData() audio Seek notifyToHandleWait start");
                 } else if (isPausedForUser) {
                     MLog.d(TAG, "handleData() audio User notifyToHandleWait start");
@@ -826,7 +843,7 @@ public class SimpleAudioPlayer {
                 }
             }
 
-            if (wrapper.isHandling && wrapper.handleData.isEmpty()) {
+            if (wrapper.handleData.isEmpty()) {
                 synchronized (wrapper.readData) {
                     wrapper.handleDataFull = false;
                 }
@@ -837,7 +854,9 @@ public class SimpleAudioPlayer {
                         wrapper.handleData.addAll(wrapper.readData);
                         wrapper.readData.clear();
                     }
-                    notifyToRead(wrapper);
+                    if (wrapper.isReading) {
+                        notifyToRead(wrapper);
+                    }
                 } else {
                     if (wrapper.isReading) {
                         if (mCallback != null) {
@@ -860,6 +879,7 @@ public class SimpleAudioPlayer {
                         }
                     } else {
                         wrapper.isHandling = false;
+                        isFinished = true;
                         break;
                     }
                 }
@@ -887,14 +907,12 @@ public class SimpleAudioPlayer {
             wrapper.extractor = null;
         }
 
-        if (mCallback != null) {
+        if (mCallback != null && isFinished) {
             MLog.d(TAG, "handleData() onFinished");
             mCallback.onFinished();
         }
 
         mAudioWrapper.clear();
-        mAudioWrapper = null;
-        internalDestroy();
         System.gc();
     }
 
@@ -915,7 +933,7 @@ public class SimpleAudioPlayer {
                     room.clear();
                     readSize = wrapper.extractor.readSampleData(room, 0);
                     if (readSize < 0) {
-                        MLog.e(TAG, "readData2() end audio readSize: " + readSize);
+                        MLog.e(TAG, "readData2() end audio readSize : " + readSize);
                         MLog.e(TAG, "readData2() end audio readData2: " + wrapper.readData.size());
                         MLog.e(TAG, "readData2() end audio notifyToHandle");
 
@@ -926,7 +944,6 @@ public class SimpleAudioPlayer {
                             wrapper.handleDataFull = true;
                         }
 
-                        //wrapper.isReading = false;
                         notifyToHandle(wrapper);
                         continue;
                     }
@@ -942,9 +959,12 @@ public class SimpleAudioPlayer {
                     wrapper.extractor.advance();
                 } else {
                     // 为了做seek的事
-                    MLog.d(TAG, "readData2() audio notifyToReadWait start");
+                    MLog.e(TAG, "readData2() audio notifyToReadWait start");
+                    wrapper.isPausedForSeek = false;
+                    SystemClock.sleep(100);
+                    notifyToHandle(wrapper);
                     notifyToReadWait(wrapper);
-                    MLog.d(TAG, "readData2() audio notifyToReadWait end");
+                    MLog.e(TAG, "readData2() audio notifyToReadWait end");
 
                     if (wrapper.isPausedForSeek) {
                         seekTo2(wrapper);
@@ -956,6 +976,7 @@ public class SimpleAudioPlayer {
             } catch (Exception e) {
                 e.printStackTrace();
                 wrapper.isReading = false;
+                MLog.e(TAG, "readData2() occur error");
                 break;
             }
         }// while(...) end
@@ -966,7 +987,6 @@ public class SimpleAudioPlayer {
     @TargetApi(Build.VERSION_CODES.M)
     private void handleData2(SimpleWrapper wrapper) {
         MLog.d(TAG, "handleData2() audio notifyToHandleWait start");
-        wrapper.isHandling = true;
         notifyToHandleWait(wrapper);
         MLog.d(TAG, "handleData2() audio notifyToHandleWait end");
         if (!wrapper.isHandling) {
@@ -974,17 +994,18 @@ public class SimpleAudioPlayer {
         }
 
         MLog.d(TAG, "handleData2() audio start");
+        boolean isFinished = false;
         while (wrapper.isHandling) {
             // pause装置
             if (wrapper.isPausedForUser
                     || wrapper.isPausedForSeek) {
-                boolean isPausedForUser = wrapper.isPausedForUser;
                 boolean isPausedForSeek = wrapper.isPausedForSeek;
 
                 if (isPausedForSeek) {
                     wrapper.handleDataFull = false;
                     wrapper.handleData.clear();
                     wrapper.needToSeek = true;
+                    notifyToRead(wrapper);
                     MLog.d(TAG, "handleData2() audio Seek notifyToHandleWait start");
                 } else {
                     MLog.d(TAG, "handleData2() audio User notifyToHandleWait start");
@@ -1003,7 +1024,7 @@ public class SimpleAudioPlayer {
                 }
             }// pause end
 
-            if (wrapper.isHandling && !wrapper.handleData.isEmpty()) {
+            if (!wrapper.handleData.isEmpty()) {
                 AVPacket data = wrapper.handleData.get(0);
                 wrapper.frameData = data.data;
                 wrapper.frameDataLength = data.size;
@@ -1018,18 +1039,21 @@ public class SimpleAudioPlayer {
                     break;
                 }
 
-                // 过一秒才更新
-                // 如果退出,那么seekTo到这个位置就行了
-                curElapsedTime = DateUtils.formatElapsedTime(
-                        (wrapper.presentationTimeUs1 / 1000) / 1000);
-                if (mCallback != null
-                        // 防止重复更新
-                        && !TextUtils.equals(curElapsedTime, preElapsedTime)) {
-                    mCallback.onProgressUpdated(wrapper.presentationTimeUs1);
-                    preElapsedTime = curElapsedTime;
+                if (!wrapper.isPausedForSeek) {
+                    // 过一秒才更新
+                    // 如果退出,那么seekTo到这个位置就行了
+                    curElapsedTime = DateUtils.formatElapsedTime(
+                            (wrapper.presentationTimeUs1 / 1000) / 1000);
+                    if (mCallback != null
+                            // 防止重复更新
+                            && !TextUtils.equals(curElapsedTime, preElapsedTime)) {
+                        mCallback.onProgressUpdated(wrapper.presentationTimeUs1);
+                        preElapsedTime = curElapsedTime;
+                    }
                 }
             } else {
                 wrapper.isHandling = false;
+                isFinished = true;
                 break;
             }
         }// while(true) end
@@ -1055,14 +1079,12 @@ public class SimpleAudioPlayer {
             wrapper.extractor = null;
         }
 
-        if (mCallback != null) {
+        if (mCallback != null && isFinished) {
             MLog.d(TAG, "handleData2() onFinished");
             mCallback.onFinished();
         }
 
         mAudioWrapper.clear();
-        mAudioWrapper = null;
-        internalDestroy();
         System.gc();
     }
 
@@ -1097,6 +1119,7 @@ public class SimpleAudioPlayer {
                 mAudioWrapper.extractor = null;
             }
             internalRelease();
+            MLog.e(TAG, "prepareAudio() setDataSource errrr");
             return false;
         }
         int trackCount = mAudioWrapper.extractor.getTrackCount();
@@ -1112,6 +1135,8 @@ public class SimpleAudioPlayer {
         if (TextUtils.isEmpty(mAudioWrapper.mime)
                 || mAudioWrapper.trackIndex == -1) {
             internalRelease();
+            MLog.e(TAG, "prepareAudio() mime: " + mAudioWrapper.mime +
+                    " trackIndex: " + mAudioWrapper.trackIndex);
             return false;
         }
 
@@ -1120,6 +1145,14 @@ public class SimpleAudioPlayer {
 
         /***
          解码前
+         audio
+         {
+         encoder-delay=576, sample-rate=44100,
+         track-id=1, durationUs=202657959,
+         mime=audio/mpeg, channel-count=2,
+         bitrate=320000, encoder-padding=804
+         }
+         video
          {
          csd-0=java.nio.HeapByteBuffer[pos=0 lim=2 cap=2],
          mime=audio/mp4a-latm, aac-profile=2, channel-count=2, track-id=2, bitrate=96000,
@@ -1140,6 +1173,7 @@ public class SimpleAudioPlayer {
             MLog.d(TAG, "internalPrepare()          audioDurationUs: " +
                     mAudioWrapper.durationUs + " " + durationTime);
         }
+        // 音乐文件没有这个属性
         if (mAudioWrapper.decoderMediaFormat.containsKey(MediaFormat.KEY_MAX_INPUT_SIZE)) {
             mAudioWrapper.frameMaxLength =
                     mAudioWrapper.decoderMediaFormat.getInteger(MediaFormat.KEY_MAX_INPUT_SIZE);
@@ -1174,7 +1208,6 @@ public class SimpleAudioPlayer {
                             mAudioWrapper.mime, mAudioWrapper.decoderMediaFormat);
                     break;
             }
-
         } catch (MediaCodec.CryptoException
                 | IllegalStateException
                 | IllegalArgumentException
@@ -1187,6 +1220,7 @@ public class SimpleAudioPlayer {
         }
         if (mAudioWrapper.decoderMediaCodec == null) {
             internalRelease();
+            MLog.e(TAG, "prepareAudio() decoderMediaCodec is null");
             return false;
         }
 
@@ -1297,29 +1331,30 @@ public class SimpleAudioPlayer {
             SystemClock.sleep(500);
             new Thread(mAudioReadData2).start();
         }
+        mIsLongTime = false;
 
         return true;
     }
 
-    private void internalStart() {
-
-    }
-
     private void internalPlay() {
-        if (!mAudioWrapper.isPausedForCache) {
+        if (mAudioWrapper.isPausedForUser
+                && !mAudioWrapper.isPausedForCache
+                && !mAudioWrapper.isPausedForSeek) {
             mAudioWrapper.isPausedForUser = false;
             notifyToHandle(mAudioWrapper);
         }
     }
 
     private void internalPause() {
-        if (!mAudioWrapper.isPausedForCache) {
+        if (!mAudioWrapper.isPausedForUser
+                && !mAudioWrapper.isPausedForCache
+                && !mAudioWrapper.isPausedForSeek) {
             mAudioWrapper.isPausedForUser = true;
         }
     }
 
     private void internalStop() {
-
+        internalRelease();
     }
 
     private void internalRelease() {
@@ -1336,6 +1371,7 @@ public class SimpleAudioPlayer {
     }
 
     private void internalDestroy() {
+        MLog.d(TAG, "internalDestroy() start");
         if (mHandlerThread != null) {
             mHandlerThread.quit();
             mHandlerThread = null;
@@ -1344,6 +1380,7 @@ public class SimpleAudioPlayer {
         //mContext.unbindService(serviceConnection);
         unregisterHeadsetPlugReceiver();
         EventBusUtils.unregister(this);
+        MLog.d(TAG, "internalDestroy() end");
     }
 
     private void internalPrev() {
@@ -1644,18 +1681,18 @@ public class SimpleAudioPlayer {
     }
 
     private void notifyToRead(SimpleWrapper wrapper) {
-        if (wrapper == null) {
+        /*if (wrapper == null) {
             return;
-        }
+        }*/
         synchronized (wrapper.readDataLock) {
             wrapper.readDataLock.notify();
         }
     }
 
     private void notifyToReadWait(SimpleWrapper wrapper) {
-        if (wrapper == null) {
+        /*if (wrapper == null) {
             return;
-        }
+        }*/
         try {
             synchronized (wrapper.readDataLock) {
                 wrapper.readDataLock.wait();
@@ -1666,18 +1703,18 @@ public class SimpleAudioPlayer {
     }
 
     private void notifyToHandle(SimpleWrapper wrapper) {
-        if (wrapper == null) {
+        /*if (wrapper == null) {
             return;
-        }
+        }*/
         synchronized (wrapper.handleDataLock) {
             wrapper.handleDataLock.notify();
         }
     }
 
     private void notifyToHandleWait(SimpleWrapper wrapper) {
-        if (wrapper == null) {
+        /*if (wrapper == null) {
             return;
-        }
+        }*/
         try {
             synchronized (wrapper.handleDataLock) {
                 wrapper.handleDataLock.wait();

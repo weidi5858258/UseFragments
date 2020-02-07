@@ -138,7 +138,7 @@ public class DownloadFileService extends Service {
         };
 
         // test
-        // mThreadHandler.sendEmptyMessage(MSG_TEST);
+        mThreadHandler.sendEmptyMessage(MSG_TEST);
     }
 
     private boolean isVideoExist(String fileName) {

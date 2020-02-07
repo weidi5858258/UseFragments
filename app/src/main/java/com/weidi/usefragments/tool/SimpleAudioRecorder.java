@@ -132,7 +132,7 @@ public class SimpleAudioRecorder {
 
     private static ExecutorService getSingleThreadPool() {
         if (singleService == null) {
-            synchronized (SimpleAudioPlayer.class) {
+            synchronized (SimpleAudioPlayer2.class) {
                 if (singleService == null) {
                     singleService = Executors.newSingleThreadExecutor();
                 }
