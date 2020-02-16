@@ -69,6 +69,9 @@ public class MedicalRecordAdapter extends RecyclerView.Adapter {
         } else if (medicalRecordLeukocyteCount_ < 3.97) {
             medicalRecordViewHolder.medicalRecordLeukocyteCountTV.setBackgroundColor(
                     mContext.getResources().getColor(R.color.lime));
+        } else {
+            medicalRecordViewHolder.medicalRecordLeukocyteCountTV.setBackgroundColor(
+                    mContext.getResources().getColor(R.color.black));
         }
 
         String medicalRecordNeutrophils = bean.medicalRecordNeutrophils;
@@ -80,6 +83,9 @@ public class MedicalRecordAdapter extends RecyclerView.Adapter {
         } else if (medicalRecordNeutrophils_ < 2.0) {
             medicalRecordViewHolder.medicalRecordNeutrophilsTV.setBackgroundColor(
                     mContext.getResources().getColor(R.color.lime));
+        } else {
+            medicalRecordViewHolder.medicalRecordNeutrophilsTV.setBackgroundColor(
+                    mContext.getResources().getColor(R.color.black));
         }
 
         String medicalRecordHemoglobin = bean.medicalRecordHemoglobin;
@@ -91,6 +97,9 @@ public class MedicalRecordAdapter extends RecyclerView.Adapter {
         } else if (medicalRecordHemoglobin_ < 131) {
             medicalRecordViewHolder.medicalRecordHemoglobinTV.setBackgroundColor(
                     mContext.getResources().getColor(R.color.lime));
+        } else {
+            medicalRecordViewHolder.medicalRecordHemoglobinTV.setBackgroundColor(
+                    mContext.getResources().getColor(R.color.black));
         }
 
         String medicalRecordPlateletCount = bean.medicalRecordPlateletCount;
@@ -102,6 +111,9 @@ public class MedicalRecordAdapter extends RecyclerView.Adapter {
         } else if (medicalRecordPlateletCount_ < 85) {
             medicalRecordViewHolder.medicalRecordPlateletCountTV.setBackgroundColor(
                     mContext.getResources().getColor(R.color.lime));
+        } else {
+            medicalRecordViewHolder.medicalRecordPlateletCountTV.setBackgroundColor(
+                    mContext.getResources().getColor(R.color.black));
         }
 
         medicalRecordViewHolder.medicalRecordRemarksTV.setText(bean.medicalRecordRemarks);
