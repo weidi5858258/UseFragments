@@ -108,7 +108,7 @@ namespace alexander {
     struct Wrapper {
         int type = TYPE_UNKNOW;
         AVCodecContext *avCodecContext = NULL;
-        // 有些东西需要通过它去得到
+        // 有些东西需要通过它去得到(自己千万千万千万不要去释放内存)
         AVCodecParameters *avCodecParameters = NULL;
         // 解码器
         AVCodec *decoderAVCodec = NULL;
@@ -133,7 +133,7 @@ namespace alexander {
         // 队列中最多保存多少个AVPacket
         int list1LimitCounts = 0;
         int list2LimitCounts = 0;
-        bool isReadList1Full = false;
+        bool isHandleList1Full = false;
 //        bool isReadList2Full = false;
 
         bool isStarted = false;
@@ -146,7 +146,7 @@ namespace alexander {
         // 因为seek所以pause
         bool isPausedForSeek = false;
         // seek的初始化条件有没有完成,true表示完成
-        bool seekToInit = false;
+        bool needToSeek = false;
 
         // 单位: 秒
         int64_t duration = 0;

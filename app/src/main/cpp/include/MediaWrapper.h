@@ -5,14 +5,11 @@
 #ifndef USEFRAGMENTS_SIMPLEVIDEOPLAYER_H
 #define USEFRAGMENTS_SIMPLEVIDEOPLAYER_H
 
-// 需要引入native绘制的头文件
-#include <android/native_window.h>
-#include <android/native_window_jni.h>
-#include <list>
-#include <iostream>
-#include <iomanip>
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-extern "C" {// 不能少
+//extern "C" {// 不能少
 // ffmpeg使用MediaCodec进行硬解码(需要编译出支持硬解码的so库)
 #include <libavcodec/jni.h>
 #include <libavcodec/avcodec.h>
@@ -70,12 +67,24 @@ extern "C" {// 不能少
 //    #include <jpeglib.h>
 //    #include <turbojpeg.h>
 
-};// extern "C" end
+//};// extern "C" end
 
-#include "ffmpeg.h"
-#include "MyHeader.h"
+#ifdef __cplusplus
+}
+#endif
 
-namespace alexander {
+// 需要引入native绘制的头文件
+#include <android/native_window.h>
+#include <android/native_window_jni.h>
+#include <list>
+#include <iostream>
+#include <iomanip>
+
+#include "../ffmpeg/ffmpeg.h"
+//#include "MyHeader.h"
+#include "Log.h"
+
+namespace alexander3 {
 
     // 1 second of 48khz 32bit audio
 #define MAX_AUDIO_FRAME_SIZE 192000
@@ -84,13 +93,8 @@ namespace alexander {
 #define TYPE_AUDIO 1
 #define TYPE_VIDEO 2
 
-#define NEXT_READ_UNKNOW -1
-#define NEXT_READ_LIST1 1
-#define NEXT_READ_LIST2 2
-
-#define NEXT_HANDLE_UNKNOW -1
-#define NEXT_HANDLE_LIST1 1
-#define NEXT_HANDLE_LIST2 2
+    // 不能无限制读取数据进行保存,这样要出错的(能播放,但不是想要的结果)
+#define MAX_AVPACKET_COUNT         10000
 
 #define MAX_AVPACKET_COUNT_AUDIO_HTTP 3000
 #define MAX_AVPACKET_COUNT_VIDEO_HTTP 3000
@@ -98,12 +102,12 @@ namespace alexander {
 #define MAX_AVPACKET_COUNT_AUDIO_LOCAL 100
 #define MAX_AVPACKET_COUNT_VIDEO_LOCAL 100
 
-    // 子类都要用到的部分
-    struct Wrapper {
+#define CACHE_COUNT 100
+
+    class Wrapper {
         int type = TYPE_UNKNOW;
-        AVFormatContext *avFormatContext = NULL;
         AVCodecContext *avCodecContext = NULL;
-        // 有些东西需要通过它去得到
+        // 有些东西需要通过它去得到(自己千万千万千万不要去释放内存)
         AVCodecParameters *avCodecParameters = NULL;
         // 解码器
         AVCodec *decoderAVCodec = NULL;
@@ -121,19 +125,15 @@ namespace alexander {
         // 总共处理了多少个AVPacket
         int handleFramesCount = 0;
 
-        // C++中也可以使用list来做
-        struct AVPacketQueue *queue1 = NULL;
-        struct AVPacketQueue *queue2 = NULL;
-        bool isHandleList1Full = false;
-        bool isReadList2Full = false;
-        int nextRead = NEXT_READ_UNKNOW;
-        int nextHandle = NEXT_HANDLE_UNKNOW;
-
-        std::list<AVPacket> *list1 = NULL;
-        std::list<AVPacket> *list2 = NULL;
-        std::list<AVFrame> *tempList = NULL;
-        // 队列中最多保存多少个AVFrame
+        // 不能这样定义
+        // std::list<AVPacket*> *list1 = NULL;
+        std::list <AVPacket> *list1 = NULL;
+        std::list <AVPacket> *list2 = NULL;
+        // 队列中最多保存多少个AVPacket
         int list1LimitCounts = 0;
+        int list2LimitCounts = 0;
+        bool isHandleList1Full = false;
+//        bool isReadList2Full = false;
 
         bool isStarted = false;
         bool isReading = false;
@@ -142,12 +142,14 @@ namespace alexander {
         bool isPausedForUser = false;
         // 因为cache所以pause
         bool isPausedForCache = false;
+        // 因为seek所以pause
+        bool isPausedForSeek = false;
         // seek的初始化条件有没有完成,true表示完成
         bool needToSeek = false;
 
         // 单位: 秒
         int64_t duration = 0;
-        // 单位: 秒
+        // 单位: 秒 seekTo到某个时间点
         int64_t timestamp = 0;
         // 跟线程有关
         pthread_mutex_t readLockMutex;
@@ -161,7 +163,7 @@ namespace alexander {
         // unsigned char *srcData[4] = {NULL}, dstData[4] = {NULL};
     };
 
-    struct AudioWrapper {
+    class AudioWrapper : public Wrapper {
         struct Wrapper *father = NULL;
         SwrContext *swrContext = NULL;
         // 存储非压缩数据(视频对应RGB/YUV像素数据,音频对应PCM采样数据)
@@ -186,7 +188,7 @@ namespace alexander {
         enum AVSampleFormat dstAVSampleFormat = AV_SAMPLE_FMT_S16;
     };
 
-    struct VideoWrapper {
+    class VideoWrapper : public Wrapper {
         struct Wrapper *father = NULL;
         SwsContext *swsContext = NULL;
         // 从视频源中得到
@@ -209,13 +211,9 @@ namespace alexander {
         int srcLineSize[4] = {0}, dstLineSize[4] = {0};
     };
 
-    void *readData(void *opaque);
+    /*void *readData(void *opaque);
 
     void *handleData(void *opaque);
-
-    void *handleAudioData(void *opaque);
-
-    void *handleVideoData(void *opaque);
 
     AudioWrapper *getAudioWrapper();
 
@@ -231,13 +229,9 @@ namespace alexander {
 
     int putAVPacketToQueue(struct AVPacketQueue *packet_queue, AVPacket *avpacket);
 
-    int openAndFindAVFormatContextForAudio();
+    int openAndFindAVFormatContext();
 
-    int openAndFindAVFormatContextForVideo();
-
-    int findStreamIndexForAudio();
-
-    int findStreamIndexForVideo();
+    int findStreamIndex();
 
     int findAndOpenAVCodecForAudio();
 
@@ -251,9 +245,7 @@ namespace alexander {
 
     void closeVideo();
 
-    int initAudioPlayer();
-
-    int initVideoPlayer();
+    int initPlayer();
 
     void setJniParameters(JNIEnv *env, const char *filePath, jobject surfaceJavaObject);
 
@@ -275,7 +267,7 @@ namespace alexander {
 
     void stepAdd();
 
-    void stepSubtract();
+    void stepSubtract();*/
 
     /*class SimpleVideoPlayer {
 

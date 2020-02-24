@@ -91,6 +91,11 @@
                  android:persistent="true"
                  android:exported="true"/>
 
+        <service android:name=".business.audio_player.JniMusicService"
+                 android:priority="1000"
+                 android:persistent="true"
+                 android:exported="true"/>
+
         <service android:name=".service.DownloadFileService"
                  android:exported="false"/>
 
@@ -116,7 +121,7 @@
         </receiver>
 
         <activity
-            android:name="com.weidi.usefragments.PlayerActivity"
+            android:name="com.weidi.usefragments.business.video_player.PlayerActivity"
             android:screenOrientation="landscape"
             android:configChanges="uiMode|keyboard|keyboardHidden|screenSize|orientation|fontScale"
             android:windowSoftInputMode="stateAlwaysHidden|adjustPan"
@@ -215,7 +220,7 @@
         </activity>
 
         <activity
-            android:name="com.weidi.usefragments.business.contents.JniPlayerActivity"
+            android:name="com.weidi.usefragments.business.video_player.JniPlayerActivity"
             android:screenOrientation="landscape"
             android:configChanges="uiMode|keyboard|keyboardHidden|screenSize|orientation|fontScale"
             android:windowSoftInputMode="stateAlwaysHidden|adjustPan"

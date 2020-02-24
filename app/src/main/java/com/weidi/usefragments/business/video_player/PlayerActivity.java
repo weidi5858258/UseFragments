@@ -1,4 +1,4 @@
-package com.weidi.usefragments;
+package com.weidi.usefragments.business.video_player;
 
 import android.content.Context;
 import android.content.Intent;
@@ -25,7 +25,8 @@ import android.widget.SeekBar;
 import android.widget.TextView;
 
 import com.weidi.eventbus.EventBusUtils;
-import com.weidi.usefragments.business.video_player.SimpleVideoPlayer9;
+import com.weidi.usefragments.BaseActivity;
+import com.weidi.usefragments.R;
 import com.weidi.usefragments.media.MediaUtils;
 import com.weidi.usefragments.service.DownloadFileService;
 import com.weidi.usefragments.test_view.BubblePopupWindow;
@@ -182,8 +183,9 @@ public class PlayerActivity extends BaseActivity {
     private Surface mSurface;
     private PowerManager.WakeLock mPowerWakeLock;
     // private SimpleVideoPlayer mSampleVideoPlayer;
-    private SimpleVideoPlayer9 mSampleVideoPlayer;
     // private SimpleAudioPlayer2 mSampleVideoPlayer;
+    // private SimpleVideoPlayer9 mSampleVideoPlayer;
+    private OnlyVideoPlayer mSampleVideoPlayer;
     private String mPath;
     private long mProgressUs;
     private long mPresentationTimeUs;
@@ -285,7 +287,8 @@ public class PlayerActivity extends BaseActivity {
 
         // mSampleVideoPlayer = new SimpleVideoPlayer();
         // mSampleVideoPlayer = new SimpleAudioPlayer2();
-        mSampleVideoPlayer = new SimpleVideoPlayer9();
+        // mSampleVideoPlayer = new SimpleVideoPlayer9();
+        mSampleVideoPlayer = new OnlyVideoPlayer();
 
         int duration = (int) mSampleVideoPlayer.getDurationUs() / 1000;
         int currentPosition = (int) mPresentationTimeUs / 1000;
@@ -347,10 +350,10 @@ public class PlayerActivity extends BaseActivity {
     }
 
     private void internalResume() {
-        contentLength = (Long) EventBusUtils.post(
+        /*contentLength = (Long) EventBusUtils.post(
                 DownloadFileService.class,
                 DownloadFileService.MSG_GET_CONTENT_LENGTH,
-                null);
+                null);*/
         EventBusUtils.post(
                 DownloadFileService.class,
                 DownloadFileService.MSG_SET_CALLBACK,
@@ -459,6 +462,7 @@ public class PlayerActivity extends BaseActivity {
         @Override
         public void onFinished() {
             //mSampleVideoPlayer.play();
+            finish();
         }
 
         @Override

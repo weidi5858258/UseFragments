@@ -197,7 +197,7 @@ namespace alexander {
         // C++中也可以使用list来做
         struct AVPacketQueue *queue1 = NULL;
         struct AVPacketQueue *queue2 = NULL;
-        bool isReadList1Full = false;
+        bool isHandleList1Full = false;
         bool isReadList2Full = false;
         int nextRead = NEXT_READ_UNKNOW;
         int nextHandle = NEXT_HANDLE_UNKNOW;
@@ -212,7 +212,7 @@ namespace alexander {
         // 因为cache所以pause
         bool isPausedForCache = false;
         // seek的初始化条件有没有完成,true表示完成
-        bool seekToInit = false;
+        bool needToSeek = false;
 
         // 单位: 秒
         int64_t duration = 0;
@@ -332,8 +332,8 @@ namespace alexander {
         audioWrapper->father->isHandling = false;
         audioWrapper->father->isPausedForUser = false;
         audioWrapper->father->isPausedForCache = false;
-        audioWrapper->father->seekToInit = false;
-        audioWrapper->father->isReadList1Full = false;
+        audioWrapper->father->needToSeek = false;
+        audioWrapper->father->isHandleList1Full = false;
         audioWrapper->father->isReadList2Full = false;
         audioWrapper->father->duration = -1;
         audioWrapper->father->timestamp = -1;
@@ -389,8 +389,8 @@ namespace alexander {
         videoWrapper->father->isHandling = false;
         videoWrapper->father->isPausedForUser = false;
         videoWrapper->father->isPausedForCache = false;
-        videoWrapper->father->seekToInit = false;
-        videoWrapper->father->isReadList1Full = false;
+        videoWrapper->father->needToSeek = false;
+        videoWrapper->father->isHandleList1Full = false;
         videoWrapper->father->isReadList2Full = false;
         videoWrapper->father->duration = -1;
         videoWrapper->father->timestamp = -1;
@@ -915,12 +915,12 @@ namespace alexander {
                     LOGW("%s\n", "readData() video seek start");
                 }
 
-                if (!wrapper->seekToInit) {
+                if (!wrapper->needToSeek) {
                     pthread_mutex_lock(&wrapper->readLockMutex);
                     pthread_cond_wait(&wrapper->readLockCondition, &wrapper->readLockMutex);
                     pthread_mutex_unlock(&wrapper->readLockMutex);
                 }
-                wrapper->seekToInit = false;
+                wrapper->needToSeek = false;
 
                 AVStream *stream =
                         wrapper->avFormatContext->streams[wrapper->streamIndex];
@@ -997,14 +997,14 @@ namespace alexander {
                             LOGF("readData() video AVERROR_EOF readFrame: %d\n", readFrame);
                         }
                         if (wrapper->queue1->allAVPacketsCount > 0) {
-                            wrapper->isReadList1Full = true;
+                            wrapper->isHandleList1Full = true;
                         }
                         if (wrapper->queue2->allAVPacketsCount > 0) {
                             wrapper->isReadList2Full = true;
                         }
 
                         // 说明歌曲长度比较短,达不到"规定值",因此处理数据线程还在等待
-                        if ((wrapper->isReadList1Full
+                        if ((wrapper->isHandleList1Full
                              && !wrapper->isReadList2Full
                              && wrapper->queue1->allAVPacketsCount > 0
                              && wrapper->queue2->allAVPacketsCount == 0)
@@ -1062,11 +1062,11 @@ namespace alexander {
             av_packet_ref(dstAVPacket, srcAVPacket);
 
             if (wrapper->nextRead == NEXT_READ_LIST1
-                && !wrapper->isReadList1Full) {
+                && !wrapper->isHandleList1Full) {
                 // 保存到队列去,然后取出来进行解码播放
                 putAVPacketToQueue(wrapper->queue1, dstAVPacket);
                 if (wrapper->queue1->allAVPacketsCount == wrapper->list1LimitCounts) {
-                    wrapper->isReadList1Full = true;
+                    wrapper->isHandleList1Full = true;
                     // queue1满了,接着存到queue2去
                     wrapper->nextRead = NEXT_READ_LIST2;
                     if (isLocal && needLocalLog) {
@@ -1123,7 +1123,7 @@ namespace alexander {
                     pthread_cond_signal(&wrapper->handleLockCondition);
                     pthread_mutex_unlock(&wrapper->handleLockMutex);
                 }
-            } else if (wrapper->isReadList1Full
+            } else if (wrapper->isHandleList1Full
                        && wrapper->isReadList2Full) {
                 // 两个队列都满的话,就进行等待
                 if (isLocal && needLocalLog) {
@@ -1149,7 +1149,7 @@ namespace alexander {
 
                 // 保存"等待前的一帧"
                 if (wrapper->nextRead == NEXT_READ_LIST1
-                    && !wrapper->isReadList1Full) {
+                    && !wrapper->isHandleList1Full) {
                     if (isLocal && needLocalLog) {
                         if (wrapper->type == TYPE_AUDIO) {
                             LOGD("readData() audio next QUEUE1\n");
@@ -1236,13 +1236,13 @@ namespace alexander {
 
             memset(avPacket, 0, sizeof(*avPacket));
             if (audioWrapper->father->nextHandle == NEXT_HANDLE_LIST1
-                && audioWrapper->father->isReadList1Full
+                && audioWrapper->father->isHandleList1Full
                 && audioWrapper->father->queue1->allAVPacketsCount > 0) {
                 audioWrapper->father->handleFramesCount++;
                 getAVPacketFromQueue(audioWrapper->father->queue1, avPacket);
                 if (audioWrapper->father->queue1->allAVPacketsCount == 0) {
                     memset(audioWrapper->father->queue1, 0, sizeof(struct AVPacketQueue));
-                    audioWrapper->father->isReadList1Full = false;
+                    audioWrapper->father->isHandleList1Full = false;
                     audioWrapper->father->nextHandle = NEXT_HANDLE_LIST2;
                     if (isLocal && needLocalLog) {
                         LOGD("handleAudioData() Queue1 用完了\n");
@@ -1272,7 +1272,7 @@ namespace alexander {
                     if (isLocal && needLocalLog) {
                         LOGD("handleAudioData() Queue2 用完了\n");
                         LOGD("handleAudioData() Queue1 isReadList1Full : %d\n",
-                             audioWrapper->father->isReadList1Full);
+                             audioWrapper->father->isHandleList1Full);
                         LOGD("handleAudioData() Queue1 allAVPacketsCount: %d\n",
                              audioWrapper->father->queue1->allAVPacketsCount);
                     }
@@ -1286,7 +1286,7 @@ namespace alexander {
                     }
                 }
             } else if (audioWrapper->father->isReading
-                       && !audioWrapper->father->isReadList1Full
+                       && !audioWrapper->father->isHandleList1Full
                        && !audioWrapper->father->isReadList2Full) {
                 onPaused();
                 // 音频Cache引起的暂停
@@ -1509,13 +1509,13 @@ namespace alexander {
 
             memset(avPacket, 0, sizeof(*avPacket));
             if (videoWrapper->father->nextHandle == NEXT_HANDLE_LIST1
-                && videoWrapper->father->isReadList1Full
+                && videoWrapper->father->isHandleList1Full
                 && videoWrapper->father->queue1->allAVPacketsCount > 0) {
                 videoWrapper->father->handleFramesCount++;
                 getAVPacketFromQueue(videoWrapper->father->queue1, avPacket);
                 if (videoWrapper->father->queue1->allAVPacketsCount == 0) {
                     memset(videoWrapper->father->queue1, 0, sizeof(struct AVPacketQueue));
-                    videoWrapper->father->isReadList1Full = false;
+                    videoWrapper->father->isHandleList1Full = false;
                     videoWrapper->father->nextHandle = NEXT_HANDLE_LIST2;
                     if (isLocal && needLocalLog) {
                         LOGW("handleVideoData() Queue1 用完了\n");
@@ -1545,7 +1545,7 @@ namespace alexander {
                     if (isLocal && needLocalLog) {
                         LOGW("handleVideoData() Queue2 用完了\n");
                         LOGW("handleVideoData() Queue1 isReadList1Full : %d\n",
-                             videoWrapper->father->isReadList1Full);
+                             videoWrapper->father->isHandleList1Full);
                         LOGW("handleVideoData() Queue1 allAVPacketsCount: %d\n",
                              videoWrapper->father->queue1->allAVPacketsCount);
                     }
@@ -1559,7 +1559,7 @@ namespace alexander {
                     }
                 }
             } else if (videoWrapper->father->isReading
-                       && !videoWrapper->father->isReadList1Full
+                       && !videoWrapper->father->isHandleList1Full
                        && !videoWrapper->father->isReadList2Full) {
                 onPaused();
                 // 视频Cache引起的暂停
@@ -2133,7 +2133,7 @@ namespace alexander {
             audioWrapper->father->isHandling = false;
             audioWrapper->father->isPausedForUser = false;
             audioWrapper->father->isPausedForCache = false;
-            audioWrapper->father->isReadList1Full = false;
+            audioWrapper->father->isHandleList1Full = false;
             audioWrapper->father->isReadList2Full = false;
             //
             pthread_mutex_lock(&audioWrapper->father->readLockMutex);
@@ -2154,7 +2154,7 @@ namespace alexander {
             videoWrapper->father->isHandling = false;
             videoWrapper->father->isPausedForUser = false;
             videoWrapper->father->isPausedForCache = false;
-            videoWrapper->father->isReadList1Full = false;
+            videoWrapper->father->isHandleList1Full = false;
             videoWrapper->father->isReadList2Full = false;
             //
             pthread_mutex_lock(&videoWrapper->father->readLockMutex);
@@ -2227,7 +2227,7 @@ namespace alexander {
 
             audioWrapper->father->nextRead = NEXT_READ_LIST1;
             audioWrapper->father->nextHandle = NEXT_HANDLE_LIST1;
-            audioWrapper->father->isReadList1Full = false;
+            audioWrapper->father->isHandleList1Full = false;
             audioWrapper->father->isReadList2Full = false;
 
             // 如果audio处理线程由于Cache原因而暂停,那么不用处理,继续让它暂停好了
@@ -2275,7 +2275,7 @@ namespace alexander {
             pthread_cond_signal(&audioWrapper->father->readLockCondition);
             pthread_mutex_unlock(&audioWrapper->father->readLockMutex);
 
-            audioWrapper->father->seekToInit = true;
+            audioWrapper->father->needToSeek = true;
         }
 #endif
 #ifdef USE_VIDEO
@@ -2287,7 +2287,7 @@ namespace alexander {
 
             videoWrapper->father->nextRead = NEXT_READ_LIST1;
             videoWrapper->father->nextHandle = NEXT_HANDLE_LIST1;
-            videoWrapper->father->isReadList1Full = false;
+            videoWrapper->father->isHandleList1Full = false;
             videoWrapper->father->isReadList2Full = false;
 
             // 如果video处理线程由于Cache原因而暂停,那么不用处理,继续让它暂停好了
@@ -2335,7 +2335,7 @@ namespace alexander {
             pthread_cond_signal(&videoWrapper->father->readLockCondition);
             pthread_mutex_unlock(&videoWrapper->father->readLockMutex);
 
-            videoWrapper->father->seekToInit = true;
+            videoWrapper->father->needToSeek = true;
         }
 #endif
         return 0;

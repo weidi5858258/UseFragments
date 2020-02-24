@@ -23,7 +23,8 @@ import android.widget.Toast;
 import com.weidi.eventbus.EventBusUtils;
 import com.weidi.recycler_view.VerticalLayoutManager;
 import com.weidi.usefragments.BaseActivity;
-import com.weidi.usefragments.PlayerActivity;
+import com.weidi.usefragments.business.video_player.JniPlayerActivity;
+import com.weidi.usefragments.business.video_player.PlayerActivity;
 import com.weidi.usefragments.R;
 import com.weidi.usefragments.fragment.base.BaseFragment;
 import com.weidi.usefragments.inject.InjectOnClick;
@@ -413,16 +414,13 @@ public class ContentsFragment extends BaseFragment {
                         switch (viewId) {
                             case R.id.item_root_layout:
                                 Intent intent = new Intent();
-                                intent.setClass(getContext(), PlayerActivity.class);
                                 intent.putExtra(PlayerActivity.CONTENT_PATH, videoPlaybackPath);
+
+                                //intent.setClass(getContext(), PlayerActivity.class);
+                                intent.setClass(getContext(), JniPlayerActivity.class);
+
                                 getAttachedActivity().startActivity(intent);
                                 ((BaseActivity) getAttachedActivity()).enterActivity();
-
-                                /*Intent intent = new Intent();
-                                intent.setClass(getContext(), JniPlayerActivity.class);
-                                intent.putExtra(JniPlayerActivity.CONTENT_PATH, videoPlaybackPath);
-                                getAttachedActivity().startActivity(intent);
-                                ((BaseActivity) getAttachedActivity()).enterActivity();*/
                                 break;
                             case R.id.item_download_btn:
                                 EventBusUtils.post(

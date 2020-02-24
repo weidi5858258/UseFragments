@@ -12,17 +12,25 @@ cmake_minimum_required(VERSION 3.4.1)
 
 # 哪些cpp文件生成什么样的动态库
 # 一个CMakeLists.txt只能生成一个动态库
+
+# 找到所有cpp文件
+# file(GLOB SOURCE src/main/cpp/*.cpp)
 add_library(ffmpeg
 
         SHARED
 
-        ffmpeg.cpp
-        SimpleAudioPlayer.cpp
         # SimpleVideoPlayer.cpp
         # SimpleVideoPlayer2.cpp
-        SimpleVideoPlayer3.cpp
+        # SimpleVideoPlayer3.cpp #
+
+        ffmpeg.cpp
+        OnlyAudioPlayer.cpp
+        OnlyVideoPlayer.cpp
         AudioRecord.cpp
         AudioTrack.cpp
+
+        # 把所有cpp文件编译到ffmpeg这个动态库中
+        # ${SOURCE}
         )
 
 ################################FFMPEG################################
@@ -137,7 +145,7 @@ set_target_properties(yuv
         PROPERTIES IMPORTED_LOCATION
         ${LIBS_DIR}/${CPU_DIR}/libyuv.so)
 #################################################################
-# 引用头文件
+# 引用头文件(所有头文件放在include这个目录)
 include_directories(../include/)
 #################################################################
 # 这个一般是找系统库,放在这个命令里面的不会被打包到我们的apk里面

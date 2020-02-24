@@ -12,7 +12,7 @@ import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 
-import com.weidi.usefragments.tool.FFMPEG;
+import com.weidi.usefragments.business.video_player.FFMPEG;
 import com.weidi.usefragments.tool.MLog;
 import com.weidi.usefragments.tool.PermissionsUtils;
 

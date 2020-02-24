@@ -21,6 +21,7 @@ import android.widget.TextView;
 
 import com.weidi.eventbus.EventBusUtils;
 import com.weidi.usefragments.R;
+import com.weidi.usefragments.business.audio_player.JniMusicService;
 import com.weidi.usefragments.business.audio_player.MusicService;
 import com.weidi.usefragments.fragment.FragOperManager;
 import com.weidi.usefragments.fragment.base.BaseFragment;
@@ -325,7 +326,8 @@ public class DecodeAudioFragment extends BaseFragment {
     private Button mJumpBtn;
 
     //private SimpleAudioPlayer mSimpleAudioPlayer;
-    private MusicService mSimpleAudioPlayer;
+    //private MusicService mSimpleAudioPlayer;
+    private JniMusicService mSimpleAudioPlayer;
 
     private int mProgress;
     private long mPresentationTimeUs;
@@ -372,8 +374,8 @@ public class DecodeAudioFragment extends BaseFragment {
                 MusicService.class,
                 MusicService.GET_OBJECT_OF_MUSICSERVICE,
                 new Object[]{mCallback});
-        if (object != null && object instanceof MusicService) {
-            mSimpleAudioPlayer = (MusicService) object;
+        if (object != null && object instanceof JniMusicService) {
+            mSimpleAudioPlayer = (JniMusicService) object;
             //mSimpleAudioPlayer = new SimpleAudioPlayer();
             //mSimpleAudioPlayer.setContext(getContext());
             mSimpleAudioPlayer.setCallback(mCallback);

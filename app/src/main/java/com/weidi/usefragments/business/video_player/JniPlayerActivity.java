@@ -1,4 +1,4 @@
-package com.weidi.usefragments.business.contents;
+package com.weidi.usefragments.business.video_player;
 
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
@@ -33,12 +33,11 @@ import android.widget.TextView;
 import com.weidi.eventbus.EventBusUtils;
 import com.weidi.usefragments.BaseActivity;
 import com.weidi.usefragments.R;
+import com.weidi.usefragments.business.contents.Contents;
 import com.weidi.usefragments.receiver.MediaButtonReceiver;
-import com.weidi.usefragments.service.DownloadFileService;
 import com.weidi.usefragments.test_view.BubblePopupWindow;
 import com.weidi.usefragments.tool.Callback;
 import com.weidi.usefragments.tool.DownloadCallback;
-import com.weidi.usefragments.tool.FFMPEG;
 import com.weidi.usefragments.tool.MLog;
 import com.weidi.usefragments.tool.PermissionsUtils;
 import com.weidi.utils.MyToast;
@@ -496,10 +495,10 @@ public class JniPlayerActivity extends BaseActivity {
                 mControllerPanelLayout.setVisibility(View.VISIBLE);
                 break;
             case MSG_ON_PLAYED:
+                mLoadingView.setVisibility(View.GONE);
                 mPlayIB.setVisibility(View.VISIBLE);
                 mPauseIB.setVisibility(View.GONE);
-                mLoadingView.setVisibility(View.GONE);
-                mControllerPanelLayout.setVisibility(View.INVISIBLE);
+                mControllerPanelLayout.setVisibility(View.VISIBLE);// INVISIBLE
                 break;
             case MSG_ON_FINISHED:
                 finish();
@@ -516,8 +515,8 @@ public class JniPlayerActivity extends BaseActivity {
                 break;
             case KeyEvent.KEYCODE_HEADSETHOOK:// 单击事件
                 if (firstFlag && secondFlag && threeFlag) {
-                    if (DEBUG)
-                        Log.d(TAG, "onKeyDown() 3");
+                    /*if (DEBUG)
+                        Log.d(TAG, "onKeyDown() 3");*/
 
                     if (mControllerPanelLayout.getVisibility() == View.VISIBLE) {
                         mNeedToSyncProgressBar = true;
@@ -526,36 +525,36 @@ public class JniPlayerActivity extends BaseActivity {
                         mControllerPanelLayout.setVisibility(View.VISIBLE);
                     }
                 } else if (firstFlag && secondFlag) {
-                    if (DEBUG)
-                        Log.d(TAG, "onKeyDown() 2");
+                    /*if (DEBUG)
+                        Log.d(TAG, "onKeyDown() 2");*/
 
                     if (mFFMPEGPlayer != null) {
                         Log.d(TAG, "onKeyDown() mPresentationTime: " + mPresentationTime);
                         mFFMPEGPlayer.seekTo(mPresentationTime + 30);
                     }
                 } else {
-                    if (DEBUG)
-                        Log.d(TAG, "onKeyDown() 1");
+                    /*if (DEBUG)
+                        Log.d(TAG, "onKeyDown() 1");*/
 
-                    if (!mIsScreenPress) {
-                        // 播放与暂停
-                        if (mFFMPEGPlayer != null) {
-                            if (mFFMPEGPlayer.isRunning()) {
-                                if (mFFMPEGPlayer.isPlaying()) {
-                                    mPlayIB.setVisibility(View.GONE);
-                                    mPauseIB.setVisibility(View.VISIBLE);
-                                    mControllerPanelLayout.setVisibility(View.VISIBLE);
-                                    mFFMPEGPlayer.pause();
-                                } else {
-                                    mPlayIB.setVisibility(View.VISIBLE);
-                                    mPauseIB.setVisibility(View.GONE);
-                                    mControllerPanelLayout.setVisibility(View.INVISIBLE);
-                                    mFFMPEGPlayer.play();
-                                }
+                    // 播放与暂停
+                    if (mFFMPEGPlayer != null) {
+                        if (mFFMPEGPlayer.isRunning()) {
+                            if (mFFMPEGPlayer.isPlaying()) {
+                                mPlayIB.setVisibility(View.GONE);
+                                mPauseIB.setVisibility(View.VISIBLE);
+                                mControllerPanelLayout.setVisibility(View.VISIBLE);
+                                mFFMPEGPlayer.pause();
+                            } else {
+                                mPlayIB.setVisibility(View.VISIBLE);
+                                mPauseIB.setVisibility(View.GONE);
+                                mControllerPanelLayout.setVisibility(View.INVISIBLE);
+                                mFFMPEGPlayer.play();
                             }
                         }
                     }
-                    mIsScreenPress = false;
+                    /*if (!mIsScreenPress) {
+                    }
+                    mIsScreenPress = false;*/
                 }
                 firstFlag = false;
                 secondFlag = false;

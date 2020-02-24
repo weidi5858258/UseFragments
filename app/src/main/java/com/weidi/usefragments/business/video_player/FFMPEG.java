@@ -1,4 +1,4 @@
-package com.weidi.usefragments.tool;
+package com.weidi.usefragments.business.video_player;
 
 import android.media.AudioManager;
 import android.media.AudioTrack;
@@ -9,8 +9,9 @@ import android.os.SystemClock;
 import android.text.TextUtils;
 import android.view.Surface;
 
-import com.weidi.usefragments.business.contents.JniPlayerActivity;
 import com.weidi.usefragments.media.MediaUtils;
+import com.weidi.usefragments.tool.Callback;
+import com.weidi.usefragments.tool.MLog;
 import com.weidi.utils.MyToast;
 
 /***
@@ -55,19 +56,20 @@ public class FFMPEG {
     public native int setCallback(Callback callback);
 
     public native int initAudio();
-
     public native int initVideo();
-
-    // 开线程1
     public native int audioReadData();
-
-    // 开线程2
-    public native int audioHandleData();
-
-    // 开线程3
     public native int videoReadData();
 
-    // 开线程4
+    // 开线程
+    public native int initPlayer();
+
+    // 开线程
+    public native int readData();
+
+    // 开线程
+    public native int audioHandleData();
+
+    // 开线程
     public native int videoHandleData();
 
     public native int play();
@@ -98,7 +100,7 @@ public class FFMPEG {
         MediaUtils.releaseAudioTrack(mAudioTrack);
     }
 
-    // 供jni层调用
+    // 供jni层调用(不要改动方法名称,如改动了,jni层也要改动)
     private void createAudioTrack(int sampleRateInHz,
                                   int channelCount,
                                   int audioFormat) {
@@ -209,7 +211,10 @@ public class FFMPEG {
 
         @Override
         public void onError() {
-
+            if (mUiHandler != null) {
+                mUiHandler.removeMessages(JniPlayerActivity.MSG_ON_FINISHED);
+                mUiHandler.sendEmptyMessage(JniPlayerActivity.MSG_ON_FINISHED);
+            }
         }
 
         @Override

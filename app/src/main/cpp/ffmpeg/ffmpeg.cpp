@@ -2,18 +2,30 @@
 // Created by ex-wangliwei on 2016/2/14.
 //
 
-#include "SimpleVideoPlayer3.h"
+//#include "SimpleVideoPlayer3.h"
+#include "OnlyVideoPlayer.h"
+//#include "OnlyAudioPlayer.h"
 
 // 这个是自定义的LOG的标识
 #define LOG "player_alexander"
 
+/***
+ 全局变量的生命周期:
+ 普通的全局变量,不需要是static的全局变量
+ (好像)
+ 只要进程不被kill掉,这些变量的值就会一直被保存着
+ */
+
+// 这个值在任何情况下都不要置为"NULL"
 static JavaVM *gJavaVm = NULL;
+
 // 下面的jobject,jmethodID按照java的反射过程去理解,套路(jni层调用java层方法)跟反射是一样的
 // java层FFMPEG对象
 jobject ffmpegJavaObject = NULL;
 jmethodID createAudioTrackMethodID = NULL;
 jmethodID writeMethodID = NULL;
 jmethodID sleepMethodID = NULL;
+
 // java层Callback对象
 jobject callbackJavaObject = NULL;
 struct Callback {
@@ -25,6 +37,9 @@ struct Callback {
     jmethodID onErrorMethodID = NULL;
     jmethodID onInfoMethodID = NULL;
 } callback;
+
+// test
+int runCount = 0;
 
 /***
  called at the library loaded.
@@ -223,6 +238,7 @@ void onError() {
     if (isAttached) {
         gJavaVm->DetachCurrentThread();
     }
+    LOGE("onError()\n");
 }
 
 void onInfo(char *info) {
@@ -250,12 +266,12 @@ void onInfo(char *info) {
  */
 extern "C"
 JNIEXPORT jint JNICALL
-Java_com_weidi_usefragments_tool_FFMPEG_setSurface(JNIEnv *env,
-                                                   jobject ffmpegObject,
-                                                   jstring path,
-                                                   jobject surfaceObject) {
-    jclass FFMPEGClass = env->FindClass("com/weidi/usefragments/tool/FFMPEG");
-    //FFMPEGClass = env->GetObjectClass(ffmpegObject);
+Java_com_weidi_usefragments_business_video_1player_FFMPEG_setSurface(JNIEnv *env,
+                                                                     jobject ffmpegObject,
+                                                                     jstring path,
+                                                                     jobject surfaceObject) {
+    jclass FFMPEGClass = env->GetObjectClass(ffmpegObject);
+    //jclass FFMPEGClass = env->FindClass("com/weidi/usefragments/business/video_player/FFMPEG");
     //CHECK(FFMPEGClass != NULL);
 
     // 第三个参数: 括号中是java端方法的参数签名,括号后面是java端方法的返回值签名(V表示void)
@@ -266,26 +282,35 @@ Java_com_weidi_usefragments_tool_FFMPEG_setSurface(JNIEnv *env,
     jmethodID sleep = env->GetMethodID(
             FFMPEGClass, "sleep", "(J)V");
 
+    // 路径
     const char *filePath = env->GetStringUTFChars(path, 0);
     alexander::setJniParameters(env, filePath, surfaceObject);
     env->ReleaseStringUTFChars(path, filePath);
 
-    // 直接赋值是不OK的
-    // ffmpegJavaObject = ffmpegObject;
+    // java层native方法所对应的类对象
+    // 在java层的native方法不是static的,因此需要用到java层的对象
+    // ffmpegJavaObject = ffmpegObject;// error 直接赋值是不OK的
     ffmpegJavaObject = reinterpret_cast<jobject>(env->NewGlobalRef(ffmpegObject));
+
     createAudioTrackMethodID = createAudioTrack;
     writeMethodID = write;
     sleepMethodID = sleep;
+
+    LOGI("setSurface()       runCount: %d\n", (++runCount));
 
     return (jint) 0;
 }
 
 extern "C"
 JNIEXPORT jint JNICALL
-Java_com_weidi_usefragments_tool_FFMPEG_setCallback(JNIEnv *env,
-                                                    jobject ffmpegObject,
-                                                    jobject callbackObject) {
+Java_com_weidi_usefragments_business_video_1player_FFMPEG_setCallback(JNIEnv *env,
+                                                                      jobject ffmpegObject,
+                                                                      jobject callbackObject) {
     jclass CallbackClass = env->FindClass("com/weidi/usefragments/tool/Callback");
+
+    // 调用下面方法需要用到这个对象
+    callbackJavaObject = reinterpret_cast<jobject>(env->NewGlobalRef(callbackObject));
+
     // 第三个参数: 括号中是java端方法的参数签名,括号后面是java端方法的返回值签名(V表示void)
     callback.onReadyMethodID = env->GetMethodID(
             CallbackClass, "onReady", "()V");
@@ -301,87 +326,91 @@ Java_com_weidi_usefragments_tool_FFMPEG_setCallback(JNIEnv *env,
             CallbackClass, "onError", "()V");
     callback.onInfoMethodID = env->GetMethodID(
             CallbackClass, "onInfo", "(Ljava/lang/String;)V");
-    callbackJavaObject = reinterpret_cast<jobject>(env->NewGlobalRef(callbackObject));
 
     return (jint) 0;
 }
 
 extern "C"
 JNIEXPORT jint JNICALL
-Java_com_weidi_usefragments_tool_FFMPEG_initAudio(JNIEnv *env, jobject ffmpegObject) {
+Java_com_weidi_usefragments_business_video_1player_FFMPEG_initAudio(JNIEnv *env, jobject ffmpegObject) {
     return (jint) 0;
 }
 
 extern "C"
 JNIEXPORT jint JNICALL
-Java_com_weidi_usefragments_tool_FFMPEG_initVideo(JNIEnv *env, jobject ffmpegObject) {
+Java_com_weidi_usefragments_business_video_1player_FFMPEG_initVideo(JNIEnv *env, jobject ffmpegObject) {
     return (jint) alexander::initPlayer();
 }
 
 extern "C"
 JNIEXPORT jint JNICALL
-Java_com_weidi_usefragments_tool_FFMPEG_audioReadData(JNIEnv *env, jobject ffmpegObject) {
-    int type = TYPE_AUDIO;
+Java_com_weidi_usefragments_business_video_1player_FFMPEG_initPlayer(JNIEnv *env, jobject instance) {
+    return (jint) alexander::initPlayer();
+}
+
+extern "C"
+JNIEXPORT jint JNICALL
+Java_com_weidi_usefragments_business_video_1player_FFMPEG_readData(JNIEnv *env, jobject instance) {
+    alexander::readData(NULL);
+    return (jint) 0;
+}
+
+extern "C"
+JNIEXPORT jint JNICALL
+Java_com_weidi_usefragments_business_video_1player_FFMPEG_audioReadData(JNIEnv *env, jobject ffmpegObject) {
+//    int type = TYPE_AUDIO;
 //    alexander::readData(&type);
-#ifdef USE_AUDIO
-#endif
     return (jint) 0;
 }
 
 extern "C"
 JNIEXPORT jint JNICALL
-Java_com_weidi_usefragments_tool_FFMPEG_audioHandleData(JNIEnv *env, jobject ffmpegObject) {
-    int type = TYPE_AUDIO;
-    alexander::handleData(&type);
-#ifdef USE_AUDIO
-#endif
-    return (jint) 0;
-}
-
-extern "C"
-JNIEXPORT jint JNICALL
-Java_com_weidi_usefragments_tool_FFMPEG_videoReadData(JNIEnv *env, jobject ffmpegObject) {
+Java_com_weidi_usefragments_business_video_1player_FFMPEG_videoReadData(JNIEnv *env, jobject ffmpegObject) {
     int type = TYPE_VIDEO;
     alexander::readData(&type);
-#ifdef USE_VIDEO
-#endif
     return (jint) 0;
 }
 
 extern "C"
 JNIEXPORT jint JNICALL
-Java_com_weidi_usefragments_tool_FFMPEG_videoHandleData(JNIEnv *env, jobject ffmpegObject) {
+Java_com_weidi_usefragments_business_video_1player_FFMPEG_audioHandleData(JNIEnv *env, jobject ffmpegObject) {
+    int type = TYPE_AUDIO;
+    alexander::handleData(&type);
+    return (jint) 0;
+}
+
+extern "C"
+JNIEXPORT jint JNICALL
+Java_com_weidi_usefragments_business_video_1player_FFMPEG_videoHandleData(JNIEnv *env, jobject ffmpegObject) {
     int type = TYPE_VIDEO;
     alexander::handleData(&type);
-#ifdef USE_VIDEO
-#endif
     return (jint) 0;
 }
 
 extern "C"
 JNIEXPORT jint JNICALL
-Java_com_weidi_usefragments_tool_FFMPEG_play(JNIEnv *env, jobject ffmpegObject) {
+Java_com_weidi_usefragments_business_video_1player_FFMPEG_play(JNIEnv *env, jobject ffmpegObject) {
     alexander::play();
     return (jint) 0;
 }
 
 extern "C"
 JNIEXPORT jint JNICALL
-Java_com_weidi_usefragments_tool_FFMPEG_pause(JNIEnv *env, jobject ffmpegObject) {
+Java_com_weidi_usefragments_business_video_1player_FFMPEG_pause(JNIEnv *env, jobject ffmpegObject) {
     alexander::pause();
     return (jint) 0;
 }
 
 extern "C"
 JNIEXPORT jint JNICALL
-Java_com_weidi_usefragments_tool_FFMPEG_stop(JNIEnv *env, jobject ffmpegObject) {
+Java_com_weidi_usefragments_business_video_1player_FFMPEG_stop(JNIEnv *env, jobject ffmpegObject) {
     alexander::stop();
     return (jint) 0;
 }
 
 extern "C"
 JNIEXPORT jint JNICALL
-Java_com_weidi_usefragments_tool_FFMPEG_release(JNIEnv *env, jobject ffmpegObject) {
+Java_com_weidi_usefragments_business_video_1player_FFMPEG_release(JNIEnv *env, jobject ffmpegObject) {
     alexander::release();
     close();
     return (jint) 0;
@@ -389,36 +418,36 @@ Java_com_weidi_usefragments_tool_FFMPEG_release(JNIEnv *env, jobject ffmpegObjec
 
 extern "C"
 JNIEXPORT jboolean JNICALL
-Java_com_weidi_usefragments_tool_FFMPEG_isRunning(JNIEnv *env, jobject instance) {
+Java_com_weidi_usefragments_business_video_1player_FFMPEG_isRunning(JNIEnv *env, jobject ffmpegObject) {
     return (jboolean) alexander::isRunning();
 }
 
 extern "C"
 JNIEXPORT jboolean JNICALL
-Java_com_weidi_usefragments_tool_FFMPEG_isPlaying(JNIEnv *env, jobject instance) {
+Java_com_weidi_usefragments_business_video_1player_FFMPEG_isPlaying(JNIEnv *env, jobject ffmpegObject) {
     return (jboolean) alexander::isPlaying();
 }
 
 extern "C"
 JNIEXPORT jint JNICALL
-Java_com_weidi_usefragments_tool_FFMPEG_seekTo(JNIEnv *env, jobject instance, jlong timestamp) {
+Java_com_weidi_usefragments_business_video_1player_FFMPEG_seekTo(JNIEnv *env, jobject ffmpegObject, jlong timestamp) {
     return (jint) alexander::seekTo(timestamp);
 }
 
 extern "C"
 JNIEXPORT jlong JNICALL
-Java_com_weidi_usefragments_tool_FFMPEG_getDuration(JNIEnv *env, jobject instance) {
+Java_com_weidi_usefragments_business_video_1player_FFMPEG_getDuration(JNIEnv *env, jobject ffmpegObject) {
     return (jlong) alexander::getDuration();
 }
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_weidi_usefragments_tool_FFMPEG_stepAdd(JNIEnv *env, jobject instance) {
+Java_com_weidi_usefragments_business_video_1player_FFMPEG_stepAdd(JNIEnv *env, jobject ffmpegObject) {
     alexander::stepAdd();
 }
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_weidi_usefragments_tool_FFMPEG_stepSubtract(JNIEnv *env, jobject instance) {
+Java_com_weidi_usefragments_business_video_1player_FFMPEG_stepSubtract(JNIEnv *env, jobject ffmpegObject) {
     alexander::stepSubtract();
 }

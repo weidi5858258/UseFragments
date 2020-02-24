@@ -23,6 +23,7 @@ import android.view.WindowManager;
 import android.view.accessibility.AccessibilityManager;
 import android.widget.FrameLayout;
 
+import com.weidi.usefragments.business.audio_player.JniMusicService;
 import com.weidi.usefragments.business.back_stack.ShowTitleDialogFragment;
 import com.weidi.usefragments.business.contents.ContentsFragment;
 import com.weidi.usefragments.business.media.AudioFragment;
@@ -215,8 +216,11 @@ public class MainActivity1 extends BaseActivity
 
         // start service
         //startService(new Intent(this, DownloadFileService.class));
-        if (!isRunService(this, "com.weidi.usefragments.business.audio_player.MusicService")) {
+        /*if (!isRunService(this, "com.weidi.usefragments.business.audio_player.MusicService")) {
             startService(new Intent(this, MusicService.class));
+        }*/
+        if (!isRunService(this, "com.weidi.usefragments.business.audio_player.JniMusicService")) {
+            startService(new Intent(this, JniMusicService.class));
         }
         /*if (!isAccessibilitySettingsOn(getApplicationContext())) {
             startActivity(new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS));
