@@ -6,7 +6,7 @@
 
 #define LOG "player_alexander"
 
-namespace alexander {
+namespace alexander2 {
 
     char inFilePath[2048];
     struct Wrapper *wrapper = NULL;

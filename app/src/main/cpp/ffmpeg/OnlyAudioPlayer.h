@@ -84,7 +84,7 @@ extern "C" {
 //#include "MyHeader.h"
 #include "../include/Log.h"
 
-namespace alexander2 {
+namespace alexander {
 
     // 1 second of 48khz 32bit audio
 #define MAX_AUDIO_FRAME_SIZE 192000
@@ -181,7 +181,7 @@ namespace alexander2 {
         // 从音频源或视频源中得到(采样格式)
         enum AVSampleFormat srcAVSampleFormat = AV_SAMPLE_FMT_NONE;
         // 输出的采样格式16bit PCM
-        enum AVSampleFormat dstAVSampleFormat = AV_SAMPLE_FMT_S16;
+        enum AVSampleFormat dstAVSampleFormat = AV_SAMPLE_FMT_NONE;
     };
 
     void *readData(void *opaque);
@@ -220,7 +220,7 @@ namespace alexander2 {
 
     int seekTo(int64_t timestamp);
 
-    int64_t getDuration();
+    long getDuration();
 
     void stepAdd();
 

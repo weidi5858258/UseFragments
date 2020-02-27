@@ -69,7 +69,7 @@ namespace alexander {
 
     int seekTo(int64_t timestamp);
 
-    int64_t getDuration();
+    long getDuration();
 
     void stepAdd();
 

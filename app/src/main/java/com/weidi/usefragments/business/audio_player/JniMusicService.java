@@ -7,6 +7,7 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.media.AudioManager;
 import android.os.AsyncTask;
 import android.os.Build;
@@ -16,6 +17,7 @@ import android.os.IBinder;
 import android.os.Looper;
 import android.os.Message;
 import android.os.SystemClock;
+import android.preference.PreferenceManager;
 import android.support.annotation.Nullable;
 import android.text.TextUtils;
 import android.text.format.DateUtils;
@@ -95,19 +97,16 @@ public class JniMusicService extends Service {
         EventBusUtils.register(this);
         registerHeadsetPlugReceiver();
 
-        mFFMPEGPlayer.setHandler(mUiHandler);
         mFFMPEGPlayer.setCallback(mFFMPEGPlayer.mCallback);
 
+        mThreadHandler.removeMessages(MSG_CREATE_PLAYBACKQUEUE);
         mThreadHandler.sendEmptyMessage(MSG_CREATE_PLAYBACKQUEUE);
     }
 
-    /***
-     Notification(channel=null pri=0 contentView=null
-     vibrate=null sound=default defaults=0x1 flags=0x40
-     color=0x00000000 vis=PRIVATE)
-     */
     private void internalStartCommand(Intent intent, int flags, int startId) {
         //JobHandlerService.startForeground(this, "Alexander", "MusicService");
+        mThreadHandler.removeMessages(MSG_THREAD_START_COMMAND);
+        mThreadHandler.sendEmptyMessage(MSG_THREAD_START_COMMAND);
     }
 
     public static final int GET_OBJECT_OF_MUSICSERVICE = 0x0001;
@@ -115,11 +114,10 @@ public class JniMusicService extends Service {
     private Object onEvent(int what, Object[] objArray) {
         Object result = null;
         switch (what) {
-            case KeyEvent.KEYCODE_HEADSETHOOK:
-                onKeyDown(KeyEvent.KEYCODE_HEADSETHOOK, null);
-                break;
             case GET_OBJECT_OF_MUSICSERVICE:
-                if (objArray != null && objArray.length > 0 && objArray[0] instanceof Callback) {
+                if (objArray != null
+                        && objArray.length > 0
+                        && objArray[0] instanceof Callback) {
                     mCallback = (Callback) objArray[0];
                 }
                 result = JniMusicService.this;
@@ -176,6 +174,9 @@ public class JniMusicService extends Service {
     private static final int MSG_SEEK_TO_NOTIFY = 19;
     private static final int MSG_GAME_OVER = 22;
     private static final int MSG_CREATE_PLAYBACKQUEUE = 23;
+    private static final int MSG_UI_READ_DATA = 24;
+    private static final int MSG_UI_HANDLE_DATA = 25;
+    private static final int MSG_THREAD_START_COMMAND = 26;
 
     private static final int STATUS_READ_DATA1_STARTED = 0x0001;
     private static final int STATUS_READ_DATA2_STARTED = 0x0002;
@@ -195,7 +196,9 @@ public class JniMusicService extends Service {
     private Handler mThreadHandler = null;
     private HandlerThread mHandlerThread = null;
     private Callback mCallback = null;
+    private SharedPreferences mSP = null;
 
+    public static final String PATH = "media_path";
     private FFMPEG mFFMPEGPlayer = new FFMPEG();
 
     public String getName() {
@@ -216,30 +219,28 @@ public class JniMusicService extends Service {
             MLog.d(TAG, "setPath() mPath: " + mPath);
     }
 
+    public void setHandler(Handler handler) {
+        mFFMPEGPlayer.setHandler(handler);
+    }
+
     public void setCallback(Callback callback) {
         mCallback = callback;
     }
 
-    public long mProgressUs = -1;
-
     // 95160000
-    public void setProgressUs(long progressUs) {
+    public void setProgress(long progress) {
         MLog.i(TAG, "----------------------------------------------------------");
-        String elapsedTime = DateUtils.formatElapsedTime(progressUs / 1000 / 1000);
-        MLog.i(TAG, "setProgressUs() progressUs: " + progressUs + " " + elapsedTime);
+        String elapsedTime = DateUtils.formatElapsedTime(progress);
+        MLog.i(TAG, "player_alexander setProgress() progress: " + progress + " " + elapsedTime);
         MLog.i(TAG, "----------------------------------------------------------");
-        if (progressUs < 0) {
+        if (progress < 0) {
             return;
         }
-        mProgressUs = progressUs;
+        mFFMPEGPlayer.seekTo(progress);
     }
 
-    private void seekTo() {
-
-    }
-
-    public long getDurationUs() {
-        return 0;
+    public long getDuration() {
+        return mFFMPEGPlayer.getDuration();
     }
 
     public void play() {
@@ -290,38 +291,6 @@ public class JniMusicService extends Service {
         return mFFMPEGPlayer.isRunning();
     }
 
-    private boolean firstFlag = false;
-    private boolean secondFlag = false;
-    private boolean threeFlag = false;
-
-    /***
-     action=ACTION_DOWN, keyCode=KEYCODE_HEADSETHOOK,
-     scanCode=226, metaState=0, flags=0x8, repeatCount=0,
-     eventTime=301864016, downTime=301864016, deviceId=9, source=0x101
-     */
-    public boolean onKeyDown(int keyCode, KeyEvent event) {
-        /*if (DEBUG)
-            Log.d(TAG, "onKeyDown() event: " + event);*/
-        switch (keyCode) {
-            case KeyEvent.KEYCODE_HEADSETHOOK:
-                if (!firstFlag) {
-                    firstFlag = true;
-                } else if (firstFlag && !secondFlag) {
-                    secondFlag = true;
-                } else if (firstFlag && secondFlag && !threeFlag) {
-                    threeFlag = true;
-                }
-                // 单位时间内按1次,2次,3次分别实现单击,双击,三击
-                mUiHandler.removeMessages(KeyEvent.KEYCODE_HEADSETHOOK);
-                mUiHandler.sendEmptyMessageDelayed(KeyEvent.KEYCODE_HEADSETHOOK, 300);
-                return true;
-            default:
-                break;
-        }
-
-        return false;
-    }
-
     private void threadHandleMessage(Message msg) {
         if (msg == null) {
             return;
@@ -335,23 +304,11 @@ public class JniMusicService extends Service {
                 }
 
                 if (internalPrepare()) {
-                    new AsyncTask<Void, Void, Void>() {
-                        @Override
-                        protected Void doInBackground(Void... voids) {
-                            mFFMPEGPlayer.audioHandleData();
-                            return null;
-                        }
-                    }.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+                    mUiHandler.removeMessages(MSG_UI_HANDLE_DATA);
+                    mUiHandler.sendEmptyMessage(MSG_UI_HANDLE_DATA);
 
-                    SystemClock.sleep(500);
-
-                    new AsyncTask<Void, Void, Void>() {
-                        @Override
-                        protected Void doInBackground(Void... voids) {
-                            mFFMPEGPlayer.audioReadData();
-                            return null;
-                        }
-                    }.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+                    mUiHandler.removeMessages(MSG_UI_READ_DATA);
+                    mUiHandler.sendEmptyMessageDelayed(MSG_UI_READ_DATA, 500);
                 } else {
                     if (mCallback != null) {
                         MLog.e(TAG, "onError");
@@ -425,15 +382,25 @@ public class JniMusicService extends Service {
                 }*/
                 break;
             case MSG_CREATE_PLAYBACKQUEUE:
+                mSP = PreferenceManager.getDefaultSharedPreferences(mContext);
                 mPlaybackQueue = new PlaybackQueue(JniMusicService.this);
                 mPath = mPlaybackQueue.next();
+                break;
+            case MSG_THREAD_START_COMMAND:
+                mPath = mSP.getString(PATH, null);
+                if (!mFFMPEGPlayer.isRunning()) {
+                    if (!TextUtils.isEmpty(mPath)) {
+                        /*mThreadHandler.removeMessages(MSG_PREPARE);
+                        mThreadHandler.sendEmptyMessage(MSG_PREPARE);*/
+                    } else {
+                        mPath = mPlaybackQueue.next();
+                    }
+                }
                 break;
             default:
                 break;
         }
     }
-
-    private long step = 0;
 
     private void uiHandleMessage(Message msg) {
         if (msg == null) {
@@ -441,46 +408,23 @@ public class JniMusicService extends Service {
         }
 
         switch (msg.what) {
-            case KeyEvent.KEYCODE_HEADSETHOOK:
-                if (firstFlag && secondFlag && threeFlag) {
-                    if (DEBUG)
-                        Log.d(TAG, "onKeyDown() 3");
-                    /*if (mCallback != null) {
-                        mCallback.onPlaybackFinished();
-                    }*/
-                } else if (firstFlag && secondFlag) {
-                    if (DEBUG)
-                        Log.d(TAG, "onKeyDown() 2");
-                    /*MediaUtils.SLEEP_TIME++;
-                    if (DEBUG)
-                        Log.d(TAG, "onKeyDown() MediaUtils.SLEEP_TIME: " +
-                                MediaUtils.SLEEP_TIME);*/
-                    /*if (mCallback != null) {
-                        mCallback.onPlaybackFinished();
-                    }*/
-                    /*if (mProgressUs == -1) {
-                        step = (int) ((mAudioWrapper.presentationTimeUs2
-                                / (mAudioWrapper.durationUs * 1.00)) * 3840.00);
-                        Log.d(TAG, "onKeuiHandleMessageyDown() step: " + step);
-                    }*/
-                    step += 100;
-                    //long progress = (long) (((step / 3840.00) * mAudioWrapper.durationUs));
-                    //setProgressUs(progress);
-                } else {
-                    if (DEBUG)
-                        Log.d(TAG, "onKeyDown() 1");
-                    /*if (!mAudioWrapper.isPausedForCache) {
-                        if (!mAudioWrapper.isPausedForUser
-                                && !mAudioWrapper.isPausedForUser) {
-                            internalPause();
-                        } else {
-                            internalPlay();
-                        }
-                    }*/
-                }
-                firstFlag = false;
-                secondFlag = false;
-                threeFlag = false;
+            case MSG_UI_READ_DATA:
+                MLog.i(TAG, "uiHandleMessage() MSG_UI_READ_DATA");
+                new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        mFFMPEGPlayer.readData();
+                    }
+                }).start();
+                break;
+            case MSG_UI_HANDLE_DATA:
+                MLog.i(TAG, "uiHandleMessage() MSG_UI_HANDLE_DATA");
+                new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        mFFMPEGPlayer.audioHandleData();
+                    }
+                }).start();
                 break;
             default:
                 break;
@@ -493,14 +437,14 @@ public class JniMusicService extends Service {
             MLog.e(TAG, "internalPrepare() mPath is empty");
             return false;
         }
-        MLog.i(TAG, "internalPrepare() start");
 
+        mSP.edit().putString(PATH, mPath).apply();
+        MLog.i(TAG, "internalPrepare() start");
         mFFMPEGPlayer.setSurface(mPath, null);
         if (mFFMPEGPlayer.initPlayer() < 0) {
             MLog.e(TAG, "internalPrepare() end error");
             return false;
         }
-
         MLog.i(TAG, "internalPrepare() end");
 
         return true;
@@ -540,8 +484,6 @@ public class JniMusicService extends Service {
         }
 
         mFFMPEGPlayer.releaseAll();
-        // 停止前台服务--参数：表示是否移除之前的通知
-        // stopForeground(true);
         unregisterHeadsetPlugReceiver();
         EventBusUtils.unregister(this);
         MLog.d(TAG, "internalDestroy() end");

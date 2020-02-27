@@ -109,6 +109,7 @@ namespace alexander3 {
         AVCodecContext *avCodecContext = NULL;
         // 有些东西需要通过它去得到(自己千万千万千万不要去释放内存)
         AVCodecParameters *avCodecParameters = NULL;
+        AVStream *avStream = NULL;
         // 解码器
         AVCodec *decoderAVCodec = NULL;
         // 编码器(没用到,因为是播放,所以不需要编码)

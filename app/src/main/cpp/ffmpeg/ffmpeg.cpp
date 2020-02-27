@@ -3,8 +3,8 @@
 //
 
 //#include "SimpleVideoPlayer3.h"
-#include "OnlyVideoPlayer.h"
-//#include "OnlyAudioPlayer.h"
+//#include "OnlyVideoPlayer.h"
+#include "OnlyAudioPlayer.h"
 
 // 这个是自定义的LOG的标识
 #define LOG "player_alexander"
@@ -26,7 +26,7 @@ jmethodID createAudioTrackMethodID = NULL;
 jmethodID writeMethodID = NULL;
 jmethodID sleepMethodID = NULL;
 
-// java层Callback对象
+// java层FFMPEG中定义的Callback对象
 jobject callbackJavaObject = NULL;
 struct Callback {
     jmethodID onReadyMethodID = NULL;
@@ -431,7 +431,8 @@ Java_com_weidi_usefragments_business_video_1player_FFMPEG_isPlaying(JNIEnv *env,
 extern "C"
 JNIEXPORT jint JNICALL
 Java_com_weidi_usefragments_business_video_1player_FFMPEG_seekTo(JNIEnv *env, jobject ffmpegObject, jlong timestamp) {
-    return (jint) alexander::seekTo(timestamp);
+    LOGI("seekTo() ffmpeg timestamp: %ld\n", timestamp);
+    return (jint) alexander::seekTo((int64_t) timestamp);
 }
 
 extern "C"

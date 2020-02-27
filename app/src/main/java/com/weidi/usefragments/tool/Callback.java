@@ -5,11 +5,20 @@ package com.weidi.usefragments.tool;
  */
 public interface Callback {
 
+    int MSG_ON_READY = 0x001;
+    int MSG_ON_PLAYED = 0x002;
+    int MSG_ON_PAUSED = 0x003;
+    int MSG_ON_FINISHED = 0x004;
+    int MSG_ON_INFO = 0x005;
+    int MSG_ON_ERROR = 0x006;
+    int MSG_ON_PROGRESS_UPDATED = 0x007;
+    //int MSG_ON_PROGRESS_CHANGED = 0x008;
+
     void onReady();
 
-    void onPaused();
-
     void onPlayed();
+
+    void onPaused();
 
     void onFinished();
 

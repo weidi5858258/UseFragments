@@ -2312,7 +2312,7 @@ namespace alexander {
     }
 
     // 返回值单位是秒
-    int64_t getDuration() {
+    long getDuration() {
         int64_t audioDuration = 0;
         int64_t videoDuration = 0;
         int64_t duration = 0;

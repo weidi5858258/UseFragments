@@ -287,9 +287,7 @@ public class DecodeAudioFragment extends BaseFragment {
 
     /////////////////////////////////////////////////////////////////
 
-    private static final int PLAYBACK_INFO = 0x001;
-    private static final int PLAYBACK_PROGRESS_UPDATED = 0x002;
-    private static final int PLAYBACK_PROGRESS_CHANGED = 0x003;
+    private static final int PLAYBACK_PROGRESS_CHANGED = 0x008;
     private static final int MSG_PREV = 9;
     private static final int MSG_NEXT = 10;
 
@@ -371,18 +369,20 @@ public class DecodeAudioFragment extends BaseFragment {
         };
 
         Object object = EventBusUtils.post(
-                MusicService.class,
-                MusicService.GET_OBJECT_OF_MUSICSERVICE,
-                new Object[]{mCallback});
+                JniMusicService.class,
+                JniMusicService.GET_OBJECT_OF_MUSICSERVICE,
+                new Object[]{null});
+        //new Object[]{mCallback});
         if (object != null && object instanceof JniMusicService) {
             mSimpleAudioPlayer = (JniMusicService) object;
             //mSimpleAudioPlayer = new SimpleAudioPlayer();
             //mSimpleAudioPlayer.setContext(getContext());
-            mSimpleAudioPlayer.setCallback(mCallback);
+            mSimpleAudioPlayer.setHandler(mUiHandler);
+            //mSimpleAudioPlayer.setCallback(mCallback);
             mSimpleAudioPlayer.play();
         }
 
-        MediaUtils.lookAtMe();
+        //MediaUtils.lookAtMe();
     }
 
     // 刚进入时,横竖屏切换时,都会调用该方法
@@ -403,14 +403,14 @@ public class DecodeAudioFragment extends BaseFragment {
 
         String curElapsedTime = DateUtils.formatElapsedTime(
                 (mPresentationTimeUs / 1000) / 1000);
-        long durationUs = mSimpleAudioPlayer.getDurationUs();
+        int durationUs = (int) mSimpleAudioPlayer.getDuration();
         String elapsedTime =
                 DateUtils.formatElapsedTime(
                         (durationUs / 1000) / 1000);
         mShowProcessTimeTv.setText(curElapsedTime);
         mShowDurationTimeTv.setText(elapsedTime);
 
-        int duration = (int) mSimpleAudioPlayer.getDurationUs() / 1000;
+        int duration = (int) mSimpleAudioPlayer.getDuration() / 1000;
         int currentPosition = (int) mPresentationTimeUs / 1000;
         float pos = (float) currentPosition / duration;
         int target = Math.round(pos * mPlayPositionSB.getMax());
@@ -467,13 +467,9 @@ public class DecodeAudioFragment extends BaseFragment {
                 break;
             case R.id.prev_btn:
                 mSimpleAudioPlayer.prev();
-                mUiHandler.removeMessages(MSG_PREV);
-                mUiHandler.sendEmptyMessageDelayed(MSG_PREV, 600);
                 break;
             case R.id.next_btn:
                 mSimpleAudioPlayer.next();
-                mUiHandler.removeMessages(MSG_NEXT);
-                mUiHandler.sendEmptyMessageDelayed(MSG_NEXT, 600);
                 break;
             case R.id.jump_btn:
                 //FragOperManager.getInstance().enter3(new A2Fragment());
@@ -490,7 +486,29 @@ public class DecodeAudioFragment extends BaseFragment {
         }
 
         switch (msg.what) {
-            case PLAYBACK_INFO:
+            case Callback.MSG_ON_READY:
+                mShowProcessTimeTv.setText("00:00");
+                mShowDurationTimeTv.setText("00:00");
+                mPlayPositionSB.setProgress(0);
+                break;
+            case Callback.MSG_ON_PLAYED:
+                int duration = (int) mSimpleAudioPlayer.getDuration();
+                String elapsedTime = DateUtils.formatElapsedTime(duration);
+                // 单位是微秒的时候需要这样处理
+                //DateUtils.formatElapsedTime((durationUs / 1000) / 1000);
+                mShowDurationTimeTv.setText(elapsedTime);
+
+                mShowInoSB.delete(0, mShowInoSB.length() - 1);
+                mShowInoSB.append(mSimpleAudioPlayer.getName());
+                mShowInoSB.append("\n");
+                setText(mShowInoSB);
+                break;
+            case Callback.MSG_ON_PAUSED:
+                break;
+            case Callback.MSG_ON_FINISHED:
+                mSimpleAudioPlayer.next();
+                break;
+            case Callback.MSG_ON_INFO:
                 mShowInoSB.append(msg.obj);
                 mShowInoSB.append("\n");
                 setText(mShowInoSB);
@@ -501,36 +519,47 @@ public class DecodeAudioFragment extends BaseFragment {
                     }
                 });
                 break;
-            case PLAYBACK_PROGRESS_UPDATED:
+            case Callback.MSG_ON_ERROR:
+                mSimpleAudioPlayer.next();
+                break;
+            case Callback.MSG_ON_PROGRESS_UPDATED:
                 /*int progress =
                         (int) (mPresentationTimeUs * 3840 / mSimpleAudioPlayer.getDurationUs());*/
                 // MLog.d(TAG, "threadHandleMessage() progress: " + progress);
-
-                String curElapsedTime = DateUtils.formatElapsedTime(
-                        (mPresentationTimeUs / 1000) / 1000);
+                if (msg.obj == null) {
+                    return;
+                }
+                mPresentationTimeUs = (Long) msg.obj;
+                String curElapsedTime = DateUtils.formatElapsedTime(mPresentationTimeUs);
                 mShowProcessTimeTv.setText(curElapsedTime);
 
-                int duration = (int) mSimpleAudioPlayer.getDurationUs() / 1000;
+                /*int duration = (int) mSimpleAudioPlayer.getDurationUs() / 1000;
                 int currentPosition = (int) mPresentationTimeUs / 1000;
                 float pos = (float) currentPosition / duration;
                 int target = Math.round(pos * mPlayPositionSB.getMax());
                 int progress = mPlayPositionSB.getProgress();
                 if (progress != target) {
                     mPlayPositionSB.setProgress(target);
-                }
+                }*/
+
+                duration = (int) mSimpleAudioPlayer.getDuration();
+                int currentPosition = (int) (mPresentationTimeUs);
+                float pos = (float) currentPosition / duration;
+                int target = Math.round(pos * mPlayPositionSB.getMax());
+                mPlayPositionSB.setProgress(target);
                 break;
             case PLAYBACK_PROGRESS_CHANGED:
-                long process = (long) ((mProgress / 3840.00) * mSimpleAudioPlayer.getDurationUs());
-                mSimpleAudioPlayer.setProgressUs(process);
-                MLog.d(TAG, "threadHandleMessage() process: " + process +
-                        " " + DateUtils.formatElapsedTime(process / 1000 / 1000));
+                long process = (long) ((mProgress / 3840.00) * mSimpleAudioPlayer.getDuration());
+                MLog.d(TAG, "player_alexander threadHandleMessage() process: " + process +
+                        " " + DateUtils.formatElapsedTime(process));
+                mSimpleAudioPlayer.setProgress(process);
                 break;
             case MSG_PREV:
             case MSG_NEXT:
-                mShowInoSB.delete(0, mShowInoSB.length());
+                /*mShowInoSB.delete(0, mShowInoSB.length());
                 mShowInoSB.append(mSimpleAudioPlayer.getName());
                 mShowInoSB.append("\n");
-                setText(mShowInoSB);
+                setText(mShowInoSB);*/
                 break;
             default:
                 break;
@@ -543,7 +572,7 @@ public class DecodeAudioFragment extends BaseFragment {
         }
     }
 
-    private Callback mCallback = new Callback() {
+    /*private Callback mCallback = new Callback() {
         @Override
         public void onReady() {
             mUiHandler.post(new Runnable() {
@@ -608,6 +637,6 @@ public class DecodeAudioFragment extends BaseFragment {
             msg.what = PLAYBACK_INFO;
             mUiHandler.sendMessage(msg);
         }
-    };
+    };*/
 
 }

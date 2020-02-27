@@ -1457,11 +1457,14 @@ public class MediaUtils {
         if (audioTrack == null) {
             return;
         }
-        try {
-            audioTrack.release();
-            audioTrack = null;
-        } catch (Exception e) {
-            audioTrack = null;
+        int playState = audioTrack.getPlayState();
+        if (playState == AudioTrack.PLAYSTATE_STOPPED) {
+            try {
+                audioTrack.release();
+                audioTrack = null;
+            } catch (Exception e) {
+                audioTrack = null;
+            }
         }
     }
 

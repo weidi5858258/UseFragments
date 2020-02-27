@@ -188,7 +188,7 @@ pthread_join(videoHandleDataThread, NULL);
 
 #define LOG "player_alexander"
 
-namespace alexander {
+namespace alexander3 {
 
     // 不要各自拥有一个指针,音视频共用一个就行了
     static AVFormatContext *avFormatContext = NULL;
@@ -2079,7 +2079,7 @@ namespace alexander {
     }
 
     // 返回值单位是秒
-    int64_t getDuration() {
+    long getDuration() {
         int64_t audioDuration = 0;
         int64_t videoDuration = 0;
         int64_t duration = 0;

@@ -20,7 +20,9 @@ import com.weidi.utils.MyToast;
 
 public class FFMPEG {
 
-    private static final String TAG = FFMPEG.class.getSimpleName();
+    private static final String TAG =
+            "player_alexander";
+    //FFMPEG.class.getSimpleName();
 
     static {
         try {
@@ -56,8 +58,11 @@ public class FFMPEG {
     public native int setCallback(Callback callback);
 
     public native int initAudio();
+
     public native int initVideo();
+
     public native int audioReadData();
+
     public native int videoReadData();
 
     // 开线程
@@ -93,6 +98,7 @@ public class FFMPEG {
     // 单位: 秒
     public native int seekTo(long timestamp);
 
+    // 单位: 秒
     public native long getDuration();
 
     public void releaseAll() {
@@ -109,11 +115,8 @@ public class FFMPEG {
                 " channelCount: " + channelCount +
                 " audioFormat: " + audioFormat);
 
-        if (mAudioTrack != null) {
-            mAudioTrack.release();
-            mAudioTrack = null;
-        }
-
+        MediaUtils.releaseAudioTrack(mAudioTrack);
+        MLog.i(TAG, "createAudioTrack() start");
         mAudioTrack = MediaUtils.createAudioTrack(
                 AudioManager.STREAM_MUSIC,
                 sampleRateInHz, channelCount, audioFormat,
@@ -122,6 +125,7 @@ public class FFMPEG {
         if (mAudioTrack != null) {
             mAudioTrack.play();
         }
+        MLog.i(TAG, "createAudioTrack() end");
     }
 
     // 供jni层调用
@@ -162,22 +166,14 @@ public class FFMPEG {
         mUiHandler = handler;
     }
 
-    // 供jni层调用
+    // 供jni层调用(底层信息才是通过这个接口反映到java层的)
     public Callback mCallback = new Callback() {
         @Override
         public void onReady() {
+            MLog.i(TAG, "onReady()");
             if (mUiHandler != null) {
-                mUiHandler.removeMessages(JniPlayerActivity.MSG_ON_READY);
-                mUiHandler.sendEmptyMessage(JniPlayerActivity.MSG_ON_READY);
-            }
-        }
-
-        @Override
-        public void onPaused() {
-            MLog.i(TAG, "onPaused()");
-            if (mUiHandler != null) {
-                mUiHandler.removeMessages(JniPlayerActivity.MSG_ON_PAUSED);
-                mUiHandler.sendEmptyMessage(JniPlayerActivity.MSG_ON_PAUSED);
+                mUiHandler.removeMessages(Callback.MSG_ON_READY);
+                mUiHandler.sendEmptyMessage(Callback.MSG_ON_READY);
             }
         }
 
@@ -185,16 +181,26 @@ public class FFMPEG {
         public void onPlayed() {
             MLog.i(TAG, "onPlayed()");
             if (mUiHandler != null) {
-                mUiHandler.removeMessages(JniPlayerActivity.MSG_ON_PLAYED);
-                mUiHandler.sendEmptyMessage(JniPlayerActivity.MSG_ON_PLAYED);
+                mUiHandler.removeMessages(Callback.MSG_ON_PLAYED);
+                mUiHandler.sendEmptyMessage(Callback.MSG_ON_PLAYED);
+            }
+        }
+
+        @Override
+        public void onPaused() {
+            MLog.i(TAG, "onPaused()");
+            if (mUiHandler != null) {
+                mUiHandler.removeMessages(Callback.MSG_ON_PAUSED);
+                mUiHandler.sendEmptyMessage(Callback.MSG_ON_PAUSED);
             }
         }
 
         @Override
         public void onFinished() {
+            MLog.i(TAG, "onFinished()");
             if (mUiHandler != null) {
-                mUiHandler.removeMessages(JniPlayerActivity.MSG_ON_FINISHED);
-                mUiHandler.sendEmptyMessage(JniPlayerActivity.MSG_ON_FINISHED);
+                mUiHandler.removeMessages(Callback.MSG_ON_FINISHED);
+                mUiHandler.sendEmptyMessage(Callback.MSG_ON_FINISHED);
             }
         }
 
@@ -202,18 +208,19 @@ public class FFMPEG {
         public void onProgressUpdated(long presentationTime) {
             if (mUiHandler != null) {
                 Message msg = mUiHandler.obtainMessage();
-                msg.what = JniPlayerActivity.PLAYBACK_PROGRESS_UPDATED;
+                msg.what = Callback.MSG_ON_PROGRESS_UPDATED;
                 msg.obj = presentationTime;
-                mUiHandler.removeMessages(JniPlayerActivity.PLAYBACK_PROGRESS_UPDATED);
+                mUiHandler.removeMessages(Callback.MSG_ON_PROGRESS_UPDATED);
                 mUiHandler.sendMessage(msg);
             }
         }
 
         @Override
         public void onError() {
+            MLog.e(TAG, "onError()");
             if (mUiHandler != null) {
-                mUiHandler.removeMessages(JniPlayerActivity.MSG_ON_FINISHED);
-                mUiHandler.sendEmptyMessage(JniPlayerActivity.MSG_ON_FINISHED);
+                mUiHandler.removeMessages(Callback.MSG_ON_ERROR);
+                mUiHandler.sendEmptyMessage(Callback.MSG_ON_ERROR);
             }
         }
 
