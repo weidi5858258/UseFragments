@@ -413,14 +413,13 @@ namespace alexander {
         }
         LOGI("seekToImpl() av_seek_frame start\n");
         int64_t timestamp = (int64_t) (timeStamp * AV_TIME_BASE);
-        LOGI("seekToImpl() timestamp: %"
-                     PRIu64
-                     "\n", timestamp);
+        //LOGI("seekToImpl() timestamp: %" PRIu64 "\n", timestamp);
         int ret = av_seek_frame(
                 avFormatContext,
                 audioWrapper->father->streamIndex,
                 timestamp,
-                AVSEEK_FLAG_BACKWARD | AVSEEK_FLAG_FRAME);
+                //AVSEEK_FLAG_BACKWARD | AVSEEK_FLAG_FRAME);
+                AVSEEK_FLAG_ANY);
         LOGI("seekToImpl() ret      : %d\n", ret);
         timeStamp = -1;
         preProgress = 0;
@@ -512,6 +511,8 @@ namespace alexander {
                 // 说明歌曲长度比较短,达不到"规定值",因此处理数据线程还在等待
                 notifyToHandle(audioWrapper->father);
 
+                //av_seek_frame(avFormatContext, audioWrapper->father->streamIndex, 0, 0);
+                av_seek_frame(avFormatContext, audioWrapper->father->streamIndex, (int64_t) 0, AVSEEK_FLAG_ANY);
                 // 不退出线程
                 LOGD("readData() notifyToReadWait start\n");
                 notifyToReadWait(audioWrapper->father);
