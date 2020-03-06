@@ -19,8 +19,8 @@ public class PlaybackQueue {
             PlaybackQueue.class.getSimpleName();
     private static final boolean DEBUG = true;
 
-    private static final String PATH = "/storage/37C8-3904/myfiles/music/";
-    //private static final String PATH = "/storage/emulated/0/kgmusic/download/";
+//    private static final String PATH = "/storage/37C8-3904/myfiles/music/";
+    private static final String PATH = "/storage/emulated/0/kgmusic/download/";
     //    private static final String PATH = "/storage/2430-1702/BaiduNetdisk/music/mylove/";
     //    private static final String PATH = "/storage/2430-1702/BaiduNetdisk/music/test_audio/";
     // /storage/2430-1702/BaiduNetdisk/music/谭咏麟 - 水中花.mp3

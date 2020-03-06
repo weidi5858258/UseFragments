@@ -2,9 +2,9 @@
 // Created by ex-wangliwei on 2016/2/14.
 //
 
-//#include "SimpleVideoPlayer3.h"
+#include "SimpleVideoPlayer3.h"
 //#include "OnlyVideoPlayer.h"
-#include "OnlyAudioPlayer.h"
+//#include "OnlyAudioPlayer.h"
 
 // 这个是自定义的LOG的标识
 #define LOG "player_alexander"

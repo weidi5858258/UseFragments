@@ -84,7 +84,7 @@ extern "C" {
 //#include "MyHeader.h"
 #include "../include/Log.h"
 
-namespace alexander {
+namespace alexander3 {
 
     // 1 second of 48khz 32bit audio
 #define MAX_AUDIO_FRAME_SIZE 192000
