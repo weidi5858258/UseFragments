@@ -181,9 +181,8 @@ public class JniPlayerActivity2 extends BaseActivity {
                     FFMPEG ffmpeg = null;//new FFMPEG();
                     ffmpeg.setSurface("/storage/2430-1702/BaiduNetdisk/video/05.mp4", mSurface);
 
-                    int videoResult = ffmpeg.initVideo();
+                    /*int videoResult = ffmpeg.initVideo();
                     int audioResult = ffmpeg.initAudio();
-
                     if (videoResult == 0) {
                         new Thread(new Runnable() {
                             @Override
@@ -198,7 +197,6 @@ public class JniPlayerActivity2 extends BaseActivity {
                             }
                         }).start();
                     }
-
                     if (audioResult == 0) {
                         new Thread(new Runnable() {
                             @Override
@@ -212,7 +210,7 @@ public class JniPlayerActivity2 extends BaseActivity {
                                 ffmpeg.audioHandleData();
                             }
                         }).start();
-                    }
+                    }*/
                 }
 
                 @Override

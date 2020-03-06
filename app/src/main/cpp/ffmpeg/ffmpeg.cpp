@@ -332,18 +332,6 @@ Java_com_weidi_usefragments_business_video_1player_FFMPEG_setCallback(JNIEnv *en
 
 extern "C"
 JNIEXPORT jint JNICALL
-Java_com_weidi_usefragments_business_video_1player_FFMPEG_initAudio(JNIEnv *env, jobject ffmpegObject) {
-    return (jint) 0;
-}
-
-extern "C"
-JNIEXPORT jint JNICALL
-Java_com_weidi_usefragments_business_video_1player_FFMPEG_initVideo(JNIEnv *env, jobject ffmpegObject) {
-    return (jint) alexander::initPlayer();
-}
-
-extern "C"
-JNIEXPORT jint JNICALL
 Java_com_weidi_usefragments_business_video_1player_FFMPEG_initPlayer(JNIEnv *env, jobject instance) {
     return (jint) alexander::initPlayer();
 }
@@ -352,22 +340,6 @@ extern "C"
 JNIEXPORT jint JNICALL
 Java_com_weidi_usefragments_business_video_1player_FFMPEG_readData(JNIEnv *env, jobject instance) {
     alexander::readData(NULL);
-    return (jint) 0;
-}
-
-extern "C"
-JNIEXPORT jint JNICALL
-Java_com_weidi_usefragments_business_video_1player_FFMPEG_audioReadData(JNIEnv *env, jobject ffmpegObject) {
-//    int type = TYPE_AUDIO;
-//    alexander::readData(&type);
-    return (jint) 0;
-}
-
-extern "C"
-JNIEXPORT jint JNICALL
-Java_com_weidi_usefragments_business_video_1player_FFMPEG_videoReadData(JNIEnv *env, jobject ffmpegObject) {
-    int type = TYPE_VIDEO;
-    alexander::readData(&type);
     return (jint) 0;
 }
 
@@ -431,7 +403,6 @@ Java_com_weidi_usefragments_business_video_1player_FFMPEG_isPlaying(JNIEnv *env,
 extern "C"
 JNIEXPORT jint JNICALL
 Java_com_weidi_usefragments_business_video_1player_FFMPEG_seekTo(JNIEnv *env, jobject ffmpegObject, jlong timestamp) {
-    LOGI("seekTo() ffmpeg timestamp: %ld\n", timestamp);
     return (jint) alexander::seekTo((int64_t) timestamp);
 }
 

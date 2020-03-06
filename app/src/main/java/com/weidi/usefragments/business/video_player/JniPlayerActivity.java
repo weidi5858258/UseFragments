@@ -1,5 +1,6 @@
 package com.weidi.usefragments.business.video_player;
 
+import android.annotation.SuppressLint;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
@@ -47,8 +48,8 @@ import com.weidi.utils.MyToast;
  */
 public class JniPlayerActivity extends BaseActivity {
 
-    //    private static final String TAG =
-    //            JniPlayerActivity.class.getSimpleName();
+    /*private static final String TAG =
+            JniPlayerActivity.class.getSimpleName();*/
     private static final String TAG = "player_alexander";
     private static final boolean DEBUG = true;
 
@@ -175,17 +176,13 @@ public class JniPlayerActivity extends BaseActivity {
 
     public static final String CONTENT_PATH = "content_path";
 
-    private static final int PLAYBACK_INFO = 0x001;
-    public static final int PLAYBACK_PROGRESS_UPDATED = 0x002;
-    private static final int PLAYBACK_PROGRESS_CHANGED = 0x003;
-    public static final int MSG_ON_READY = 0x004;
-    public static final int MSG_ON_PAUSED = 0x005;
-    public static final int MSG_ON_PLAYED = 0x006;
-    public static final int MSG_ON_FINISHED = 0x007;
-    private static final int MSG_LOADING_SHOW = 0x008;
-    private static final int MSG_LOADING_HIDE = 0x009;
-    private static final int MSG_ON_PROGRESS_UPDATED = 0x010;
-    private static final int MSG_START_PLAYBACK = 0x011;
+    private static final int PLAYBACK_INFO = 1;// 0x001
+    public static final int PLAYBACK_PROGRESS_UPDATED = 200;
+    private static final int PLAYBACK_PROGRESS_CHANGED = 3;
+    private static final int MSG_LOADING_SHOW = 8;
+    private static final int MSG_LOADING_HIDE = 9;
+    private static final int MSG_ON_PROGRESS_UPDATED = 10;
+    private static final int MSG_START_PLAYBACK = 11;
 
     private SurfaceView mSurfaceView;
     private Surface mSurface;
@@ -214,9 +211,6 @@ public class JniPlayerActivity extends BaseActivity {
     // 气泡上显示时间
     TextView mShowTimeTV;
     BubblePopupWindow mBubblePopupWindow;
-
-    int audioInitResult = -1;
-    int videoInitResult = -1;
 
     private Handler mUiHandler;
 
@@ -260,9 +254,6 @@ public class JniPlayerActivity extends BaseActivity {
         mSurfaceView.setOnClickListener(mOnClickListener);
 
         mFFMPEGPlayer = new FFMPEG();
-
-        audioInitResult = -1;
-        videoInitResult = -1;
 
         int duration = (int) mFFMPEGPlayer.getDuration();
         int currentPosition = (int) mPresentationTime;
@@ -317,6 +308,7 @@ public class JniPlayerActivity extends BaseActivity {
         });
     }
 
+    @SuppressLint("InvalidWakeLockTag")
     private void internalStart() {
         // When player view started,wake the lock.
         PowerManager powerManager = (PowerManager) getSystemService(Context.POWER_SERVICE);
@@ -343,13 +335,13 @@ public class JniPlayerActivity extends BaseActivity {
                 public void surfaceCreated(
                         SurfaceHolder holder) {
                     MLog.d(TAG, "surfaceCreated()");
-                    mSurface = holder.getSurface();
-                    // 这里也要写
-                    holder.setFormat(PixelFormat.RGBA_8888);
-
                     if (mFFMPEGPlayer == null) {
                         return;
                     }
+
+                    mSurface = holder.getSurface();
+                    // 这里也要写
+                    holder.setFormat(PixelFormat.RGBA_8888);
 
                     mFFMPEGPlayer.setCallback(mFFMPEGPlayer.mCallback);
                     mFFMPEGPlayer.setHandler(mUiHandler);
@@ -358,35 +350,18 @@ public class JniPlayerActivity extends BaseActivity {
                     new Thread(new Runnable() {
                         @Override
                         public void run() {
-                            videoInitResult = mFFMPEGPlayer.initVideo();
-                            if (videoInitResult != 0) {
-                                MyToast.show("视频初始化失败");
-                                mUiHandler.post(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        finish();
-                                        exitActivity();
-                                    }
-                                });
+                            if (mFFMPEGPlayer.initPlayer() != 0) {
+                                MyToast.show("音视频初始化失败");
+                                mUiHandler.removeMessages(Callback.MSG_ON_ERROR);
+                                mUiHandler.sendEmptyMessage(Callback.MSG_ON_ERROR);
                                 return;
                             }
 
-                            audioInitResult = mFFMPEGPlayer.initAudio();
-                            if (audioInitResult != 0) {
-                                MyToast.show("音频初始化失败");
-                                mUiHandler.post(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        finish();
-                                        exitActivity();
-                                    }
-                                });
-                                return;
-                            }
-
-                            MyToast.show("音视频初始化成功");
                             mUiHandler.removeMessages(MSG_START_PLAYBACK);
                             mUiHandler.sendEmptyMessage(MSG_START_PLAYBACK);
+                            MyToast.show("音视频初始化成功");
+                            SystemClock.sleep(500);
+                            mFFMPEGPlayer.readData();
                         }
                     }).start();
                 }
@@ -453,7 +428,38 @@ public class JniPlayerActivity extends BaseActivity {
         }
 
         switch (msg.what) {
-            case PLAYBACK_PROGRESS_UPDATED:
+            case Callback.MSG_ON_READY:
+                String durationTime = DateUtils.formatElapsedTime(mFFMPEGPlayer.getDuration());
+                mDurationTimeTV.setText(durationTime);
+                if (durationTime.length() > 5) {
+                    mProgressTimeTV.setText("00:00:00");
+                } else {
+                    mProgressTimeTV.setText("00:00");
+                }
+                mProgressBar.setProgress(0);
+                mFileNameTV.setText(Contents.getTitle());
+                mLoadingView.setVisibility(View.VISIBLE);
+                break;
+            case Callback.MSG_ON_PLAYED:
+                durationTime = DateUtils.formatElapsedTime(mFFMPEGPlayer.getDuration());
+                mDurationTimeTV.setText(durationTime);
+                mLoadingView.setVisibility(View.GONE);
+                mPlayIB.setVisibility(View.VISIBLE);
+                mPauseIB.setVisibility(View.GONE);
+                mControllerPanelLayout.setVisibility(View.VISIBLE);// INVISIBLE
+                break;
+            case Callback.MSG_ON_PAUSED:
+                mPlayIB.setVisibility(View.GONE);
+                mPauseIB.setVisibility(View.VISIBLE);
+                mLoadingView.setVisibility(View.VISIBLE);
+                mControllerPanelLayout.setVisibility(View.VISIBLE);
+                break;
+            case Callback.MSG_ON_FINISHED:
+            case Callback.MSG_ON_ERROR:
+                finish();
+                exitActivity();
+                break;
+            case Callback.MSG_ON_PROGRESS_UPDATED:
                 if (msg.obj == null) {
                     return;
                 }
@@ -468,50 +474,6 @@ public class JniPlayerActivity extends BaseActivity {
                     int target = Math.round(pos * mProgressBar.getMax());
                     mProgressBar.setProgress(target);
                 }
-                break;
-            case PLAYBACK_PROGRESS_CHANGED:
-                // 单位: 秒
-                /*long process = (long) ((mProgress / 3840.00) * mFFMPEGPlayer.getDuration());
-                mFFMPEGPlayer.seekTo(process);
-                MLog.d(TAG, "uiHandleMessage() mProgress: " + process +
-                        " " + DateUtils.formatElapsedTime(process));*/
-                break;
-            case MSG_ON_READY:
-                String durationTime = DateUtils.formatElapsedTime(mFFMPEGPlayer.getDuration());
-                mDurationTimeTV.setText(durationTime);
-                if (durationTime.length() > 5) {
-                    mProgressTimeTV.setText("00:00:00");
-                } else {
-                    mProgressTimeTV.setText("00:00");
-                }
-                mProgressBar.setProgress(0);
-                mFileNameTV.setText(Contents.getTitle());
-                mLoadingView.setVisibility(View.VISIBLE);
-                break;
-            case MSG_ON_PAUSED:
-                mPlayIB.setVisibility(View.GONE);
-                mPauseIB.setVisibility(View.VISIBLE);
-                mLoadingView.setVisibility(View.VISIBLE);
-                mControllerPanelLayout.setVisibility(View.VISIBLE);
-                break;
-            case MSG_ON_PLAYED:
-                mLoadingView.setVisibility(View.GONE);
-                mPlayIB.setVisibility(View.VISIBLE);
-                mPauseIB.setVisibility(View.GONE);
-                mControllerPanelLayout.setVisibility(View.VISIBLE);// INVISIBLE
-                break;
-            case MSG_ON_FINISHED:
-                finish();
-                exitActivity();
-                break;
-            case MSG_LOADING_SHOW:
-                mLoadingView.setVisibility(View.VISIBLE);
-                break;
-            case MSG_LOADING_HIDE:
-                mLoadingView.setVisibility(View.GONE);
-                break;
-            case MSG_ON_PROGRESS_UPDATED:
-                mProgressBar.setSecondaryProgress(mDownloadProgress);
                 break;
             case KeyEvent.KEYCODE_HEADSETHOOK:// 单击事件
                 if (firstFlag && secondFlag && threeFlag) {
@@ -561,106 +523,28 @@ public class JniPlayerActivity extends BaseActivity {
                 threeFlag = false;
                 break;
             case MSG_START_PLAYBACK:
-                if (videoInitResult == 0 || audioInitResult == 0) {
-                    durationTime = DateUtils.formatElapsedTime(mFFMPEGPlayer.getDuration());
-                    mDurationTimeTV.setText(durationTime);
-                    if (durationTime.length() > 5) {
-                        mProgressTimeTV.setText("00:00:00");
-                    } else {
-                        mProgressTimeTV.setText("00:00");
-                    }
-                    mProgressBar.setProgress(0);
+                if (!isDestroyed()) {
+                    new Thread(new Runnable() {
+                        @Override
+                        public void run() {
+                            mFFMPEGPlayer.audioHandleData();
+                        }
+                    }).start();
+                    new Thread(new Runnable() {
+                        @Override
+                        public void run() {
+                            mFFMPEGPlayer.videoHandleData();
+                        }
+                    }).start();
                 }
-
-                new Thread(new Runnable() {
-                    @Override
-                    public void run() {
-                        if (isDestroyed()) {
-                            return;
-                        }
-                        mFFMPEGPlayer.audioHandleData();
-                    }
-                }).start();
-                new Thread(new Runnable() {
-                    @Override
-                    public void run() {
-                        if (isDestroyed()) {
-                            return;
-                        }
-                        mFFMPEGPlayer.videoHandleData();
-                    }
-                }).start();
-                new Thread(new Runnable() {
-                    @Override
-                    public void run() {
-                        SystemClock.sleep(500);
-                        if (isDestroyed()) {
-                            return;
-                        }
-                        mFFMPEGPlayer.audioReadData();
-                    }
-                }).start();
-                new Thread(new Runnable() {
-                    @Override
-                    public void run() {
-                        SystemClock.sleep(500);
-                        if (isDestroyed()) {
-                            return;
-                        }
-                        mFFMPEGPlayer.videoReadData();
-                    }
-                }).start();
+                break;
+            case PLAYBACK_PROGRESS_UPDATED:
+                mProgressBar.setSecondaryProgress(mDownloadProgress);
                 break;
             default:
                 break;
         }
     }
-
-    private Callback mCallback = new Callback() {
-        @Override
-        public void onReady() {
-            Log.d(TAG, "onReady() java");
-            mUiHandler.removeMessages(MSG_ON_READY);
-            mUiHandler.sendEmptyMessage(MSG_ON_READY);
-        }
-
-        @Override
-        public void onPaused() {
-            Log.d(TAG, "onPaused() java");
-            mUiHandler.removeMessages(MSG_LOADING_SHOW);
-            mUiHandler.sendEmptyMessage(MSG_LOADING_SHOW);
-        }
-
-        @Override
-        public void onPlayed() {
-            Log.d(TAG, "onPlayed() java");
-            mUiHandler.removeMessages(MSG_LOADING_HIDE);
-            mUiHandler.sendEmptyMessage(MSG_LOADING_HIDE);
-        }
-
-        @Override
-        public void onFinished() {
-            //mSampleVideoPlayer.play();
-            Log.d(TAG, "onFinished() java");
-        }
-
-        @Override
-        public void onProgressUpdated(long presentationTime) {
-            mPresentationTime = presentationTime;
-            mUiHandler.removeMessages(PLAYBACK_PROGRESS_UPDATED);
-            mUiHandler.sendEmptyMessage(PLAYBACK_PROGRESS_UPDATED);
-        }
-
-        @Override
-        public void onError() {
-
-        }
-
-        @Override
-        public void onInfo(String info) {
-
-        }
-    };
 
     private DownloadCallback mDownloadCallback = new DownloadCallback() {
         @Override

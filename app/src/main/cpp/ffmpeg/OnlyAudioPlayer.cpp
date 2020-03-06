@@ -188,19 +188,22 @@ namespace alexander3 {
             case AV_CODEC_ID_HEVC: {
                 LOGD("findAndOpenAVCodecForAudio() hevc_mediacodec\n");
                 // 硬解码265
-                audioWrapper->father->decoderAVCodec = avcodec_find_decoder_by_name("hevc_mediacodec");
+                audioWrapper->father->decoderAVCodec = avcodec_find_decoder_by_name(
+                        "hevc_mediacodec");
                 break;
             }
             case AV_CODEC_ID_H264: {
                 LOGD("findAndOpenAVCodecForAudio() h264_mediacodec\n");
                 // 硬解码264
-                audioWrapper->father->decoderAVCodec = avcodec_find_decoder_by_name("h264_mediacodec");
+                audioWrapper->father->decoderAVCodec = avcodec_find_decoder_by_name(
+                        "h264_mediacodec");
                 break;
             }
             case AV_CODEC_ID_MPEG4: {
                 LOGD("findAndOpenAVCodecForAudio() mpeg4_mediacodec\n");
                 // 硬解码mpeg4
-                audioWrapper->father->decoderAVCodec = avcodec_find_decoder_by_name("mpeg4_mediacodec");
+                audioWrapper->father->decoderAVCodec = avcodec_find_decoder_by_name(
+                        "mpeg4_mediacodec");
                 break;
             }
             default: {
@@ -214,7 +217,8 @@ namespace alexander3 {
         if (audioWrapper->father->decoderAVCodec != NULL) {
             // 获取解码器上下文
             // 再通过AVCodec得到AVCodecContext
-            audioWrapper->father->avCodecContext = avcodec_alloc_context3(audioWrapper->father->decoderAVCodec);
+            audioWrapper->father->avCodecContext = avcodec_alloc_context3(
+                    audioWrapper->father->decoderAVCodec);
             if (audioWrapper->father->avCodecContext != NULL) {
                 // 关联操作
                 if (avcodec_parameters_to_context(
@@ -416,7 +420,8 @@ namespace alexander3 {
         //LOGI("seekToImpl() timestamp: %" PRIu64 "\n", timestamp);
         int ret = av_seek_frame(
                 avFormatContext,
-                audioWrapper->father->streamIndex,
+                //audioWrapper->father->streamIndex,
+                -1,
                 timestamp,
                 //AVSEEK_FLAG_BACKWARD | AVSEEK_FLAG_FRAME);
                 AVSEEK_FLAG_ANY);
@@ -512,7 +517,8 @@ namespace alexander3 {
                 notifyToHandle(audioWrapper->father);
 
                 //av_seek_frame(avFormatContext, audioWrapper->father->streamIndex, 0, 0);
-                av_seek_frame(avFormatContext, audioWrapper->father->streamIndex, (int64_t) 0, AVSEEK_FLAG_ANY);
+                av_seek_frame(avFormatContext, audioWrapper->father->streamIndex, (int64_t) 0,
+                              AVSEEK_FLAG_ANY);
                 // 不退出线程
                 LOGD("readData() notifyToReadWait start\n");
                 notifyToReadWait(audioWrapper->father);

@@ -99,10 +99,8 @@ namespace alexander {
 #define MAX_AVPACKET_COUNT_AUDIO_HTTP 3000
 #define MAX_AVPACKET_COUNT_VIDEO_HTTP 3000
 
-#define MAX_AVPACKET_COUNT_AUDIO_LOCAL 100
-#define MAX_AVPACKET_COUNT_VIDEO_LOCAL 100
-
-#define CACHE_COUNT 100
+#define MAX_AVPACKET_COUNT_AUDIO_LOCAL 50
+#define MAX_AVPACKET_COUNT_VIDEO_LOCAL 50
 
     // 子类都要用到的部分
     struct Wrapper {
@@ -147,6 +145,7 @@ namespace alexander {
         bool isPausedForSeek = false;
         // seek的初始化条件有没有完成,true表示完成
         bool needToSeek = false;
+        bool allowDecode = false;
 
         // 单位: 秒
         int64_t duration = 0;

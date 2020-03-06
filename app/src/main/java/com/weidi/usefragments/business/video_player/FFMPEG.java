@@ -50,31 +50,23 @@ public class FFMPEG {
     }*/
 
     private AudioTrack mAudioTrack;
-    private float mVolume = 1.0f;
+    private static float VOLUME = 1.0f;
 
     // 首先调用
     public native int setSurface(String filePath, Surface surface);
 
     public native int setCallback(Callback callback);
 
-    public native int initAudio();
-
-    public native int initVideo();
-
-    public native int audioReadData();
-
-    public native int videoReadData();
-
-    // 开线程
+    // 子线程
     public native int initPlayer();
 
-    // 开线程
+    // 子线程
     public native int readData();
 
-    // 开线程
+    // 子线程
     public native int audioHandleData();
 
-    // 开线程
+    // 子线程
     public native int videoHandleData();
 
     public native int play();
@@ -121,7 +113,7 @@ public class FFMPEG {
                 AudioManager.STREAM_MUSIC,
                 sampleRateInHz, channelCount, audioFormat,
                 AudioTrack.MODE_STREAM);
-        setVolume();
+        setVolume(1.0f);
         if (mAudioTrack != null) {
             mAudioTrack.play();
         }
@@ -149,14 +141,17 @@ public class FFMPEG {
         SystemClock.sleep(ms);
     }
 
-    private void setVolume() {
+    private void setVolume(float volume) {
         if (mAudioTrack == null) {
             return;
         }
+        if (volume < 0 || volume > 1.0f) {
+            volume = VOLUME;
+        }
         if (Build.VERSION.SDK_INT >= 21) {
-            mAudioTrack.setVolume(mVolume);
+            mAudioTrack.setVolume(volume);
         } else {
-            mAudioTrack.setStereoVolume(mVolume, mVolume);
+            mAudioTrack.setStereoVolume(volume, volume);
         }
     }
 
