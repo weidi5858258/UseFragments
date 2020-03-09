@@ -6,7 +6,7 @@
 
 #define LOG "player_alexander"
 
-namespace alexander2 {
+namespace alexander_only_video {
 
     char inFilePath[2048];
     struct Wrapper *wrapper = NULL;

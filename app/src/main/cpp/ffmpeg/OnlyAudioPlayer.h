@@ -2,8 +2,8 @@
 // Created by root on 19-8-8.
 //
 
-#ifndef USEFRAGMENTS_SIMPLEVIDEOPLAYER_H
-#define USEFRAGMENTS_SIMPLEVIDEOPLAYER_H
+#ifndef USEFRAGMENTS_ONLYAUDIOPLAYER_H
+#define USEFRAGMENTS_ONLYAUDIOPLAYER_H
 
 // 需要引入native绘制的头文件
 #include <android/native_window.h>
@@ -84,7 +84,7 @@ extern "C" {
 //#include "MyHeader.h"
 #include "../include/Log.h"
 
-namespace alexander3 {
+namespace alexander_only_audio {
 
     // 1 second of 48khz 32bit audio
 #define MAX_AUDIO_FRAME_SIZE 192000
@@ -94,15 +94,9 @@ namespace alexander3 {
 #define TYPE_VIDEO 2
 
     // 不能无限制读取数据进行保存,这样要出错的(能播放,但不是想要的结果)
-#define MAX_AVPACKET_COUNT         10000
-
+#define MAX_AVPACKET_COUNT         30000
 #define MAX_AVPACKET_COUNT_AUDIO_HTTP 3000
-//#define MAX_AVPACKET_COUNT_VIDEO_HTTP 3000
-
-#define MAX_AVPACKET_COUNT_AUDIO_LOCAL 100
-//#define MAX_AVPACKET_COUNT_VIDEO_LOCAL 100
-
-#define CACHE_COUNT 100
+#define MAX_AVPACKET_COUNT_AUDIO_LOCAL 20000
 
     // 子类都要用到的部分
     struct Wrapper {
@@ -226,18 +220,7 @@ namespace alexander3 {
 
     void stepSubtract();
 
-    /*class SimpleVideoPlayer {
-
-    private:
-        // char *inFilePath = "/storage/2430-1702/BaiduNetdisk/music/谭咏麟 - 水中花.mp3";
-        char *inFilePath = NULL;
-
-        ANativeWindow *pANativeWindow = NULL;
-
-    public:
-    };*/
-
 }
 
 
-#endif //USEFRAGMENTS_SIMPLEVIDEOPLAYER_H
+#endif //USEFRAGMENTS_ONLYAUDIOPLAYER_H

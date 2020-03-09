@@ -440,6 +440,7 @@ public class JniMusicService extends Service {
 
         mSP.edit().putString(PATH, mPath).apply();
         MLog.i(TAG, "internalPrepare() start");
+        mFFMPEGPlayer.setMode(FFMPEG.USE_MODE_ONLY_AUDIO);
         mFFMPEGPlayer.setSurface(mPath, null);
         if (mFFMPEGPlayer.initPlayer() < 0) {
             MLog.e(TAG, "internalPrepare() end error");

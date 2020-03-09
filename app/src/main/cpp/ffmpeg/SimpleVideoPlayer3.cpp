@@ -188,7 +188,7 @@ pthread_join(videoHandleDataThread, NULL);
 
 #define LOG "player_alexander"
 
-namespace alexander {
+namespace alexander_media {
 
     // 不要各自拥有一个指针,音视频共用一个就行了
     static AVFormatContext *avFormatContext = NULL;

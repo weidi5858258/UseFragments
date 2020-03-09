@@ -24,6 +24,10 @@ public class FFMPEG {
             "player_alexander";
     //FFMPEG.class.getSimpleName();
 
+    public static final int USE_MODE_MEDIA = 1;
+    public static final int USE_MODE_ONLY_VIDEO = 2;
+    public static final int USE_MODE_ONLY_AUDIO = 3;
+
     static {
         try {
             System.loadLibrary("ffmpeg");
@@ -51,6 +55,8 @@ public class FFMPEG {
 
     private AudioTrack mAudioTrack;
     private static float VOLUME = 1.0f;
+
+    public native void setMode(int mode);
 
     // 首先调用
     public native int setSurface(String filePath, Surface surface);

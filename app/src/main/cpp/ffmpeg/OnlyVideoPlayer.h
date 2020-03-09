@@ -2,8 +2,8 @@
 // Created by root on 19-8-8.
 //
 
-#ifndef USEFRAGMENTS_SIMPLEVIDEOPLAYER_H
-#define USEFRAGMENTS_SIMPLEVIDEOPLAYER_H
+#ifndef USEFRAGMENTS_ONLYVIDEOPLAYER_H
+#define USEFRAGMENTS_ONLYVIDEOPLAYER_H
 
 // 需要引入native绘制的头文件
 #include <android/native_window.h>
@@ -87,7 +87,7 @@ extern "C" {
 //#include "MyHeader.h"
 #include "../include/Log.h"
 
-namespace alexander2 {
+namespace alexander_only_video {
 
     // 1 second of 48khz 32bit audio
 #define MAX_AUDIO_FRAME_SIZE 192000
@@ -241,4 +241,4 @@ namespace alexander2 {
 }
 
 
-#endif //USEFRAGMENTS_SIMPLEVIDEOPLAYER_H
+#endif //USEFRAGMENTS_ONLYVIDEOPLAYER_H

@@ -3,8 +3,8 @@
 //
 
 #include "SimpleVideoPlayer3.h"
-//#include "OnlyVideoPlayer.h"
-//#include "OnlyAudioPlayer.h"
+#include "OnlyVideoPlayer.h"
+#include "OnlyAudioPlayer.h"
 
 // 这个是自定义的LOG的标识
 #define LOG "player_alexander"
@@ -37,6 +37,13 @@ struct Callback {
     jmethodID onErrorMethodID = NULL;
     jmethodID onInfoMethodID = NULL;
 } callback;
+
+enum {
+    USE_MODE_MEDIA = 1,
+    USE_MODE_ONLY_VIDEO = 2,
+    USE_MODE_ONLY_AUDIO = 3
+};
+int use_mode = USE_MODE_ONLY_AUDIO;
 
 // test
 int runCount = 0;
@@ -258,6 +265,18 @@ void onInfo(char *info) {
 
 /////////////////////////////////////////////////////////////////////////
 
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_weidi_usefragments_business_video_1player_FFMPEG_setMode(JNIEnv *env, jobject thiz,
+                                                                  jint mode) {
+    use_mode = (int) mode;
+    if (use_mode != USE_MODE_MEDIA
+        && use_mode != USE_MODE_ONLY_VIDEO
+        && use_mode != USE_MODE_ONLY_AUDIO) {
+        use_mode = USE_MODE_ONLY_AUDIO;
+    }
+}
+
 /***
  setSurface方法在java层因为不是static方法,
  所以每个方法里至少有两个参数,即:
@@ -284,7 +303,22 @@ Java_com_weidi_usefragments_business_video_1player_FFMPEG_setSurface(JNIEnv *env
 
     // 路径
     const char *filePath = env->GetStringUTFChars(path, 0);
-    alexander::setJniParameters(env, filePath, surfaceObject);
+    switch (use_mode) {
+        case USE_MODE_MEDIA: {
+            alexander_media::setJniParameters(env, filePath, surfaceObject);
+            break;
+        }
+        case USE_MODE_ONLY_VIDEO: {
+            alexander_only_video::setJniParameters(env, filePath, surfaceObject);
+            break;
+        }
+        case USE_MODE_ONLY_AUDIO: {
+            alexander_only_audio::setJniParameters(env, filePath, NULL);
+            break;
+        }
+        default:
+            break;
+    }
     env->ReleaseStringUTFChars(path, filePath);
 
     // java层native方法所对应的类对象
@@ -332,94 +366,299 @@ Java_com_weidi_usefragments_business_video_1player_FFMPEG_setCallback(JNIEnv *en
 
 extern "C"
 JNIEXPORT jint JNICALL
-Java_com_weidi_usefragments_business_video_1player_FFMPEG_initPlayer(JNIEnv *env, jobject instance) {
-    return (jint) alexander::initPlayer();
+Java_com_weidi_usefragments_business_video_1player_FFMPEG_initPlayer(JNIEnv *env,
+                                                                     jobject instance) {
+    switch (use_mode) {
+        case USE_MODE_MEDIA: {
+            return (jint) alexander_media::initPlayer();
+        }
+        case USE_MODE_ONLY_VIDEO: {
+            return (jint) alexander_only_video::initPlayer();
+        }
+        case USE_MODE_ONLY_AUDIO: {
+            return (jint) alexander_only_audio::initPlayer();
+        }
+        default:
+            break;
+    }
 }
 
 extern "C"
 JNIEXPORT jint JNICALL
 Java_com_weidi_usefragments_business_video_1player_FFMPEG_readData(JNIEnv *env, jobject instance) {
-    alexander::readData(NULL);
+    switch (use_mode) {
+        case USE_MODE_MEDIA: {
+            alexander_media::readData(NULL);
+            break;
+        }
+        case USE_MODE_ONLY_VIDEO: {
+            alexander_only_video::readData(NULL);
+            break;
+        }
+        case USE_MODE_ONLY_AUDIO: {
+            alexander_only_audio::readData(NULL);
+            break;
+        }
+        default:
+            break;
+    }
     return (jint) 0;
 }
 
 extern "C"
 JNIEXPORT jint JNICALL
-Java_com_weidi_usefragments_business_video_1player_FFMPEG_audioHandleData(JNIEnv *env, jobject ffmpegObject) {
+Java_com_weidi_usefragments_business_video_1player_FFMPEG_audioHandleData(JNIEnv *env,
+                                                                          jobject ffmpegObject) {
     int type = TYPE_AUDIO;
-    alexander::handleData(&type);
+    switch (use_mode) {
+        case USE_MODE_MEDIA: {
+            alexander_media::handleData(&type);
+            break;
+        }
+        case USE_MODE_ONLY_VIDEO: {
+            alexander_only_video::handleData(&type);
+            break;
+        }
+        case USE_MODE_ONLY_AUDIO: {
+            alexander_only_audio::handleData(&type);
+            break;
+        }
+        default:
+            break;
+    }
     return (jint) 0;
 }
 
 extern "C"
 JNIEXPORT jint JNICALL
-Java_com_weidi_usefragments_business_video_1player_FFMPEG_videoHandleData(JNIEnv *env, jobject ffmpegObject) {
+Java_com_weidi_usefragments_business_video_1player_FFMPEG_videoHandleData(JNIEnv *env,
+                                                                          jobject ffmpegObject) {
     int type = TYPE_VIDEO;
-    alexander::handleData(&type);
+    switch (use_mode) {
+        case USE_MODE_MEDIA: {
+            alexander_media::handleData(&type);
+            break;
+        }
+        case USE_MODE_ONLY_VIDEO: {
+            alexander_only_video::handleData(&type);
+            break;
+        }
+        case USE_MODE_ONLY_AUDIO: {
+            alexander_only_audio::handleData(&type);
+            break;
+        }
+        default:
+            break;
+    }
     return (jint) 0;
 }
 
 extern "C"
 JNIEXPORT jint JNICALL
 Java_com_weidi_usefragments_business_video_1player_FFMPEG_play(JNIEnv *env, jobject ffmpegObject) {
-    alexander::play();
+    switch (use_mode) {
+        case USE_MODE_MEDIA: {
+            alexander_media::play();
+            break;
+        }
+        case USE_MODE_ONLY_VIDEO: {
+            alexander_only_video::play();
+            break;
+        }
+        case USE_MODE_ONLY_AUDIO: {
+            alexander_only_audio::play();
+            break;
+        }
+        default:
+            break;
+    }
     return (jint) 0;
 }
 
 extern "C"
 JNIEXPORT jint JNICALL
 Java_com_weidi_usefragments_business_video_1player_FFMPEG_pause(JNIEnv *env, jobject ffmpegObject) {
-    alexander::pause();
+    switch (use_mode) {
+        case USE_MODE_MEDIA: {
+            alexander_media::pause();
+            break;
+        }
+        case USE_MODE_ONLY_VIDEO: {
+            alexander_only_video::pause();
+            break;
+        }
+        case USE_MODE_ONLY_AUDIO: {
+            alexander_only_audio::pause();
+            break;
+        }
+        default:
+            break;
+    }
     return (jint) 0;
 }
 
 extern "C"
 JNIEXPORT jint JNICALL
 Java_com_weidi_usefragments_business_video_1player_FFMPEG_stop(JNIEnv *env, jobject ffmpegObject) {
-    alexander::stop();
+    switch (use_mode) {
+        case USE_MODE_MEDIA: {
+            alexander_media::stop();
+            break;
+        }
+        case USE_MODE_ONLY_VIDEO: {
+            alexander_only_video::stop();
+            break;
+        }
+        case USE_MODE_ONLY_AUDIO: {
+            alexander_only_audio::stop();
+            break;
+        }
+        default:
+            break;
+    }
     return (jint) 0;
 }
 
 extern "C"
 JNIEXPORT jint JNICALL
-Java_com_weidi_usefragments_business_video_1player_FFMPEG_release(JNIEnv *env, jobject ffmpegObject) {
-    alexander::release();
+Java_com_weidi_usefragments_business_video_1player_FFMPEG_release(JNIEnv *env,
+                                                                  jobject ffmpegObject) {
+    switch (use_mode) {
+        case USE_MODE_MEDIA: {
+            alexander_media::release();
+            break;
+        }
+        case USE_MODE_ONLY_VIDEO: {
+            alexander_only_video::release();
+            break;
+        }
+        case USE_MODE_ONLY_AUDIO: {
+            alexander_only_audio::release();
+            break;
+        }
+        default:
+            break;
+    }
     close();
     return (jint) 0;
 }
 
 extern "C"
 JNIEXPORT jboolean JNICALL
-Java_com_weidi_usefragments_business_video_1player_FFMPEG_isRunning(JNIEnv *env, jobject ffmpegObject) {
-    return (jboolean) alexander::isRunning();
+Java_com_weidi_usefragments_business_video_1player_FFMPEG_isRunning(JNIEnv *env,
+                                                                    jobject ffmpegObject) {
+    switch (use_mode) {
+        case USE_MODE_MEDIA: {
+            return (jboolean) alexander_media::isRunning();
+        }
+        case USE_MODE_ONLY_VIDEO: {
+            return (jboolean) alexander_only_video::isRunning();
+        }
+        case USE_MODE_ONLY_AUDIO: {
+            return (jboolean) alexander_only_audio::isRunning();
+        }
+        default:
+            break;
+    }
 }
 
 extern "C"
 JNIEXPORT jboolean JNICALL
-Java_com_weidi_usefragments_business_video_1player_FFMPEG_isPlaying(JNIEnv *env, jobject ffmpegObject) {
-    return (jboolean) alexander::isPlaying();
+Java_com_weidi_usefragments_business_video_1player_FFMPEG_isPlaying(JNIEnv *env,
+                                                                    jobject ffmpegObject) {
+    switch (use_mode) {
+        case USE_MODE_MEDIA: {
+            return (jboolean) alexander_media::isPlaying();
+        }
+        case USE_MODE_ONLY_VIDEO: {
+            return (jboolean) alexander_only_video::isPlaying();
+        }
+        case USE_MODE_ONLY_AUDIO: {
+            return (jboolean) alexander_only_audio::isPlaying();
+        }
+        default:
+            break;
+    }
 }
 
 extern "C"
 JNIEXPORT jint JNICALL
-Java_com_weidi_usefragments_business_video_1player_FFMPEG_seekTo(JNIEnv *env, jobject ffmpegObject, jlong timestamp) {
-    return (jint) alexander::seekTo((int64_t) timestamp);
+Java_com_weidi_usefragments_business_video_1player_FFMPEG_seekTo(JNIEnv *env, jobject ffmpegObject,
+                                                                 jlong timestamp) {
+    switch (use_mode) {
+        case USE_MODE_MEDIA: {
+            return (jint) alexander_media::seekTo((int64_t) timestamp);
+        }
+        case USE_MODE_ONLY_VIDEO: {
+            return (jint) alexander_only_video::seekTo((int64_t) timestamp);
+        }
+        case USE_MODE_ONLY_AUDIO: {
+            return (jint) alexander_only_audio::seekTo((int64_t) timestamp);
+        }
+        default:
+            break;
+    }
 }
 
 extern "C"
 JNIEXPORT jlong JNICALL
-Java_com_weidi_usefragments_business_video_1player_FFMPEG_getDuration(JNIEnv *env, jobject ffmpegObject) {
-    return (jlong) alexander::getDuration();
+Java_com_weidi_usefragments_business_video_1player_FFMPEG_getDuration(JNIEnv *env,
+                                                                      jobject ffmpegObject) {
+    switch (use_mode) {
+        case USE_MODE_MEDIA: {
+            return (jlong) alexander_media::getDuration();
+        }
+        case USE_MODE_ONLY_VIDEO: {
+            return (jlong) alexander_only_video::getDuration();
+        }
+        case USE_MODE_ONLY_AUDIO: {
+            return (jlong) alexander_only_audio::getDuration();
+        }
+        default:
+            break;
+    }
 }
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_weidi_usefragments_business_video_1player_FFMPEG_stepAdd(JNIEnv *env, jobject ffmpegObject) {
-    alexander::stepAdd();
+Java_com_weidi_usefragments_business_video_1player_FFMPEG_stepAdd(JNIEnv *env,
+                                                                  jobject ffmpegObject) {
+    switch (use_mode) {
+        case USE_MODE_MEDIA: {
+            alexander_media::stepAdd();
+            break;
+        }
+        case USE_MODE_ONLY_VIDEO: {
+            alexander_only_video::stepAdd();
+            break;
+        }
+        case USE_MODE_ONLY_AUDIO: {
+            alexander_only_audio::stepAdd();
+            break;
+        }
+        default:
+            break;
+    }
 }
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_weidi_usefragments_business_video_1player_FFMPEG_stepSubtract(JNIEnv *env, jobject ffmpegObject) {
-    alexander::stepSubtract();
+Java_com_weidi_usefragments_business_video_1player_FFMPEG_stepSubtract(JNIEnv *env,
+                                                                       jobject ffmpegObject) {
+    switch (use_mode) {
+        case USE_MODE_MEDIA: {
+            alexander_media::stepSubtract();
+            break;
+        }
+        case USE_MODE_ONLY_VIDEO: {
+            alexander_only_video::stepSubtract();
+            break;
+        }
+        case USE_MODE_ONLY_AUDIO: {
+            alexander_only_audio::stepSubtract();
+            break;
+        }
+        default:
+            break;
+    }
 }

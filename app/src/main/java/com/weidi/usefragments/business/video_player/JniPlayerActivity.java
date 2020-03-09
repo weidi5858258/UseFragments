@@ -343,6 +343,7 @@ public class JniPlayerActivity extends BaseActivity {
                     // 这里也要写
                     holder.setFormat(PixelFormat.RGBA_8888);
 
+                    mFFMPEGPlayer.setMode(FFMPEG.USE_MODE_MEDIA);
                     mFFMPEGPlayer.setCallback(mFFMPEGPlayer.mCallback);
                     mFFMPEGPlayer.setHandler(mUiHandler);
                     mFFMPEGPlayer.setSurface(mPath, mSurface);

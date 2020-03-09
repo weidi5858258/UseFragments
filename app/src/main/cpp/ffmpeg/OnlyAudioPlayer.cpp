@@ -6,7 +6,7 @@
 
 #define LOG "player_alexander"
 
-namespace alexander3 {
+namespace alexander_only_audio {
 
     char inFilePath[2048];
     struct Wrapper *wrapper = NULL;
@@ -15,8 +15,10 @@ namespace alexander3 {
     AVFormatContext *avFormatContext = NULL;
     bool isLocal = false;
     bool isReading = false;
+    bool isReadFinished = true;
     // seek时间
     int64_t timeStamp = -1;
+    int64_t fileLength = 0;
     long preProgress = 0;
     double audioTimeDifference = 0;
 
@@ -67,8 +69,11 @@ namespace alexander3 {
     void initAudio() {
         LOGD("initAudio() start\n");
         timeStamp = -1;
+        fileLength = 0;
         preProgress = 0;
         audioTimeDifference = 0.0;
+        isReading = true;
+        isReadFinished = true;
 
         if (wrapper != NULL) {
             av_free(wrapper);
@@ -405,10 +410,12 @@ namespace alexander3 {
     }
 
     int seekToImpl() {
-        pthread_mutex_lock(&audioWrapper->father->readLockMutex);
-        LOGI("readData() audio list2 clear\n");
-        audioWrapper->father->list2->clear();
-        pthread_mutex_unlock(&audioWrapper->father->readLockMutex);
+        if (!isReadFinished) {
+            pthread_mutex_lock(&audioWrapper->father->readLockMutex);
+            LOGI("readData() audio list2 clear\n");
+            audioWrapper->father->list2->clear();
+            pthread_mutex_unlock(&audioWrapper->father->readLockMutex);
+        }
 
         while (!audioWrapper->father->needToSeek) {
             // 休眠1毫秒
@@ -416,16 +423,38 @@ namespace alexander3 {
             av_usleep(1000);// 单位:微秒(1000微秒=1毫秒)
         }
         LOGI("seekToImpl() av_seek_frame start\n");
-        int64_t timestamp = (int64_t) (timeStamp * AV_TIME_BASE);
         //LOGI("seekToImpl() timestamp: %" PRIu64 "\n", timestamp);
-        int ret = av_seek_frame(
-                avFormatContext,
-                //audioWrapper->father->streamIndex,
-                -1,
-                timestamp,
-                //AVSEEK_FLAG_BACKWARD | AVSEEK_FLAG_FRAME);
-                AVSEEK_FLAG_ANY);
-        LOGI("seekToImpl() ret      : %d\n", ret);
+        LOGI("seekToImpl() fileLength: %ld\n", (long) fileLength);
+        LOGI("seekToImpl() timeStamp : %ld\n", (long) timeStamp);
+        if (isReadFinished) {
+            int64_t tempLength = ((double) timeStamp / audioWrapper->father->duration) * fileLength;
+            LOGI("seekToImpl() tempLength: %ld\n", (long) tempLength);
+            int64_t size = 0;
+            int index = -1;
+            std::list<AVPacket>::iterator iter;
+            for (iter = audioWrapper->father->list2->begin();
+                 iter != audioWrapper->father->list2->end();
+                 iter++) {
+                AVPacket avPacket = *iter;
+                size += avPacket.size;
+                index++;
+                if (size >= tempLength) {
+                    wrapper->list1->push_back(avPacket);
+                    //LOGI("seekToImpl() pos      : %ld, index: %d\n", (long) avPacket.pos, index);
+                    //break;
+                }
+            }
+        } else {
+            int ret = av_seek_frame(
+                    avFormatContext,
+                    //audioWrapper->father->streamIndex,
+                    -1,
+                    timeStamp * AV_TIME_BASE,
+                    //AVSEEK_FLAG_ANY);
+                    AVSEEK_FLAG_BACKWARD | AVSEEK_FLAG_FRAME);
+            LOGI("seekToImpl() ret      : %d\n", ret);
+        }
+
         timeStamp = -1;
         preProgress = 0;
         audioWrapper->father->isPausedForSeek = false;
@@ -436,6 +465,7 @@ namespace alexander3 {
         av_packet_ref(copyAVPacket, srcAVPacket);
         av_packet_unref(srcAVPacket);
 
+        fileLength += copyAVPacket->size;
         pthread_mutex_lock(&wrapper->readLockMutex);
         // 存数据
         wrapper->list2->push_back(*copyAVPacket);
@@ -444,6 +474,7 @@ namespace alexander3 {
 
         if (!wrapper->isReadList1Full
             && list2Size == wrapper->list1LimitCounts) {
+            isReadFinished = false;
             // 把list2中的内容全部复制给list1
             wrapper->list1->clear();
             wrapper->list1->assign(wrapper->list2->begin(), wrapper->list2->end());
@@ -453,6 +484,7 @@ namespace alexander3 {
             notifyToHandle(wrapper);
             LOGD("readDataImpl() audio 已填满数据可以播放了\n");
         } else if (list2Size >= wrapper->list2LimitCounts) {
+            isReadFinished = false;
             LOGD("readDataImpl() audio list1: %d\n", audioWrapper->father->list1->size());
             LOGD("readDataImpl() audio list2: %d\n", audioWrapper->father->list2->size());
             LOGI("readDataImpl() notifyToReadWait start\n");
@@ -469,8 +501,8 @@ namespace alexander3 {
         AVPacket *srcAVPacket = av_packet_alloc();
         AVPacket *copyAVPacket = av_packet_alloc();
 
-        isReading = true;
         int count_12 = 0;
+        int readFrame = 0;
         /***
          有几种情况:
          1.list1中先存满n个,然后list2多次存取
@@ -484,14 +516,21 @@ namespace alexander3 {
                 break;
             }
 
+            readFrame = 0;
+
             // seekTo
             if (audioWrapper->father->isPausedForSeek
                 && timeStamp != -1) {
                 seekToImpl();
+                if (isReadFinished) {
+                    readFrame = AVERROR_EOF;
+                }
             }
 
             // 0 if OK, < 0 on error or end of file
-            int readFrame = av_read_frame(avFormatContext, srcAVPacket);
+            if (readFrame == 0) {
+                readFrame = av_read_frame(avFormatContext, srcAVPacket);
+            }
             //LOGI("readFrame           : %d\n", readFrame);
             if (readFrame < 0) {
                 // 有些视频一直返回-12
@@ -515,10 +554,8 @@ namespace alexander3 {
                 audioWrapper->father->isReadList1Full = true;
                 // 说明歌曲长度比较短,达不到"规定值",因此处理数据线程还在等待
                 notifyToHandle(audioWrapper->father);
+                notifyToHandle(audioWrapper->father);
 
-                //av_seek_frame(avFormatContext, audioWrapper->father->streamIndex, 0, 0);
-                av_seek_frame(avFormatContext, audioWrapper->father->streamIndex, (int64_t) 0,
-                              AVSEEK_FLAG_ANY);
                 // 不退出线程
                 LOGD("readData() notifyToReadWait start\n");
                 notifyToReadWait(audioWrapper->father);
@@ -699,10 +736,13 @@ namespace alexander3 {
                         pthread_mutex_lock(&wrapper->readLockMutex);
                         wrapper->list1->clear();
                         wrapper->list1->assign(wrapper->list2->begin(), wrapper->list2->end());
-                        wrapper->list2->clear();
+                        if (!isReadFinished) {
+                            wrapper->list2->clear();
+                        }
                         pthread_mutex_unlock(&wrapper->readLockMutex);
 
-                        LOGD("handleData() audio 最后要处理的数据还有 list1: %d\n", wrapper->list1->size());
+                        LOGD("handleData() audio 最后要处理的数据还有 list1: %d\n",
+                             wrapper->list1->size());
                     } else {
                         wrapper->isHandling = false;
                         isFinished = true;
@@ -1028,7 +1068,8 @@ namespace alexander3 {
 
         if (((long) timestamp) < 0
             || audioWrapper == NULL
-            || audioWrapper->father == NULL) {
+            || audioWrapper->father == NULL
+            || !isRunning()) {
             return -1;
         }
 
