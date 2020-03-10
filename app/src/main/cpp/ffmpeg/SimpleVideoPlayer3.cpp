@@ -191,22 +191,25 @@ pthread_join(videoHandleDataThread, NULL);
 namespace alexander_media {
 
     // 不要各自拥有一个指针,音视频共用一个就行了
-    static AVFormatContext *avFormatContext = NULL;
+    AVFormatContext *avFormatContext = NULL;
 
-    static struct AudioWrapper *audioWrapper = NULL;
-    static struct VideoWrapper *videoWrapper = NULL;
-    static pthread_mutex_t readLockMutex = PTHREAD_MUTEX_INITIALIZER;
-    static pthread_cond_t readLockCondition = PTHREAD_COND_INITIALIZER;
-    static bool isLocal = false;
-    static bool isReading = false;
+    struct AudioWrapper *audioWrapper = NULL;
+    struct VideoWrapper *videoWrapper = NULL;
+    pthread_mutex_t readLockMutex = PTHREAD_MUTEX_INITIALIZER;
+    pthread_cond_t readLockCondition = PTHREAD_COND_INITIALIZER;
+    bool isLocal = false;
+    bool isReading = false;
+    bool needLocalLog = true;
     // seek时间
-    static int64_t timeStamp = -1;
-    static long preProgress = 0;
+    int64_t timeStamp = -1;
+    long preProgress = 0;
     // 视频播放时每帧之间的暂停时间,单位为ms
-    static int videoSleepTime = 11;
-    static bool needLocalLog = true;
-    static char inFilePath[2048];
-    static ANativeWindow *pANativeWindow = NULL;
+    int videoSleepTime = 11;
+    char inFilePath[2048];
+    ANativeWindow *pANativeWindow = NULL;
+    // 绘制时的缓冲区
+    ANativeWindow_Buffer mANativeWindow_Buffer;
+    AVRational mAVRational;
 
     double TIME_DIFFERENCE = 1.000000;// 0.180000
     double audioTimeDifference = 0;
@@ -225,9 +228,6 @@ namespace alexander_media {
     double totalTimeDifference = 0;
     long totalTimeDifferenceCount = 0;
 
-
-    // 绘制时的缓冲区
-    ANativeWindow_Buffer mANativeWindow_Buffer;
     bool onlyOneVideo = true;
     int64_t curAVFramePtsVideo = 0;
     int64_t preAVFramePtsVideo = 0;
@@ -529,6 +529,19 @@ namespace alexander_media {
             LOGE("Didn't find audio or video stream.\n");
             return -1;
         }
+
+        videoWrapper->father->avStream = avFormatContext->streams[videoWrapper->father->streamIndex];
+        audioWrapper->father->avStream = avFormatContext->streams[audioWrapper->father->streamIndex];
+
+        videoWrapper->father->start_pts = AV_NOPTS_VALUE;
+        videoWrapper->father->start_pts_tb = videoWrapper->father->avStream->time_base;
+        audioWrapper->father->start_pts = AV_NOPTS_VALUE;
+        audioWrapper->father->start_pts_tb = audioWrapper->father->avStream->time_base;
+
+        videoWrapper->father->next_pts = AV_NOPTS_VALUE;
+        videoWrapper->father->next_pts_tb = videoWrapper->father->avStream->time_base;
+        audioWrapper->father->next_pts = AV_NOPTS_VALUE;
+        audioWrapper->father->next_pts_tb = audioWrapper->father->avStream->time_base;
 
         return 0;
     }
@@ -1086,12 +1099,52 @@ namespace alexander_media {
                     1);
 
             write(audioWrapper->father->outBuffer1, 0, out_buffer_size);
+
+            ////////////////////////////////////////////////////////////////////
+
+            /*mAVRational = (AVRational) {1, decodedAVFrame->sample_rate};
+
+            if (decodedAVFrame->pts != AV_NOPTS_VALUE)
+                decodedAVFrame->pts = av_rescale_q(
+                        decodedAVFrame->pts,
+                        audioWrapper->father->avCodecContext->pkt_timebase, mAVRational);
+            else if (audioWrapper->father->next_pts != AV_NOPTS_VALUE)
+                decodedAVFrame->pts = av_rescale_q(
+                        audioWrapper->father->next_pts, audioWrapper->father->next_pts_tb,
+                        mAVRational);
+            if (decodedAVFrame->pts != AV_NOPTS_VALUE) {
+                audioWrapper->father->next_pts = decodedAVFrame->pts + decodedAVFrame->nb_samples;
+                audioWrapper->father->next_pts_tb = mAVRational;
+            }
+
+            int64_t pkt_pos = decodedAVFrame->pkt_pos;
+            double duration = av_q2d(
+                    (AVRational) {decodedAVFrame->nb_samples, decodedAVFrame->sample_rate});
+            double pts = (decodedAVFrame->pts == AV_NOPTS_VALUE)
+                         ? NAN : decodedAVFrame->pts * av_q2d(mAVRational);
+
+            if (!isnan(pts)) {
+                audio_clock =
+                        pts + (double) decodedAVFrame->nb_samples / decodedAVFrame->sample_rate;
+            } else {
+                audio_clock = NAN;
+            }
+            if (!isnan(audio_clock)) {
+                *//*double pts = audio_clock -
+                             (double) (2 * is->audio_hw_buf_size + is->audio_write_buf_size)
+                             / is->audio_tgt.bytes_per_sec;*//*
+            }*/
+
+            ////////////////////////////////////////////////////////////////////
         } else {
             LOGE("audio 转换时出错 %d", ret);
         }
 
         return ret;
     }
+
+    double remaining_time = 0.0;
+    double frame_timer;
 
     int handleVideoDataImpl(AVStream *stream, AVFrame *decodedAVFrame) {
         if (!videoWrapper->father->isStarted) {
@@ -1111,31 +1164,61 @@ namespace alexander_media {
          音频需要正常播放才是好的体验
          */
         videoTimeDifference = decodedAVFrame->pts * av_q2d(stream->time_base);
-        /*if (videoTimeDifference < audioTimeDifference) {
-            // 正常情况下videoTimeDifference比audioTimeDifference大一些
-            // 如果发现小了,说明视频播放慢了,应丢弃这些帧
-            // break后videoTimeDifference增长的速度会加快
-            return 0;
-        }*/
-        //if (videoTimeDifference - audioTimeDifference > 2.000000) {
-        /*if (videoTimeDifference - audioTimeDifference > TIME_DIFFERENCE) {
-            // 不好的现象.为什么会出现这种情况还不知道?
-            LOGE("handleVideoDataImpl() audioTimeDifference: %lf\n", audioTimeDifference);
-            LOGE("handleVideoDataImpl() videoTimeDifference: %lf\n", videoTimeDifference);
-            LOGE("handleVideoDataImpl() video - audio      : %lf\n",
-                 (videoTimeDifference - audioTimeDifference));
-            // videoTimeDifference = audioTimeDifference;
-            audioTimeDifference = videoTimeDifference;
+
+        ////////////////////////////////////////////////////////
+
+        /*decodedAVFrame->pts = decodedAVFrame->best_effort_timestamp;
+        double dpts = NAN;
+        if (decodedAVFrame->pts != AV_NOPTS_VALUE) {
+            dpts = av_q2d(videoWrapper->father->avStream->time_base) * decodedAVFrame->pts;
         }
-        // 如果videoTimeDifference比audioTimeDifference大出了一定的范围
-        // 那么说明视频播放快了,应等待音频
-        while (videoTimeDifference - audioTimeDifference > TIME_DIFFERENCE) {
-            if (videoWrapper->father->isPausedForSeek) {
+        decodedAVFrame->sample_aspect_ratio = av_guess_sample_aspect_ratio(
+                avFormatContext, videoWrapper->father->avStream, decodedAVFrame);
+        if (decodedAVFrame->pts != AV_NOPTS_VALUE) {
+            if (1 != 1) {
+                av_frame_unref(decodedAVFrame);
                 return 0;
             }
-            videoSleep(1);
+        }
+
+        AVRational tb = videoWrapper->father->avStream->time_base;
+        AVRational frame_rate = av_guess_frame_rate(
+                avFormatContext, videoWrapper->father->avStream, NULL);
+        double frame_duration = (frame_rate.num && frame_rate.den)
+                          ? (av_q2d((AVRational) {frame_rate.den, frame_rate.num})) : 0;
+        double pts = (decodedAVFrame->pts == AV_NOPTS_VALUE)
+                     ? NAN : decodedAVFrame->pts * av_q2d(tb);
+        int width = decodedAVFrame->width;
+        int height = decodedAVFrame->height;
+        int format = decodedAVFrame->format;
+        int64_t pkt_pos = decodedAVFrame->pkt_pos;
+
+        if (remaining_time > 0.0) {
+            int64_t remaining_time_sleep = (int64_t) (remaining_time * 1000000.0);
+            // 在这里睡觉了(单位: 微秒)
+            av_usleep(remaining_time_sleep);
+        }
+        remaining_time = REFRESH_RATE;
+
+        // 修改remaining_time值
+        double time, last_duration, duration, delay;
+
+        retry:
+        time = av_gettime_relative() / 1000000.0;
+        if (time < frame_timer + delay) {
+            remaining_time = FFMIN(frame_timer + delay - time, remaining_time);
+            goto display;
+        }
+        frame_timer += delay;
+        if (delay > 0 && time - frame_timer > AV_SYNC_THRESHOLD_MAX) {
+            frame_timer = time;
+            LOGW("handleVideoDataImpl() frame_timer: %lf\n", frame_timer);
         }*/
 
+
+        ////////////////////////////////////////////////////////
+
+        display:
         // 渲染画面
         if (videoWrapper->father->isHandling) {
             // 3.lock锁定下一个即将要绘制的Surface
@@ -1159,59 +1242,6 @@ namespace alexander_media {
             for (int h = 0; h < videoWrapper->srcHeight; h++) {
                 memcpy(dst + h * dstStride, src + h * srcStride, srcStride);
             }
-
-
-            ////////////////////////////////////////////////////////
-
-            // timeDifference = 0.040000
-            /*double timeDifference = videoTimeDifference - videoTimeDifferencePre;
-            // 单位: 毫秒
-            long tempSleep = timeDifference * 1000;
-            tempSleep -= 30;
-            tempSleep += step;
-            if (videoSleepTime != tempSleep) {
-                videoSleepTime = tempSleep;
-            }
-            //LOGW("handleVideoDataImpl() timeDifference     : %lf\n", timeDifference);
-            //LOGW("handleVideoDataImpl() timeDifference     : %ld\n", tempSleep);
-            //LOGW("handleVideoDataImpl() videoSleepTime     : %ld\n", videoSleepTime);
-            if (videoSleepTime < 13 && videoSleepTime > 0) {
-                videoSleep(videoSleepTime);
-            } else {
-                if (videoSleepTime > 0) {
-                    // 好像是个比较合理的值
-                    videoSleep(11);
-                }
-                // videoSleepTime <= 0时不需要sleep
-            }*/
-
-            /*int tempSleep = (int) ((videoTimeDifference - videoTimeDifferencePre) * 1000) - 30;
-            if (videoSleepTime != tempSleep) {
-                videoSleepTime = tempSleep;
-            }
-            LOGW("handleVideoDataImpl() ----------------------------------\n");
-            LOGW("handleVideoDataImpl() audioTimeDifference: %lf\n", audioTimeDifference);
-            LOGW("handleVideoDataImpl() videoTimeDifference: %lf\n", videoTimeDifference);
-            LOGW("handleVideoDataImpl() videoSleepTime     : %ld\n", videoSleepTime);
-            LOGW("handleVideoDataImpl() ----------------------------------\n");
-            if (videoSleepTime < 13 && videoSleepTime > 0) {
-                videoSleep(videoSleepTime);
-            } else {
-                if (videoSleepTime > 0) {
-                    // 好像是个比较合理的值
-                    videoSleep(11);
-                }
-                // videoSleepTime <= 0时不需要sleep
-            }*/
-
-            /*if (videoSleepTime > 0) {
-                videoSleep(videoSleepTime);
-            }*/
-
-            av_usleep(9000);
-
-            ////////////////////////////////////////////////////////
-
             // 6.unlock绘制
             ANativeWindow_unlockAndPost(pANativeWindow);
         }

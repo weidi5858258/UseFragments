@@ -432,14 +432,16 @@ namespace alexander_only_audio {
             int64_t size = 0;
             int index = -1;
             std::list<AVPacket>::iterator iter;
+            AVPacket tempPkt;
             for (iter = audioWrapper->father->list2->begin();
                  iter != audioWrapper->father->list2->end();
                  iter++) {
-                AVPacket avPacket = *iter;
-                size += avPacket.size;
+                AVPacket srcPkt = *iter;
+                size += srcPkt.size;
                 index++;
                 if (size >= tempLength) {
-                    wrapper->list1->push_back(avPacket);
+                    av_packet_ref(&tempPkt, &srcPkt);
+                    wrapper->list1->push_back(tempPkt);
                     //LOGI("seekToImpl() pos      : %ld, index: %d\n", (long) avPacket.pos, index);
                     //break;
                 }

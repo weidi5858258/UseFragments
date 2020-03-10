@@ -102,6 +102,50 @@ namespace alexander_media {
 #define MAX_AVPACKET_COUNT_AUDIO_LOCAL 50
 #define MAX_AVPACKET_COUNT_VIDEO_LOCAL 50
 
+#define REFRESH_RATE 0.01
+#define AV_SYNC_THRESHOLD_MAX 0.1
+
+    typedef struct Clock {
+        // 初始化时为NAN
+        double pts;
+        double pts_drift;
+        // 初始化时为av_gettime_relative() / 1000000.0;
+        double last_updated;
+        // 初始化时为1.0
+        double speed;
+        // 初始化时为-1
+        int serial;
+        // 初始化时为0
+        int paused;
+        // 指向当前数据包队列序列的指针，用于过时的时钟检测
+        int *queue_serial;
+    } Clock;
+
+    typedef struct Frame {
+        // 解码帧
+        AVFrame *frame;
+        // 字幕
+        AVSubtitle sub;
+        int serial;
+        // 帧的显示时间戳
+        double pts;
+        // 帧显示时长
+        double duration;
+        // 文件中的位置
+        int64_t pkt_pos;
+        int width;
+        int height;
+        // 格式
+        int format;
+        // 额外参数
+        AVRational sample_aspect_ratio;
+        // 上载
+        int uploaded;
+        // 反转
+        int flip_v;
+        double relative_time;
+    } Frame;
+
     // 子类都要用到的部分
     struct Wrapper {
         int type = TYPE_UNKNOW;
@@ -112,6 +156,7 @@ namespace alexander_media {
         AVCodec *decoderAVCodec = NULL;
         // 编码器(没用到,因为是播放,所以不需要编码)
         AVCodec *encoderAVCodec = NULL;
+        AVStream *avStream = NULL;
 
         unsigned char *outBuffer1 = NULL;
         unsigned char *outBuffer2 = NULL;
@@ -161,6 +206,17 @@ namespace alexander_media {
         // AVPacket *avPacket = NULL;
         // 视频使用到sws_scale函数时需要定义这些变量,音频也要用到
         // unsigned char *srcData[4] = {NULL}, dstData[4] = {NULL};
+
+        /////////////////////////////////
+
+        // 开始的时间戳
+        int64_t start_pts = 0;
+        // 开始的额外参数
+        AVRational start_pts_tb;
+        // 下一帧时间戳
+        int64_t next_pts = 0;
+        // 下一帧的额外参数
+        AVRational next_pts_tb;
     };
 
     struct AudioWrapper {
