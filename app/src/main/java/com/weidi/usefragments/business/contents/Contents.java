@@ -12,9 +12,9 @@ public class Contents {
     public static Map<String, String> movieMap = new LinkedHashMap<>();
     private static String mPath;
 //    private static final String PATH = "/storage/emulated/0/Download/";
-//    private static final String PATH = "/storage/1532-48AD/Android/data/com.weidi.usefragments/files/Movies/";
+    private static final String PATH = "/storage/1532-48AD/Android/data/com.weidi.usefragments/files/Movies/";
 //    private static final String PATH = "/storage/2430-1702/BaiduNetdisk/video/";
-    private static final String PATH = "/storage/37C8-3904/myfiles/video/";
+//    private static final String PATH = "/storage/37C8-3904/myfiles/video/";
 //    private static final String PATH = "/storage/emulated/0/BaiduNetdisk/video/";
 
     static {
@@ -142,6 +142,37 @@ public class Contents {
         movieMap.put(
                 "第29节STL实例",
                 PATH + "/c_plus_plus_面向对象编程/第29节STL实例.mp4");
+
+        movieMap.put(
+                "东方卫视",
+                "rtmp://58.200.131.2:1935/livetv/dftv");
+        movieMap.put(
+                "广东卫视",
+                "rtmp://58.200.131.2:1935/livetv/gdtv");
+        movieMap.put(
+                "广西卫视",
+                "rtmp://58.200.131.2:1935/livetv/gxtv");
+        movieMap.put(
+                "东方卫视",
+                "rtmp://58.200.131.2:1935/livetv/dftv");
+        movieMap.put(
+                "湖南卫视",
+                "rtmp://58.200.131.2:1935/livetv/hunantv");
+        movieMap.put(
+                "CCTV1高清",
+                "http://ivi.bupt.edu.cn/hls/cctv1hd.m3u8");
+        movieMap.put(
+                "CCTV3高清",
+                "http://ivi.bupt.edu.cn/hls/cctv3hd.m3u8");
+        movieMap.put(
+                "CCTV5+高清",
+                "http://ivi.bupt.edu.cn/hls/cctv5phd.m3u8");
+        movieMap.put(
+                "CCTV6高清",
+                "http://ivi.bupt.edu.cn/hls/cctv6hd.m3u8");
+        movieMap.put(
+                "CCTV6-电影HD",
+                "http://ivi.bupt.edu.cn/hls/cctv6hd.m3u8");
 
         // {csd-1=java.nio.HeapByteBuffer[pos=0 lim=8 cap=8], mime=video/avc, frame-rate=24, track-id=2, profile=2, width=1280, height=720, max-input-size=151238, durationUs=6227930041, csd-0=java.nio.HeapByteBuffer[pos=0 lim=41 cap=41], bitrate-mode=0, level=512}
         // csd-0: {0, 0, 0, 1, 103, 77, 64, 31, -24, -128, 40, 2, -35, -128, -87, 1, 1, 1, 64, 0, 0, -6, 64, 0, 46, -32, 56, 24, 0, 21, 92, -64, 1, 83, -38, 76, 48, 15, -116, 24, -119}

@@ -330,7 +330,7 @@ Java_com_weidi_usefragments_business_video_1player_FFMPEG_setSurface(JNIEnv *env
     writeMethodID = write;
     sleepMethodID = sleep;
 
-    LOGI("setSurface()       runCount: %d\n", (++runCount));
+    LOGI("setSurface()       runCount  : %d\n", (++runCount));
 
     return (jint) 0;
 }
