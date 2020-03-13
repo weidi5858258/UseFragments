@@ -12,13 +12,13 @@ public class Contents {
     public static Map<String, String> movieMap = new LinkedHashMap<>();
     private static String mPath;
     // 手机
-//    private static final String PATH = "/storage/1532-48AD/Android/data/com.weidi.usefragments/files/Movies/";
+    private static final String PATH = "/storage/1532-48AD/Android/data/com.weidi.usefragments/files/Movies/";
 
 //    private static final String PATH = "/storage/emulated/0/Download/";
 //    private static final String PATH = "/storage/2430-1702/BaiduNetdisk/video/";
 //    private static final String PATH = "/storage/emulated/0/BaiduNetdisk/video/";
     // U盘
-    private static final String PATH = "/storage/37C8-3904/myfiles/video/";
+//    private static final String PATH = "/storage/37C8-3904/myfiles/video/";
 
     static {
         movieMap.put(
@@ -62,7 +62,7 @@ public class Contents {
                 "http://ivi.bupt.edu.cn/hls/cctv17hd.m3u8");
         movieMap.put(
                 "CGTN高清",
-                "http://ivi.bupt.edu.cn/hls/cgtnhd.m3u8");
+                "http://ivi.bupt.edu.cn/hls/cgtnhd.m3u8");// http://ivi.bupt.edu.cn/hls/cctv16.m3u8
         movieMap.put(
                 "CGTN-DOC高清",
                 "http://ivi.bupt.edu.cn/hls/cgtndochd.m3u8");
@@ -72,95 +72,161 @@ public class Contents {
 
         movieMap.put(
                 "北京卫视高清",
-                "http://ivi.bupt.edu.cn/hls/btv1hd.m3u8");
+                "http://ivi.bupt.edu.cn/hls/btv1hd.m3u8");// http://ivi.bupt.edu.cn/hls/btv1.m3u8
         movieMap.put(
                 "北京文艺高清",
-                "http://ivi.bupt.edu.cn/hls/btv2hd.m3u8");
+                "http://ivi.bupt.edu.cn/hls/btv2hd.m3u8");// http://ivi.bupt.edu.cn/hls/btv2.m3u8
         movieMap.put(
                 "北京影视高清",
-                "http://ivi.bupt.edu.cn/hls/btv4hd.m3u8");
+                "http://ivi.bupt.edu.cn/hls/btv4hd.m3u8");// http://ivi.bupt.edu.cn/hls/btv4.m3u8
         movieMap.put(
                 "北京新闻高清",
-                "http://ivi.bupt.edu.cn/hls/btv9hd.m3u8");
+                "http://ivi.bupt.edu.cn/hls/btv9hd.m3u8");// http://ivi.bupt.edu.cn/hls/btv9.m3u8
         movieMap.put(
                 "北京冬奥纪实高清",
-                "http://ivi.bupt.edu.cn/hls/btv11hd.m3u8");
+                "http://ivi.bupt.edu.cn/hls/btv11hd.m3u8");// http://ivi.bupt.edu.cn/hls/btv11.m3u8
+        movieMap.put(
+                "上海纪实高清",
+                "http://ivi.bupt.edu.cn/hls/docuchina.m3u8");
+        movieMap.put(
+                "金鹰纪实高清",
+                "http://ivi.bupt.edu.cn/hls/gedocu.m3u8");
+        movieMap.put(
+                "浙江卫视高清",
+                "http://ivi.bupt.edu.cn/hls/zjhd.m3u8");// http://ivi.bupt.edu.cn/hls/zjtv.m3u8
+        movieMap.put(
+                "湖南卫视高清",
+                "http://ivi.bupt.edu.cn/hls/hunanhd.m3u8");// http://ivi.bupt.edu.cn/hls/hunantv.m3u8
+        movieMap.put(
+                "江苏卫视高清",
+                "http://ivi.bupt.edu.cn/hls/jshd.m3u8");// http://ivi.bupt.edu.cn/hls/jstv.m3u8
+        movieMap.put(
+                "东方卫视高清",
+                "http://ivi.bupt.edu.cn/hls/dfhd.m3u8");// http://ivi.bupt.edu.cn/hls/dftv.m3u8
+        movieMap.put(
+                "安徽卫视高清",
+                "http://ivi.bupt.edu.cn/hls/ahhd.m3u8");// http://ivi.bupt.edu.cn/hls/ahtv.m3u8
+        movieMap.put(
+                "黑龙江卫视高清",
+                "http://ivi.bupt.edu.cn/hls/hljhd.m3u8");// http://ivi.bupt.edu.cn/hls/hljtv.m3u8
+        movieMap.put(
+                "辽宁卫视高清",
+                "http://ivi.bupt.edu.cn/hls/lnhd.m3u8");// http://ivi.bupt.edu.cn/hls/lntv.m3u8
+        movieMap.put(
+                "深圳卫视高清",
+                "http://ivi.bupt.edu.cn/hls/szhd.m3u8");// http://ivi.bupt.edu.cn/hls/sztv.m3u8
+        movieMap.put(
+                "广东卫视高清",
+                "http://ivi.bupt.edu.cn/hls/gdhd.m3u8");// http://ivi.bupt.edu.cn/hls/gdtv.m3u8
+        movieMap.put(
+                "天津卫视高清",
+                "http://ivi.bupt.edu.cn/hls/tjhd.m3u8");// http://ivi.bupt.edu.cn/hls/tjtv.m3u8
+        movieMap.put(
+                "湖北卫视高清",
+                "http://ivi.bupt.edu.cn/hls/hbhd.m3u8");// http://ivi.bupt.edu.cn/hls/hbtv.m3u8
+        movieMap.put(
+                "山东卫视高清",
+                "http://ivi.bupt.edu.cn/hls/sdhd.m3u8");// http://ivi.bupt.edu.cn/hls/sdtv.m3u8
+        movieMap.put(
+                "重庆卫视高清",
+                "http://ivi.bupt.edu.cn/hls/cqhd.m3u8");// http://ivi.bupt.edu.cn/hls/cqtv.m3u8
+        movieMap.put(
+                "福建东南卫视高清",
+                "http://ivi.bupt.edu.cn/hls/dnhd.m3u8");// http://ivi.bupt.edu.cn/hls/dntv.m3u8
+        movieMap.put(
+                "四川卫视高清",
+                "http://ivi.bupt.edu.cn/hls/schd.m3u8");// http://ivi.bupt.edu.cn/hls/sctv.m3u8
+        movieMap.put(
+                "河北卫视高清",
+                "http://ivi.bupt.edu.cn/hls/hebhd.m3u8");// http://ivi.bupt.edu.cn/hls/hebtv.m3u8
+        movieMap.put(
+                "江西卫视高清",
+                "http://ivi.bupt.edu.cn/hls/jxhd.m3u8");// http://ivi.bupt.edu.cn/hls/jxtv.m3u8
+        movieMap.put(
+                "广西卫视高清",
+                "http://ivi.bupt.edu.cn/hls/gxhd.m3u8");// http://ivi.bupt.edu.cn/hls/gxtv.m3u8
+        movieMap.put(
+                "吉林卫视高清",
+                "http://ivi.bupt.edu.cn/hls/jlhd.m3u8");// http://ivi.bupt.edu.cn/hls/jltv.m3u8
+        movieMap.put(
+                "海南卫视高清",
+                "http://ivi.bupt.edu.cn/hls/lyhd.m3u8");// http://ivi.bupt.edu.cn/hls/lytv.m3u8
+        movieMap.put(
+                "贵州卫视高清",
+                "http://ivi.bupt.edu.cn/hls/gzhd.m3u8");// http://ivi.bupt.edu.cn/hls/gztv.m3u8
+        movieMap.put(
+                "CETV-1高清",
+                "http://ivi.bupt.edu.cn/hls/cetv1hd.m3u8");// http://ivi.bupt.edu.cn/hls/cetv1.m3u8
+
+        /////////////////////////////////////////////////////////////////
+
         movieMap.put(
                 "北京科教",
                 "http://ivi.bupt.edu.cn/hls/btv3.m3u8");
         movieMap.put(
-                "上海纪实",
-                "http://ivi.bupt.edu.cn/hls/docuchina.m3u8");
+                "北京财经",
+                "http://ivi.bupt.edu.cn/hls/btv5.m3u8");
         movieMap.put(
-                "金鹰纪实",
-                "http://ivi.bupt.edu.cn/hls/gedocu.m3u8");
+                "北京生活",
+                "http://ivi.bupt.edu.cn/hls/btv7.m3u8");
         movieMap.put(
-                "浙江卫视高清",
-                "http://ivi.bupt.edu.cn/hls/zjhd.m3u8");
+                "北京青年",
+                "http://ivi.bupt.edu.cn/hls/btv8.m3u8");
         movieMap.put(
-                "湖南卫视高清",
-                "http://ivi.bupt.edu.cn/hls/hunanhd.m3u8");
+                "北京卡酷少儿",
+                "http://ivi.bupt.edu.cn/hls/btv10.m3u8");
         movieMap.put(
-                "江苏卫视高清",
-                "http://ivi.bupt.edu.cn/hls/jshd.m3u8");
+                "山东教育",
+                "http://ivi.bupt.edu.cn/hls/sdetv.m3u8");
         movieMap.put(
-                "东方卫视高清",
-                "http://ivi.bupt.edu.cn/hls/dfhd.m3u8");
+                "河南卫视",
+                "http://ivi.bupt.edu.cn/hls/hntv.m3u8");
         movieMap.put(
-                "安徽卫视高清",
-                "http://ivi.bupt.edu.cn/hls/ahhd.m3u8");
+                "陕西卫视",
+                "http://ivi.bupt.edu.cn/hls/sxtv.m3u8");
         movieMap.put(
-                "黑龙江卫视高清",
-                "http://ivi.bupt.edu.cn/hls/hljhd.m3u8");
+                "西藏卫视",
+                "http://ivi.bupt.edu.cn/hls/xztv.m3u8");
         movieMap.put(
-                "辽宁卫视高清",
-                "http://ivi.bupt.edu.cn/hls/lnhd.m3u8");
+                "内蒙古卫视",
+                "http://ivi.bupt.edu.cn/hls/nmtv.m3u8");
         movieMap.put(
-                "深圳卫视高清",
-                "http://ivi.bupt.edu.cn/hls/szhd.m3u8");
+                "青海卫视",
+                "http://ivi.bupt.edu.cn/hls/qhtv.m3u8");
         movieMap.put(
-                "广东卫视高清",
-                "http://ivi.bupt.edu.cn/hls/gdhd.m3u8");
+                "山西卫视",
+                "http://ivi.bupt.edu.cn/hls/sxrtv.m3u8");
         movieMap.put(
-                "天津卫视高清",
-                "http://ivi.bupt.edu.cn/hls/tjhd.m3u8");
+                "厦门卫视",
+                "http://ivi.bupt.edu.cn/hls/xmtv.m3u8");
         movieMap.put(
-                "湖北卫视高清",
-                "http://ivi.bupt.edu.cn/hls/hbhd.m3u8");
+                "新疆卫视",
+                "http://ivi.bupt.edu.cn/hls/xjtv.m3u8");
         movieMap.put(
-                "山东卫视高清",
-                "http://ivi.bupt.edu.cn/hls/sdhd.m3u8");
+                "云南卫视",
+                "http://ivi.bupt.edu.cn/hls/yntv.m3u8");
         movieMap.put(
-                "重庆卫视高清",
-                "http://ivi.bupt.edu.cn/hls/cqhd.m3u8");
+                "宁夏卫视",
+                "http://ivi.bupt.edu.cn/hls/nxtv.m3u8");
         movieMap.put(
-                "福建东南卫视高清",
-                "http://ivi.bupt.edu.cn/hls/dnhd.m3u8");
+                "甘肃卫视",
+                "http://ivi.bupt.edu.cn/hls/gstv.m3u8");
         movieMap.put(
-                "四川卫视高清",
-                "http://ivi.bupt.edu.cn/hls/schd.m3u8");
+                "三沙卫视",
+                "http://ivi.bupt.edu.cn/hls/sstv.m3u8");
         movieMap.put(
-                "河北卫视高清",
-                "http://ivi.bupt.edu.cn/hls/hebhd.m3u8");
+                "兵团卫视",
+                "http://ivi.bupt.edu.cn/hls/bttv.m3u8");
         movieMap.put(
-                "江西卫视高清",
-                "http://ivi.bupt.edu.cn/hls/jxhd.m3u8");
-        movieMap.put(
-                "河南卫视高清",
-                "http://ivi.bupt.edu.cn/hls/hnhd.m3u8");
-        movieMap.put(
-                "广西卫视高清",
-                "http://ivi.bupt.edu.cn/hls/gxhd.m3u8");
-        movieMap.put(
-                "吉林卫视高清",
-                "http://ivi.bupt.edu.cn/hls/jlhd.m3u8");
-        movieMap.put(
-                "海南卫视高清",
-                "http://ivi.bupt.edu.cn/hls/lyhd.m3u8");
-        movieMap.put(
-                "贵州卫视高清",
-                "http://ivi.bupt.edu.cn/hls/gzhd.m3u8");
+                "延边卫视",
+                "http://ivi.bupt.edu.cn/hls/ybtv.m3u8");
 
+        movieMap.put(
+                "CETV-3",
+                "http://ivi.bupt.edu.cn/hls/cetv3.m3u8");
+        movieMap.put(
+                "CETV-4",
+                "http://ivi.bupt.edu.cn/hls/cetv4.m3u8");
         movieMap.put(
                 "CCTV-1综合",
                 "http://ivi.bupt.edu.cn/hls/cctv1.m3u8");

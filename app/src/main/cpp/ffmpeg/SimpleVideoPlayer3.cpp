@@ -290,6 +290,17 @@ namespace alexander_media {
         }
     };
 
+    int read_thread_interrupt_cb(void *opaque) {
+        LOGW("read_thread_interrupt_cb() %d %d\n",
+             audioWrapper->father->isReading, videoWrapper->father->isReading);
+        if (!audioWrapper->father->isReading
+            || videoWrapper->father->isReading) {
+            LOGW("read_thread_interrupt_cb() return 1\n");
+            return 1;
+        }
+        return 0;
+    }
+
     // 已经不需要调用了
     void initAV() {
         av_register_all();
@@ -432,9 +443,13 @@ namespace alexander_media {
             LOGE("avFormatContext is NULL.\n");
             return -1;
         }
+//        avFormatContext->interrupt_callback.callback = read_thread_interrupt_cb;
+//        avFormatContext->interrupt_callback.opaque = NULL;
+        AVDictionary *options = NULL;
+        av_dict_set(&options, "stimeout", "10000000", 0);
         if (avformat_open_input(&avFormatContext,
                                 inFilePath,
-                                NULL, NULL) != 0) {
+                                NULL, &options) != 0) {
             LOGE("Couldn't open input stream.\n");
             return -1;
         }
@@ -872,15 +887,14 @@ namespace alexander_media {
             wrapper->list1->clear();
             wrapper->list1->assign(wrapper->list2->begin(), wrapper->list2->end());
             wrapper->list2->clear();
+            wrapper->isHandleList1Full = true;
+            notifyToHandle(wrapper);
 
             if (wrapper->type == TYPE_AUDIO) {
                 LOGD("readDataImpl() audio 填满数据了\n");
             } else {
                 LOGW("readDataImpl() video 填满数据了\n");
             }
-
-            wrapper->isHandleList1Full = true;
-            notifyToHandle(wrapper);
         } else if (wrapper->type == TYPE_VIDEO
                    && list2Size >= wrapper->list2LimitCounts) {
             LOGD("readDataImpl() audio list1: %d\n", audioWrapper->father->list1->size());
@@ -1253,7 +1267,7 @@ namespace alexander_media {
             decodedAVFrame = videoWrapper->decodedAVFrame;
         }
 
-        bool hasErrorOccurred = false;
+        //bool hasErrorOccurred = false;
         int ret = 0, out_buffer_size = 0;
         for (;;) {
             if (!wrapper->isHandling) {
@@ -1492,6 +1506,27 @@ namespace alexander_media {
 
                 // 开始播放
                 onPlayed();
+
+                LOGE("***************************************************\n");
+                if (wrapper->type == TYPE_AUDIO) {
+                    LOGD("handleData() audio                   list1: %d\n",
+                         wrapper->list1->size());
+                    LOGD("handleData() audio                   list2: %d\n",
+                         wrapper->list2->size());
+                    LOGW("handleData() video                   list1: %d\n",
+                         videoWrapper->father->list1->size());
+                    LOGW("handleData() video                   list2: %d\n",
+                         videoWrapper->father->list2->size());
+                } else {
+                    LOGW("handleData() video                   list1: %d\n",
+                         wrapper->list1->size());
+                    LOGW("handleData() video                   list2: %d\n",
+                         wrapper->list2->size());
+                    LOGD("handleData() audio                   list1: %d\n",
+                         audioWrapper->father->list1->size());
+                    LOGD("handleData() audio                   list2: %d\n",
+                         audioWrapper->father->list2->size());
+                }
             }
 
             // endregion
@@ -1521,15 +1556,20 @@ namespace alexander_media {
                 case AVERROR(ENOMEM):
                 case AVERROR_EOF:
                     if (wrapper->type == TYPE_AUDIO) {
-                        LOGE("audio 发送数据包到解码器时出错 %d", ret);
+                        LOGE("audio 发送数据包到解码器时出错 %d", ret);// -22
                     } else {
                         LOGE("video 发送数据包到解码器时出错 %d", ret);
                     }
-                    wrapper->isHandling = false;
-                    hasErrorOccurred = true;
+                    //wrapper->isHandling = false;
                     break;
                 case 0:
+                    break;
                 default:
+                    if (wrapper->type == TYPE_AUDIO) {
+                        LOGE("audio 发送数据包时出现异常 %d", ret);// -1094995529
+                    } else {
+                        LOGE("video 发送数据包时出现异常 %d", ret);
+                    }
                     break;
             }// switch (ret) end
 
@@ -1556,18 +1596,22 @@ namespace alexander_media {
                     // codec打不开,或者是一个encoder
                 case AVERROR_EOF:
                     // 已经完全刷新,不会再有输出帧了
-                    wrapper->isHandling = false;
+                    if (wrapper->type == TYPE_AUDIO) {
+                        LOGE("audio 从解码器接收解码帧时出错 %d", ret);
+                    } else {
+                        LOGE("video 从解码器接收解码帧时出错 %d", ret);
+                    }
+                    //wrapper->isHandling = false;
                     break;
                 case 0: {
                     // 解码成功,返回一个输出帧
                     break;
                 }
                 default:
-                    // 合法的解码错误
                     if (wrapper->type == TYPE_AUDIO) {
-                        LOGE("audio 从解码器接收帧时出错 %d", ret);
+                        LOGE("audio 接收解码帧时出现异常 %d", ret);
                     } else {
-                        LOGE("video 从解码器接收帧时出错 %d", ret);
+                        LOGE("video 接收解码帧时出现异常 %d", ret);
                     }
                     break;
             }// switch (ret) end
