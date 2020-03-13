@@ -447,7 +447,7 @@ public class JniPlayerActivity extends BaseActivity {
                 mLoadingView.setVisibility(View.GONE);
                 mPlayIB.setVisibility(View.VISIBLE);
                 mPauseIB.setVisibility(View.GONE);
-                mControllerPanelLayout.setVisibility(View.VISIBLE);// INVISIBLE
+                mControllerPanelLayout.setVisibility(View.INVISIBLE);// INVISIBLE
                 break;
             case Callback.MSG_ON_PAUSED:
                 mPlayIB.setVisibility(View.GONE);

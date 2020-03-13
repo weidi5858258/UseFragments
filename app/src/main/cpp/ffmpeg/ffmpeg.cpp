@@ -218,7 +218,7 @@ void onFinished() {
     if (isAttached) {
         gJavaVm->DetachCurrentThread();
     }
-    LOGI("onFinished()\n");
+    LOGF("onFinished()\n");
 }
 
 void onProgressUpdated(long seconds) {

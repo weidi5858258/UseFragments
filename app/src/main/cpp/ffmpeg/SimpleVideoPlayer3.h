@@ -96,8 +96,8 @@ namespace alexander_media {
     // 不能无限制读取数据进行保存,这样要出错的(能播放,但不是想要的结果)
 #define MAX_AVPACKET_COUNT         10000
 
-#define MAX_AVPACKET_COUNT_AUDIO_HTTP 3000
-#define MAX_AVPACKET_COUNT_VIDEO_HTTP 3000
+#define MAX_AVPACKET_COUNT_AUDIO_HTTP 2000// 3000
+#define MAX_AVPACKET_COUNT_VIDEO_HTTP 1000// 2000
 
 #define MAX_AVPACKET_COUNT_AUDIO_LOCAL 100
 #define MAX_AVPACKET_COUNT_VIDEO_LOCAL 100
@@ -384,129 +384,6 @@ namespace alexander_media {
 
     public:
     };*/
-
-    static int av_sync_type = AV_SYNC_AUDIO_MASTER;
-    static Clock audClock;
-    static Clock vidClock;
-    static Clock extClock;
-    static int64_t audio_callback_time = 0;
-    static double max_frame_duration = 0;
-    static Frame *curAudioFrame = NULL;
-    static Frame *preAudioFrame = NULL;
-    static Frame *curVideoFrame = NULL;
-    static Frame *preVideoFrame = NULL;
-    static pthread_mutex_t clockLockMutex = PTHREAD_MUTEX_INITIALIZER;
-
-    static double get_clock(Clock *c) {
-        //printf("get_clock() serial: %d, queue_serial: %d\n", c->serial, *(c->queue_serial));
-        if (*(c->queue_serial) != c->serial) {
-            return NAN;
-        }
-        if (c->paused) {
-            return c->pts;
-        } else {
-            double time = av_gettime_relative() / 1000000.0;
-            return c->pts_drift + time - (time - c->last_updated) * (1.0 - c->speed);
-        }
-    }
-
-    static int get_master_sync_type() {
-        if (av_sync_type == AV_SYNC_VIDEO_MASTER) {
-            return AV_SYNC_VIDEO_MASTER;
-        } else if (av_sync_type == AV_SYNC_AUDIO_MASTER) {
-            return AV_SYNC_AUDIO_MASTER;
-        } else {
-            return AV_SYNC_EXTERNAL_CLOCK;
-        }
-    }
-
-    /* get the current master clock value */
-    static double get_master_clock() {
-        double val;
-        switch (get_master_sync_type()) {
-            case AV_SYNC_VIDEO_MASTER:
-                val = get_clock(&vidClock);
-                break;
-            case AV_SYNC_AUDIO_MASTER:
-                val = get_clock(&audClock);
-                break;
-            default:
-                val = get_clock(&extClock);
-                break;
-        }
-        return val;
-    }
-
-    static void set_clock_at(Clock *c, double pts, int serial, double time) {
-        c->pts = pts;
-        c->serial = serial;
-        c->last_updated = time;
-        c->pts_drift = c->pts - time;
-    }
-
-    static void set_clock(Clock *c, double pts, int serial) {
-        double time = av_gettime_relative() / 1000000.0;
-        set_clock_at(c, pts, serial, time);
-    }
-
-    static void set_clock_speed(Clock *c, double speed) {
-        set_clock(c, get_clock(c), c->serial);
-        c->speed = speed;
-        printf("set_clock_speed() speed: %lf\n", speed);
-    }
-
-    static void init_clock(Clock *c, int *queue_serial) {
-        c->queue_serial = queue_serial;
-        c->speed = 1.0;
-        c->paused = 0;
-        set_clock(c, NAN, -1);
-    }
-
-    /***
-    1、外部时钟pts非法，从属时钟（音频/视频）的pts有效时更新。
-    2、外部时钟pts与从属时钟的时间差值超过AV_NOSYNC_THRESHOLD（10秒），则对外部时钟进行更新。
-     */
-    static void sync_clock_to_slave(Clock *c, Clock *slave) {
-        double clock = get_clock(c);
-        double slave_clock = get_clock(slave);
-        /* 仅当下列条件满足时，才会更新外部时钟 */
-        if (!isnan(slave_clock)
-            && (isnan(clock) || fabs(clock - slave_clock) > AV_NOSYNC_THRESHOLD)) {
-            set_clock(c, slave_clock, slave->serial);
-        }
-    }
-
-    static double compute_target_delay(double delay) {
-        double sync_threshold, diff = 0;
-
-        /* update delay to follow master synchronisation source */
-        /* if video is slave, we try to correct big delays by
-           duplicating or deleting a frame */
-        diff = get_clock(&vidClock) - get_master_clock();
-        /* skip or repeat frame. We take into account the
-           delay to compute the threshold. I still don't know
-           if it is the best guess */
-        sync_threshold = FFMAX(AV_SYNC_THRESHOLD_MIN, FFMIN(AV_SYNC_THRESHOLD_MAX, delay));
-        if (!isnan(diff) && fabs(diff) < max_frame_duration) {
-            if (diff <= -sync_threshold) {
-                delay = FFMAX(0, delay + diff);
-            } else if (diff >= sync_threshold && delay > AV_SYNC_FRAMEDUP_THRESHOLD) {
-                delay = delay + diff;
-            } else if (diff >= sync_threshold) {
-                delay = 2 * delay;
-            }
-        }
-
-        av_log(NULL, AV_LOG_TRACE, "video: delay=%0.3f A-V=%f\n", delay, -diff);
-
-        return delay;
-    }
-
-    static void update_video_pts(double pts, int64_t pos, int serial) {
-        /* update current video pts */
-        set_clock(&vidClock, pts, serial);
-        sync_clock_to_slave(&extClock, &vidClock);
-    }
 
 }
 
