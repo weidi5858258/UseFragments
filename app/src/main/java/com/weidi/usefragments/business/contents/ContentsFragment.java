@@ -5,15 +5,18 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.res.Configuration;
+import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
+import android.provider.MediaStore;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v7.widget.RecyclerView;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -215,6 +218,27 @@ public class ContentsFragment extends BaseFragment {
                     " requestCode: " + requestCode +
                     " resultCode: " + resultCode +
                     " data: " + data.toString());
+        if (requestCode == REQUEST_CODE_SELECT_VIDEO
+                && resultCode == Activity.RESULT_OK
+                && null != data) {
+            Uri selectedVideo = data.getData();
+            String[] filePathColumn = {MediaStore.Video.Media.DATA};
+            Cursor cursor = getContext().getContentResolver().query(
+                    selectedVideo, filePathColumn, null, null, null);
+            cursor.moveToFirst();
+            int columnIndex = cursor.getColumnIndex(filePathColumn[0]);
+            String videoPlaybackPath = cursor.getString(columnIndex);
+            cursor.close();
+            MLog.i(TAG, "onActivityResult() videoPlaybackPath: " + videoPlaybackPath);
+            if (!TextUtils.isEmpty(videoPlaybackPath)) {
+                Intent intent = new Intent();
+                intent.putExtra(PlayerActivity.CONTENT_PATH, videoPlaybackPath);
+                //intent.setClass(getContext(), PlayerActivity.class);
+                intent.setClass(getContext(), JniPlayerActivity.class);
+                getAttachedActivity().startActivity(intent);
+                ((BaseActivity) getAttachedActivity()).enterActivity();
+            }
+        }
     }
 
     @Override
@@ -523,11 +547,17 @@ public class ContentsFragment extends BaseFragment {
                         new Object[]{address});
                 break;
             case R.id.jump_btn:
+                // 调用图库
+                intent = new Intent(Intent.ACTION_PICK,
+                        android.provider.MediaStore.Video.Media.EXTERNAL_CONTENT_URI);
+                startActivityForResult(intent, REQUEST_CODE_SELECT_VIDEO);
                 break;
             default:
                 break;
         }
     }
+
+    private final int REQUEST_CODE_SELECT_VIDEO = 112;
 
     private static final int MSG_ON_PROGRESS_UPDATED = 1;
 

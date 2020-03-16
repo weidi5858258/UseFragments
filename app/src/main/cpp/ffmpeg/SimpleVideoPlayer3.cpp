@@ -995,16 +995,21 @@ namespace alexander_media {
                 notifyToHandle(audioWrapper->father);
                 notifyToHandle(videoWrapper->father);
 
-                // 不退出线程
-                LOGI("readData() notifyToReadWait start\n");
-                notifyToReadWait();
-                LOGI("readData() notifyToReadWait end\n");
-                if (audioWrapper->father->isPausedForSeek
-                    || videoWrapper->father->isPausedForSeek) {
-                    LOGF("readData() start seek\n");
-                    audioWrapper->father->isReading = true;
-                    videoWrapper->father->isReading = true;
-                    continue;
+                if (readFrame != -12) {
+                    // 不退出线程
+                    LOGI("readData() notifyToReadWait start\n");
+                    notifyToReadWait();
+                    LOGI("readData() notifyToReadWait end\n");
+                    if (audioWrapper->father->isPausedForSeek
+                        || videoWrapper->father->isPausedForSeek) {
+                        LOGF("readData() start seek\n");
+                        audioWrapper->father->isReading = true;
+                        videoWrapper->father->isReading = true;
+                        continue;
+                    } else {
+                        // for (;;) end
+                        break;
+                    }
                 } else {
                     // for (;;) end
                     break;
