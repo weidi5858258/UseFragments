@@ -1046,9 +1046,7 @@ namespace alexander_media {
                 // 一个通道中可用的输入采样数量
                 decodedAVFrame->nb_samples);
         if (ret >= 0) {
-            if (!audioWrapper->father->isStarted) {
-                audioWrapper->father->isStarted = true;
-            }
+            audioWrapper->father->isStarted = true;
             while (!videoWrapper->father->isStarted) {
                 if (audioWrapper->father->isPausedForSeek) {
                     return 0;
@@ -1086,19 +1084,15 @@ namespace alexander_media {
                     audioWrapper->dstAVSampleFormat,
                     // 缓冲区大小对齐（0 = 默认值,1 = 不对齐）
                     1);
-
             write(audioWrapper->father->outBuffer1, 0, out_buffer_size);
         } else {
             LOGE("audio 转换时出错 %d", ret);
         }
-
         return ret;
     }
 
     int handleVideoDataImpl(AVStream *stream, AVFrame *decodedAVFrame) {
-        if (!videoWrapper->father->isStarted) {
-            videoWrapper->father->isStarted = true;
-        }
+        videoWrapper->father->isStarted = true;
         while (!audioWrapper->father->isStarted) {
             if (videoWrapper->father->isPausedForSeek) {
                 return 0;
@@ -2051,7 +2045,7 @@ namespace alexander_media {
             videoRunning = videoWrapper->father->isStarted
                            && videoWrapper->father->isHandling;
         }
-        return audioRunning || videoRunning;
+        return audioRunning && videoRunning;
     }
 
     // 有没有在播放,暂停状态不算播放状态
@@ -2117,7 +2111,7 @@ namespace alexander_media {
         if (audioWrapper != NULL && audioWrapper->father != NULL) {
             return audioWrapper->father->duration;
         } else {
-            return 0;
+            return -1;
         }
     }
 
