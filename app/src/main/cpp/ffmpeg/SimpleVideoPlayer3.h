@@ -102,6 +102,8 @@ namespace alexander_media {
 #define MAX_AVPACKET_COUNT_AUDIO_LOCAL 100
 #define MAX_AVPACKET_COUNT_VIDEO_LOCAL 100
 
+#define MAX_RELATIVE_TIME 9000000
+
 ///////////////////////////////////////////
 
 #define    PICTURE_QUEUE_SIZE 3

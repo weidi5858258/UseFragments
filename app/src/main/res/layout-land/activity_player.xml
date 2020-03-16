@@ -8,16 +8,14 @@
     android:background="@color/black">
 
     <SurfaceView
-        android:layout_alignParentTop="true"
         android:id="@+id/surfaceView"
         android:layout_width="match_parent"
-        android:layout_height="360dp"/>
+        android:layout_height="match_parent"/>
 
     <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="360dp"
-        android:layout_alignParentTop="true">
+        android:layout_alignParentBottom="true">
         <include layout="@layout/controller_panel"/>
     </FrameLayout>
 
@@ -25,8 +23,7 @@
         android:id="@+id/loading_view"
         style="?android:attr/progressBarStyleLarge"
         android:layout_width="match_parent"
-        android:layout_height="360dp"
-        android:layout_alignParentTop="true"
+        android:layout_height="match_parent"
+        android:layout_centerInParent="true"
         android:visibility="gone"/>
-
 </RelativeLayout>

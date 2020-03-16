@@ -10,6 +10,8 @@
 
 
 /***
+usleep(1000*40);//等待40毫秒
+av_gettime_relative() 单位:微秒
 
 NV21(yuv420sp)和I420(yuv420p)
 NV21的排列是YYYYYYYY VUVU  -> YUV420SP
@@ -291,10 +293,10 @@ namespace alexander_media {
     };
 
     int read_thread_interrupt_cb(void *opaque) {
-        LOGW("read_thread_interrupt_cb() %d %d\n",
-             audioWrapper->father->isReading, videoWrapper->father->isReading);
-        if (!audioWrapper->father->isReading
-            || videoWrapper->father->isReading) {
+        // 必须通过传参方式进行判断,不能用全局变量判断
+        AudioWrapper *audioWrapper = (AudioWrapper *) opaque;
+        //LOGW("read_thread_interrupt_cb() %d\n", audioWrapper->father->isReading);
+        if (!audioWrapper->father->isReading) {
             LOGW("read_thread_interrupt_cb() return 1\n");
             return 1;
         }
@@ -443,15 +445,24 @@ namespace alexander_media {
             LOGE("avFormatContext is NULL.\n");
             return -1;
         }
-//        avFormatContext->interrupt_callback.callback = read_thread_interrupt_cb;
-//        avFormatContext->interrupt_callback.opaque = NULL;
-        AVDictionary *options = NULL;
-        av_dict_set(&options, "stimeout", "10000000", 0);
-        if (avformat_open_input(&avFormatContext,
-                                inFilePath,
-                                NULL, &options) != 0) {
-            LOGE("Couldn't open input stream.\n");
-            return -1;
+        if (!isLocal) {
+            avFormatContext->interrupt_callback.callback = read_thread_interrupt_cb;
+            avFormatContext->interrupt_callback.opaque = audioWrapper;
+            /*AVDictionary *options = NULL;
+            av_dict_set(&options, "stimeout", "10000000", 0);*/
+            if (avformat_open_input(&avFormatContext,
+                                    inFilePath,
+                                    NULL, NULL) != 0) {
+                LOGE("Couldn't open input stream.\n");
+                return -1;
+            }
+        } else {
+            if (avformat_open_input(&avFormatContext,
+                                    inFilePath,
+                                    NULL, NULL) != 0) {
+                LOGE("Couldn't open input stream.\n");
+                return -1;
+            }
         }
         if (avformat_find_stream_info(avFormatContext, NULL) != 0) {
             LOGE("Couldn't find stream information.\n");
@@ -892,6 +903,14 @@ namespace alexander_media {
 
             if (wrapper->type == TYPE_AUDIO) {
                 LOGD("readDataImpl() audio 填满数据了\n");
+                /*if (videoWrapper->father->isPausedForCache) {
+                    if (videoWrapper->father->list2->size() <
+                        videoWrapper->father->list1LimitCounts) {
+                        // 如果video的list2没有达到一定数量,那么等它达到了,让它通知继续播放好了
+                    }
+                } else {
+
+                }*/
             } else {
                 LOGW("readDataImpl() video 填满数据了\n");
             }
@@ -945,9 +964,14 @@ namespace alexander_media {
                 seekToImpl();
             }
 
+            //int64_t startTime = av_gettime_relative();
             // 0 if OK, < 0 on error or end of file
             int readFrame = av_read_frame(avFormatContext, srcAVPacket);
             //LOGI("readFrame           : %d\n", readFrame);
+            /*int64_t endTime = av_gettime_relative();
+            if ((endTime - startTime) >= MAX_RELATIVE_TIME) {
+                LOGE("readData() endTime - startTime: %ld\n", (long) (endTime - startTime));
+            }*/
             if (readFrame < 0) {
                 // 有些视频一直返回-12
                 // LOGF("readData() readFrame            : %d\n", readFrame);

@@ -219,9 +219,10 @@
             </intent-filter>
         </activity>
 
+            <!--android:screenOrientation="landscape"-->
+            <!--android:configChanges="keyboardHidden|screenLayout|screenSize|smallestScreenSize|orientation"-->
         <activity
             android:name="com.weidi.usefragments.business.video_player.JniPlayerActivity"
-            android:screenOrientation="landscape"
             android:configChanges="uiMode|keyboard|keyboardHidden|screenSize|orientation|fontScale"
             android:windowSoftInputMode="stateAlwaysHidden|adjustPan"
             android:launchMode="singleTask"

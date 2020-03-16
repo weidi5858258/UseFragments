@@ -214,6 +214,130 @@ public class JniPlayerActivity extends BaseActivity {
 
     private Handler mUiHandler;
 
+    private void uiHandleMessage(Message msg) {
+        if (msg == null) {
+            return;
+        }
+
+        switch (msg.what) {
+            case Callback.MSG_ON_READY:
+                String durationTime = DateUtils.formatElapsedTime(mFFMPEGPlayer.getDuration());
+                mDurationTimeTV.setText(durationTime);
+                if (durationTime.length() > 5) {
+                    mProgressTimeTV.setText("00:00:00");
+                } else {
+                    mProgressTimeTV.setText("00:00");
+                }
+                mProgressBar.setProgress(0);
+                mFileNameTV.setText(Contents.getTitle());
+                mLoadingView.setVisibility(View.VISIBLE);
+                break;
+            case Callback.MSG_ON_PLAYED:
+                durationTime = DateUtils.formatElapsedTime(mFFMPEGPlayer.getDuration());
+                mDurationTimeTV.setText(durationTime);
+                mLoadingView.setVisibility(View.GONE);
+                mPlayIB.setVisibility(View.VISIBLE);
+                mPauseIB.setVisibility(View.GONE);
+                mControllerPanelLayout.setVisibility(View.INVISIBLE);// INVISIBLE
+                break;
+            case Callback.MSG_ON_PAUSED:
+                mPlayIB.setVisibility(View.GONE);
+                mPauseIB.setVisibility(View.VISIBLE);
+                mLoadingView.setVisibility(View.VISIBLE);
+                mControllerPanelLayout.setVisibility(View.VISIBLE);
+                break;
+            case Callback.MSG_ON_FINISHED:
+            case Callback.MSG_ON_ERROR:
+                finish();
+                exitActivity();
+                break;
+            case Callback.MSG_ON_PROGRESS_UPDATED:
+                if (msg.obj == null) {
+                    return;
+                }
+                mPresentationTime = (Long) msg.obj;
+                String curElapsedTime = DateUtils.formatElapsedTime(mPresentationTime);
+                mProgressTimeTV.setText(curElapsedTime);
+
+                if (mNeedToSyncProgressBar) {
+                    int duration = (int) (mFFMPEGPlayer.getDuration());
+                    int currentPosition = (int) (mPresentationTime);
+                    float pos = (float) currentPosition / duration;
+                    int target = Math.round(pos * mProgressBar.getMax());
+                    mProgressBar.setProgress(target);
+                }
+                break;
+            case KeyEvent.KEYCODE_HEADSETHOOK:// 单击事件
+                if (firstFlag && secondFlag && threeFlag) {
+                    /*if (DEBUG)
+                        Log.d(TAG, "onKeyDown() 3");*/
+
+                    if (mControllerPanelLayout.getVisibility() == View.VISIBLE) {
+                        mNeedToSyncProgressBar = true;
+                        mControllerPanelLayout.setVisibility(View.INVISIBLE);
+                    } else {
+                        mControllerPanelLayout.setVisibility(View.VISIBLE);
+                    }
+                } else if (firstFlag && secondFlag) {
+                    /*if (DEBUG)
+                        Log.d(TAG, "onKeyDown() 2");*/
+
+                    if (mFFMPEGPlayer != null) {
+                        Log.d(TAG, "onKeyDown() mPresentationTime: " + mPresentationTime);
+                        mFFMPEGPlayer.seekTo(mPresentationTime + 30);
+                    }
+                } else {
+                    /*if (DEBUG)
+                        Log.d(TAG, "onKeyDown() 1");*/
+
+                    // 播放与暂停
+                    if (mFFMPEGPlayer != null) {
+                        if (mFFMPEGPlayer.isRunning()) {
+                            if (mFFMPEGPlayer.isPlaying()) {
+                                mPlayIB.setVisibility(View.GONE);
+                                mPauseIB.setVisibility(View.VISIBLE);
+                                mControllerPanelLayout.setVisibility(View.VISIBLE);
+                                mFFMPEGPlayer.pause();
+                            } else {
+                                mPlayIB.setVisibility(View.VISIBLE);
+                                mPauseIB.setVisibility(View.GONE);
+                                mControllerPanelLayout.setVisibility(View.INVISIBLE);
+                                mFFMPEGPlayer.play();
+                            }
+                        }
+                    }
+                    /*if (!mIsScreenPress) {
+                    }
+                    mIsScreenPress = false;*/
+                }
+                firstFlag = false;
+                secondFlag = false;
+                threeFlag = false;
+                break;
+            case MSG_START_PLAYBACK:
+                if (!isDestroyed()) {
+                    new Thread(new Runnable() {
+                        @Override
+                        public void run() {
+                            mFFMPEGPlayer.audioHandleData();
+                        }
+                    }).start();
+                    new Thread(new Runnable() {
+                        @Override
+                        public void run() {
+                            mFFMPEGPlayer.videoHandleData();
+                        }
+                    }).start();
+                }
+                break;
+            case PLAYBACK_PROGRESS_UPDATED:
+                mProgressBar.setSecondaryProgress(mDownloadProgress);
+                break;
+            default:
+                break;
+        }
+    }
+
     private void initData() {
         EventBusUtils.register(this);
         registerHeadsetPlugReceiver();
@@ -421,130 +545,6 @@ public class JniPlayerActivity extends BaseActivity {
     private void showBubbleView(String time, View view) {
         mShowTimeTV.setText(time);
         mBubblePopupWindow.show(view);
-    }
-
-    private void uiHandleMessage(Message msg) {
-        if (msg == null) {
-            return;
-        }
-
-        switch (msg.what) {
-            case Callback.MSG_ON_READY:
-                String durationTime = DateUtils.formatElapsedTime(mFFMPEGPlayer.getDuration());
-                mDurationTimeTV.setText(durationTime);
-                if (durationTime.length() > 5) {
-                    mProgressTimeTV.setText("00:00:00");
-                } else {
-                    mProgressTimeTV.setText("00:00");
-                }
-                mProgressBar.setProgress(0);
-                mFileNameTV.setText(Contents.getTitle());
-                mLoadingView.setVisibility(View.VISIBLE);
-                break;
-            case Callback.MSG_ON_PLAYED:
-                durationTime = DateUtils.formatElapsedTime(mFFMPEGPlayer.getDuration());
-                mDurationTimeTV.setText(durationTime);
-                mLoadingView.setVisibility(View.GONE);
-                mPlayIB.setVisibility(View.VISIBLE);
-                mPauseIB.setVisibility(View.GONE);
-                mControllerPanelLayout.setVisibility(View.INVISIBLE);// INVISIBLE
-                break;
-            case Callback.MSG_ON_PAUSED:
-                mPlayIB.setVisibility(View.GONE);
-                mPauseIB.setVisibility(View.VISIBLE);
-                mLoadingView.setVisibility(View.VISIBLE);
-                mControllerPanelLayout.setVisibility(View.VISIBLE);
-                break;
-            case Callback.MSG_ON_FINISHED:
-            case Callback.MSG_ON_ERROR:
-                finish();
-                exitActivity();
-                break;
-            case Callback.MSG_ON_PROGRESS_UPDATED:
-                if (msg.obj == null) {
-                    return;
-                }
-                mPresentationTime = (Long) msg.obj;
-                String curElapsedTime = DateUtils.formatElapsedTime(mPresentationTime);
-                mProgressTimeTV.setText(curElapsedTime);
-
-                if (mNeedToSyncProgressBar) {
-                    int duration = (int) (mFFMPEGPlayer.getDuration());
-                    int currentPosition = (int) (mPresentationTime);
-                    float pos = (float) currentPosition / duration;
-                    int target = Math.round(pos * mProgressBar.getMax());
-                    mProgressBar.setProgress(target);
-                }
-                break;
-            case KeyEvent.KEYCODE_HEADSETHOOK:// 单击事件
-                if (firstFlag && secondFlag && threeFlag) {
-                    /*if (DEBUG)
-                        Log.d(TAG, "onKeyDown() 3");*/
-
-                    if (mControllerPanelLayout.getVisibility() == View.VISIBLE) {
-                        mNeedToSyncProgressBar = true;
-                        mControllerPanelLayout.setVisibility(View.INVISIBLE);
-                    } else {
-                        mControllerPanelLayout.setVisibility(View.VISIBLE);
-                    }
-                } else if (firstFlag && secondFlag) {
-                    /*if (DEBUG)
-                        Log.d(TAG, "onKeyDown() 2");*/
-
-                    if (mFFMPEGPlayer != null) {
-                        Log.d(TAG, "onKeyDown() mPresentationTime: " + mPresentationTime);
-                        mFFMPEGPlayer.seekTo(mPresentationTime + 30);
-                    }
-                } else {
-                    /*if (DEBUG)
-                        Log.d(TAG, "onKeyDown() 1");*/
-
-                    // 播放与暂停
-                    if (mFFMPEGPlayer != null) {
-                        if (mFFMPEGPlayer.isRunning()) {
-                            if (mFFMPEGPlayer.isPlaying()) {
-                                mPlayIB.setVisibility(View.GONE);
-                                mPauseIB.setVisibility(View.VISIBLE);
-                                mControllerPanelLayout.setVisibility(View.VISIBLE);
-                                mFFMPEGPlayer.pause();
-                            } else {
-                                mPlayIB.setVisibility(View.VISIBLE);
-                                mPauseIB.setVisibility(View.GONE);
-                                mControllerPanelLayout.setVisibility(View.INVISIBLE);
-                                mFFMPEGPlayer.play();
-                            }
-                        }
-                    }
-                    /*if (!mIsScreenPress) {
-                    }
-                    mIsScreenPress = false;*/
-                }
-                firstFlag = false;
-                secondFlag = false;
-                threeFlag = false;
-                break;
-            case MSG_START_PLAYBACK:
-                if (!isDestroyed()) {
-                    new Thread(new Runnable() {
-                        @Override
-                        public void run() {
-                            mFFMPEGPlayer.audioHandleData();
-                        }
-                    }).start();
-                    new Thread(new Runnable() {
-                        @Override
-                        public void run() {
-                            mFFMPEGPlayer.videoHandleData();
-                        }
-                    }).start();
-                }
-                break;
-            case PLAYBACK_PROGRESS_UPDATED:
-                mProgressBar.setSecondaryProgress(mDownloadProgress);
-                break;
-            default:
-                break;
-        }
     }
 
     private DownloadCallback mDownloadCallback = new DownloadCallback() {
