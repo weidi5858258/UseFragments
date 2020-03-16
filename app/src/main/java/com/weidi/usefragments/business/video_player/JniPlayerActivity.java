@@ -7,6 +7,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.res.Configuration;
+import android.content.res.Resources;
 import android.graphics.PixelFormat;
 import android.media.AudioManager;
 import android.os.Bundle;
@@ -56,9 +57,11 @@ public class JniPlayerActivity extends BaseActivity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        getWindow().setFlags(
-                WindowManager.LayoutParams.FLAG_FULLSCREEN,
-                WindowManager.LayoutParams.FLAG_FULLSCREEN);
+        if (getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE) {
+            getWindow().setFlags(
+                    WindowManager.LayoutParams.FLAG_FULLSCREEN,
+                    WindowManager.LayoutParams.FLAG_FULLSCREEN);
+        }
         setContentView(R.layout.activity_player);
         if (DEBUG)
             MLog.d(TAG, "onCreate(): " + printThis()
@@ -170,6 +173,10 @@ public class JniPlayerActivity extends BaseActivity {
         if (DEBUG)
             MLog.d(TAG, "onWindowFocusChanged(): " + printThis() +
                     " hasFocus: " + hasFocus);
+
+        if (hasFocus) {
+            //getStatusBarHeight();
+        }
     }
 
     ///////////////////////////////////////////////////////////////////////
@@ -238,7 +245,7 @@ public class JniPlayerActivity extends BaseActivity {
                 mLoadingView.setVisibility(View.GONE);
                 mPlayIB.setVisibility(View.VISIBLE);
                 mPauseIB.setVisibility(View.GONE);
-                mControllerPanelLayout.setVisibility(View.INVISIBLE);// INVISIBLE
+                mControllerPanelLayout.setVisibility(View.VISIBLE);// INVISIBLE
                 break;
             case Callback.MSG_ON_PAUSED:
                 mPlayIB.setVisibility(View.GONE);
@@ -255,7 +262,7 @@ public class JniPlayerActivity extends BaseActivity {
                 if (msg.obj == null) {
                     return;
                 }
-                mPresentationTime = (Long) msg.obj;
+                mPresentationTime = (Long) msg.obj;// 秒
                 String curElapsedTime = DateUtils.formatElapsedTime(mPresentationTime);
                 mProgressTimeTV.setText(curElapsedTime);
 
@@ -545,6 +552,18 @@ public class JniPlayerActivity extends BaseActivity {
     private void showBubbleView(String time, View view) {
         mShowTimeTV.setText(time);
         mBubblePopupWindow.show(view);
+    }
+
+    private int getStatusBarHeight() {
+        Resources resources = getResources();
+        int resourceId = resources.getIdentifier(
+                "status_bar_height",
+                "dimen",
+                "android");
+        int height = resources.getDimensionPixelSize(resourceId);
+        // getStatusBarHeight() height: 48 95
+        MLog.d(TAG, "getStatusBarHeight() height: " + height);
+        return height;
     }
 
     private DownloadCallback mDownloadCallback = new DownloadCallback() {

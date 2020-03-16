@@ -248,24 +248,8 @@ public class A2Fragment extends BaseFragment {
     }
 
     private void initData() {
-        getStatusBarHeight();
 
         // new Thread(new TestThread()).start();
-    }
-
-    private int getStatusBarHeight() {
-        Resources resources = getActivity().getResources();
-        int resourceId = resources.getIdentifier(
-                "status_bar_height",
-                "dimen",
-                "android");
-        int height = resources.getDimensionPixelSize(resourceId);
-
-        // getStatusBarHeight() height: 48
-        if (DEBUG)
-            MLog.d(TAG, "getStatusBarHeight() height: " + height);
-
-        return height;
     }
 
     private class TestThread implements Runnable {

@@ -8,7 +8,7 @@
     android:layout_height="wrap_content"
     android:background="@android:color/transparent"
     android:orientation="vertical"
-    android:visibility="visible">
+    android:visibility="gone">
 
     <TextView
         android:id="@+id/file_name_tv"
@@ -51,12 +51,11 @@
     </RelativeLayout>
 
     <RelativeLayout
-        android:layout_width="match_parent"
+        android:layout_width="@dimen/dimen_480_dp"
         android:layout_height="wrap_content"
         android:paddingTop="0dp"
         android:paddingBottom="0dp"
-        android:layout_marginEnd="@dimen/dimen_16_dp"
-        android:layout_marginStart="@dimen/dimen_16_dp"
+        android:layout_marginBottom="@dimen/dimen_16_dp"
         android:layout_gravity="bottom|center_horizontal"
         android:layout_centerHorizontal="true"
         android:orientation="horizontal">

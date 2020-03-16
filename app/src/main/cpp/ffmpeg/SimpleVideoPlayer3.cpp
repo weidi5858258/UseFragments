@@ -205,6 +205,7 @@ namespace alexander_media {
     bool needLocalLog = true;
     // seek时间
     int64_t timeStamp = -1;
+    long curProgress = 0;
     long preProgress = 0;
     // 视频播放时每帧之间的暂停时间,单位为ms
     int videoSleepTime = 11;
@@ -224,7 +225,7 @@ namespace alexander_media {
 
     bool runOneTime = true;
 
-#define RUN_COUNTS 30
+#define RUN_COUNTS 88
     int runCounts = 0;
     double averageTimeDiff = 0;
     double timeDiff[RUN_COUNTS];
@@ -292,12 +293,19 @@ namespace alexander_media {
         }
     };
 
+    int64_t startReadTime = 0.0;
+    int64_t endReadTime = 0.0;
+
     int read_thread_interrupt_cb(void *opaque) {
         // 必须通过传参方式进行判断,不能用全局变量判断
         AudioWrapper *audioWrapper = (AudioWrapper *) opaque;
-        //LOGW("read_thread_interrupt_cb() %d\n", audioWrapper->father->isReading);
+        endReadTime = av_gettime_relative();
         if (!audioWrapper->father->isReading) {
-            LOGW("read_thread_interrupt_cb() return 1\n");
+            LOGE("read_thread_interrupt_cb() return 1 退出了\n");
+            return 1;
+        } else if (audioWrapper->father->isPausedForCache
+                   && (endReadTime - startReadTime) > MAX_RELATIVE_TIME) {
+            LOGE("read_thread_interrupt_cb() return 1 超时了\n");
             return 1;
         }
         return 0;
@@ -841,16 +849,17 @@ namespace alexander_media {
 
     int seekToImpl() {
         // seekTo
-        LOGI("seekToImpl() audio and video list2 clear\n");
-        pthread_mutex_lock(&readLockMutex);
-        audioWrapper->father->list2->clear();
-        videoWrapper->father->list2->clear();
-        pthread_mutex_unlock(&readLockMutex);
-
+        LOGI("seekToImpl() sleep start\n");
         while (!audioWrapper->father->needToSeek
                || !videoWrapper->father->needToSeek) {
             av_usleep(1000);
         }
+        LOGI("seekToImpl() sleep end\n");
+
+        pthread_mutex_lock(&readLockMutex);
+        audioWrapper->father->list2->clear();
+        videoWrapper->father->list2->clear();
+        pthread_mutex_unlock(&readLockMutex);
         LOGI("seekToImpl() av_seek_frame start\n");
         LOGI("seekToImpl() timestamp: %ld\n", (long) timeStamp);
         //LOGI("seekToImpl() timestamp: %"PRIu64"\n", timestamp);
@@ -964,14 +973,12 @@ namespace alexander_media {
                 seekToImpl();
             }
 
-            //int64_t startTime = av_gettime_relative();
-            // 0 if OK, < 0 on error or end of file
+            startReadTime = av_gettime_relative();
             int readFrame = av_read_frame(avFormatContext, srcAVPacket);
+            endReadTime = av_gettime_relative();
+
             //LOGI("readFrame           : %d\n", readFrame);
-            /*int64_t endTime = av_gettime_relative();
-            if ((endTime - startTime) >= MAX_RELATIVE_TIME) {
-                LOGE("readData() endTime - startTime: %ld\n", (long) (endTime - startTime));
-            }*/
+            // 0 if OK, < 0 on error or end of file
             if (readFrame < 0) {
                 // 有些视频一直返回-12
                 // LOGF("readData() readFrame            : %d\n", readFrame);
@@ -1071,10 +1078,10 @@ namespace alexander_media {
             ////////////////////////////////////////////////////////////////////
 
             audioPts = decodedAVFrame->pts * av_q2d(stream->time_base);
-            long progress = (long) audioPts;
-            if (progress > preProgress) {
-                preProgress = progress;
-                onProgressUpdated(progress);
+            curProgress = (long) audioPts;// 秒
+            if (curProgress > preProgress) {
+                preProgress = curProgress;
+                onProgressUpdated(curProgress);
             }
 
             ////////////////////////////////////////////////////////////////////
@@ -1145,8 +1152,8 @@ namespace alexander_media {
                 LOGE("handleVideoDataImpl() audioTimeDifference: %lf\n", audioPts);
                 LOGE("handleVideoDataImpl() videoTimeDifference: %lf\n", videoPts);
                 LOGE("handleVideoDataImpl() video - audio      : %lf\n", tempTimeDifference);
-                //videoPts = audioPts + averageTimeDiff;
-                //LOGE("handleVideoDataImpl() videoTimeDifference: %lf\n", videoPts);
+                videoPts = audioPts + averageTimeDiff;
+                LOGE("handleVideoDataImpl() videoTimeDifference: %lf\n", videoPts);
             }
             // 如果videoTimeDifference比audioTimeDifference大出了一定的范围
             // 那么说明视频播放快了,应等待音频
@@ -2098,7 +2105,6 @@ namespace alexander_media {
             return -1;
         }
 
-
         LOGD("seekTo() signal() to Read and Handle\n");
         timeStamp = timestamp;
         audioWrapper->father->isPausedForSeek = true;
@@ -2124,19 +2130,23 @@ namespace alexander_media {
     }
 
     void stepAdd() {
-        ++videoSleepTime;
+        /*++videoSleepTime;
         char dest[50];
         sprintf(dest, "videoSleepTime: %d\n", videoSleepTime);
         onInfo(dest);
-        LOGF("stepAdd()      videoSleepTime: %d\n", videoSleepTime);
+        LOGF("stepAdd()      videoSleepTime: %d\n", videoSleepTime);*/
+
+        seekTo(curProgress + 30);
     }
 
     void stepSubtract() {
-        --videoSleepTime;
+        /*--videoSleepTime;
         char dest[50];
         sprintf(dest, "videoSleepTime: %d\n", videoSleepTime);
         onInfo(dest);
-        LOGF("stepSubtract() videoSleepTime: %d\n", videoSleepTime);
+        LOGF("stepSubtract() videoSleepTime: %d\n", videoSleepTime);*/
+
+        seekTo(curProgress - 30);
     }
 
     /***
