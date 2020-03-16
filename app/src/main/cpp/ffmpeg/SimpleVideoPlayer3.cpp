@@ -856,10 +856,8 @@ namespace alexander_media {
         }
         LOGI("seekToImpl() sleep end\n");
 
-        pthread_mutex_lock(&readLockMutex);
         audioWrapper->father->list2->clear();
         videoWrapper->father->list2->clear();
-        pthread_mutex_unlock(&readLockMutex);
         LOGI("seekToImpl() av_seek_frame start\n");
         LOGI("seekToImpl() timestamp: %ld\n", (long) timeStamp);
         //LOGI("seekToImpl() timestamp: %"PRIu64"\n", timestamp);
@@ -870,6 +868,9 @@ namespace alexander_media {
         preProgress = 0;
         audioWrapper->father->isPausedForSeek = false;
         videoWrapper->father->isPausedForSeek = false;
+        // 清空解码器的缓存
+        avcodec_flush_buffers(audioWrapper->father->avCodecContext);
+        avcodec_flush_buffers(videoWrapper->father->avCodecContext);
         LOGI("seekToImpl() av_seek_frame end\n");
         LOGI("==================================================================\n");
     }
@@ -881,10 +882,10 @@ namespace alexander_media {
         av_packet_unref(srcAVPacket);
 
         // 保存数据
-        pthread_mutex_lock(&readLockMutex);
+        pthread_mutex_lock(&wrapper->readLockMutex);
         wrapper->list2->push_back(*copyAVPacket);
         size_t list2Size = wrapper->list2->size();
-        pthread_mutex_unlock(&readLockMutex);
+        pthread_mutex_unlock(&wrapper->readLockMutex);
 
         if (!isLocal) {
             if (wrapper->type == TYPE_AUDIO) {
@@ -904,10 +905,12 @@ namespace alexander_media {
             // std::move(wrapper->list2->begin(), wrapper->list2->end(), std::back_inserter(wrapper->list1));
             // wrapper->list1->swap((std::list<AVPacket> &) wrapper->list2);
             // 把list2中的内容全部复制给list1
+            pthread_mutex_lock(&wrapper->readLockMutex);
             wrapper->list1->clear();
             wrapper->list1->assign(wrapper->list2->begin(), wrapper->list2->end());
             wrapper->list2->clear();
             wrapper->isHandleList1Full = true;
+            pthread_mutex_unlock(&wrapper->readLockMutex);
             notifyToHandle(wrapper);
 
             if (wrapper->type == TYPE_AUDIO) {
@@ -952,7 +955,6 @@ namespace alexander_media {
         videoWrapper->father->isPausedForSeek = true;*/
 
         isReading = true;
-        int count_12 = 0;
         /***
          有几种情况:
          1.list1中先存满n个,然后list2多次存取
@@ -977,26 +979,13 @@ namespace alexander_media {
             int readFrame = av_read_frame(avFormatContext, srcAVPacket);
             endReadTime = av_gettime_relative();
 
-            //LOGI("readFrame           : %d\n", readFrame);
             // 0 if OK, < 0 on error or end of file
             if (readFrame < 0) {
-                // 有些视频一直返回-12
-                // LOGF("readData() readFrame            : %d\n", readFrame);
-                if (readFrame != AVERROR_EOF) {
-                    if (readFrame == -12) {
-                        ++count_12;
-                    }
-                    if (count_12 <= 500) {
-                        continue;
-                    }
-                }
-
-                // readData() video AVERROR_EOF readFrame: -541478725
-                LOGF("readData() AVERROR_EOF readFrame: %d\n", readFrame);
-                LOGF("readData() 文件已经读完了\n");
+                // readData() AVERROR_EOF readFrame: -12 (Cannot allocate memory)
+                // readData() AVERROR_EOF readFrame: -541478725 文件已经读完了
+                LOGF("readData() readFrame  : %d\n", readFrame);
                 LOGF("readData() audio list2: %d\n", audioWrapper->father->list2->size());
                 LOGF("readData() video list2: %d\n", videoWrapper->father->list2->size());
-
                 // 读到文件末尾了
                 audioWrapper->father->isReading = false;
                 videoWrapper->father->isReading = false;
@@ -1158,6 +1147,9 @@ namespace alexander_media {
             // 如果videoTimeDifference比audioTimeDifference大出了一定的范围
             // 那么说明视频播放快了,应等待音频
             while (videoPts - audioPts > TIME_DIFFERENCE) {
+                if (videoWrapper->father->isPausedForSeek) {
+                    return 0;
+                }
                 av_usleep(1000);
             }
         }
@@ -1391,12 +1383,12 @@ namespace alexander_media {
                 if (wrapper->list1->size() == 0) {
                     wrapper->isHandleList1Full = false;
                     if (list2Size > 0) {
-                        pthread_mutex_lock(&readLockMutex);
+                        pthread_mutex_lock(&wrapper->readLockMutex);
                         wrapper->list1->clear();
                         wrapper->list1->assign(wrapper->list2->begin(), wrapper->list2->end());
                         wrapper->list2->clear();
                         wrapper->isHandleList1Full = true;
-                        pthread_mutex_unlock(&readLockMutex);
+                        pthread_mutex_unlock(&wrapper->readLockMutex);
 
                         LOGI("===================================================\n");
                         if (wrapper->type == TYPE_AUDIO) {
@@ -1427,11 +1419,11 @@ namespace alexander_media {
                 } else {
                     if (list2Size > 0) {
                         // 把剩余的数据全部复制过来
-                        pthread_mutex_lock(&readLockMutex);
+                        pthread_mutex_lock(&wrapper->readLockMutex);
                         wrapper->list1->clear();
                         wrapper->list1->assign(wrapper->list2->begin(), wrapper->list2->end());
                         wrapper->list2->clear();
-                        pthread_mutex_unlock(&readLockMutex);
+                        pthread_mutex_unlock(&wrapper->readLockMutex);
 
                         if (wrapper->type == TYPE_AUDIO) {
                             LOGD("handleData() audio 最后要处理的数据还有 list1: %d\n",
@@ -2136,7 +2128,9 @@ namespace alexander_media {
         onInfo(dest);
         LOGF("stepAdd()      videoSleepTime: %d\n", videoSleepTime);*/
 
-        seekTo(curProgress + 30);
+        if (getDuration() > 0) {
+            seekTo(curProgress + 30);
+        }
     }
 
     void stepSubtract() {
@@ -2146,7 +2140,9 @@ namespace alexander_media {
         onInfo(dest);
         LOGF("stepSubtract() videoSleepTime: %d\n", videoSleepTime);*/
 
-        seekTo(curProgress - 30);
+        if (getDuration() > 0) {
+            seekTo(curProgress - 30);
+        }
     }
 
     /***
