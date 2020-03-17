@@ -102,7 +102,7 @@ namespace alexander_media {
 #define MAX_AVPACKET_COUNT_AUDIO_LOCAL 100
 #define MAX_AVPACKET_COUNT_VIDEO_LOCAL 100
 
-#define MAX_RELATIVE_TIME 60000000// 60秒
+#define MAX_RELATIVE_TIME 120000000// 120秒
 
 ///////////////////////////////////////////
 

@@ -243,6 +243,11 @@ public class JniPlayerActivity extends BaseActivity {
                 mLoadingView.setVisibility(View.VISIBLE);
                 break;
             case Callback.MSG_ON_CHANGE_WINDOW:
+                if (getResources().getConfiguration().orientation
+                        == Configuration.ORIENTATION_LANDSCAPE) {
+                    return;
+                }
+
                 mControllerPanelLayout.setVisibility(View.VISIBLE);
                 int width = msg.arg1;
                 int height = msg.arg2;

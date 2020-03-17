@@ -953,14 +953,14 @@ namespace alexander_media {
         } else if (wrapper->type == TYPE_VIDEO
                    && list2Size >= wrapper->list2LimitCounts) {
             LOGD("readDataImpl() audio list1: %d\n", audioWrapper->father->list1->size());
-            LOGW("readDataImpl() video list1: %d\n", videoWrapper->father->list1->size());
             LOGD("readDataImpl() audio list2: %d\n", audioWrapper->father->list2->size());
+            LOGW("readDataImpl() video list1: %d\n", videoWrapper->father->list1->size());
             LOGW("readDataImpl() video list2: %d\n", videoWrapper->father->list2->size());
-            LOGI("readDataImpl() notifyToReadWait start\n");
             if (audioWrapper->father->list2->size() > audioWrapper->father->list1LimitCounts) {
+                LOGI("readDataImpl() notifyToReadWait start\n");
                 notifyToReadWait(videoWrapper->father);
+                LOGI("readDataImpl() notifyToReadWait end\n");
             }
-            LOGI("readDataImpl() notifyToReadWait end\n");
         }
         return 0;
     }
@@ -1006,6 +1006,7 @@ namespace alexander_media {
             // 0 if OK, < 0 on error or end of file
             if (readFrame < 0) {
                 // readData() AVERROR_EOF readFrame: -12 (Cannot allocate memory)
+                // readData() AVERROR_EOF readFrame: -1414092869 超时
                 // readData() AVERROR_EOF readFrame: -541478725 文件已经读完了
                 LOGF("readData() readFrame  : %d\n", readFrame);
                 LOGF("readData() audio list2: %d\n", audioWrapper->father->list2->size());
@@ -1413,11 +1414,10 @@ namespace alexander_media {
 
             // region 复制数据
 
-            size_t list2Size = wrapper->list2->size();
             if (wrapper->isReading) {
                 if (wrapper->list1->size() == 0) {
                     wrapper->isHandleList1Full = false;
-                    if (list2Size > 0) {
+                    if (wrapper->list2->size() > 0) {
                         pthread_mutex_lock(&wrapper->readLockMutex);
                         wrapper->list1->clear();
                         wrapper->list1->assign(wrapper->list2->begin(), wrapper->list2->end());
@@ -1452,7 +1452,7 @@ namespace alexander_media {
                 if (wrapper->list1->size() > 0) {
                     // 还有数据,先用完再说
                 } else {
-                    if (list2Size > 0) {
+                    if (wrapper->list2->size() > 0) {
                         // 把剩余的数据全部复制过来
                         pthread_mutex_lock(&wrapper->readLockMutex);
                         wrapper->list1->clear();
@@ -1492,6 +1492,7 @@ namespace alexander_media {
             if (wrapper->isReading
                 && wrapper->isHandling
                 && !wrapper->isHandleList1Full
+                && wrapper->list1->size() == 0
                 && wrapper->list2->size() == 0) {
 
                 LOGE("---------------------------------------------------\n");
@@ -1514,6 +1515,7 @@ namespace alexander_media {
                     LOGD("handleData() audio                   list2: %d\n",
                          audioWrapper->father->list2->size());
                 }
+                LOGE("---------------------------------------------------\n");
 
                 // 开始暂停
                 onPaused();
@@ -1565,7 +1567,7 @@ namespace alexander_media {
                 // 开始播放
                 onPlayed();
 
-                LOGE("***************************************************\n");
+                LOGI("***************************************************\n");
                 if (wrapper->type == TYPE_AUDIO) {
                     LOGD("handleData() audio                   list1: %d\n",
                          wrapper->list1->size());
@@ -1585,6 +1587,7 @@ namespace alexander_media {
                     LOGD("handleData() audio                   list2: %d\n",
                          audioWrapper->father->list2->size());
                 }
+                LOGI("***************************************************\n");
             }
 
             // endregion
