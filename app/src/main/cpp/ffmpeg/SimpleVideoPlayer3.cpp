@@ -792,6 +792,7 @@ namespace alexander_media {
         videoWrapper->srcWidth = videoWrapper->father->avCodecContext->width;
         videoWrapper->srcHeight = videoWrapper->father->avCodecContext->height;
         videoWrapper->srcAVPixelFormat = videoWrapper->father->avCodecContext->pix_fmt;
+        onChangeWindow(videoWrapper->srcWidth, videoWrapper->srcHeight);
         LOGW("---------------------------------\n");
         LOGW("srcWidth            : %d\n", videoWrapper->srcWidth);
         LOGW("srcHeight           : %d\n", videoWrapper->srcHeight);
@@ -852,6 +853,9 @@ namespace alexander_media {
         LOGI("seekToImpl() sleep start\n");
         while (!audioWrapper->father->needToSeek
                || !videoWrapper->father->needToSeek) {
+            if (!audioWrapper->father->isHandling || !videoWrapper->father->isHandling) {
+                return 0;
+            }
             av_usleep(1000);
         }
         LOGI("seekToImpl() sleep end\n");
@@ -873,6 +877,7 @@ namespace alexander_media {
         avcodec_flush_buffers(videoWrapper->father->avCodecContext);
         LOGI("seekToImpl() av_seek_frame end\n");
         LOGI("==================================================================\n");
+        return 0;
     }
 
     int readDataImpl(Wrapper *wrapper, AVPacket *srcAVPacket, AVPacket *copyAVPacket) {
@@ -1053,7 +1058,7 @@ namespace alexander_media {
         if (ret >= 0) {
             audioWrapper->father->isStarted = true;
             while (!videoWrapper->father->isStarted) {
-                if (audioWrapper->father->isPausedForSeek) {
+                if (audioWrapper->father->isPausedForSeek || !audioWrapper->father->isHandling) {
                     return 0;
                 }
                 av_usleep(1000);
@@ -1099,7 +1104,7 @@ namespace alexander_media {
     int handleVideoDataImpl(AVStream *stream, AVFrame *decodedAVFrame) {
         videoWrapper->father->isStarted = true;
         while (!audioWrapper->father->isStarted) {
-            if (videoWrapper->father->isPausedForSeek) {
+            if (videoWrapper->father->isPausedForSeek || !videoWrapper->father->isHandling) {
                 return 0;
             }
             av_usleep(1000);
@@ -1146,7 +1151,7 @@ namespace alexander_media {
             // 如果videoTimeDifference比audioTimeDifference大出了一定的范围
             // 那么说明视频播放快了,应等待音频
             while (videoPts - audioPts > TIME_DIFFERENCE) {
-                if (videoWrapper->father->isPausedForSeek) {
+                if (videoWrapper->father->isPausedForSeek || !videoWrapper->father->isHandling) {
                     return 0;
                 }
                 av_usleep(1000);

@@ -30,8 +30,9 @@ jmethodID sleepMethodID = NULL;
 jobject callbackJavaObject = NULL;
 struct Callback {
     jmethodID onReadyMethodID = NULL;
-    jmethodID onPausedMethodID = NULL;
+    jmethodID onChangeWindowMethodID = NULL;
     jmethodID onPlayedMethodID = NULL;
+    jmethodID onPausedMethodID = NULL;
     jmethodID onFinishedMethodID = NULL;
     jmethodID onProgressUpdatedMethodID = NULL;
     jmethodID onErrorMethodID = NULL;
@@ -179,18 +180,19 @@ void onReady() {
     LOGI("onReady()\n");
 }
 
-void onPaused() {
+void onChangeWindow(int width, int height) {
     JNIEnv *jniEnv;
     bool isAttached = getEnv(&jniEnv);
     if (jniEnv != NULL
         && callbackJavaObject != NULL
-        && callback.onPausedMethodID != NULL) {
-        jniEnv->CallVoidMethod(callbackJavaObject, callback.onPausedMethodID);
+        && callback.onChangeWindowMethodID != NULL) {
+        jniEnv->CallVoidMethod(callbackJavaObject, callback.onChangeWindowMethodID,
+                               (jint) width, (jint) height);
     }
     if (isAttached) {
         gJavaVm->DetachCurrentThread();
     }
-    LOGI("onPaused()\n");
+    LOGI("onChangeWindow()\n");
 }
 
 void onPlayed() {
@@ -205,6 +207,20 @@ void onPlayed() {
         gJavaVm->DetachCurrentThread();
     }
     LOGI("onPlayed()\n");
+}
+
+void onPaused() {
+    JNIEnv *jniEnv;
+    bool isAttached = getEnv(&jniEnv);
+    if (jniEnv != NULL
+        && callbackJavaObject != NULL
+        && callback.onPausedMethodID != NULL) {
+        jniEnv->CallVoidMethod(callbackJavaObject, callback.onPausedMethodID);
+    }
+    if (isAttached) {
+        gJavaVm->DetachCurrentThread();
+    }
+    LOGI("onPaused()\n");
 }
 
 void onFinished() {
@@ -348,10 +364,12 @@ Java_com_weidi_usefragments_business_video_1player_FFMPEG_setCallback(JNIEnv *en
     // 第三个参数: 括号中是java端方法的参数签名,括号后面是java端方法的返回值签名(V表示void)
     callback.onReadyMethodID = env->GetMethodID(
             CallbackClass, "onReady", "()V");
-    callback.onPausedMethodID = env->GetMethodID(
-            CallbackClass, "onPaused", "()V");
+    callback.onChangeWindowMethodID = env->GetMethodID(
+            CallbackClass, "onChangeWindow", "(II)V");
     callback.onPlayedMethodID = env->GetMethodID(
             CallbackClass, "onPlayed", "()V");
+    callback.onPausedMethodID = env->GetMethodID(
+            CallbackClass, "onPaused", "()V");
     callback.onFinishedMethodID = env->GetMethodID(
             CallbackClass, "onFinished", "()V");
     callback.onProgressUpdatedMethodID = env->GetMethodID(

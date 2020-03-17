@@ -943,6 +943,11 @@ public class AudioFragment extends BaseFragment {
         }
 
         @Override
+        public void onChangeWindow(int width, int height) {
+
+        }
+
+        @Override
         public void onPaused() {
             mUiHandler.post(new Runnable() {
                 @Override

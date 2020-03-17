@@ -287,7 +287,7 @@ public class DecodeAudioFragment extends BaseFragment {
 
     /////////////////////////////////////////////////////////////////
 
-    private static final int PLAYBACK_PROGRESS_CHANGED = 0x008;
+    private static final int PLAYBACK_PROGRESS_CHANGED = 800;
     private static final int MSG_PREV = 9;
     private static final int MSG_NEXT = 10;
 

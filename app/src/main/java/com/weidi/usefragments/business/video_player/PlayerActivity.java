@@ -437,6 +437,11 @@ public class PlayerActivity extends BaseActivity {
         }
 
         @Override
+        public void onChangeWindow(int width, int height) {
+
+        }
+
+        @Override
         public void onPaused() {
             mUiHandler.removeMessages(MSG_LOADING_SHOW);
             mUiHandler.sendEmptyMessage(MSG_LOADING_SHOW);

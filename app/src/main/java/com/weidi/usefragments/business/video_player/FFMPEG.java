@@ -179,6 +179,19 @@ public class FFMPEG {
         }
 
         @Override
+        public void onChangeWindow(int width, int height) {
+            MLog.i(TAG, "onChangeWindow() width: " + width + " height: " + height);
+            if (mUiHandler != null) {
+                Message msg = mUiHandler.obtainMessage();
+                msg.arg1 = width;
+                msg.arg2 = height;
+                msg.what = Callback.MSG_ON_CHANGE_WINDOW;
+                mUiHandler.removeMessages(Callback.MSG_ON_CHANGE_WINDOW);
+                mUiHandler.sendMessage(msg);
+            }
+        }
+
+        @Override
         public void onPlayed() {
             MLog.i(TAG, "onPlayed()");
             if (mUiHandler != null) {

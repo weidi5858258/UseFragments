@@ -17,6 +17,7 @@ import android.os.Message;
 import android.os.PowerManager;
 import android.os.SystemClock;
 import android.text.format.DateUtils;
+import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
@@ -26,9 +27,11 @@ import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
 import android.view.WindowManager;
+import android.widget.FrameLayout;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
+import android.widget.RelativeLayout;
 import android.widget.SeekBar;
 import android.widget.TextView;
 
@@ -238,6 +241,39 @@ public class JniPlayerActivity extends BaseActivity {
                 mProgressBar.setProgress(0);
                 mFileNameTV.setText(Contents.getTitle());
                 mLoadingView.setVisibility(View.VISIBLE);
+                break;
+            case Callback.MSG_ON_CHANGE_WINDOW:
+                int width = msg.arg1;
+                int height = msg.arg2;
+                int controllerPanelLayoutHeight = mControllerPanelLayout.getHeight();
+                MLog.d(TAG, "Callback.MSG_ON_PLAYED controllerPanelLayoutHeight: " +
+                        controllerPanelLayoutHeight);
+                WindowManager windowManager =
+                        (WindowManager) getSystemService(Context.WINDOW_SERVICE);
+                DisplayMetrics displayMetrics = new DisplayMetrics();
+                windowManager.getDefaultDisplay().getRealMetrics(displayMetrics);
+                int screenWidth = displayMetrics.widthPixels;
+                int screenHeight = displayMetrics.heightPixels;
+                MLog.d(TAG, "Callback.MSG_ON_PLAYED screenWidth: " +
+                        screenWidth + " screenHeight: " + screenHeight);
+                RelativeLayout.LayoutParams relativeParams =
+                        (RelativeLayout.LayoutParams) mSurfaceView.getLayoutParams();
+                relativeParams.setMargins(0, 0, 0, 0);
+                int tempHeight = (screenWidth * height) / width;
+                if (tempHeight > (screenHeight - mControllerPanelLayout.getHeight())) {
+                    tempHeight = screenHeight - mControllerPanelLayout.getHeight();
+                }
+                relativeParams.width = screenWidth;
+                relativeParams.height = tempHeight;
+                MLog.d(TAG, "Callback.MSG_ON_PLAYED relativeParams.width: " +
+                        relativeParams.width + " relativeParams.height: " + relativeParams.height);
+                mSurfaceView.setLayoutParams(relativeParams);
+                FrameLayout.LayoutParams frameParams =
+                        (FrameLayout.LayoutParams) mControllerPanelLayout.getLayoutParams();
+                frameParams.setMargins(0, tempHeight, 0, 0);
+                frameParams.width = screenWidth;
+                frameParams.height = controllerPanelLayoutHeight;
+                mControllerPanelLayout.setLayoutParams(frameParams);
                 break;
             case Callback.MSG_ON_PLAYED:
                 durationTime = DateUtils.formatElapsedTime(mFFMPEGPlayer.getDuration());

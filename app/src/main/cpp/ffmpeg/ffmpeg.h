@@ -19,6 +19,8 @@ void videoSleep(long ms);
 
 void onReady();
 
+void onChangeWindow(int width, int height);
+
 void onPaused();
 
 void onPlayed();
