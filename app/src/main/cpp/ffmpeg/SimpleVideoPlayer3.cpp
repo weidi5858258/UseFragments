@@ -859,22 +859,41 @@ namespace alexander_media {
             av_usleep(1000);
         }
         LOGI("seekToImpl() sleep end\n");
-
-        audioWrapper->father->list2->clear();
-        videoWrapper->father->list2->clear();
+        LOGD("seekToImpl() audio list2 size: %d\n", audioWrapper->father->list2->size());
+        LOGD("seekToImpl() video list2 size: %d\n", videoWrapper->father->list2->size());
+        if (audioWrapper->father->list2->size() != 0) {
+            std::list<AVPacket>::iterator iter;
+            for (iter = audioWrapper->father->list2->begin();
+                 iter != audioWrapper->father->list2->end();
+                 iter++) {
+                AVPacket avPacket = *iter;
+                av_packet_unref(&avPacket);
+            }
+            audioWrapper->father->list2->clear();
+        }
+        if (videoWrapper->father->list2->size() != 0) {
+            std::list<AVPacket>::iterator iter;
+            for (iter = videoWrapper->father->list2->begin();
+                 iter != videoWrapper->father->list2->end();
+                 iter++) {
+                AVPacket avPacket = *iter;
+                av_packet_unref(&avPacket);
+            }
+            videoWrapper->father->list2->clear();
+        }
         LOGI("seekToImpl() av_seek_frame start\n");
         LOGI("seekToImpl() timestamp: %ld\n", (long) timeStamp);
         //LOGI("seekToImpl() timestamp: %"PRIu64"\n", timestamp);
         av_seek_frame(avFormatContext, -1,
                       timeStamp * AV_TIME_BASE,
                       AVSEEK_FLAG_BACKWARD | AVSEEK_FLAG_FRAME);
+        // 清空解码器的缓存
+        avcodec_flush_buffers(audioWrapper->father->avCodecContext);
+        avcodec_flush_buffers(videoWrapper->father->avCodecContext);
         timeStamp = -1;
         preProgress = 0;
         audioWrapper->father->isPausedForSeek = false;
         videoWrapper->father->isPausedForSeek = false;
-        // 清空解码器的缓存
-        avcodec_flush_buffers(audioWrapper->father->avCodecContext);
-        avcodec_flush_buffers(videoWrapper->father->avCodecContext);
         LOGI("seekToImpl() av_seek_frame end\n");
         LOGI("==================================================================\n");
         return 0;
@@ -1312,12 +1331,23 @@ namespace alexander_media {
                 if (isPausedForSeek) {
                     if (wrapper->type == TYPE_AUDIO) {
                         LOGD("handleData() wait() Seek  audio start\n");
+                        LOGD("handleData() audio list1 size: %d\n", wrapper->list1->size());
                     } else {
                         LOGW("handleData() wait() Seek  video start\n");
+                        LOGD("handleData() video list1 size: %d\n", wrapper->list1->size());
                     }
-                    wrapper->needToSeek = true;
+                    if (wrapper->list1->size() != 0) {
+                        std::list<AVPacket>::iterator iter;
+                        for (iter = wrapper->list1->begin();
+                             iter != wrapper->list1->end();
+                             iter++) {
+                            AVPacket avPacket = *iter;
+                            av_packet_unref(&avPacket);
+                        }
+                        wrapper->list1->clear();
+                    }
                     wrapper->isHandleList1Full = false;
-                    wrapper->list1->clear();
+                    wrapper->needToSeek = true;
                 } else if (isPausedForUser) {
                     if (wrapper->type == TYPE_AUDIO) {
                         LOGD("handleData() wait() User  audio start\n");
@@ -2096,8 +2126,10 @@ namespace alexander_media {
         if ((long) timestamp < 0
             || audioWrapper == NULL
             || audioWrapper->father == NULL
+            || audioWrapper->father->isPausedForSeek
             || videoWrapper == NULL
-            || videoWrapper->father == NULL) {
+            || videoWrapper->father == NULL
+            || videoWrapper->father->isPausedForSeek) {
             return -1;
         }
 
