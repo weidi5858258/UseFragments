@@ -1251,6 +1251,7 @@ namespace alexander_media {
             closeVideo();
             onFinished();
             LOGF("%s\n", "handleData() video end");
+            LOGF("%s\n", "Safe exit");
         }
     }
 
@@ -1763,8 +1764,6 @@ namespace alexander_media {
         pthread_mutex_destroy(&audioWrapper->father->handleLockMutex);
         pthread_cond_destroy(&audioWrapper->father->handleLockCondition);
 
-        //av_free(audioWrapper->father->list1);
-        //av_free(audioWrapper->father->list2);
         if (audioWrapper->father->list1->size() != 0) {
             LOGD("closeAudio() list1 is not empty, %d\n", audioWrapper->father->list1->size());
             std::list<AVPacket>::iterator iter;
@@ -1794,7 +1793,6 @@ namespace alexander_media {
         audioWrapper->father = NULL;
         av_free(audioWrapper);
         audioWrapper = NULL;
-
         LOGD("%s\n", "closeAudio() end");
     }
 
@@ -1852,8 +1850,6 @@ namespace alexander_media {
         pthread_mutex_destroy(&videoWrapper->father->handleLockMutex);
         pthread_cond_destroy(&videoWrapper->father->handleLockCondition);
 
-        //av_free(videoWrapper->father->list1);
-        //av_free(videoWrapper->father->list2);
         if (videoWrapper->father->list1->size() != 0) {
             LOGW("closeVideo() list1 is not empty, %d\n", videoWrapper->father->list1->size());
             std::list<AVPacket>::iterator iter;
@@ -2129,7 +2125,9 @@ namespace alexander_media {
             || audioWrapper->father->isPausedForSeek
             || videoWrapper == NULL
             || videoWrapper->father == NULL
-            || videoWrapper->father->isPausedForSeek) {
+            || videoWrapper->father->isPausedForSeek
+            || getDuration() < 0
+            || ((long) timestamp) > getDuration()) {
             return -1;
         }
 
@@ -2165,7 +2163,11 @@ namespace alexander_media {
         LOGF("stepAdd()      videoSleepTime: %d\n", videoSleepTime);*/
 
         if (getDuration() > 0) {
-            seekTo(curProgress + 30);
+            if (getDuration() > 300) {
+                seekTo(curProgress + 30);
+            } else {
+                seekTo(curProgress + 10);
+            }
         }
     }
 
@@ -2177,7 +2179,11 @@ namespace alexander_media {
         LOGF("stepSubtract() videoSleepTime: %d\n", videoSleepTime);*/
 
         if (getDuration() > 0) {
-            seekTo(curProgress - 30);
+            if (getDuration() > 300) {
+                seekTo(curProgress - 30);
+            } else {
+                seekTo(curProgress - 10);
+            }
         }
     }
 

@@ -243,8 +243,11 @@ public class JniPlayerActivity extends BaseActivity {
                 mLoadingView.setVisibility(View.VISIBLE);
                 break;
             case Callback.MSG_ON_CHANGE_WINDOW:
+                mControllerPanelLayout.setVisibility(View.VISIBLE);
                 int width = msg.arg1;
                 int height = msg.arg2;
+                MLog.d(TAG, "Callback.MSG_ON_PLAYED srcWidth: " +
+                        width + " scrHeight: " + height);
                 int controllerPanelLayoutHeight = mControllerPanelLayout.getHeight();
                 MLog.d(TAG, "Callback.MSG_ON_PLAYED controllerPanelLayoutHeight: " +
                         controllerPanelLayoutHeight);
@@ -545,7 +548,6 @@ public class JniPlayerActivity extends BaseActivity {
                     MLog.d(TAG, "surfaceDestroyed()");
                     if (mFFMPEGPlayer != null) {
                         mFFMPEGPlayer.releaseAll();
-                        mFFMPEGPlayer = null;
                     }
                 }
             });
@@ -583,6 +585,10 @@ public class JniPlayerActivity extends BaseActivity {
         }
         unregisterHeadsetPlugReceiver();
         EventBusUtils.unregister(this);
+        if (mFFMPEGPlayer != null) {
+            mFFMPEGPlayer.releaseAll();
+        }
+        mFFMPEGPlayer = null;
     }
 
     private void showBubbleView(String time, View view) {
