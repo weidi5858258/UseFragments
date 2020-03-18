@@ -1011,6 +1011,7 @@ namespace alexander_media {
                 LOGF("readData() readFrame  : %d\n", readFrame);
                 LOGF("readData() audio list2: %d\n", audioWrapper->father->list2->size());
                 LOGF("readData() video list2: %d\n", videoWrapper->father->list2->size());
+
                 // 读到文件末尾了
                 audioWrapper->father->isReading = false;
                 videoWrapper->father->isReading = false;
@@ -1408,6 +1409,19 @@ namespace alexander_media {
                 wrapper->list1->pop_front();
                 wrapper->handleFramesCount++;
                 wrapper->allowDecode = true;
+            }
+
+            if (!isLocal) {
+                size_t list1Size = wrapper->list1->size();
+                if (wrapper->type == TYPE_AUDIO) {
+                    if (list1Size % 1000 == 0) {
+                        LOGD("handleData()   audio list1Size: %d\n", list1Size);
+                    }
+                } else {
+                    if (list1Size % 1000 == 0) {
+                        LOGW("handleData()   video list1Size: %d\n", list1Size);
+                    }
+                }
             }
 
             // endregion

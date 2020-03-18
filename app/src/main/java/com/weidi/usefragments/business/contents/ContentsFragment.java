@@ -221,23 +221,36 @@ public class ContentsFragment extends BaseFragment {
         if (requestCode == REQUEST_CODE_SELECT_VIDEO
                 && resultCode == Activity.RESULT_OK
                 && null != data) {
-            Uri selectedVideo = data.getData();
+            Uri uri = data.getData();
+            MLog.i(TAG, "onActivityResult() path: " + uri.getPath());
             String[] filePathColumn = {MediaStore.Video.Media.DATA};
             Cursor cursor = getContext().getContentResolver().query(
-                    selectedVideo, filePathColumn, null, null, null);
+                    uri, filePathColumn, null, null, null);
             cursor.moveToFirst();
             int columnIndex = cursor.getColumnIndex(filePathColumn[0]);
             String videoPlaybackPath = cursor.getString(columnIndex);
             cursor.close();
-            MLog.i(TAG, "onActivityResult() videoPlaybackPath: " + videoPlaybackPath);
-            if (!TextUtils.isEmpty(videoPlaybackPath)) {
-                Intent intent = new Intent();
-                intent.putExtra(PlayerActivity.CONTENT_PATH, videoPlaybackPath);
-                //intent.setClass(getContext(), PlayerActivity.class);
-                intent.setClass(getContext(), JniPlayerActivity.class);
-                getAttachedActivity().startActivity(intent);
-                ((BaseActivity) getAttachedActivity()).enterActivity();
+            if (TextUtils.isEmpty(videoPlaybackPath)) {
+                // /document/1532-48AD:Videos/传染病.mp4
+                String path = uri.getPath();
+                if (path.contains(":")) {
+                    String[] paths = path.split(":");
+                    if (paths.length == 2) {
+                        videoPlaybackPath = "/storage" +
+                                paths[0].substring(paths[0].lastIndexOf("/")) + "/" + paths[1];
+                    }
+                }
             }
+            MLog.i(TAG, "onActivityResult() videoPlaybackPath: " + videoPlaybackPath);
+            if (TextUtils.isEmpty(videoPlaybackPath)) {
+                return;
+            }
+            Intent intent = new Intent();
+            intent.putExtra(PlayerActivity.CONTENT_PATH, videoPlaybackPath);
+            //intent.setClass(getContext(), PlayerActivity.class);
+            intent.setClass(getContext(), JniPlayerActivity.class);
+            getAttachedActivity().startActivity(intent);
+            ((BaseActivity) getAttachedActivity()).enterActivity();
         }
     }
 
@@ -496,7 +509,8 @@ public class ContentsFragment extends BaseFragment {
 
     }
 
-    @InjectOnClick({R.id.playback_btn, R.id.download_btn, R.id.jump_btn})
+    @InjectOnClick({R.id.playback_btn, R.id.download_btn,
+            R.id.jump_to_gallery_btn, R.id.jump_to_file_manager_btn, R.id.jump_btn})
     private void onClick(View v) {
         switch (v.getId()) {
             case R.id.playback_btn:
@@ -546,11 +560,24 @@ public class ContentsFragment extends BaseFragment {
                         DownloadFileService.MSG_DOWNLOAD_START,
                         new Object[]{address});
                 break;
-            case R.id.jump_btn:
-                // 调用图库
+            case R.id.jump_to_gallery_btn:
+                // 调用"图库"
                 intent = new Intent(Intent.ACTION_PICK,
                         android.provider.MediaStore.Video.Media.EXTERNAL_CONTENT_URI);
                 startActivityForResult(intent, REQUEST_CODE_SELECT_VIDEO);
+                break;
+            case R.id.jump_to_file_manager_btn:
+                // 调用"文件管理"
+                intent = new Intent(Intent.ACTION_GET_CONTENT);
+                // 设置类型(任意后缀)
+                intent.setType("*/*");
+                //intent.setType("video/*");
+                //intent.setType("video/*;image/*");
+                intent.addCategory(Intent.CATEGORY_OPENABLE);
+                startActivityForResult(intent, REQUEST_CODE_SELECT_VIDEO);
+                break;
+            case R.id.jump_btn:
+
                 break;
             default:
                 break;

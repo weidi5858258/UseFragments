@@ -16,6 +16,7 @@ import android.os.Looper;
 import android.os.Message;
 import android.os.PowerManager;
 import android.os.SystemClock;
+import android.text.TextUtils;
 import android.text.format.DateUtils;
 import android.util.DisplayMetrics;
 import android.util.Log;
@@ -46,6 +47,8 @@ import com.weidi.usefragments.tool.DownloadCallback;
 import com.weidi.usefragments.tool.MLog;
 import com.weidi.usefragments.tool.PermissionsUtils;
 import com.weidi.utils.MyToast;
+
+import java.io.File;
 
 /***
 
@@ -410,6 +413,12 @@ public class JniPlayerActivity extends BaseActivity {
         mShowTimeTV.setOnClickListener(mOnClickListener);
 
         mPath = getIntent().getStringExtra(CONTENT_PATH);
+        if (!TextUtils.isEmpty(mPath)) {
+            File file = new File(mPath);
+            if (!file.canRead()) {
+                MLog.d(TAG, "initData() mPath: " + mPath + " 这个路径的文件不能读取!!!");
+            }
+        }
 
         mLoadingView = findViewById(R.id.loading_view);
         mControllerPanelLayout = findViewById(R.id.controller_panel_layout);
@@ -581,6 +590,7 @@ public class JniPlayerActivity extends BaseActivity {
                 }
             }
         }
+        finish();
     }
 
     private void internalDestroy() {
