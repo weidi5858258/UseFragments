@@ -998,7 +998,7 @@ public class AudioFragment extends BaseFragment {
         }
 
         @Override
-        public void onError() {
+        public void onError(int error, String errorInfo) {
 
         }
 

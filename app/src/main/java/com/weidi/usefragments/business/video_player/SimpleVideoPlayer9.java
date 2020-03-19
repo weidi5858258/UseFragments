@@ -544,13 +544,13 @@ public class SimpleVideoPlayer9 {
                     } else {
                         if (mCallback != null) {
                             MLog.e(TAG, "onError prepareAudio() || prepareVideo()");
-                            mCallback.onError();
+                            mCallback.onError(0,null);
                         }
                     }
                 } else {
                     if (mCallback != null) {
                         MLog.e(TAG, "onError internalPrepare()");
-                        mCallback.onError();
+                        mCallback.onError(0,null);
                     }
                 }
                 break;

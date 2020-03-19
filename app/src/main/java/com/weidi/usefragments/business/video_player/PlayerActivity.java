@@ -478,7 +478,7 @@ public class PlayerActivity extends BaseActivity {
         }
 
         @Override
-        public void onError() {
+        public void onError(int error, String errorInfo) {
 
         }
 

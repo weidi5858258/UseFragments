@@ -167,6 +167,7 @@ void videoSleep(long ms) {
 
 // 回调java端FFMPEG类中的有关方法
 void onReady() {
+    LOGI("onReady()\n");
     JNIEnv *jniEnv;
     bool isAttached = getEnv(&jniEnv);
     if (jniEnv != NULL
@@ -177,10 +178,10 @@ void onReady() {
     if (isAttached) {
         gJavaVm->DetachCurrentThread();
     }
-    LOGI("onReady()\n");
 }
 
 void onChangeWindow(int width, int height) {
+    LOGI("onChangeWindow()\n");
     JNIEnv *jniEnv;
     bool isAttached = getEnv(&jniEnv);
     if (jniEnv != NULL
@@ -192,10 +193,10 @@ void onChangeWindow(int width, int height) {
     if (isAttached) {
         gJavaVm->DetachCurrentThread();
     }
-    LOGI("onChangeWindow()\n");
 }
 
 void onPlayed() {
+    LOGI("onPlayed()\n");
     JNIEnv *jniEnv;
     bool isAttached = getEnv(&jniEnv);
     if (jniEnv != NULL
@@ -206,10 +207,10 @@ void onPlayed() {
     if (isAttached) {
         gJavaVm->DetachCurrentThread();
     }
-    LOGI("onPlayed()\n");
 }
 
 void onPaused() {
+    LOGI("onPaused()\n");
     JNIEnv *jniEnv;
     bool isAttached = getEnv(&jniEnv);
     if (jniEnv != NULL
@@ -220,10 +221,10 @@ void onPaused() {
     if (isAttached) {
         gJavaVm->DetachCurrentThread();
     }
-    LOGI("onPaused()\n");
 }
 
 void onFinished() {
+    LOGF("onFinished()\n");
     JNIEnv *jniEnv;
     bool isAttached = getEnv(&jniEnv);
     if (jniEnv != NULL
@@ -234,7 +235,6 @@ void onFinished() {
     if (isAttached) {
         gJavaVm->DetachCurrentThread();
     }
-    LOGF("onFinished()\n");
 }
 
 void onProgressUpdated(long seconds) {
@@ -252,16 +252,17 @@ void onProgressUpdated(long seconds) {
     }
 }
 
-void onError() {
+void onError(int error, char *errorInfo) {
+    LOGE("onError()\n");
     JNIEnv *jniEnv;
     bool isAttached = getEnv(&jniEnv);
     if (jniEnv != NULL && callbackJavaObject != NULL && callback.onErrorMethodID != NULL) {
-        jniEnv->CallVoidMethod(callbackJavaObject, callback.onErrorMethodID);
+        jniEnv->CallVoidMethod(callbackJavaObject, callback.onErrorMethodID,
+                               error, jniEnv->NewStringUTF(errorInfo));
     }
     if (isAttached) {
         gJavaVm->DetachCurrentThread();
     }
-    LOGE("onError()\n");
 }
 
 void onInfo(char *info) {
@@ -375,7 +376,7 @@ Java_com_weidi_usefragments_business_video_1player_FFMPEG_setCallback(JNIEnv *en
     callback.onProgressUpdatedMethodID = env->GetMethodID(
             CallbackClass, "onProgressUpdated", "(J)V");
     callback.onErrorMethodID = env->GetMethodID(
-            CallbackClass, "onError", "()V");
+            CallbackClass, "onError", "(ILjava/lang/String;)V");
     callback.onInfoMethodID = env->GetMethodID(
             CallbackClass, "onInfo", "(Ljava/lang/String;)V");
 

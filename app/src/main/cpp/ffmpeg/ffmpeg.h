@@ -29,7 +29,7 @@ void onFinished();
 
 void onProgressUpdated(long seconds);
 
-void onError();
+void onError(int error, char *errorInfo);
 
 void onInfo(char *info);
 

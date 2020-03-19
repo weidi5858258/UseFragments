@@ -311,7 +311,7 @@ namespace alexander_only_video {
                 }
             } else {
                 LOGW("findAndOpenAVCodecForVideo() decoderAVCodec is NULL\n");
-                onError();
+                //onError();
                 return -1;
             }
         }
@@ -1021,25 +1021,25 @@ namespace alexander_only_video {
         if (openAndFindAVFormatContext() < 0) {
             LOGE("openAndFindAVFormatContext() failed\n");
             closeVideo();
-            onError();
+            //onError();
             return -1;
         }
         if (findStreamIndex() < 0) {
             LOGE("findStreamIndex() failed\n");
             closeVideo();
-            onError();
+            //onError();
             return -1;
         }
         if (findAndOpenAVCodecForVideo() < 0) {
             LOGE("findAndOpenAVCodecForVideo() failed\n");
             closeVideo();
-            onError();
+            //onError();
             return -1;
         }
         if (createSwsContext() < 0) {
             LOGE("createSwsContext() failed\n");
             closeVideo();
-            onError();
+            //onError();
             return -1;
         }
 

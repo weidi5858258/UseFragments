@@ -230,16 +230,24 @@ public class FFMPEG {
         }
 
         @Override
-        public void onError() {
-            MLog.e(TAG, "onError()");
+        public void onError(int error, String errorInfo) {
+            MLog.e(TAG, "onError() error: " + error + " errorInfo: " + errorInfo);
+            if (!TextUtils.isEmpty(errorInfo)) {
+                MyToast.show(errorInfo);
+            }
             if (mUiHandler != null) {
+                Message msg = mUiHandler.obtainMessage();
+                msg.what = Callback.MSG_ON_ERROR;
+                msg.obj = errorInfo;
+                msg.arg1 = error;
                 mUiHandler.removeMessages(Callback.MSG_ON_ERROR);
-                mUiHandler.sendEmptyMessage(Callback.MSG_ON_ERROR);
+                mUiHandler.sendMessage(msg);
             }
         }
 
         @Override
         public void onInfo(String info) {
+            MLog.i(TAG, "onInfo() info: " + info);
             if (!TextUtils.isEmpty(info)) {
                 MyToast.show(info);
             }

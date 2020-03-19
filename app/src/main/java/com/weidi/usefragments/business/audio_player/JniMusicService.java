@@ -312,7 +312,7 @@ public class JniMusicService extends Service {
                 } else {
                     if (mCallback != null) {
                         MLog.e(TAG, "onError");
-                        mCallback.onError();
+                        mCallback.onError(0, null);
                     }
                 }
                 break;

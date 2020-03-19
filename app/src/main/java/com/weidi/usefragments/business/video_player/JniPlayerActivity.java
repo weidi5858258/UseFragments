@@ -103,6 +103,7 @@ public class JniPlayerActivity extends BaseActivity {
         super.onPause();
         if (DEBUG)
             MLog.d(TAG, "onPause(): " + printThis());
+        internalPause();
     }
 
     @Override
@@ -115,10 +116,10 @@ public class JniPlayerActivity extends BaseActivity {
 
     @Override
     public void onDestroy() {
-        internalDestroy();
-        super.onDestroy();
         if (DEBUG)
             MLog.d(TAG, "onDestroy(): " + printThis());
+        internalDestroy();
+        super.onDestroy();
         exitActivity();
     }
 
@@ -208,6 +209,7 @@ public class JniPlayerActivity extends BaseActivity {
     private long contentLength = -1;
     private boolean mNeedToSyncProgressBar = true;
     private boolean mIsScreenPress = false;
+    private boolean mHasError = false;
     private ProgressBar mLoadingView;
     private LinearLayout mControllerPanelLayout;
     private TextView mFileNameTV;
@@ -248,6 +250,7 @@ public class JniPlayerActivity extends BaseActivity {
             case Callback.MSG_ON_CHANGE_WINDOW:
                 if (getResources().getConfiguration().orientation
                         == Configuration.ORIENTATION_LANDSCAPE) {
+                    // 横屏
                     return;
                 }
 
@@ -292,7 +295,12 @@ public class JniPlayerActivity extends BaseActivity {
                 mLoadingView.setVisibility(View.GONE);
                 mPlayIB.setVisibility(View.VISIBLE);
                 mPauseIB.setVisibility(View.GONE);
-                mControllerPanelLayout.setVisibility(View.VISIBLE);// INVISIBLE
+                if (getResources().getConfiguration().orientation
+                        == Configuration.ORIENTATION_LANDSCAPE) {
+                    mControllerPanelLayout.setVisibility(View.INVISIBLE);// INVISIBLE
+                } else {
+                    mControllerPanelLayout.setVisibility(View.VISIBLE);// INVISIBLE
+                }
                 break;
             case Callback.MSG_ON_PAUSED:
                 mPlayIB.setVisibility(View.GONE);
@@ -300,8 +308,38 @@ public class JniPlayerActivity extends BaseActivity {
                 mLoadingView.setVisibility(View.VISIBLE);
                 mControllerPanelLayout.setVisibility(View.VISIBLE);
                 break;
-            case Callback.MSG_ON_FINISHED:
             case Callback.MSG_ON_ERROR:
+                if (msg.obj == null) {
+                    return;
+                }
+                mHasError = false;
+                int error = msg.arg1;
+                String errorInfo = (String) msg.obj;
+                switch (error) {
+                    case Callback.ERROR_TIME_OUT:
+                    case Callback.ERROR_DATA_EXCEPTION:
+                        // 需要重新播放
+                        mHasError = true;
+                        MLog.e(TAG, "Callback.MSG_ON_ERROR " + errorInfo);
+                    case Callback.ERROR_FFMPEG_INIT:
+                        // 不需要重新播放
+                        break;
+                    default:
+                        break;
+                }
+                break;
+            case Callback.MSG_ON_FINISHED:
+                if (mHasError) {
+                    mHasError = false;
+
+                    /*Intent intent = new Intent();
+                    intent.putExtra(PlayerActivity.CONTENT_PATH, mPath);
+                    //intent.setClass(getContext(), PlayerActivity.class);
+                    intent.setClass(getContext(), JniPlayerActivity.class);
+                    startActivity(intent);
+                    enterActivity();*/
+                }
+
                 finish();
                 exitActivity();
                 break;
@@ -323,8 +361,7 @@ public class JniPlayerActivity extends BaseActivity {
                 break;
             case KeyEvent.KEYCODE_HEADSETHOOK:// 单击事件
                 if (firstFlag && secondFlag && threeFlag) {
-                    /*if (DEBUG)
-                        Log.d(TAG, "onKeyDown() 3");*/
+                    /*Log.d(TAG, "onKeyDown() 3");*/
 
                     if (mControllerPanelLayout.getVisibility() == View.VISIBLE) {
                         mNeedToSyncProgressBar = true;
@@ -333,33 +370,34 @@ public class JniPlayerActivity extends BaseActivity {
                         mControllerPanelLayout.setVisibility(View.VISIBLE);
                     }
                 } else if (firstFlag && secondFlag) {
-                    /*if (DEBUG)
-                        Log.d(TAG, "onKeyDown() 2");*/
+                    /*Log.d(TAG, "onKeyDown() 2");*/
 
-                    if (mFFMPEGPlayer != null) {
+                    /*if (mFFMPEGPlayer != null) {
                         Log.d(TAG, "onKeyDown() mPresentationTime: " + mPresentationTime);
                         mFFMPEGPlayer.seekTo(mPresentationTime + 30);
-                    }
-                } else {
-                    /*if (DEBUG)
-                        Log.d(TAG, "onKeyDown() 1");*/
-
-                    // 播放与暂停
-                    if (mFFMPEGPlayer != null) {
-                        if (mFFMPEGPlayer.isRunning()) {
-                            if (mFFMPEGPlayer.isPlaying()) {
-                                mPlayIB.setVisibility(View.GONE);
-                                mPauseIB.setVisibility(View.VISIBLE);
-                                mControllerPanelLayout.setVisibility(View.VISIBLE);
-                                mFFMPEGPlayer.pause();
-                            } else {
-                                mPlayIB.setVisibility(View.VISIBLE);
-                                mPauseIB.setVisibility(View.GONE);
-                                mControllerPanelLayout.setVisibility(View.INVISIBLE);
-                                mFFMPEGPlayer.play();
+                    }*/
+                    if (getResources().getConfiguration().orientation
+                            == Configuration.ORIENTATION_LANDSCAPE) {
+                        // 播放与暂停
+                        if (mFFMPEGPlayer != null) {
+                            if (mFFMPEGPlayer.isRunning()) {
+                                if (mFFMPEGPlayer.isPlaying()) {
+                                    mPlayIB.setVisibility(View.GONE);
+                                    mPauseIB.setVisibility(View.VISIBLE);
+                                    mControllerPanelLayout.setVisibility(View.VISIBLE);
+                                    mFFMPEGPlayer.pause();
+                                } else {
+                                    mPlayIB.setVisibility(View.VISIBLE);
+                                    mPauseIB.setVisibility(View.GONE);
+                                    mControllerPanelLayout.setVisibility(View.INVISIBLE);
+                                    mFFMPEGPlayer.play();
+                                }
                             }
                         }
                     }
+                } else {
+                    /*Log.d(TAG, "onKeyDown() 1");*/
+
                     /*if (!mIsScreenPress) {
                     }
                     mIsScreenPress = false;*/
@@ -579,6 +617,10 @@ public class JniPlayerActivity extends BaseActivity {
         }
     }
 
+    private void internalPause() {
+        finish();
+    }
+
     private void internalStop() {
         if (mFFMPEGPlayer != null) {
             if (mFFMPEGPlayer.isRunning()) {
@@ -590,7 +632,6 @@ public class JniPlayerActivity extends BaseActivity {
                 }
             }
         }
-        finish();
     }
 
     private void internalDestroy() {

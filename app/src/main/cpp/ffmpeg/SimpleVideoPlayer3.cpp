@@ -202,6 +202,7 @@ namespace alexander_media {
     bool isLocal = false;
     bool isReading = false;
     bool isAudioHandling = false;
+    bool isInterrupted = false;
     bool needLocalLog = true;
     // seek时间
     int64_t timeStamp = -1;
@@ -306,6 +307,8 @@ namespace alexander_media {
         } else if (audioWrapper->father->isPausedForCache
                    && (endReadTime - startReadTime) > MAX_RELATIVE_TIME) {
             LOGE("read_thread_interrupt_cb() return 1 超时了\n");
+            isInterrupted = true;
+            onError(0x101, "读取数据超时");
             return 1;
         }
         return 0;
@@ -334,6 +337,7 @@ namespace alexander_media {
         runCounts = 0;
         averageTimeDiff = 0.0;
         memset(timeDiff, '0', sizeof(timeDiff));
+        isInterrupted = false;
     }
 
     void initAudio() {
@@ -1003,6 +1007,11 @@ namespace alexander_media {
             int readFrame = av_read_frame(avFormatContext, srcAVPacket);
             endReadTime = av_gettime_relative();
 
+            if (isInterrupted) {
+                stop();
+                break;
+            }
+
             // 0 if OK, < 0 on error or end of file
             if (readFrame < 0) {
                 // readData() AVERROR_EOF readFrame: -12 (Cannot allocate memory)
@@ -1243,6 +1252,7 @@ namespace alexander_media {
             while (isReading || isAudioHandling) {
                 av_usleep(1000);
             }
+            LOGF("%s\n", "handleData() video end");
             if (avFormatContext != NULL) {
                 avformat_free_context(avFormatContext);
                 avFormatContext = NULL;
@@ -1252,7 +1262,6 @@ namespace alexander_media {
             closeAudio();
             closeVideo();
             onFinished();
-            LOGF("%s\n", "handleData() video end");
             LOGF("%s\n", "Safe exit");
         }
     }
@@ -1318,6 +1327,7 @@ namespace alexander_media {
 
         //bool hasErrorOccurred = false;
         int ret = 0, out_buffer_size = 0;
+        bool maybeHasException = false;
         for (;;) {
             if (!wrapper->isHandling) {
                 // for (;;) end
@@ -1396,6 +1406,13 @@ namespace alexander_media {
             if (!wrapper->isHandling) {
                 // for (;;) end
                 break;
+            }
+
+            if (!isLocal) {
+                if (wrapper->list1->size() >= wrapper->list1LimitCounts) {
+                    wrapper->startHandleTime = av_gettime_relative();
+                    maybeHasException = true;
+                }
             }
 
             // region 从队列中取出一个AVPacket
@@ -1500,6 +1517,20 @@ namespace alexander_media {
             }
 
             // endregion
+
+            if (!isLocal) {
+                if (maybeHasException && wrapper->list1->size() == 0) {
+                    wrapper->endHandleTime = av_gettime_relative();
+                    // 如果不是本地视频,从一千个左右的数据到0个数据的时间不超过30秒,那么就有问题了.
+                    if ((wrapper->endHandleTime - wrapper->startHandleTime) <= 30000000) {
+                        onError(0x102, "播放时发生异常");
+                        stop();
+                        break;
+                    } else {
+                        maybeHasException = false;
+                    }
+                }
+            }
 
             // region 缓冲处理
 
@@ -1622,7 +1653,7 @@ namespace alexander_media {
             switch (ret) {
                 case AVERROR(EAGAIN):
                     if (wrapper->type == TYPE_AUDIO) {
-                        LOGE("handleData() audio avcodec_send_packet   ret: %d\n", ret);
+                        LOGE("handleData() audio avcodec_send_packet   ret: %d\n", ret);// -11
                     } else {
                         LOGE("handleData() video avcodec_send_packet   ret: %d\n", ret);
                     }
@@ -2050,7 +2081,7 @@ namespace alexander_media {
             || audioWrapper->father == NULL
             || videoWrapper == NULL
             || videoWrapper->father == NULL) {
-            LOGE("stop() return\n");
+            LOGI("stop() return\n");
             return -1;
         }
 

@@ -96,7 +96,7 @@ namespace alexander_media {
     // 不能无限制读取数据进行保存,这样要出错的(能播放,但不是想要的结果)
 #define MAX_AVPACKET_COUNT         10000
 
-#define MAX_AVPACKET_COUNT_AUDIO_HTTP 2000// 3000
+#define MAX_AVPACKET_COUNT_AUDIO_HTTP 1500// 3000
 #define MAX_AVPACKET_COUNT_VIDEO_HTTP 1000// 2000
 
 #define MAX_AVPACKET_COUNT_AUDIO_LOCAL 100
@@ -105,80 +105,6 @@ namespace alexander_media {
 #define MAX_RELATIVE_TIME 120000000// 120秒
 
 ///////////////////////////////////////////
-
-#define    PICTURE_QUEUE_SIZE 3
-#define     SAMPLE_QUEUE_SIZE 9
-#define SUBPICTURE_QUEUE_SIZE 16
-#define FRAME_QUEUE_SIZE FFMAX(SAMPLE_QUEUE_SIZE, FFMAX(PICTURE_QUEUE_SIZE, SUBPICTURE_QUEUE_SIZE))
-
-#define REFRESH_RATE 0.01
-#define AV_SYNC_THRESHOLD_MAX 0.1
-#define AV_SYNC_THRESHOLD_MIN 0.04
-#define AV_SYNC_FRAMEDUP_THRESHOLD 0.1
-#define AV_NOSYNC_THRESHOLD 10.0 // 10秒
-
-    enum {
-        AV_SYNC_AUDIO_MASTER,   /* default choice */
-        AV_SYNC_VIDEO_MASTER,
-        AV_SYNC_EXTERNAL_CLOCK, /* synchronize to an external clock */
-    };
-
-    typedef struct Clock {
-        // 初始化时为NAN
-        double pts;
-        double pts_drift;
-        // 初始化时为av_gettime_relative() / 1000000.0;
-        double last_updated;
-        // 初始化时为1.0
-        double speed;
-        // 初始化时为-1
-        int serial;
-        // 初始化时为0
-        int paused;
-        // 指向当前数据包队列序列的指针，用于过时的时钟检测
-        int *queue_serial;
-    } Clock;
-
-    typedef struct Frame {
-        // 解码帧
-        AVFrame *frame;
-        // 帧的显示时间戳
-        double pts;
-        // 帧显示时长
-        double duration;
-        // 文件中的位置
-        int64_t pkt_pos;
-        int width;
-        int height;
-        // 格式
-        int format;
-
-        // 字幕
-        AVSubtitle sub;
-        int serial;
-        // 额外参数
-        AVRational sample_aspect_ratio;
-        // 上载
-        int uploaded;
-        // 反转
-        int flip_v;
-        double relative_time;
-    } Frame;
-
-    typedef struct FrameQueue {
-        // 视频放3 个元素
-        // 音频放9 个元素
-        // 字幕放16个元素
-        Frame queue[FRAME_QUEUE_SIZE];
-        int size;
-        int read_index;
-        int write_index;
-        int max_size;
-        int keep_last;
-        int rindex_shown;
-        pthread_mutex_t pMutex;// "同步"作用
-        pthread_cond_t pCond;  // "暂停"作用
-    } FrameQueue;
 
     // 子类都要用到的部分
     struct Wrapper {
@@ -224,6 +150,9 @@ namespace alexander_media {
         // seek的初始化条件有没有完成,true表示完成
         bool needToSeek = false;
         bool allowDecode = false;
+
+        int64_t startHandleTime;
+        int64_t endHandleTime;
 
         // 单位: 秒
         int64_t duration = 0;

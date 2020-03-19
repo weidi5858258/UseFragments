@@ -450,13 +450,13 @@ public class OnlyVideoPlayer {
                     } else {
                         if (mCallback != null) {
                             MLog.e(TAG, "onError prepareVideo()");
-                            mCallback.onError();
+                            mCallback.onError(0,null);
                         }
                     }
                 } else {
                     if (mCallback != null) {
                         MLog.e(TAG, "onError internalPrepare()");
-                        mCallback.onError();
+                        mCallback.onError(0,null);
                     }
                 }
                 break;

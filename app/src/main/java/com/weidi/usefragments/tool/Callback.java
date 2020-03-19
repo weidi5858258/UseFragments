@@ -15,6 +15,10 @@ public interface Callback {
     int MSG_ON_PROGRESS_UPDATED = 0x008;
     //int MSG_ON_PROGRESS_CHANGED = 0x008;
 
+    int ERROR_FFMPEG_INIT = 0x100;
+    int ERROR_TIME_OUT = 0x101;
+    int ERROR_DATA_EXCEPTION = 0x102;
+
     void onReady();
 
     void onChangeWindow(int width, int height);
@@ -32,7 +36,7 @@ public interface Callback {
      */
     void onProgressUpdated(long presentationTimeUs);
 
-    void onError();
+    void onError(int error, String errorInfo);
 
     void onInfo(String info);
 
