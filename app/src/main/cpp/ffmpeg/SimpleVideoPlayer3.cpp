@@ -1172,11 +1172,11 @@ namespace alexander_media {
 
             if (tempTimeDifference > 2.000000) {
                 // 不好的现象.为什么会出现这种情况还不知道?
-                LOGE("handleVideoDataImpl() audioTimeDifference: %lf\n", audioPts);
-                LOGE("handleVideoDataImpl() videoTimeDifference: %lf\n", videoPts);
-                LOGE("handleVideoDataImpl() video - audio      : %lf\n", tempTimeDifference);
+                //LOGE("handleVideoDataImpl() audioTimeDifference: %lf\n", audioPts);
+                //LOGE("handleVideoDataImpl() videoTimeDifference: %lf\n", videoPts);
+                //LOGE("handleVideoDataImpl() video - audio      : %lf\n", tempTimeDifference);
                 videoPts = audioPts + averageTimeDiff;
-                LOGE("handleVideoDataImpl() videoTimeDifference: %lf\n", videoPts);
+                //LOGE("handleVideoDataImpl() videoTimeDifference: %lf\n", videoPts);
             }
             // 如果videoTimeDifference比audioTimeDifference大出了一定的范围
             // 那么说明视频播放快了,应等待音频
@@ -1261,6 +1261,7 @@ namespace alexander_media {
             pthread_cond_destroy(&readLockCondition);
             closeAudio();
             closeVideo();
+            // 必须保证每次退出都要执行到
             onFinished();
             LOGF("%s\n", "Safe exit");
         }
@@ -1407,12 +1408,19 @@ namespace alexander_media {
                 break;
             }
 
-            /*if (!isLocal) {
+            if (!isLocal) {
                 if (wrapper->list1->size() >= wrapper->list1LimitCounts) {
                     wrapper->startHandleTime = av_gettime_relative();
                     maybeHasException = true;
+                    /*if (wrapper->type == TYPE_AUDIO) {
+                        LOGD("handleData() audio startHandleTime: %ld\n",
+                             (long) wrapper->startHandleTime);
+                    } else {
+                        LOGW("handleData() video startHandleTime: %ld\n",
+                             (long) wrapper->startHandleTime);
+                    }*/
                 }
-            }*/
+            }
 
             // region 从队列中取出一个AVPacket
 
@@ -1441,6 +1449,27 @@ namespace alexander_media {
             }
 
             // endregion
+
+            if (!isLocal) {
+                if (maybeHasException && wrapper->list1->size() == 0) {
+                    wrapper->endHandleTime = av_gettime_relative();
+                    /*if (wrapper->type == TYPE_AUDIO) {
+                        LOGD("handleData() audio      handleTime: %ld\n",
+                             (long) (wrapper->endHandleTime - wrapper->startHandleTime));
+                    } else {
+                        LOGW("handleData() video      handleTime: %ld\n",
+                             (long) (wrapper->endHandleTime - wrapper->startHandleTime));
+                    }*/
+                    // 如果不是本地视频,从一千个左右的数据到0个数据的时间不超过30秒,那么就有问题了.
+                    if ((wrapper->endHandleTime - wrapper->startHandleTime) <= 30000000) {
+                        onError(0x102, "播放时发生异常");
+                        stop();
+                        break;
+                    } else {
+                        maybeHasException = false;
+                    }
+                }
+            }
 
             // region 复制数据
 
@@ -1516,20 +1545,6 @@ namespace alexander_media {
             }
 
             // endregion
-
-            /*if (!isLocal) {
-                if (maybeHasException && wrapper->list1->size() == 0) {
-                    wrapper->endHandleTime = av_gettime_relative();
-                    // 如果不是本地视频,从一千个左右的数据到0个数据的时间不超过30秒,那么就有问题了.
-                    if ((wrapper->endHandleTime - wrapper->startHandleTime) <= 30000000) {
-                        onError(0x102, "播放时发生异常");
-                        stop();
-                        break;
-                    } else {
-                        maybeHasException = false;
-                    }
-                }
-            }*/
 
             // region 缓冲处理
 

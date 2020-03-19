@@ -11,12 +11,15 @@ import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.graphics.PixelFormat;
 import android.media.AudioManager;
+import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
 import android.os.PowerManager;
 import android.os.SystemClock;
+import android.provider.Settings;
 import android.text.TextUtils;
 import android.text.format.DateUtils;
 import android.util.DisplayMetrics;
@@ -41,7 +44,9 @@ import com.weidi.eventbus.EventBusUtils;
 import com.weidi.usefragments.BaseActivity;
 import com.weidi.usefragments.R;
 import com.weidi.usefragments.business.contents.Contents;
+import com.weidi.usefragments.business.contents.ContentsFragment;
 import com.weidi.usefragments.receiver.MediaButtonReceiver;
+import com.weidi.usefragments.service.DownloadFileService;
 import com.weidi.usefragments.test_view.BubblePopupWindow;
 import com.weidi.usefragments.tool.Callback;
 import com.weidi.usefragments.tool.DownloadCallback;
@@ -345,13 +350,10 @@ public class JniPlayerActivity extends BaseActivity {
             case Callback.MSG_ON_FINISHED:
                 if (mHasError) {
                     mHasError = false;
-
-                    /*Intent intent = new Intent();
-                    intent.putExtra(PlayerActivity.CONTENT_PATH, mPath);
-                    //intent.setClass(getContext(), PlayerActivity.class);
-                    intent.setClass(getContext(), JniPlayerActivity.class);
-                    startActivity(intent);
-                    enterActivity();*/
+                    EventBusUtils.post(
+                            ContentsFragment.class,
+                            ContentsFragment.MSG_ON_PLAYBACK_AGAIN,
+                            new Object[]{mPath});
                 }
 
                 finish();
@@ -813,6 +815,19 @@ public class JniPlayerActivity extends BaseActivity {
                 break;
         }
         return result;
+    }
+
+    public void startFloatingService(View view) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            if (!Settings.canDrawOverlays(this)) {
+                Intent intent = new Intent(
+                        Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                        Uri.parse("package:" + getPackageName()));
+                startActivityForResult(intent, 0);
+            } else {
+                // startService();
+            }
+        }
     }
 
     /////////////////////////////////////////////////////////////////

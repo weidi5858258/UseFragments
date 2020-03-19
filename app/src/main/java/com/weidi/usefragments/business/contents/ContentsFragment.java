@@ -380,6 +380,7 @@ public class ContentsFragment extends BaseFragment {
     }
 
     private void initData() {
+        EventBusUtils.register(this);
         mPreferences = getContext().getSharedPreferences(
                 DownloadFileService.PREFERENCES_NAME, Context.MODE_PRIVATE);
 
@@ -506,7 +507,7 @@ public class ContentsFragment extends BaseFragment {
     }
 
     private void destroy() {
-
+        EventBusUtils.unregister(this);
     }
 
     @InjectOnClick({R.id.playback_btn, R.id.download_btn,
@@ -587,6 +588,7 @@ public class ContentsFragment extends BaseFragment {
     private final int REQUEST_CODE_SELECT_VIDEO = 112;
 
     private static final int MSG_ON_PROGRESS_UPDATED = 1;
+    public static final int MSG_ON_PLAYBACK_AGAIN = 2;
 
     private void uiHandleMessage(Message msg) {
         if (msg == null) {
@@ -597,9 +599,40 @@ public class ContentsFragment extends BaseFragment {
             case MSG_ON_PROGRESS_UPDATED:
                 mAdapter.setProgress(mProgress + "%");
                 break;
+            case MSG_ON_PLAYBACK_AGAIN:
+                if (msg.obj == null) {
+                    return;
+                }
+                String path = (String) msg.obj;
+                Intent intent = new Intent();
+                intent.putExtra(PlayerActivity.CONTENT_PATH, path);
+                //intent.setClass(getContext(), PlayerActivity.class);
+                intent.setClass(getContext(), JniPlayerActivity.class);
+                getAttachedActivity().startActivity(intent);
+                ((BaseActivity) getAttachedActivity()).enterActivity();
+                break;
             default:
                 break;
         }
+    }
+
+    private Object onEvent(int what, Object[] objArray) {
+        Object result = null;
+        switch (what) {
+            case MSG_ON_PLAYBACK_AGAIN:
+                if (objArray != null && objArray.length > 0) {
+                    String path = (String) objArray[0];
+                    Message msg = mUiHandler.obtainMessage();
+                    msg.what = MSG_ON_PLAYBACK_AGAIN;
+                    msg.obj = path;
+                    mUiHandler.removeMessages(MSG_ON_PLAYBACK_AGAIN);
+                    mUiHandler.sendMessageDelayed(msg, 5000);
+                }
+                break;
+            default:
+                break;
+        }
+        return result;
     }
 
     private int mProgress = -1;
