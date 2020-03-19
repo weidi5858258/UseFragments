@@ -6,6 +6,7 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.graphics.PixelFormat;
@@ -49,6 +50,10 @@ import com.weidi.usefragments.tool.PermissionsUtils;
 import com.weidi.utils.MyToast;
 
 import java.io.File;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+
+import static com.weidi.usefragments.service.DownloadFileService.PREFERENCES_NAME;
 
 /***
 
@@ -190,13 +195,14 @@ public class JniPlayerActivity extends BaseActivity {
 
     public static final String CONTENT_PATH = "content_path";
 
-    private static final int PLAYBACK_INFO = 1;// 0x001
     public static final int PLAYBACK_PROGRESS_UPDATED = 200;
-    private static final int PLAYBACK_PROGRESS_CHANGED = 3;
-    private static final int MSG_LOADING_SHOW = 8;
-    private static final int MSG_LOADING_HIDE = 9;
     private static final int MSG_ON_PROGRESS_UPDATED = 10;
     private static final int MSG_START_PLAYBACK = 11;
+
+    private static final String PLAYBACK_ADDRESS = "playback_address";
+    private static final String PLAYBACK_POSITION = "playback_position";
+    private static final String PLAYBACK_ISLIVE = "playback_islive";
+    private SharedPreferences mSP;
 
     private SurfaceView mSurfaceView;
     private Surface mSurface;
@@ -301,6 +307,14 @@ public class JniPlayerActivity extends BaseActivity {
                 } else {
                     mControllerPanelLayout.setVisibility(View.VISIBLE);// INVISIBLE
                 }
+                SharedPreferences.Editor edit = mSP.edit();
+                edit.putString(PLAYBACK_ADDRESS, mPath);
+                if (mFFMPEGPlayer.getDuration() < 0) {
+                    edit.putBoolean(PLAYBACK_ISLIVE, true);
+                } else {
+                    edit.putBoolean(PLAYBACK_ISLIVE, false);
+                }
+                edit.commit();
                 break;
             case Callback.MSG_ON_PAUSED:
                 mPlayIB.setVisibility(View.GONE);
@@ -358,6 +372,8 @@ public class JniPlayerActivity extends BaseActivity {
                     int target = Math.round(pos * mProgressBar.getMax());
                     mProgressBar.setProgress(target);
                 }
+
+                mSP.edit().putLong(PLAYBACK_POSITION, mPresentationTime).commit();
                 break;
             case KeyEvent.KEYCODE_HEADSETHOOK:// 单击事件
                 if (firstFlag && secondFlag && threeFlag) {
@@ -435,6 +451,7 @@ public class JniPlayerActivity extends BaseActivity {
         registerHeadsetPlugReceiver();
         // Volume change should always affect media volume
         setVolumeControlStream(AudioManager.STREAM_MUSIC);
+        mSP = getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE);
 
         mUiHandler = new Handler(Looper.getMainLooper()) {
             @Override

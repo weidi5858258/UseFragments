@@ -1325,8 +1325,7 @@ namespace alexander_media {
             decodedAVFrame = videoWrapper->decodedAVFrame;
         }
 
-        //bool hasErrorOccurred = false;
-        int ret = 0, out_buffer_size = 0;
+        int ret = 0;
         bool maybeHasException = false;
         for (;;) {
             if (!wrapper->isHandling) {
@@ -1408,12 +1407,12 @@ namespace alexander_media {
                 break;
             }
 
-            if (!isLocal) {
+            /*if (!isLocal) {
                 if (wrapper->list1->size() >= wrapper->list1LimitCounts) {
                     wrapper->startHandleTime = av_gettime_relative();
                     maybeHasException = true;
                 }
-            }
+            }*/
 
             // region 从队列中取出一个AVPacket
 
@@ -1518,7 +1517,7 @@ namespace alexander_media {
 
             // endregion
 
-            if (!isLocal) {
+            /*if (!isLocal) {
                 if (maybeHasException && wrapper->list1->size() == 0) {
                     wrapper->endHandleTime = av_gettime_relative();
                     // 如果不是本地视频,从一千个左右的数据到0个数据的时间不超过30秒,那么就有问题了.
@@ -1530,7 +1529,7 @@ namespace alexander_media {
                         maybeHasException = false;
                     }
                 }
-            }
+            }*/
 
             // region 缓冲处理
 
