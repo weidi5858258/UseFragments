@@ -328,7 +328,6 @@ namespace alexander_media {
         readLockMutex = PTHREAD_MUTEX_INITIALIZER;
         readLockCondition = PTHREAD_COND_INITIALIZER;
         videoSleepTime = 11;
-        timeStamp = -1;
         preProgress = 0;
         audioPts = 0.0;
         videoPts = 0.0;
@@ -970,17 +969,19 @@ namespace alexander_media {
     }
 
     void *readData(void *opaque) {
-        LOGD("%s\n", "readData() start");
+        LOGI("%s\n", "readData() start");
 
         AVPacket *srcAVPacket = av_packet_alloc();
         AVPacket *copyAVPacket = av_packet_alloc();
 
         // seekTo
-        /*timeStamp = 400;
-        audioWrapper->father->needToSeek = true;
-        videoWrapper->father->needToSeek = true;
-        audioWrapper->father->isPausedForSeek = true;
-        videoWrapper->father->isPausedForSeek = true;*/
+        if (timeStamp > 0) {
+            LOGI("readData() timeStamp: %ld\n", (long) timeStamp);
+            audioWrapper->father->needToSeek = true;
+            videoWrapper->father->needToSeek = true;
+            audioWrapper->father->isPausedForSeek = true;
+            videoWrapper->father->isPausedForSeek = true;
+        }
 
         isReading = true;
         /***
@@ -2179,7 +2180,13 @@ namespace alexander_media {
      */
     int seekTo(int64_t timestamp) {// 单位秒.比如seek到100秒,就传100
         LOGI("==================================================================\n");
-        LOGI("seekTo() timestamp: %ld\n", (long) timestamp);
+        LOGI("seekTo() timeStamp: %ld\n", (long) timestamp);
+
+        if ((long) timestamp > 0
+            && (audioWrapper == NULL || videoWrapper == NULL)) {
+            timeStamp = timestamp;
+            return 0;
+        }
 
         if ((long) timestamp < 0
             || audioWrapper == NULL

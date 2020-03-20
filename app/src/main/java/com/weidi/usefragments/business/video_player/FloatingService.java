@@ -176,7 +176,5 @@ public class FloatingService extends Service {
                 windowManager.addView(rootView, layoutParams);
             }
         }
-
-
     }
 }

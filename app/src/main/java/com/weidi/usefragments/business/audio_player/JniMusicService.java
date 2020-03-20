@@ -199,7 +199,7 @@ public class JniMusicService extends Service {
     private SharedPreferences mSP = null;
 
     public static final String PATH = "media_path";
-    private FFMPEG mFFMPEGPlayer = new FFMPEG();
+    private FFMPEG mFFMPEGPlayer = FFMPEG.getDefault();;
 
     public String getName() {
         if (!TextUtils.isEmpty(mPath)) {

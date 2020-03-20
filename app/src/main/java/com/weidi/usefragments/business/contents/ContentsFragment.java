@@ -16,6 +16,7 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v7.widget.RecyclerView;
 import android.text.TextUtils;
+import android.text.format.DateUtils;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -26,6 +27,7 @@ import android.widget.Toast;
 import com.weidi.eventbus.EventBusUtils;
 import com.weidi.recycler_view.VerticalLayoutManager;
 import com.weidi.usefragments.BaseActivity;
+import com.weidi.usefragments.business.video_player.FFMPEG;
 import com.weidi.usefragments.business.video_player.JniPlayerActivity;
 import com.weidi.usefragments.business.video_player.PlayerActivity;
 import com.weidi.usefragments.R;
@@ -41,6 +43,8 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+
+import static com.weidi.usefragments.business.video_player.JniPlayerActivity.PLAYBACK_POSITION;
 
 /***
 
@@ -245,6 +249,7 @@ public class ContentsFragment extends BaseFragment {
             if (TextUtils.isEmpty(videoPlaybackPath)) {
                 return;
             }
+            FFMPEG.getDefault().setMode(FFMPEG.USE_MODE_MEDIA);
             Intent intent = new Intent();
             intent.putExtra(PlayerActivity.CONTENT_PATH, videoPlaybackPath);
             //intent.setClass(getContext(), PlayerActivity.class);
@@ -451,12 +456,20 @@ public class ContentsFragment extends BaseFragment {
 
                         switch (viewId) {
                             case R.id.item_root_layout:
+                                FFMPEG.getDefault().setMode(FFMPEG.USE_MODE_MEDIA);
+
+                                // Test
+                                /*long position_ = mPreferences.getLong(PLAYBACK_POSITION, 0);
+                                position_ = position_ - 600;
+                                String curElapsedTime = DateUtils.formatElapsedTime(position_);
+                                MLog.d("player_alexander", "onItemClick() position: " +
+                                        position_ + " curElapsedTime: " + curElapsedTime);
+                                FFMPEG.getDefault().seekTo(position_);*/
+
                                 Intent intent = new Intent();
                                 intent.putExtra(PlayerActivity.CONTENT_PATH, videoPlaybackPath);
-
                                 //intent.setClass(getContext(), PlayerActivity.class);
                                 intent.setClass(getContext(), JniPlayerActivity.class);
-
                                 getAttachedActivity().startActivity(intent);
                                 ((BaseActivity) getAttachedActivity()).enterActivity();
                                 break;
@@ -588,7 +601,6 @@ public class ContentsFragment extends BaseFragment {
     private final int REQUEST_CODE_SELECT_VIDEO = 112;
 
     private static final int MSG_ON_PROGRESS_UPDATED = 1;
-    public static final int MSG_ON_PLAYBACK_AGAIN = 2;
 
     private void uiHandleMessage(Message msg) {
         if (msg == null) {
@@ -599,18 +611,6 @@ public class ContentsFragment extends BaseFragment {
             case MSG_ON_PROGRESS_UPDATED:
                 mAdapter.setProgress(mProgress + "%");
                 break;
-            case MSG_ON_PLAYBACK_AGAIN:
-                if (msg.obj == null) {
-                    return;
-                }
-                String path = (String) msg.obj;
-                Intent intent = new Intent();
-                intent.putExtra(PlayerActivity.CONTENT_PATH, path);
-                //intent.setClass(getContext(), PlayerActivity.class);
-                intent.setClass(getContext(), JniPlayerActivity.class);
-                getAttachedActivity().startActivity(intent);
-                ((BaseActivity) getAttachedActivity()).enterActivity();
-                break;
             default:
                 break;
         }
@@ -619,16 +619,6 @@ public class ContentsFragment extends BaseFragment {
     private Object onEvent(int what, Object[] objArray) {
         Object result = null;
         switch (what) {
-            case MSG_ON_PLAYBACK_AGAIN:
-                if (objArray != null && objArray.length > 0) {
-                    String path = (String) objArray[0];
-                    Message msg = mUiHandler.obtainMessage();
-                    msg.what = MSG_ON_PLAYBACK_AGAIN;
-                    msg.obj = path;
-                    mUiHandler.removeMessages(MSG_ON_PLAYBACK_AGAIN);
-                    mUiHandler.sendMessageDelayed(msg, 5000);
-                }
-                break;
             default:
                 break;
         }

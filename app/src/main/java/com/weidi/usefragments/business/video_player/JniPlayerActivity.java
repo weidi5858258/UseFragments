@@ -204,13 +204,13 @@ public class JniPlayerActivity extends BaseActivity {
     private static final int MSG_ON_PROGRESS_UPDATED = 10;
     private static final int MSG_START_PLAYBACK = 11;
 
-    private static final String PLAYBACK_ADDRESS = "playback_address";
-    private static final String PLAYBACK_POSITION = "playback_position";
-    private static final String PLAYBACK_ISLIVE = "playback_islive";
+    public static final String PLAYBACK_ADDRESS = "playback_address";
+    public static final String PLAYBACK_POSITION = "playback_position";
+    public static final String PLAYBACK_ISLIVE = "playback_islive";
     private SharedPreferences mSP;
 
     private SurfaceView mSurfaceView;
-    private Surface mSurface;
+    private SurfaceHolder mSurfaceHolder;
     private PowerManager.WakeLock mPowerWakeLock;
     private FFMPEG mFFMPEGPlayer;
     private String mPath;
@@ -266,33 +266,44 @@ public class JniPlayerActivity extends BaseActivity {
                 }
 
                 mControllerPanelLayout.setVisibility(View.VISIBLE);
-                int width = msg.arg1;
-                int height = msg.arg2;
-                MLog.d(TAG, "Callback.MSG_ON_PLAYED srcWidth: " +
-                        width + " scrHeight: " + height);
-                int controllerPanelLayoutHeight = mControllerPanelLayout.getHeight();
-                MLog.d(TAG, "Callback.MSG_ON_PLAYED controllerPanelLayoutHeight: " +
-                        controllerPanelLayoutHeight);
+                // 屏幕宽高
                 WindowManager windowManager =
                         (WindowManager) getSystemService(Context.WINDOW_SERVICE);
                 DisplayMetrics displayMetrics = new DisplayMetrics();
                 windowManager.getDefaultDisplay().getRealMetrics(displayMetrics);
                 int screenWidth = displayMetrics.widthPixels;
                 int screenHeight = displayMetrics.heightPixels;
-                MLog.d(TAG, "Callback.MSG_ON_PLAYED screenWidth: " +
+                MLog.d(TAG, "Callback.MSG_ON_CHANGE_WINDOW screenWidth: " +
                         screenWidth + " screenHeight: " + screenHeight);
+                // 视频宽高
+                int width = msg.arg1;
+                int height = msg.arg2;
+                MLog.d(TAG, "Callback.MSG_ON_CHANGE_WINDOW videoWidth: " +
+                        width + " videoHeight: " + height);
+                // 控制面板高度
+                int controllerPanelLayoutHeight = mControllerPanelLayout.getHeight();
+                MLog.d(TAG, "Callback.MSG_ON_CHANGE_WINDOW controllerPanelLayoutHeight: " +
+                        controllerPanelLayoutHeight);
+                // 改变SurfaceView高度
                 RelativeLayout.LayoutParams relativeParams =
                         (RelativeLayout.LayoutParams) mSurfaceView.getLayoutParams();
                 relativeParams.setMargins(0, 0, 0, 0);
                 int tempHeight = (screenWidth * height) / width;
-                if (tempHeight > (screenHeight - mControllerPanelLayout.getHeight())) {
+                /*if (tempHeight > (screenHeight - mControllerPanelLayout.getHeight())) {
                     tempHeight = screenHeight - mControllerPanelLayout.getHeight();
+                }*/
+                if (tempHeight > screenHeight) {
+                    tempHeight = screenHeight;
                 }
                 relativeParams.width = screenWidth;
                 relativeParams.height = tempHeight;
-                MLog.d(TAG, "Callback.MSG_ON_PLAYED relativeParams.width: " +
+                MLog.d(TAG, "Callback.MSG_ON_CHANGE_WINDOW relativeParams.width: " +
                         relativeParams.width + " relativeParams.height: " + relativeParams.height);
                 mSurfaceView.setLayoutParams(relativeParams);
+                // 改变ControllerPanelLayout高度
+                if (tempHeight > (int) (screenHeight * 2 / 3)) {
+                    tempHeight = (int) (screenHeight / 2);
+                }
                 FrameLayout.LayoutParams frameParams =
                         (FrameLayout.LayoutParams) mControllerPanelLayout.getLayoutParams();
                 frameParams.setMargins(0, tempHeight, 0, 0);
@@ -340,8 +351,11 @@ public class JniPlayerActivity extends BaseActivity {
                         // 需要重新播放
                         mHasError = true;
                         MLog.e(TAG, "Callback.MSG_ON_ERROR " + errorInfo);
+                        break;
                     case Callback.ERROR_FFMPEG_INIT:
                         // 不需要重新播放
+                        finish();
+                        exitActivity();
                         break;
                     default:
                         break;
@@ -350,25 +364,25 @@ public class JniPlayerActivity extends BaseActivity {
             case Callback.MSG_ON_FINISHED:
                 if (mHasError) {
                     mHasError = false;
-                    EventBusUtils.post(
-                            ContentsFragment.class,
-                            ContentsFragment.MSG_ON_PLAYBACK_AGAIN,
-                            new Object[]{mPath});
+                    // 重新开始播放
+                    startPlayback(mSurfaceHolder);
+                } else {
+                    finish();
+                    exitActivity();
                 }
 
-                finish();
-                exitActivity();
                 break;
             case Callback.MSG_ON_PROGRESS_UPDATED:
                 if (msg.obj == null) {
                     return;
                 }
+
                 mPresentationTime = (Long) msg.obj;// 秒
                 String curElapsedTime = DateUtils.formatElapsedTime(mPresentationTime);
                 mProgressTimeTV.setText(curElapsedTime);
 
-                if (mNeedToSyncProgressBar) {
-                    int duration = (int) (mFFMPEGPlayer.getDuration());
+                int duration = (int) (mFFMPEGPlayer.getDuration());
+                if (mNeedToSyncProgressBar && duration > 0) {
                     int currentPosition = (int) (mPresentationTime);
                     float pos = (float) currentPosition / duration;
                     int target = Math.round(pos * mProgressBar.getMax());
@@ -383,7 +397,7 @@ public class JniPlayerActivity extends BaseActivity {
 
                     if (mControllerPanelLayout.getVisibility() == View.VISIBLE) {
                         mNeedToSyncProgressBar = true;
-                        mControllerPanelLayout.setVisibility(View.INVISIBLE);
+                        mControllerPanelLayout.setVisibility(View.GONE);
                     } else {
                         mControllerPanelLayout.setVisibility(View.VISIBLE);
                     }
@@ -407,7 +421,7 @@ public class JniPlayerActivity extends BaseActivity {
                                 } else {
                                     mPlayIB.setVisibility(View.VISIBLE);
                                     mPauseIB.setVisibility(View.GONE);
-                                    mControllerPanelLayout.setVisibility(View.INVISIBLE);
+                                    mControllerPanelLayout.setVisibility(View.GONE);
                                     mFFMPEGPlayer.play();
                                 }
                             }
@@ -494,7 +508,7 @@ public class JniPlayerActivity extends BaseActivity {
         mNextIB.setOnClickListener(mOnClickListener);
         mSurfaceView.setOnClickListener(mOnClickListener);
 
-        mFFMPEGPlayer = new FFMPEG();
+        mFFMPEGPlayer = FFMPEG.getDefault();
 
         int duration = (int) mFFMPEGPlayer.getDuration();
         int currentPosition = (int) mPresentationTime;
@@ -567,7 +581,7 @@ public class JniPlayerActivity extends BaseActivity {
                 DownloadFileService.MSG_SET_CALLBACK,
                 new Object[]{mDownloadCallback});*/
 
-        if (mSurface == null) {
+        if (mSurfaceHolder == null) {
             // 没有图像出来,就是由于没有设置PixelFormat.RGBA_8888
             // 这里要写
             mSurfaceView.getHolder().setFormat(PixelFormat.RGBA_8888);
@@ -580,32 +594,8 @@ public class JniPlayerActivity extends BaseActivity {
                         return;
                     }
 
-                    mSurface = holder.getSurface();
-                    // 这里也要写
-                    holder.setFormat(PixelFormat.RGBA_8888);
-
-                    mFFMPEGPlayer.setMode(FFMPEG.USE_MODE_MEDIA);
-                    mFFMPEGPlayer.setCallback(mFFMPEGPlayer.mCallback);
-                    mFFMPEGPlayer.setHandler(mUiHandler);
-                    mFFMPEGPlayer.setSurface(mPath, mSurface);
-
-                    new Thread(new Runnable() {
-                        @Override
-                        public void run() {
-                            if (mFFMPEGPlayer.initPlayer() != 0) {
-                                MyToast.show("音视频初始化失败");
-                                mUiHandler.removeMessages(Callback.MSG_ON_ERROR);
-                                mUiHandler.sendEmptyMessage(Callback.MSG_ON_ERROR);
-                                return;
-                            }
-
-                            mUiHandler.removeMessages(MSG_START_PLAYBACK);
-                            mUiHandler.sendEmptyMessage(MSG_START_PLAYBACK);
-                            MyToast.show("音视频初始化成功");
-                            SystemClock.sleep(500);
-                            mFFMPEGPlayer.readData();
-                        }
-                    }).start();
+                    mSurfaceHolder = holder;
+                    startPlayback(holder);
                 }
 
                 @Override
@@ -669,6 +659,42 @@ public class JniPlayerActivity extends BaseActivity {
     private void showBubbleView(String time, View view) {
         mShowTimeTV.setText(time);
         mBubblePopupWindow.show(view);
+    }
+
+    private void startPlayback(SurfaceHolder holder) {
+        if (holder == null) {
+            return;
+        }
+
+        Surface surface = holder.getSurface();
+        // 这里也要写
+        holder.setFormat(PixelFormat.RGBA_8888);
+        mFFMPEGPlayer.setMode(FFMPEG.USE_MODE_MEDIA);
+        mFFMPEGPlayer.setCallback(mFFMPEGPlayer.mCallback);
+        mFFMPEGPlayer.setHandler(mUiHandler);
+        mFFMPEGPlayer.setSurface(mPath, surface);
+
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                if (mFFMPEGPlayer.initPlayer() != 0) {
+                    if (!mHasError) {
+                        MyToast.show("音视频初始化失败");
+                    }
+                    mUiHandler.removeMessages(Callback.MSG_ON_ERROR);
+                    mUiHandler.sendEmptyMessage(Callback.MSG_ON_ERROR);
+                    return;
+                }
+
+                mUiHandler.removeMessages(MSG_START_PLAYBACK);
+                mUiHandler.sendEmptyMessage(MSG_START_PLAYBACK);
+                if (!mHasError) {
+                    MyToast.show("音视频初始化成功");
+                }
+                SystemClock.sleep(500);
+                mFFMPEGPlayer.readData();
+            }
+        }).start();
     }
 
     private int getStatusBarHeight() {
