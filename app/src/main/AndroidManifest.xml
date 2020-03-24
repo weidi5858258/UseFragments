@@ -107,6 +107,12 @@
             android:priority="1000" />
 
         <service
+            android:name=".business.video_player.PlayerService"
+            android:exported="true"
+            android:persistent="true"
+            android:priority="1000" />
+
+        <service
             android:name=".service.DownloadFileService"
             android:exported="false" />
 

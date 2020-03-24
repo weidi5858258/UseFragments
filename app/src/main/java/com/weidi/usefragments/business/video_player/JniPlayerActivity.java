@@ -233,7 +233,6 @@ public class JniPlayerActivity extends BaseActivity {
     public static final String PLAYBACK_ISLIVE = "playback_islive";
     private SharedPreferences mSP;
 
-    private SurfaceView mSurfaceView;
     private SurfaceHolder mSurfaceHolder;
     private PowerManager.WakeLock mPowerWakeLock;
     private FFMPEG mFFMPEGPlayer;
@@ -245,22 +244,25 @@ public class JniPlayerActivity extends BaseActivity {
     private boolean mNeedToSyncProgressBar = true;
     private boolean mIsScreenPress = false;
     private boolean mHasError = false;
-    private ProgressBar mLoadingView;
-    private LinearLayout mControllerPanelLayout;
-    private TextView mFileNameTV;
-    private TextView mProgressTimeTV;
-    private TextView mDurationTimeTV;
-    private SeekBar mProgressBar;
-    private ImageButton mPreviousIB;
-    private ImageButton mPlayIB;
-    private ImageButton mPauseIB;
-    private ImageButton mNextIB;
+
+    public SurfaceView mSurfaceView;
+    public LinearLayout mControllerPanelLayout;
+    public ProgressBar mLoadingView;
+    public SeekBar mProgressBar;
+    public TextView mFileNameTV;
+    public TextView mProgressTimeTV;
+    public TextView mDurationTimeTV;
+    public ImageButton mPreviousIB;
+    public ImageButton mPlayIB;
+    public ImageButton mPauseIB;
+    public ImageButton mNextIB;
+
     // 跟气泡相关
-    LayoutInflater mLayoutInflater;
-    View mBubbleView;
+    private LayoutInflater mLayoutInflater;
+    private View mBubbleView;
     // 气泡上显示时间
-    TextView mShowTimeTV;
-    BubblePopupWindow mBubblePopupWindow;
+    private TextView mShowTimeTV;
+    private BubblePopupWindow mBubblePopupWindow;
 
     private Handler mUiHandler;
     private int videoWidth;
@@ -483,7 +485,6 @@ public class JniPlayerActivity extends BaseActivity {
         mShowTimeTV = mBubbleView.findViewById(R.id.content_tv);
         mBubblePopupWindow = new BubblePopupWindow(this);
         mBubblePopupWindow.setBubbleView(mBubbleView);
-        mShowTimeTV.setOnClickListener(mOnClickListener);
 
         mLoadingView = findViewById(R.id.loading_view);
         mControllerPanelLayout = findViewById(R.id.controller_panel_layout);
@@ -496,6 +497,8 @@ public class JniPlayerActivity extends BaseActivity {
         mPauseIB = findViewById(R.id.button_pause);
         mNextIB = findViewById(R.id.button_next);
         mSurfaceView = findViewById(R.id.surfaceView);
+
+        mShowTimeTV.setOnClickListener(mOnClickListener);
         mPreviousIB.setOnClickListener(mOnClickListener);
         mPlayIB.setOnClickListener(mOnClickListener);
         mPauseIB.setOnClickListener(mOnClickListener);
@@ -725,7 +728,7 @@ public class JniPlayerActivity extends BaseActivity {
     }
 
     // 执行全屏和取消全屏的方法
-    private static void setFullscreen(Activity context, boolean fullscreen) {
+    private void setFullscreen(Activity context, boolean fullscreen) {
         Window window = context.getWindow();
         WindowManager.LayoutParams winParams = window.getAttributes();
         final int bits = WindowManager.LayoutParams.FLAG_FULLSCREEN;
@@ -962,19 +965,6 @@ public class JniPlayerActivity extends BaseActivity {
                 break;
         }
         return result;
-    }
-
-    public void startFloatingService(View view) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            if (!Settings.canDrawOverlays(this)) {
-                Intent intent = new Intent(
-                        Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
-                        Uri.parse("package:" + getPackageName()));
-                startActivityForResult(intent, 0);
-            } else {
-                // startService();
-            }
-        }
     }
 
     /////////////////////////////////////////////////////////////////

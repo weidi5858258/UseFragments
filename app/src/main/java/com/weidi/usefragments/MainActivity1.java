@@ -1,6 +1,7 @@
 package com.weidi.usefragments;
 
 import android.accessibilityservice.AccessibilityServiceInfo;
+import android.app.Activity;
 import android.app.ActivityManager;
 import android.app.Fragment;
 import android.content.BroadcastReceiver;
@@ -37,6 +38,7 @@ import com.weidi.usefragments.business.media.ThrowingScreenFragment;
 import com.weidi.usefragments.business.media.VideoLiveBroadcastingFragment;
 import com.weidi.usefragments.business.medical_record.MedicalRecordFragment;
 import com.weidi.usefragments.business.test_horizontal_card.HorizontalCardFragment;
+import com.weidi.usefragments.business.video_player.PlayerService;
 import com.weidi.usefragments.fragment.FragOperManager;
 import com.weidi.usefragments.fragment.base.BaseFragment;
 import com.weidi.usefragments.javabean.Person;
@@ -212,6 +214,17 @@ public class MainActivity1 extends BaseActivity
                 intent.setData(Uri.parse("package:" + getPackageName()));
                 startActivity(intent);
             }
+
+            if (!isRunService(this, "com.weidi.usefragments.business.video_player.PlayerService")) {
+                if (!Settings.canDrawOverlays(this)) {
+                    Intent intent = new Intent(
+                            Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                            Uri.parse("package:" + getPackageName()));
+                    startActivityForResult(intent, 0);
+                } else {
+                    startService(new Intent(this, PlayerService.class));
+                }
+            }
         }
 
         // start service
@@ -219,12 +232,12 @@ public class MainActivity1 extends BaseActivity
         /*if (!isRunService(this, "com.weidi.usefragments.business.audio_player.MusicService")) {
             startService(new Intent(this, MusicService.class));
         }*/
-        if (!isRunService(this, "com.weidi.usefragments.business.audio_player.JniMusicService")) {
-            startService(new Intent(this, JniMusicService.class));
-        }
         /*if (!isAccessibilitySettingsOn(getApplicationContext())) {
             startActivity(new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS));
         }*/
+        if (!isRunService(this, "com.weidi.usefragments.business.audio_player.JniMusicService")) {
+            startService(new Intent(this, JniMusicService.class));
+        }
 
         main1Fragment = new Main1Fragment();
         main2Fragment = new Main2Fragment();
@@ -376,6 +389,15 @@ public class MainActivity1 extends BaseActivity
             Log.d(TAG, "onActivityResult() requestCode: " + requestCode +
                     " resultCode: " + resultCode +
                     " data: " + data);
+        if (requestCode == 0
+                && resultCode == Activity.RESULT_OK
+                && null != data) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                if (Settings.canDrawOverlays(this)) {
+                    startService(new Intent(this, PlayerService.class));
+                }
+            }
+        }
     }
 
     @Override
