@@ -221,7 +221,7 @@ public class ContentsFragment extends BaseFragment {
             MLog.d(TAG, "onActivityResult(): " + printThis() +
                     " requestCode: " + requestCode +
                     " resultCode: " + resultCode +
-                    " data: " + data.toString());
+                    " data: " + (data != null ? data.toString() : null));
         if (requestCode == REQUEST_CODE_SELECT_VIDEO
                 && resultCode == Activity.RESULT_OK
                 && null != data) {

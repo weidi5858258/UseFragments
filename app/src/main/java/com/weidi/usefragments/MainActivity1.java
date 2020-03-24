@@ -203,7 +203,7 @@ public class MainActivity1 extends BaseActivity
 
         }
 
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             PowerManager powerManager = (PowerManager) getSystemService(POWER_SERVICE);
             boolean hasIgnored = powerManager.isIgnoringBatteryOptimizations(getPackageName());
             // 判断当前APP是否有加入电池优化的白名单，如果没有，弹出加入电池优化的白名单的设置对话框。
@@ -270,7 +270,9 @@ public class MainActivity1 extends BaseActivity
 
         // test
         Log.d(TAG, "onCreate() stringFromJNI(): " + stringFromJNI());
-        test();
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            test();
+        }
     }
 
     @Override

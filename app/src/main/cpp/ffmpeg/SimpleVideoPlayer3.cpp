@@ -294,8 +294,8 @@ namespace alexander_media {
         }
     };
 
-    int64_t startReadTime = 0.0;
-    int64_t endReadTime = 0.0;
+    int64_t startReadTime = -1;
+    int64_t endReadTime = -1;
 
     int read_thread_interrupt_cb(void *opaque) {
         // 必须通过传参方式进行判断,不能用全局变量判断
@@ -304,7 +304,8 @@ namespace alexander_media {
         if (!audioWrapper->father->isReading) {
             LOGE("read_thread_interrupt_cb() return 1 退出了\n");
             return 1;
-        } else if (audioWrapper->father->isPausedForCache
+        } else if ((audioWrapper->father->isPausedForCache || !audioWrapper->father->isStarted)
+                   && startReadTime > 0
                    && (endReadTime - startReadTime) > MAX_RELATIVE_TIME) {
             LOGE("read_thread_interrupt_cb() return 1 超时了\n");
             isInterrupted = true;
@@ -337,6 +338,8 @@ namespace alexander_media {
         averageTimeDiff = 0.0;
         memset(timeDiff, '0', sizeof(timeDiff));
         isInterrupted = false;
+        startReadTime = -1;
+        endReadTime = -1;
     }
 
     void initAudio() {
@@ -1015,9 +1018,15 @@ namespace alexander_media {
 
             // 0 if OK, < 0 on error or end of file
             if (readFrame < 0) {
+                if (readFrame != -12 && readFrame != AVERROR_EOF) {
+                    LOGE("readData() readFrame  : %d\n", readFrame);
+                    continue;
+                }
                 // readData() AVERROR_EOF readFrame: -12 (Cannot allocate memory)
+                // readData() AVERROR_EOF readFrame: -1094995529
                 // readData() AVERROR_EOF readFrame: -1414092869 超时
                 // readData() AVERROR_EOF readFrame: -541478725 文件已经读完了
+                LOGF("readData() AVERROR_EOF: %d\n", AVERROR_EOF);
                 LOGF("readData() readFrame  : %d\n", readFrame);
                 LOGF("readData() audio list2: %d\n", audioWrapper->father->list2->size());
                 LOGF("readData() video list2: %d\n", videoWrapper->father->list2->size());
@@ -1031,21 +1040,16 @@ namespace alexander_media {
                 notifyToHandle(audioWrapper->father);
                 notifyToHandle(videoWrapper->father);
 
-                if (readFrame != -12) {
-                    // 不退出线程
-                    LOGI("readData() notifyToReadWait start\n");
-                    notifyToReadWait();
-                    LOGI("readData() notifyToReadWait end\n");
-                    if (audioWrapper->father->isPausedForSeek
-                        || videoWrapper->father->isPausedForSeek) {
-                        LOGF("readData() start seek\n");
-                        audioWrapper->father->isReading = true;
-                        videoWrapper->father->isReading = true;
-                        continue;
-                    } else {
-                        // for (;;) end
-                        break;
-                    }
+                // 不退出线程
+                LOGI("readData() notifyToReadWait start\n");
+                notifyToReadWait();
+                LOGI("readData() notifyToReadWait end\n");
+                if (audioWrapper->father->isPausedForSeek
+                    || videoWrapper->father->isPausedForSeek) {
+                    LOGF("readData() start seek\n");
+                    audioWrapper->father->isReading = true;
+                    videoWrapper->father->isReading = true;
+                    continue;
                 } else {
                     // for (;;) end
                     break;
@@ -1153,7 +1157,7 @@ namespace alexander_media {
             if (runCounts < RUN_COUNTS) {
                 if (tempTimeDifference > 0) {
                     timeDiff[runCounts++] = tempTimeDifference;
-                    LOGI("handleVideoDataImpl() video - audio      : %lf\n", tempTimeDifference);
+                    //LOGI("handleVideoDataImpl() video - audio      : %lf\n", tempTimeDifference);
                 }
             } else if (runCounts == RUN_COUNTS) {
                 runCounts++;
@@ -1971,36 +1975,42 @@ namespace alexander_media {
             LOGE("openAndFindAVFormatContext() failed\n");
             closeAudio();
             closeVideo();
+            onError(0x100, "");
             return -1;
         }
         if (findStreamIndex() < 0) {
             LOGE("findStreamIndex() failed\n");
             closeAudio();
             closeVideo();
+            onError(0x100, "");
             return -1;
         }
         if (findAndOpenAVCodecForAudio() < 0) {
             LOGE("findAndOpenAVCodecForAudio() failed\n");
             closeAudio();
             closeVideo();
+            onError(0x100, "");
             return -1;
         }
         if (findAndOpenAVCodecForVideo() < 0) {
             LOGE("findAndOpenAVCodecForVideo() failed\n");
             closeAudio();
             closeVideo();
+            onError(0x100, "");
             return -1;
         }
         if (createSwrContent() < 0) {
             LOGE("createSwrContent() failed\n");
             closeAudio();
             closeVideo();
+            onError(0x100, "");
             return -1;
         }
         if (createSwsContext() < 0) {
             LOGE("createSwsContext() failed\n");
             closeAudio();
             closeVideo();
+            onError(0x100, "");
             return -1;
         }
 
