@@ -237,7 +237,7 @@
             </intent-filter>
         </activity>-->
 
-        <!--android:screenOrientation="landscape"-->
+            <!--android:screenOrientation="landscape"-->
         <!--android:configChanges="keyboardHidden|screenLayout|screenSize|smallestScreenSize|orientation"-->
         <activity
             android:name="com.weidi.usefragments.business.video_player.JniPlayerActivity"
@@ -245,7 +245,7 @@
             android:enabled="true"
             android:exported="true"
             android:launchMode="singleTask"
-            android:theme="@style/Theme.AppCompat.Light"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar.Fullscreen"
             android:windowSoftInputMode="stateAlwaysHidden|adjustPan">
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />

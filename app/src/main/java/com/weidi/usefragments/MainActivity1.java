@@ -9,6 +9,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.res.Configuration;
+import android.media.AudioManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -24,6 +25,7 @@ import android.view.WindowManager;
 import android.view.accessibility.AccessibilityManager;
 import android.widget.FrameLayout;
 
+import com.weidi.eventbus.EventBusUtils;
 import com.weidi.usefragments.business.audio_player.JniMusicService;
 import com.weidi.usefragments.business.back_stack.ShowTitleDialogFragment;
 import com.weidi.usefragments.business.contents.ContentsFragment;
@@ -186,6 +188,8 @@ public class MainActivity1 extends BaseActivity
                 WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON,
                 WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         super.onCreate(savedInstanceState);
+        // Volume change should always affect media volume
+        setVolumeControlStream(AudioManager.STREAM_MUSIC);
         mRootView = View.inflate(this, R.layout.activity_main, null);
         FrameLayout contentLayout = getContentLayout(this);
         if (contentLayout != null) {

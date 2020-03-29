@@ -1,13 +1,12 @@
 package com.weidi.usefragments.business.video_player;
 
+import android.annotation.SuppressLint;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
-import android.graphics.PixelFormat;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Handler;
-import android.os.HandlerThread;
 import android.os.IBinder;
 import android.os.Looper;
 import android.os.Message;
@@ -17,7 +16,6 @@ import android.util.DisplayMetrics;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
-import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
 import android.view.WindowManager;
@@ -30,8 +28,6 @@ import android.widget.TextView;
 import com.weidi.eventbus.EventBusUtils;
 import com.weidi.usefragments.R;
 import com.weidi.usefragments.tool.MLog;
-
-import static com.weidi.usefragments.service.DownloadFileService.PREFERENCES_NAME;
 
 /***
  Created by root on 19-8-5.
@@ -89,16 +85,15 @@ public class PlayerService extends Service {
     public static final int MSG_TEST = 1000;
     private static final int BUFFER = 1024 * 1024 * 2;
 
-    private SharedPreferences mSP;
-    private HandlerThread mHandlerThread;
-    private Handler mThreadHandler;
     private Handler mUiHandler;
+    private PlayerWrapper mPlayerWrapper;
+    public boolean mIsAddedView = false;
+    private String mPrePath = null;
+    private String mCurPath = null;
 
-    private WindowManager mWindowManager;
-    private WindowManager.LayoutParams mLayoutParams;
-    private SurfaceHolder mSurfaceHolder;
-    private boolean mIsAddedView = false;
-    private View mRootView;
+    public WindowManager mWindowManager;
+    public WindowManager.LayoutParams mLayoutParams;
+    public View mRootView;
 
     public SurfaceView mSurfaceView;
     public LinearLayout mControllerPanelLayout;
@@ -112,19 +107,12 @@ public class PlayerService extends Service {
     public ImageButton mPauseIB;
     public ImageButton mNextIB;
 
+    public ImageButton mPreviousIB2;
+    public ImageButton mNextIB2;
+
     private void internalCreate() {
         EventBusUtils.register(this);
 
-        mSP = getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE);
-
-        mHandlerThread = new HandlerThread(TAG);
-        mHandlerThread.start();
-        mThreadHandler = new Handler(mHandlerThread.getLooper()) {
-            @Override
-            public void handleMessage(Message msg) {
-                PlayerService.this.threadHandleMessage(msg);
-            }
-        };
         mUiHandler = new Handler(Looper.getMainLooper()) {
             @Override
             public void handleMessage(Message msg) {
@@ -138,16 +126,23 @@ public class PlayerService extends Service {
     public static final String COMMAND_ACTION =
             "com.weidi.usefragments.business.video_player.PlayerService";
     public static final String COMMAND_NAME = "HandlePlayerService";
-    private static final int COMMAND_SHOW_WINDOW = 1;
-    private static final int COMMAND_HIDE_WINDOW = 2;
-    private static final int COMMAND_STOP_SERVICE = 3;
+    public static final int COMMAND_SHOW_WINDOW = 1;
+    public static final int COMMAND_HIDE_WINDOW = 2;
+    public static final int COMMAND_STOP_SERVICE = 3;
+    public static final int COMMAND_HANDLE_LANDSCAPE_SCREEN = 4;
+    public static final int COMMAND_HANDLE_PORTRAIT_SCREEN = 5;
 
+    // 测试时使用
     private void internalStartCommand(Intent intent, int flags, int startId) {
         if (intent == null) {
             return;
         }
 
         String action = intent.getAction();
+        Uri uri = intent.getData();
+        if (uri != null) {
+            mCurPath = uri.getPath();
+        }
         MLog.d(TAG, "internalStartCommand() action: " + action);
         if (!TextUtils.equals(COMMAND_ACTION, action)) {
             return;
@@ -172,35 +167,51 @@ public class PlayerService extends Service {
     }
 
     private void internalDestroy() {
+        mPlayerWrapper.onDestroy();
         removeView();
         EventBusUtils.unregister(this);
-
-        if (mHandlerThread != null) {
-            mHandlerThread.quit();
-            mHandlerThread = null;
-        }
     }
 
     private Object onEvent(int what, Object[] objArray) {
         Object result = null;
         switch (what) {
-
+            case COMMAND_SHOW_WINDOW:
+                if (objArray != null && objArray.length > 0) {
+                    mCurPath = (String) objArray[0];
+                    if (mPlayerWrapper == null) {
+                        mPlayerWrapper = new PlayerWrapper();
+                    }
+                    mPlayerWrapper.setPath(mCurPath);
+                }
+                mUiHandler.removeMessages(COMMAND_SHOW_WINDOW);
+                mUiHandler.sendEmptyMessage(COMMAND_SHOW_WINDOW);
+                break;
+            case COMMAND_HIDE_WINDOW:
+                mUiHandler.removeMessages(COMMAND_HIDE_WINDOW);
+                mUiHandler.sendEmptyMessage(COMMAND_HIDE_WINDOW);
+                break;
+            case COMMAND_STOP_SERVICE:
+                mUiHandler.removeMessages(COMMAND_STOP_SERVICE);
+                mUiHandler.sendEmptyMessage(COMMAND_STOP_SERVICE);
+                break;
+            case COMMAND_HANDLE_LANDSCAPE_SCREEN:
+                if (objArray != null && objArray.length > 0) {
+                    int statusBarHeight = (Integer) objArray[0];
+                    Message msg = mUiHandler.obtainMessage();
+                    msg.what = COMMAND_HANDLE_LANDSCAPE_SCREEN;
+                    msg.arg1 = statusBarHeight;
+                    mUiHandler.removeMessages(COMMAND_HANDLE_LANDSCAPE_SCREEN);
+                    mUiHandler.sendMessage(msg);
+                }
+                break;
+            case COMMAND_HANDLE_PORTRAIT_SCREEN:
+                mUiHandler.removeMessages(COMMAND_HANDLE_PORTRAIT_SCREEN);
+                mUiHandler.sendEmptyMessage(COMMAND_HANDLE_PORTRAIT_SCREEN);
+                break;
             default:
                 break;
         }
         return result;
-    }
-
-    private void threadHandleMessage(Message msg) {
-        if (msg == null) {
-            return;
-        }
-
-        switch (msg.what) {
-
-            default:
-                break;
-        }
     }
 
     private void uiHandleMessage(Message msg) {
@@ -219,12 +230,24 @@ public class PlayerService extends Service {
                 removeView();
                 stopSelf();
                 break;
+            case COMMAND_HANDLE_LANDSCAPE_SCREEN:
+                if (msg.arg1 == 0) {
+                    mPlayerWrapper.handleLandscapeScreen(0);
+                } else {
+                    mPlayerWrapper.handleLandscapeScreen(1);
+                }
+                break;
+            case COMMAND_HANDLE_PORTRAIT_SCREEN:
+                mPlayerWrapper.handlePortraitScreen();
+                break;
             default:
                 break;
         }
     }
 
     private void initPlayerWindow() {
+        mIsAddedView = false;
+
         // 屏幕宽高(竖屏时)
         mWindowManager =
                 (WindowManager) getSystemService(Context.WINDOW_SERVICE);
@@ -256,56 +279,75 @@ public class PlayerService extends Service {
 
         mSurfaceView = mRootView.findViewById(R.id.surfaceView);
         mControllerPanelLayout = mRootView.findViewById(R.id.controller_panel_layout);
-        mProgressBar = mRootView.findViewById(R.id.loading_view);
+        mLoadingView = mRootView.findViewById(R.id.loading_view);
+        mProgressBar = mRootView.findViewById(R.id.progress_bar);
+        mFileNameTV = mRootView.findViewById(R.id.file_name_tv);
+        mProgressTimeTV = mRootView.findViewById(R.id.progress_time_tv);
+        mDurationTimeTV = mRootView.findViewById(R.id.duration_time_tv);
+        mPreviousIB = mRootView.findViewById(R.id.button_prev);
+        mPlayIB = mRootView.findViewById(R.id.button_play);
+        mPauseIB = mRootView.findViewById(R.id.button_pause);
+        mNextIB = mRootView.findViewById(R.id.button_next);
 
-        mIsAddedView = false;
-    }
+        mPreviousIB2 = mRootView.findViewById(R.id.button_prev2);
+        mNextIB2 = mRootView.findViewById(R.id.button_next2);
+        mPreviousIB2.setVisibility(View.VISIBLE);
+        mNextIB2.setVisibility(View.VISIBLE);
+        mPreviousIB2.setOnClickListener(mOnClickListener);
+        mNextIB2.setOnClickListener(mOnClickListener);
 
-    private void addView() {
-        if (mSurfaceHolder == null) {
-            // 没有图像出来,就是由于没有设置PixelFormat.RGBA_8888
-            // 这里要写
-            mSurfaceHolder = mSurfaceView.getHolder();
-            mSurfaceHolder.setFormat(PixelFormat.RGBA_8888);
-            mSurfaceHolder.addCallback(new SurfaceHolder.Callback() {
-                @Override
-                public void surfaceCreated(
-                        SurfaceHolder holder) {
-                    MLog.d(TAG, "surfaceCreated()");
-                            /*if (mFFMPEGPlayer == null) {
-                                return;
-                            }*/
-
-                    //startPlayback(holder);
-                }
-
-                @Override
-                public void surfaceChanged(
-                        SurfaceHolder holder, int format, int width, int height) {
-                    MLog.d(TAG, "surfaceChanged() width: " + width + " height: " + height);
-                }
-
-                @Override
-                public void surfaceDestroyed(
-                        SurfaceHolder holder) {
-                    MLog.d(TAG, "surfaceDestroyed()");
-                    mSurfaceHolder = null;
-                            /*if (mFFMPEGPlayer != null) {
-                                mFFMPEGPlayer.releaseAll();
-                            }*/
-                }
-            });
+        /*mCurPath = "/storage/1532-48AD/Android/data/" +
+                "com.weidi.usefragments/files/Movies/哪吒之魔童降世.mp4";*/
+        //        mPath = "/storage/1532-48AD/Videos/vodeo/c7f879de3a6baacf2ad81c5a65379718.mp4";
+        //        mPath = "http://ivi.bupt.edu.cn/hls/cctv9hd.m3u8";
+        if (mPlayerWrapper == null) {
+            mPlayerWrapper = new PlayerWrapper();
         }
-
-        mWindowManager.addView(mRootView, mLayoutParams);
-        mIsAddedView = true;
+        mPlayerWrapper.setActivity(null, this);
+        mPlayerWrapper.setPath(mCurPath);
+        mPlayerWrapper.onCreate();
     }
 
-    private void removeView() {
+    @SuppressLint("InvalidWakeLockTag")
+    private void addView() {
+        if (TextUtils.isEmpty(mCurPath)) {
+            MLog.e(TAG, "addView() mCurPath is empty");
+            return;
+        }
+        if (!mIsAddedView) {
+            mPlayerWrapper.onResume();
+            mWindowManager.addView(mRootView, mLayoutParams);
+            mPrePath = mCurPath.substring(0);
+            //MLog.i(TAG, "addView() mPrePath: " + mPrePath);
+            mIsAddedView = true;
+        } else if (!TextUtils.equals(mCurPath, mPrePath)) {
+            MLog.i(TAG, "addView() onRelease");
+            // 有一个视频已经在播放了,在不关闭浮动窗口的情况下播放另一个视频
+            mPlayerWrapper.onRelease();
+        }
+    }
+
+    public void removeView() {
         if (mIsAddedView) {
+            mPlayerWrapper.onPause();
             mWindowManager.removeView(mRootView);
+            mCurPath = null;
+            mPrePath = null;
             mIsAddedView = false;
         }
+    }
+
+    public boolean needToPlaybackOtherVideo() {
+        if (!TextUtils.equals(mCurPath, mPrePath)) {
+            MLog.i(TAG, "needToPlaybackOtherVideo() mPrePath: " + mPrePath);
+            MLog.i(TAG, "needToPlaybackOtherVideo() mCurPath: " + mCurPath);
+            mPlayerWrapper.startPlayback();
+            mPrePath = mCurPath.substring(0);
+            return true;
+        }
+
+        // 不需要播放另一个视频
+        return false;
     }
 
     private class PlayerOnTouchListener implements View.OnTouchListener {
@@ -329,8 +371,24 @@ public class PlayerService extends Service {
                 default:
                     break;
             }
-            return false;
+            return true;
         }
     }
+
+    private View.OnClickListener mOnClickListener = new View.OnClickListener() {
+        @Override
+        public void onClick(View v) {
+            switch (v.getId()) {
+                case R.id.button_prev2:
+                    removeView();
+                    break;
+                case R.id.button_next2:
+                    removeView();
+                    break;
+                default:
+                    break;
+            }
+        }
+    };
 
 }

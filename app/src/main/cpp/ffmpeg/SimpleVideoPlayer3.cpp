@@ -193,7 +193,7 @@ pthread_join(videoHandleDataThread, NULL);
 namespace alexander_media {
 
     // 不要各自拥有一个指针,音视频共用一个就行了
-    AVFormatContext *avFormatContext = NULL;
+    static AVFormatContext *avFormatContext = NULL;
 
     struct AudioWrapper *audioWrapper = NULL;
     struct VideoWrapper *videoWrapper = NULL;
@@ -1258,17 +1258,11 @@ namespace alexander_media {
                 av_usleep(1000);
             }
             LOGF("%s\n", "handleData() video end");
-            if (avFormatContext != NULL) {
-                avformat_free_context(avFormatContext);
-                avFormatContext = NULL;
-            }
-            pthread_mutex_destroy(&readLockMutex);
-            pthread_cond_destroy(&readLockCondition);
             closeAudio();
             closeVideo();
             // 必须保证每次退出都要执行到
             onFinished();
-            LOGF("%s\n", "Safe exit");
+            LOGF("%s\n", "Safe Exit");
         }
     }
 
@@ -1467,9 +1461,10 @@ namespace alexander_media {
                     }*/
                     // 如果不是本地视频,从一千个左右的数据到0个数据的时间不超过30秒,那么就有问题了.
                     if ((wrapper->endHandleTime - wrapper->startHandleTime) <= 30000000) {
-                        onError(0x102, "播放时发生异常");
+                        LOGE("handleData() maybeHasException\n");
+                        /*onError(0x102, "播放时发生异常");
                         stop();
-                        break;
+                        break;*/
                     } else {
                         maybeHasException = false;
                     }
@@ -1864,6 +1859,13 @@ namespace alexander_media {
     }
 
     void closeVideo() {
+        if (avFormatContext != NULL) {
+            avformat_free_context(avFormatContext);
+            avFormatContext = NULL;
+        }
+        pthread_mutex_destroy(&readLockMutex);
+        pthread_cond_destroy(&readLockCondition);
+
         // video
         if (pANativeWindow != NULL) {
             // 7.释放资源
@@ -1982,35 +1984,35 @@ namespace alexander_media {
             LOGE("findStreamIndex() failed\n");
             closeAudio();
             closeVideo();
-            onError(0x100, "");
+            onError(0x100, "findStreamIndex() failed");
             return -1;
         }
         if (findAndOpenAVCodecForAudio() < 0) {
             LOGE("findAndOpenAVCodecForAudio() failed\n");
             closeAudio();
             closeVideo();
-            onError(0x100, "");
+            onError(0x100, "findAndOpenAVCodecForAudio() failed");
             return -1;
         }
         if (findAndOpenAVCodecForVideo() < 0) {
             LOGE("findAndOpenAVCodecForVideo() failed\n");
             closeAudio();
             closeVideo();
-            onError(0x100, "");
+            onError(0x100, "findAndOpenAVCodecForVideo() failed");
             return -1;
         }
         if (createSwrContent() < 0) {
             LOGE("createSwrContent() failed\n");
             closeAudio();
             closeVideo();
-            onError(0x100, "");
+            onError(0x100, "createSwrContent() failed");
             return -1;
         }
         if (createSwsContext() < 0) {
             LOGE("createSwsContext() failed\n");
             closeAudio();
             closeVideo();
-            onError(0x100, "");
+            onError(0x100, "createSwsContext() failed");
             return -1;
         }
 

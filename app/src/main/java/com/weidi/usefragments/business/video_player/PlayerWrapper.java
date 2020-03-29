@@ -4,26 +4,21 @@ import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.Service;
 import android.content.Context;
-import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
 import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.graphics.PixelFormat;
-import android.media.AudioManager;
-import android.net.Uri;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
 import android.os.PowerManager;
 import android.os.SystemClock;
-import android.text.TextUtils;
 import android.text.format.DateUtils;
 import android.util.DisplayMetrics;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
-import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
@@ -38,12 +33,11 @@ import android.widget.SeekBar;
 import android.widget.TextView;
 
 import com.weidi.eventbus.EventBusUtils;
-import com.weidi.usefragments.BaseActivity;
+import com.weidi.threadpool.ThreadPool;
 import com.weidi.usefragments.R;
 import com.weidi.usefragments.business.contents.Contents;
 import com.weidi.usefragments.test_view.BubblePopupWindow;
 import com.weidi.usefragments.tool.Callback;
-import com.weidi.usefragments.tool.DownloadCallback;
 import com.weidi.usefragments.tool.MLog;
 import com.weidi.utils.MyToast;
 
@@ -53,8 +47,6 @@ public class PlayerWrapper {
 
     private static final String TAG = "player_alexander";
 
-    public static final String CONTENT_PATH = "content_path";
-
     public static final int PLAYBACK_PROGRESS_UPDATED = 200;
     private static final int MSG_ON_PROGRESS_UPDATED = 10;
     private static final int MSG_START_PLAYBACK = 11;
@@ -62,10 +54,10 @@ public class PlayerWrapper {
     public static final String PLAYBACK_ADDRESS = "playback_address";
     public static final String PLAYBACK_POSITION = "playback_position";
     public static final String PLAYBACK_ISLIVE = "playback_islive";
-    private SharedPreferences mSP;
 
-    private SurfaceHolder mSurfaceHolder;
+    private SharedPreferences mSP;
     private PowerManager.WakeLock mPowerWakeLock;
+    private SurfaceHolder mSurfaceHolder;
     private FFMPEG mFFMPEGPlayer;
     private String mPath;
     private long mProgress;
@@ -75,6 +67,10 @@ public class PlayerWrapper {
     private boolean mNeedToSyncProgressBar = true;
     private boolean mIsScreenPress = false;
     private boolean mHasError = false;
+
+    private WindowManager mWindowManager;
+    private WindowManager.LayoutParams mLayoutParams;
+    private View mRootView;
 
     private SurfaceView mSurfaceView;
     private LinearLayout mControllerPanelLayout;
@@ -91,24 +87,40 @@ public class PlayerWrapper {
     // 跟气泡相关
     private LayoutInflater mLayoutInflater;
     private View mBubbleView;
-    // 气泡上显示时间
-    private TextView mShowTimeTV;
+    private TextView mShowTimeTV;// 气泡上显示时间
     private BubblePopupWindow mBubblePopupWindow;
 
     private Handler mUiHandler;
-    private int videoWidth;
-    private int videoHeight;
+    // 屏幕的宽高
+    // 竖屏:width = 1080 height = 2244
+    // 横屏:width = 2244 height = 1080
+    private int mScreenWidth;
+    private int mScreenHeight;
+    // 视频源的宽高
+    private int mVideoWidth;
+    private int mVideoHeight;
+    // 想要的高度
+    private int mNeedVideoHeight;
+    // 控制面板的高度
+    private int mControllerPanelLayoutHeight;
 
     private Context mContext;
-    private Activity mActivity;
+    private JniPlayerActivity mActivity;
+    private PlayerService mService;
 
+    // 必须首先被调用
     public void setActivity(Activity activity, Service service) {
-        mActivity = activity;
+        mActivity = null;
+        mService = null;
         if (activity != null) {
             if (!(activity instanceof JniPlayerActivity)) {
                 return;
             }
             JniPlayerActivity jniPlayerActivity = (JniPlayerActivity) activity;
+            mActivity = jniPlayerActivity;
+            mContext = jniPlayerActivity.getApplicationContext();
+            mWindowManager = (WindowManager) mContext.getSystemService(Context.WINDOW_SERVICE);
+
             mSurfaceView = jniPlayerActivity.mSurfaceView;
             mControllerPanelLayout = jniPlayerActivity.mControllerPanelLayout;
             mLoadingView = jniPlayerActivity.mLoadingView;
@@ -125,6 +137,13 @@ public class PlayerWrapper {
                 return;
             }
             PlayerService playerService = (PlayerService) service;
+            mService = playerService;
+            mContext = playerService.getApplicationContext();
+
+            mWindowManager = playerService.mWindowManager;
+            mLayoutParams = playerService.mLayoutParams;
+            mRootView = playerService.mRootView;
+
             mSurfaceView = playerService.mSurfaceView;
             mControllerPanelLayout = playerService.mControllerPanelLayout;
             mLoadingView = playerService.mLoadingView;
@@ -139,18 +158,12 @@ public class PlayerWrapper {
         }
     }
 
-    public void setContext(Context context) {
-        mContext = context;
-    }
-
     public void setPath(String path) {
         mPath = path;
     }
 
     public void onCreate() {
         EventBusUtils.register(this);
-        // Volume change should always affect media volume
-        //setVolumeControlStream(AudioManager.STREAM_MUSIC);
         mSP = mContext.getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE);
 
         mUiHandler = new Handler(Looper.getMainLooper()) {
@@ -166,27 +179,16 @@ public class PlayerWrapper {
         mBubblePopupWindow = new BubblePopupWindow(mContext);
         mBubblePopupWindow.setBubbleView(mBubbleView);
 
-        //        mLoadingView = findViewById(R.id.loading_view);
-        //        mControllerPanelLayout = findViewById(R.id.controller_panel_layout);
-        //        mFileNameTV = findViewById(R.id.file_name_tv);
-        //        mProgressTimeTV = findViewById(R.id.progress_time_tv);
-        //        mDurationTimeTV = findViewById(R.id.duration_time_tv);
-        //        mProgressBar = findViewById(R.id.progress_bar);
-        //        mPreviousIB = findViewById(R.id.button_prev);
-        //        mPlayIB = findViewById(R.id.button_play);
-        //        mPauseIB = findViewById(R.id.button_pause);
-        //        mNextIB = findViewById(R.id.button_next);
-        //        mSurfaceView = findViewById(R.id.surfaceView);
-
         mShowTimeTV.setOnClickListener(mOnClickListener);
+        mSurfaceView.setOnClickListener(mOnClickListener);
         mPreviousIB.setOnClickListener(mOnClickListener);
         mPlayIB.setOnClickListener(mOnClickListener);
         mPauseIB.setOnClickListener(mOnClickListener);
         mNextIB.setOnClickListener(mOnClickListener);
-        mSurfaceView.setOnClickListener(mOnClickListener);
 
-        mFFMPEGPlayer = FFMPEG.getDefault();
-
+        if (mFFMPEGPlayer == null) {
+            mFFMPEGPlayer = FFMPEG.getDefault();
+        }
         int duration = (int) mFFMPEGPlayer.getDuration();
         int currentPosition = (int) mPresentationTime;
         float pos = (float) currentPosition / duration;
@@ -223,8 +225,10 @@ public class PlayerWrapper {
             public boolean onTouch(View v, MotionEvent event) {
                 switch (event.getAction()) {
                     case MotionEvent.ACTION_DOWN:
+                        // 滑动SeekBar时进度条不要更新,滑动结束后再更新
                         mNeedToSyncProgressBar = false;
-                        showBubbleView("", mProgressBar);
+                        mShowTimeTV.setText("");
+                        mBubblePopupWindow.show(mProgressBar);
                         break;
                     case MotionEvent.ACTION_UP:
                         break;
@@ -238,54 +242,32 @@ public class PlayerWrapper {
         });
     }
 
+    // 调用之前,视频路径先设置好
+    @SuppressLint("InvalidWakeLockTag")
     public void onResume() {
-        if (mSurfaceHolder == null) {
-            // 没有图像出来,就是由于没有设置PixelFormat.RGBA_8888
-            // 这里要写
-            mSurfaceView.getHolder().setFormat(PixelFormat.RGBA_8888);
-            mSurfaceView.getHolder().addCallback(new SurfaceHolder.Callback() {
-                @Override
-                public void surfaceCreated(
-                        SurfaceHolder holder) {
-                    MLog.d(TAG, "surfaceCreated()");
-                    if (mFFMPEGPlayer == null) {
-                        return;
-                    }
-
-                    mSurfaceHolder = holder;
-                    startPlayback(holder);
-                }
-
-                @Override
-                public void surfaceChanged(
-                        SurfaceHolder holder, int format, int width, int height) {
-                }
-
-                @Override
-                public void surfaceDestroyed(
-                        SurfaceHolder holder) {
-                    MLog.d(TAG, "surfaceDestroyed()");
-                    if (mFFMPEGPlayer != null) {
-                        mFFMPEGPlayer.releaseAll();
-                    }
-                }
-            });
+        MLog.i(TAG, "onResume()");
+        if (mPowerWakeLock == null) {
+            // When player view started,wake the lock.
+            PowerManager powerManager =
+                    (PowerManager) mContext.getSystemService(Context.POWER_SERVICE);
+            mPowerWakeLock = powerManager.newWakeLock(PowerManager.SCREEN_BRIGHT_WAKE_LOCK, TAG);
+            mPowerWakeLock.acquire();
         }
 
-        if (mFFMPEGPlayer != null) {
-            if (mFFMPEGPlayer.isRunning()) {
-                if (!mFFMPEGPlayer.isPlaying()) {
-                    mPlayIB.setVisibility(View.VISIBLE);
-                    mPauseIB.setVisibility(View.GONE);
-                    mControllerPanelLayout.setVisibility(View.GONE);
-                    mFFMPEGPlayer.play();
-                }
-            }
+        if (mSurfaceHolder == null) {
+            mSurfaceHolder = mSurfaceView.getHolder();
+            // 没有图像出来,就是由于没有设置PixelFormat.RGBA_8888
+            // 这里要写
+            mSurfaceHolder.setFormat(PixelFormat.RGBA_8888);
+            mSurfaceHolder.addCallback(mSurfaceCallback);
         }
     }
 
     public void onPause() {
-
+        if (mPowerWakeLock != null && mPowerWakeLock.isHeld()) {
+            mPowerWakeLock.release();
+            mPowerWakeLock = null;
+        }
     }
 
     public void onStop() {
@@ -293,15 +275,17 @@ public class PlayerWrapper {
     }
 
     public void onDestroy() {
-        if (mPowerWakeLock != null && mPowerWakeLock.isHeld()) {
-            mPowerWakeLock.release();
-            mPowerWakeLock = null;
+        if (mFFMPEGPlayer != null) {
+            mFFMPEGPlayer.releaseAll();
+            mFFMPEGPlayer = null;
         }
         EventBusUtils.unregister(this);
+    }
+
+    public void onRelease() {
         if (mFFMPEGPlayer != null) {
             mFFMPEGPlayer.releaseAll();
         }
-        mFFMPEGPlayer = null;
     }
 
     @SuppressLint("SourceLockedOrientationActivity")
@@ -325,13 +309,18 @@ public class PlayerWrapper {
                 break;
             case Callback.MSG_ON_CHANGE_WINDOW:
                 // 视频宽高
-                videoWidth = msg.arg1;
-                videoHeight = msg.arg2;
+                mVideoWidth = msg.arg1;
+                mVideoHeight = msg.arg2;
                 MLog.d(TAG, "Callback.MSG_ON_CHANGE_WINDOW videoWidth: " +
-                        videoWidth + " videoHeight: " + videoHeight);
+                        mVideoWidth + " videoHeight: " + mVideoHeight);
+
                 if (mContext.getResources().getConfiguration().orientation
                         == Configuration.ORIENTATION_LANDSCAPE) {
-                    //handleLandscapeScreen();
+                    if (JniPlayerActivity.isAliveJniPlayerActivity) {
+                        handleLandscapeScreen(0);
+                    } else {
+                        handleLandscapeScreen(1);
+                    }
                 } else {
                     handlePortraitScreen();
                 }
@@ -348,6 +337,7 @@ public class PlayerWrapper {
                 } else {
                     mControllerPanelLayout.setVisibility(View.VISIBLE);// INVISIBLE
                 }
+
                 SharedPreferences.Editor edit = mSP.edit();
                 edit.putString(PLAYBACK_ADDRESS, mPath);
                 if (mFFMPEGPlayer.getDuration() < 0) {
@@ -378,11 +368,17 @@ public class PlayerWrapper {
                         MLog.e(TAG, "Callback.MSG_ON_ERROR " + errorInfo);
                         break;
                     case Callback.ERROR_FFMPEG_INIT:
+                        MLog.e(TAG, "Callback.ERROR_FFMPEG_INIT " + errorInfo);
                         // 不需要重新播放
-                        if (mActivity != null && mActivity instanceof BaseActivity) {
-                            BaseActivity activity = (BaseActivity) mActivity;
-                            activity.finish();
-                            activity.exitActivity();
+                        if (mService != null) {
+                            mService.removeView();
+                            mSurfaceHolder.removeCallback(mSurfaceCallback);
+                            mSurfaceHolder = null;
+                        } else if (mActivity != null) {
+                            mActivity.finish();
+                            mActivity.exitActivity();
+                            mSurfaceHolder.removeCallback(mSurfaceCallback);
+                            mSurfaceHolder = null;
                         }
                         break;
                     default:
@@ -393,12 +389,21 @@ public class PlayerWrapper {
                 if (mHasError) {
                     mHasError = false;
                     // 重新开始播放
-                    startPlayback(mSurfaceHolder);
+                    startPlayback();
                 } else {
-                    if (mActivity != null && mActivity instanceof BaseActivity) {
-                        BaseActivity activity = (BaseActivity) mActivity;
-                        activity.finish();
-                        activity.exitActivity();
+                    // 播放结束
+                    if (mService != null) {
+                        if (!mService.needToPlaybackOtherVideo()) {
+                            MyToast.show("Safe Exit");
+                            mService.removeView();
+                            mSurfaceHolder.removeCallback(mSurfaceCallback);
+                            mSurfaceHolder = null;
+                        }
+                    } else if (mActivity != null) {
+                        mActivity.finish();
+                        mActivity.exitActivity();
+                        mSurfaceHolder.removeCallback(mSurfaceCallback);
+                        mSurfaceHolder = null;
                     }
                 }
 
@@ -426,7 +431,30 @@ public class PlayerWrapper {
                 if (firstFlag && secondFlag && threeFlag && fourFlag) {
                     /*Log.d(TAG, "onKeyDown() 4");*/
 
-                    if (mActivity != null) {
+                    if (mService != null) {
+                        // 如果当前是横屏
+                        if (mContext.getResources().getConfiguration().orientation ==
+                                Configuration.ORIENTATION_LANDSCAPE) {
+                            MLog.d(TAG, "onKeyDown() 4 横屏");
+                            // 强制横屏
+                            // 执行全屏操作
+                            // 重新计算mScreenWidth和mScreenHeight的值
+
+                            if (JniPlayerActivity.isAliveJniPlayerActivity) {
+                                handleLandscapeScreen(0);
+                            } else {
+                                handleLandscapeScreen(1);
+                            }
+                        } else if (mContext.getResources().getConfiguration().orientation ==
+                                Configuration.ORIENTATION_PORTRAIT) {
+                            MLog.d(TAG, "onKeyDown() 4 竖屏");
+                            // 强制竖屏
+                            // 取消全屏操作
+                            // 重新计算mScreenWidth和mScreenHeight的值
+
+                            handlePortraitScreen();
+                        }
+                    } else if (mActivity != null) {
                         // 如果当前是横屏
                         if (mContext.getResources().getConfiguration().orientation ==
                                 Configuration.ORIENTATION_LANDSCAPE) {
@@ -446,7 +474,6 @@ public class PlayerWrapper {
                     /*Log.d(TAG, "onKeyDown() 3");*/
 
                     if (mControllerPanelLayout.getVisibility() == View.VISIBLE) {
-                        mNeedToSyncProgressBar = true;
                         mControllerPanelLayout.setVisibility(View.GONE);
                     } else {
                         mControllerPanelLayout.setVisibility(View.VISIBLE);
@@ -458,14 +485,12 @@ public class PlayerWrapper {
                     if (mFFMPEGPlayer != null) {
                         if (mFFMPEGPlayer.isRunning()) {
                             if (mFFMPEGPlayer.isPlaying()) {
-                                /*mPlayIB.setVisibility(View.GONE);
+                                mPlayIB.setVisibility(View.GONE);
                                 mPauseIB.setVisibility(View.VISIBLE);
-                                mControllerPanelLayout.setVisibility(View.VISIBLE);*/
                                 mFFMPEGPlayer.pause();
                             } else {
-                                /*mPlayIB.setVisibility(View.VISIBLE);
+                                mPlayIB.setVisibility(View.VISIBLE);
                                 mPauseIB.setVisibility(View.GONE);
-                                mControllerPanelLayout.setVisibility(View.GONE);*/
                                 mFFMPEGPlayer.play();
                             }
                         }
@@ -477,20 +502,21 @@ public class PlayerWrapper {
                 secondFlag = false;
                 threeFlag = false;
                 fourFlag = false;
+                mNeedToSyncProgressBar = true;
                 break;
             case MSG_START_PLAYBACK:
-                new Thread(new Runnable() {
+                ThreadPool.getFixedThreadPool().execute(new Runnable() {
                     @Override
                     public void run() {
                         mFFMPEGPlayer.audioHandleData();
                     }
-                }).start();
-                new Thread(new Runnable() {
+                });
+                ThreadPool.getFixedThreadPool().execute(new Runnable() {
                     @Override
                     public void run() {
                         mFFMPEGPlayer.videoHandleData();
                     }
-                }).start();
+                });
                 break;
             case PLAYBACK_PROGRESS_UPDATED:
                 mProgressBar.setSecondaryProgress(mDownloadProgress);
@@ -500,25 +526,20 @@ public class PlayerWrapper {
         }
     }
 
-    private void showBubbleView(String time, View view) {
-        mShowTimeTV.setText(time);
-        mBubblePopupWindow.show(view);
-    }
-
-    private void startPlayback(SurfaceHolder holder) {
-        if (holder == null) {
-            return;
+    public void startPlayback() {
+        if (mSurfaceHolder == null) {
+            mSurfaceHolder = mSurfaceView.getHolder();
         }
-
-        Surface surface = holder.getSurface();
         // 这里也要写
-        holder.setFormat(PixelFormat.RGBA_8888);
+        mSurfaceHolder.setFormat(PixelFormat.RGBA_8888);
+        // 底层有关参数的设置
         mFFMPEGPlayer.setMode(FFMPEG.USE_MODE_MEDIA);
         mFFMPEGPlayer.setCallback(mFFMPEGPlayer.mCallback);
         mFFMPEGPlayer.setHandler(mUiHandler);
-        mFFMPEGPlayer.setSurface(mPath, surface);
+        mFFMPEGPlayer.setSurface(mPath, mSurfaceHolder.getSurface());
 
-        new Thread(new Runnable() {
+        // 开启线程初始化ffmpeg
+        ThreadPool.getFixedThreadPool().execute(new Runnable() {
             @Override
             public void run() {
                 if (mFFMPEGPlayer.initPlayer() != 0) {
@@ -534,7 +555,7 @@ public class PlayerWrapper {
                 SystemClock.sleep(500);
                 mFFMPEGPlayer.readData();
             }
-        }).start();
+        });
     }
 
     // 执行全屏和取消全屏的方法
@@ -550,9 +571,21 @@ public class PlayerWrapper {
         window.setAttributes(winParams);
     }
 
+    private int getStatusBarHeight() {
+        Resources resources = mContext.getResources();
+        int resourceId = resources.getIdentifier(
+                "status_bar_height",
+                "dimen",
+                "android");
+        int height = resources.getDimensionPixelSize(resourceId);
+        // getStatusBarHeight() height: 48 95
+        MLog.d(TAG, "getStatusBarHeight() height: " + height);
+        return height;
+    }
+
     // 处理横屏
     @SuppressLint("SourceLockedOrientationActivity")
-    private void handleLandscapeScreen() {
+    public void handleLandscapeScreen(int statusBarHeight) {
         /*if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
             getWindow().getDecorView().setSystemUiVisibility(
                     View.SYSTEM_UI_FLAG_LAYOUT_STABLE |
@@ -565,77 +598,155 @@ public class PlayerWrapper {
             getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LOW_PROFILE);
         }*/
 
+        /*if (mScreenWidth > mScreenHeight) {
+            return;
+        }*/
+
+        MLog.d(TAG, "Callback.MSG_ON_CHANGE_WINDOW handleLandscapeScreen");
+        if (statusBarHeight != 0) {
+            statusBarHeight = getStatusBarHeight();
+        }
+        MLog.d(TAG, "Callback.MSG_ON_CHANGE_WINDOW statusBarHeight: " + statusBarHeight);
+
+        // mScreenWidth: 2149 mScreenHeight: 1080
         // 屏幕宽高
-        WindowManager windowManager =
-                (WindowManager) mContext.getSystemService(Context.WINDOW_SERVICE);
         DisplayMetrics displayMetrics = new DisplayMetrics();
-        windowManager.getDefaultDisplay().getRealMetrics(displayMetrics);
-        int screenWidth = displayMetrics.widthPixels;
-        int screenHeight = displayMetrics.heightPixels;
-        MLog.d(TAG, "Callback.MSG_ON_CHANGE_WINDOW screenWidth: " +
-                screenWidth + " screenHeight: " + screenHeight);
+        mWindowManager.getDefaultDisplay().getRealMetrics(displayMetrics);
+        mScreenWidth = displayMetrics.widthPixels;
+        mScreenHeight = displayMetrics.heightPixels;
+        MLog.d(TAG, "Callback.MSG_ON_CHANGE_WINDOW mScreenWidth: " +
+                mScreenWidth + " mScreenHeight: " + mScreenHeight);
+
         // 控制面板高度
-        int controllerPanelLayoutHeight = mControllerPanelLayout.getHeight();
-        MLog.d(TAG, "Callback.MSG_ON_CHANGE_WINDOW controllerPanelLayoutHeight: " +
-                controllerPanelLayoutHeight);
+        mControllerPanelLayoutHeight = mControllerPanelLayout.getHeight();
+        MLog.d(TAG, "Callback.MSG_ON_CHANGE_WINDOW mControllerPanelLayoutHeight: " +
+                mControllerPanelLayoutHeight);
+
         // 改变SurfaceView高度
         RelativeLayout.LayoutParams relativeParams =
                 (RelativeLayout.LayoutParams) mSurfaceView.getLayoutParams();
         relativeParams.setMargins(0, 0, 0, 0);
-        relativeParams.width = screenWidth;
-        relativeParams.height = screenHeight;
+        relativeParams.width = mScreenWidth;
+        if (statusBarHeight != 0) {
+            relativeParams.height = mScreenHeight - statusBarHeight;
+        } else {
+            relativeParams.height = mScreenHeight;
+        }
         MLog.d(TAG, "Callback.MSG_ON_CHANGE_WINDOW relativeParams.width: " +
                 relativeParams.width + " relativeParams.height: " + relativeParams.height);
         mSurfaceView.setLayoutParams(relativeParams);
+
         // 改变ControllerPanelLayout高度
         FrameLayout.LayoutParams frameParams =
                 (FrameLayout.LayoutParams) mControllerPanelLayout.getLayoutParams();
-        frameParams.setMargins(0, (screenHeight - controllerPanelLayoutHeight), 0, 0);
-        frameParams.width = screenWidth;
-        frameParams.height = controllerPanelLayoutHeight;
+        //frameParams.setMargins(0, (mScreenHeight - mControllerPanelLayoutHeight - 150), 0, 0);
+        frameParams.setMargins(0, 120, 0, 0);
+        frameParams.width = mScreenWidth;
+        frameParams.height = mControllerPanelLayoutHeight;
         mControllerPanelLayout.setLayoutParams(frameParams);
+
+        if (mService != null) {
+            if (statusBarHeight != 0) {
+                updateRootViewLayout(mScreenWidth, mScreenHeight - statusBarHeight);
+            } else {
+                updateRootViewLayout(mScreenWidth, mScreenHeight);
+            }
+        }
     }
 
     // 处理竖屏
-    private void handlePortraitScreen() {
+    public void handlePortraitScreen() {
+        MLog.d(TAG, "Callback.MSG_ON_CHANGE_WINDOW handlePortraitScreen");
+
         mControllerPanelLayout.setVisibility(View.VISIBLE);
+
+        // mScreenWidth: 1080 mScreenHeight: 2244
         // 屏幕宽高
-        WindowManager windowManager =
-                (WindowManager) mContext.getSystemService(Context.WINDOW_SERVICE);
         DisplayMetrics displayMetrics = new DisplayMetrics();
-        windowManager.getDefaultDisplay().getRealMetrics(displayMetrics);
-        int screenWidth = displayMetrics.widthPixels;// 1080
-        int screenHeight = displayMetrics.heightPixels;// 2244
-        MLog.d(TAG, "Callback.MSG_ON_CHANGE_WINDOW screenWidth: " +
-                screenWidth + " screenHeight: " + screenHeight);
+        mWindowManager.getDefaultDisplay().getRealMetrics(displayMetrics);
+        mScreenWidth = displayMetrics.widthPixels;
+        mScreenHeight = displayMetrics.heightPixels;
+        MLog.d(TAG, "Callback.MSG_ON_CHANGE_WINDOW mScreenWidth: " +
+                mScreenWidth + " mScreenHeight: " + mScreenHeight);
+
         // 控制面板高度
-        int controllerPanelLayoutHeight = mControllerPanelLayout.getHeight();
-        MLog.d(TAG, "Callback.MSG_ON_CHANGE_WINDOW controllerPanelLayoutHeight: " +
-                controllerPanelLayoutHeight);
+        mControllerPanelLayoutHeight = mControllerPanelLayout.getHeight();
+        MLog.d(TAG, "Callback.MSG_ON_CHANGE_WINDOW mControllerPanelLayoutHeight: " +
+                mControllerPanelLayoutHeight);
+
         // 改变SurfaceView高度
         RelativeLayout.LayoutParams relativeParams =
                 (RelativeLayout.LayoutParams) mSurfaceView.getLayoutParams();
         relativeParams.setMargins(0, 0, 0, 0);
-        int tempHeight = (screenWidth * videoHeight) / videoWidth;
-        if (tempHeight > screenHeight) {
-            tempHeight = screenHeight;
+        mNeedVideoHeight = (mScreenWidth * mVideoHeight) / mVideoWidth;
+        if (mNeedVideoHeight > mScreenHeight) {
+            mNeedVideoHeight = mScreenHeight;
         }
-        relativeParams.width = screenWidth;
-        relativeParams.height = tempHeight;
+        relativeParams.width = mScreenWidth;
+        relativeParams.height = mNeedVideoHeight;
         MLog.d(TAG, "Callback.MSG_ON_CHANGE_WINDOW relativeParams.width: " +
                 relativeParams.width + " relativeParams.height: " + relativeParams.height);
         mSurfaceView.setLayoutParams(relativeParams);
+
         // 改变ControllerPanelLayout高度
-        if (tempHeight > (int) (screenHeight * 2 / 3)) {
-            tempHeight = (int) (screenHeight / 2);
-        }
         FrameLayout.LayoutParams frameParams =
                 (FrameLayout.LayoutParams) mControllerPanelLayout.getLayoutParams();
-        frameParams.setMargins(0, tempHeight, 0, 0);
-        frameParams.width = screenWidth;
-        frameParams.height = controllerPanelLayoutHeight;
+        if (mNeedVideoHeight > (int) (mScreenHeight * 2 / 3)) {
+            //frameParams.setMargins(0, (int) (mScreenHeight / 2), 0, 0);
+            frameParams.setMargins(0, getStatusBarHeight(), 0, 0);
+        } else {
+            frameParams.setMargins(0, mNeedVideoHeight, 0, 0);
+        }
+        frameParams.width = mScreenWidth;
+        frameParams.height = mControllerPanelLayoutHeight;
         mControllerPanelLayout.setLayoutParams(frameParams);
+
+        if (mService != null) {
+            if (mNeedVideoHeight > (int) (mScreenHeight * 2 / 3)) {
+                updateRootViewLayout(mScreenWidth, mNeedVideoHeight);
+            } else {
+                updateRootViewLayout(mScreenWidth, mNeedVideoHeight + mControllerPanelLayoutHeight);
+            }
+        }
     }
+
+    private void updateRootViewLayout(int width, int height) {
+        if (mService != null && mService.mIsAddedView) {
+            mLayoutParams.width = width;
+            mLayoutParams.height = height;
+            mLayoutParams.x = 0;
+            mLayoutParams.y = 0;
+            mWindowManager.updateViewLayout(mRootView, mLayoutParams);
+        }
+    }
+
+    private SurfaceHolder.Callback mSurfaceCallback = new SurfaceHolder.Callback() {
+        @Override
+        public void surfaceCreated(
+                SurfaceHolder holder) {
+            MLog.d(TAG, "surfaceCreated()");
+            if (mFFMPEGPlayer == null) {
+                return;
+            }
+
+            startPlayback();
+        }
+
+        @Override
+        public void surfaceChanged(
+                SurfaceHolder holder, int format, int width, int height) {
+            MLog.d(TAG, "surfaceChanged() width: " + width + " height: " + height);
+        }
+
+        @Override
+        public void surfaceDestroyed(
+                SurfaceHolder holder) {
+            MLog.d(TAG, "surfaceDestroyed()");
+            if (mFFMPEGPlayer != null) {
+                mFFMPEGPlayer.releaseAll();
+            }
+        }
+    };
 
     private View.OnClickListener mOnClickListener = new View.OnClickListener() {
         @Override

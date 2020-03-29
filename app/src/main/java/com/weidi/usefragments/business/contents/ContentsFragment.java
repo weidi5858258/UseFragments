@@ -16,8 +16,6 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v7.widget.RecyclerView;
 import android.text.TextUtils;
-import android.text.format.DateUtils;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -27,10 +25,12 @@ import android.widget.Toast;
 import com.weidi.eventbus.EventBusUtils;
 import com.weidi.recycler_view.VerticalLayoutManager;
 import com.weidi.usefragments.BaseActivity;
+import com.weidi.usefragments.R;
+import com.weidi.usefragments.business.audio_player.JniMusicService;
 import com.weidi.usefragments.business.video_player.FFMPEG;
 import com.weidi.usefragments.business.video_player.JniPlayerActivity;
 import com.weidi.usefragments.business.video_player.PlayerActivity;
-import com.weidi.usefragments.R;
+import com.weidi.usefragments.business.video_player.PlayerService;
 import com.weidi.usefragments.fragment.base.BaseFragment;
 import com.weidi.usefragments.inject.InjectOnClick;
 import com.weidi.usefragments.inject.InjectView;
@@ -43,8 +43,6 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-
-import static com.weidi.usefragments.business.video_player.JniPlayerActivity.PLAYBACK_POSITION;
 
 /***
 
@@ -249,13 +247,19 @@ public class ContentsFragment extends BaseFragment {
             if (TextUtils.isEmpty(videoPlaybackPath)) {
                 return;
             }
+
             FFMPEG.getDefault().setMode(FFMPEG.USE_MODE_MEDIA);
-            Intent intent = new Intent();
+            EventBusUtils.post(
+                    PlayerService.class,
+                    PlayerService.COMMAND_SHOW_WINDOW,
+                    new Object[]{videoPlaybackPath});
+
+            /*Intent intent = new Intent();
             intent.putExtra(PlayerActivity.CONTENT_PATH, videoPlaybackPath);
             //intent.setClass(getContext(), PlayerActivity.class);
             intent.setClass(getContext(), JniPlayerActivity.class);
             getAttachedActivity().startActivity(intent);
-            ((BaseActivity) getAttachedActivity()).enterActivity();
+            ((BaseActivity) getAttachedActivity()).enterActivity();*/
         }
     }
 
@@ -466,12 +470,17 @@ public class ContentsFragment extends BaseFragment {
                                         position_ + " curElapsedTime: " + curElapsedTime);
                                 FFMPEG.getDefault().seekTo(position_);*/
 
-                                Intent intent = new Intent();
+                                EventBusUtils.post(
+                                        PlayerService.class,
+                                        PlayerService.COMMAND_SHOW_WINDOW,
+                                        new Object[]{videoPlaybackPath});
+
+                                /*Intent intent = new Intent();
                                 intent.putExtra(PlayerActivity.CONTENT_PATH, videoPlaybackPath);
                                 //intent.setClass(getContext(), PlayerActivity.class);
                                 intent.setClass(getContext(), JniPlayerActivity.class);
                                 getAttachedActivity().startActivity(intent);
-                                ((BaseActivity) getAttachedActivity()).enterActivity();
+                                ((BaseActivity) getAttachedActivity()).enterActivity();*/
                                 break;
                             case R.id.item_download_btn:
                                 EventBusUtils.post(
@@ -530,8 +539,8 @@ public class ContentsFragment extends BaseFragment {
             case R.id.playback_btn:
                 boolean videoIsFinished = false;/*mPreferences.getBoolean(
                         DownloadFileService.VIDEO_IS_FINISHED, false);*/
-                String address = mAddressET.getText().toString();
-                if (TextUtils.isEmpty(address) && videoIsFinished) {
+                String videoPlaybackPath = mAddressET.getText().toString();
+                if (TextUtils.isEmpty(videoPlaybackPath) && videoIsFinished) {
                     // 如果要播放下载好的视频,那么把地址栏清空
                     boolean isExist = false;
                     File moviesFile = new File(DownloadFileService.PATH);
@@ -551,32 +560,38 @@ public class ContentsFragment extends BaseFragment {
                     }
                 } else {
                     Contents.setTitle("");
-                    Contents.setPath(address);
+                    Contents.setPath(videoPlaybackPath);
                 }
 
-                Intent intent = new Intent();
+                FFMPEG.getDefault().setMode(FFMPEG.USE_MODE_MEDIA);
+                EventBusUtils.post(
+                        PlayerService.class,
+                        PlayerService.COMMAND_SHOW_WINDOW,
+                        new Object[]{videoPlaybackPath});
+
+                /*Intent intent = new Intent();
                 intent.setClass(getContext(), PlayerActivity.class);
-                intent.putExtra(PlayerActivity.CONTENT_PATH, address);
+                intent.putExtra(PlayerActivity.CONTENT_PATH, videoPlaybackPath);
                 getAttachedActivity().startActivity(intent);
-                ((BaseActivity) getAttachedActivity()).enterActivity();
+                ((BaseActivity) getAttachedActivity()).enterActivity();*/
                 break;
             case R.id.download_btn:
-                address = mAddressET.getText().toString();
-                if (TextUtils.isEmpty(address)) {
+                videoPlaybackPath = mAddressET.getText().toString();
+                if (TextUtils.isEmpty(videoPlaybackPath)) {
                     return;
                 }
 
-                MLog.i(TAG, "onClick() address: " + address);
-                Contents.setPath(address);
+                MLog.i(TAG, "onClick() address: " + videoPlaybackPath);
+                Contents.setPath(videoPlaybackPath);
 
                 EventBusUtils.post(
                         DownloadFileService.class,
                         DownloadFileService.MSG_DOWNLOAD_START,
-                        new Object[]{address});
+                        new Object[]{videoPlaybackPath});
                 break;
             case R.id.jump_to_gallery_btn:
                 // 调用"图库"
-                intent = new Intent(Intent.ACTION_PICK,
+                Intent intent = new Intent(Intent.ACTION_PICK,
                         android.provider.MediaStore.Video.Media.EXTERNAL_CONTENT_URI);
                 startActivityForResult(intent, REQUEST_CODE_SELECT_VIDEO);
                 break;
@@ -591,7 +606,11 @@ public class ContentsFragment extends BaseFragment {
                 startActivityForResult(intent, REQUEST_CODE_SELECT_VIDEO);
                 break;
             case R.id.jump_btn:
-
+                // 视频播放后才可以打开这个Activity
+                intent = new Intent();
+                intent.putExtra(JniPlayerActivity.COMMAND_NO_FINISH, true);
+                intent.setClass(getContext(), JniPlayerActivity.class);
+                getAttachedActivity().startActivity(intent);
                 break;
             default:
                 break;

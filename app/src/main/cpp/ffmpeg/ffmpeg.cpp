@@ -227,14 +227,17 @@ void onFinished() {
     LOGF("onFinished()\n");
     JNIEnv *jniEnv;
     bool isAttached = getEnv(&jniEnv);
+    LOGF("onFinished() isAttached: %d\n", isAttached);
     if (jniEnv != NULL
         && callbackJavaObject != NULL
         && callback.onFinishedMethodID != NULL) {
+        LOGF("onFinished() callback.onFinishedMethodID\n");
         jniEnv->CallVoidMethod(callbackJavaObject, callback.onFinishedMethodID);
     }
     if (isAttached) {
         gJavaVm->DetachCurrentThread();
     }
+    close();
 }
 
 void onProgressUpdated(long seconds) {
@@ -558,7 +561,6 @@ Java_com_weidi_usefragments_business_video_1player_FFMPEG_release(JNIEnv *env,
         default:
             break;
     }
-    close();
     return (jint) 0;
 }
 

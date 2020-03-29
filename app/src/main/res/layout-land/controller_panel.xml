@@ -8,15 +8,16 @@
     android:layout_height="wrap_content"
     android:background="@android:color/transparent"
     android:orientation="vertical"
-    android:visibility="gone">
+    android:visibility="invisible">
 
-    <TextView
-        android:id="@+id/file_name_tv"
+    <!--<TextView
+        android:id="@+id/file_name_tv2"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:gravity="center"
-        android:maxLines="4"
-        android:textColor="@color/white"/>
+        android:gravity="center" transparent
+        android:maxLines="1" facelock_spotlight_mask
+        android:textSize="10sp"
+        android:textColor="@color/white"/>-->
 
     <SeekBar
         android:id="@+id/progress_bar"
@@ -43,6 +44,15 @@
             android:textColor="@color/white"/>
 
         <TextView
+            android:id="@+id/file_name_tv"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerInParent="true"
+            android:maxLines="1"
+            android:textSize="10sp"
+            android:textColor="@color/white"/>
+
+        <TextView
             android:id="@+id/duration_time_tv"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -51,27 +61,36 @@
     </RelativeLayout>
 
     <RelativeLayout
-        android:layout_width="@dimen/dimen_480_dp"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:paddingTop="0dp"
         android:paddingBottom="0dp"
-        android:layout_marginBottom="@dimen/dimen_16_dp"
+        android:layout_marginEnd="@dimen/dimen_16_dp"
+        android:layout_marginStart="@dimen/dimen_16_dp"
         android:layout_gravity="bottom|center_horizontal"
         android:layout_centerHorizontal="true"
         android:orientation="horizontal">
         <ImageButton
             android:id="@+id/button_prev"
             style="@style/StyleImageButton"
-            android:layout_marginRight="@dimen/dimen_16_dp"
             android:layout_alignParentStart="true"
             android:contentDescription="Previous"
             android:src="@drawable/media_ic_prev"/>
 
         <ImageButton
+            android:id="@+id/button_prev2"
+            style="@style/StyleImageButton"
+            android:layout_alignParentStart="true"
+            android:layout_marginStart="@dimen/dimen_80_dp"
+            android:contentDescription="Previous2"
+            android:src="@drawable/media_ic_prev"
+            android:visibility="gone"/>
+
+        <ImageButton
             android:id="@+id/button_play"
             style="@style/StyleImageButton"
-            android:layout_width="@dimen/dimen_64_dp"
-            android:layout_height="@dimen/dimen_64_dp"
+            android:layout_width="@dimen/dimen_36_dp"
+            android:layout_height="@dimen/dimen_36_dp"
             android:layout_centerInParent="true"
             android:layout_margin="0dp"
             android:contentDescription="Play"
@@ -80,8 +99,8 @@
         <ImageButton
             android:id="@+id/button_pause"
             style="@style/StyleImageButton"
-            android:layout_width="@dimen/dimen_64_dp"
-            android:layout_height="@dimen/dimen_64_dp"
+            android:layout_width="@dimen/dimen_36_dp"
+            android:layout_height="@dimen/dimen_36_dp"
             android:layout_centerInParent="true"
             android:layout_margin="0dp"
             android:contentDescription="Play"
@@ -89,13 +108,20 @@
             android:visibility="gone"/>
 
         <ImageButton
+            android:id="@+id/button_next2"
+            style="@style/StyleImageButton"
+            android:layout_alignParentEnd="true"
+            android:layout_marginEnd="@dimen/dimen_80_dp"
+            android:contentDescription="Next2"
+            android:src="@drawable/media_ic_next"
+            android:visibility="gone"/>
+
+        <ImageButton
             android:id="@+id/button_next"
             style="@style/StyleImageButton"
-            android:layout_marginLeft="@dimen/dimen_16_dp"
             android:layout_alignParentEnd="true"
             android:contentDescription="Next"
             android:src="@drawable/media_ic_next"/>
-
     </RelativeLayout>
 
 </LinearLayout>
