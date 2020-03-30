@@ -6,13 +6,11 @@ import android.os.Build;
 import android.os.Handler;
 import android.os.Message;
 import android.os.SystemClock;
-import android.text.TextUtils;
 import android.view.Surface;
 
 import com.weidi.usefragments.media.MediaUtils;
 import com.weidi.usefragments.tool.Callback;
 import com.weidi.usefragments.tool.MLog;
-import com.weidi.utils.MyToast;
 
 /***
  Created by root on 19-8-8.
@@ -54,7 +52,8 @@ public class FFMPEG {
     }
 
     private AudioTrack mAudioTrack;
-    private static float VOLUME = 1.0f;
+    public static final float VOLUME_NORMAL = 1.0f;
+    public static final float VOLUME_MUTE = 0.0f;
 
     public native void setMode(int mode);
 
@@ -147,12 +146,12 @@ public class FFMPEG {
         SystemClock.sleep(ms);
     }
 
-    private void setVolume(float volume) {
+    public void setVolume(float volume) {
         if (mAudioTrack == null) {
             return;
         }
         if (volume < 0 || volume > 1.0f) {
-            volume = VOLUME;
+            volume = VOLUME_NORMAL;
         }
         if (Build.VERSION.SDK_INT >= 21) {
             mAudioTrack.setVolume(volume);
@@ -183,9 +182,9 @@ public class FFMPEG {
             MLog.i(TAG, "onChangeWindow() width: " + width + " height: " + height);
             if (mUiHandler != null) {
                 Message msg = mUiHandler.obtainMessage();
+                msg.what = Callback.MSG_ON_CHANGE_WINDOW;
                 msg.arg1 = width;
                 msg.arg2 = height;
-                msg.what = Callback.MSG_ON_CHANGE_WINDOW;
                 mUiHandler.removeMessages(Callback.MSG_ON_CHANGE_WINDOW);
                 mUiHandler.sendMessage(msg);
             }
@@ -232,14 +231,11 @@ public class FFMPEG {
         @Override
         public void onError(int error, String errorInfo) {
             MLog.e(TAG, "onError() error: " + error + " errorInfo: " + errorInfo);
-            if (!TextUtils.isEmpty(errorInfo)) {
-                MyToast.show(errorInfo);
-            }
             if (mUiHandler != null) {
                 Message msg = mUiHandler.obtainMessage();
                 msg.what = Callback.MSG_ON_ERROR;
-                msg.obj = errorInfo;
                 msg.arg1 = error;
+                msg.obj = errorInfo;
                 mUiHandler.removeMessages(Callback.MSG_ON_ERROR);
                 mUiHandler.sendMessage(msg);
             }
@@ -248,8 +244,15 @@ public class FFMPEG {
         @Override
         public void onInfo(String info) {
             MLog.i(TAG, "onInfo() info: " + info);
-            if (!TextUtils.isEmpty(info)) {
+            /*if (!TextUtils.isEmpty(info)) {
                 MyToast.show(info);
+            }*/
+            if (mUiHandler != null) {
+                Message msg = mUiHandler.obtainMessage();
+                msg.what = Callback.MSG_ON_INFO;
+                msg.obj = info;
+                mUiHandler.removeMessages(Callback.MSG_ON_INFO);
+                mUiHandler.sendMessage(msg);
             }
         }
     };

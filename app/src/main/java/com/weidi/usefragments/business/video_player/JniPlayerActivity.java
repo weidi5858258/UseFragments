@@ -293,7 +293,7 @@ public class JniPlayerActivity extends BaseActivity {
         finish();
 
         /*registerHeadsetPlugReceiver();
-        // Volume change should always affect media volume
+        // Volume change should always affect media volume_normal
         setVolumeControlStream(AudioManager.STREAM_MUSIC);*/
 
         /*mSurfaceView = findViewById(R.id.surfaceView);

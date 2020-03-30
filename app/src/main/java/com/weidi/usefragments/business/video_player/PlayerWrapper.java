@@ -83,6 +83,10 @@ public class PlayerWrapper {
     private ImageButton mPlayIB;
     private ImageButton mPauseIB;
     private ImageButton mNextIB;
+    private ImageButton mPreviousIB2;
+    // 声音
+    private ImageButton mVolumeNormal;
+    private ImageButton mVolumeMute;
 
     // 跟气泡相关
     private LayoutInflater mLayoutInflater;
@@ -99,7 +103,8 @@ public class PlayerWrapper {
     // 视频源的宽高
     private int mVideoWidth;
     private int mVideoHeight;
-    // 想要的高度
+    // 想要的宽高
+    private int mNeedVideoWidth;
     private int mNeedVideoHeight;
     // 控制面板的高度
     private int mControllerPanelLayoutHeight;
@@ -144,17 +149,34 @@ public class PlayerWrapper {
             mLayoutParams = playerService.mLayoutParams;
             mRootView = playerService.mRootView;
 
-            mSurfaceView = playerService.mSurfaceView;
-            mControllerPanelLayout = playerService.mControllerPanelLayout;
-            mLoadingView = playerService.mLoadingView;
-            mProgressBar = playerService.mProgressBar;
-            mFileNameTV = playerService.mFileNameTV;
-            mProgressTimeTV = playerService.mProgressTimeTV;
-            mDurationTimeTV = playerService.mDurationTimeTV;
-            mPreviousIB = playerService.mPreviousIB;
-            mPlayIB = playerService.mPlayIB;
-            mPauseIB = playerService.mPauseIB;
-            mNextIB = playerService.mNextIB;
+            mSurfaceView = mRootView.findViewById(R.id.surfaceView);
+            mControllerPanelLayout = mRootView.findViewById(R.id.controller_panel_layout);
+            mLoadingView = mRootView.findViewById(R.id.loading_view);
+            mProgressBar = mRootView.findViewById(R.id.progress_bar);
+            mFileNameTV = mRootView.findViewById(R.id.file_name_tv);
+            mProgressTimeTV = mRootView.findViewById(R.id.progress_time_tv);
+            mDurationTimeTV = mRootView.findViewById(R.id.duration_time_tv);
+            mPreviousIB = mRootView.findViewById(R.id.button_prev);
+            mPlayIB = mRootView.findViewById(R.id.button_play);
+            mPauseIB = mRootView.findViewById(R.id.button_pause);
+            mNextIB = mRootView.findViewById(R.id.button_next);
+
+            mPreviousIB2 = mRootView.findViewById(R.id.button_prev2);
+            mVolumeNormal = mRootView.findViewById(R.id.volume_normal);
+            mVolumeMute = mRootView.findViewById(R.id.volume_mute);
+
+            mPreviousIB2.setVisibility(View.VISIBLE);
+            mVolumeNormal.setVisibility(View.VISIBLE);
+            mVolumeMute.setVisibility(View.GONE);
+
+            mSurfaceView.setOnClickListener(mOnClickListener);
+            mPreviousIB.setOnClickListener(mOnClickListener);
+            mPlayIB.setOnClickListener(mOnClickListener);
+            mPauseIB.setOnClickListener(mOnClickListener);
+            mNextIB.setOnClickListener(mOnClickListener);
+            mPreviousIB2.setOnClickListener(mOnClickListener);
+            mVolumeNormal.setOnClickListener(mOnClickListener);
+            mVolumeMute.setOnClickListener(mOnClickListener);
         }
     }
 
@@ -178,13 +200,7 @@ public class PlayerWrapper {
         mShowTimeTV = mBubbleView.findViewById(R.id.content_tv);
         mBubblePopupWindow = new BubblePopupWindow(mContext);
         mBubblePopupWindow.setBubbleView(mBubbleView);
-
         mShowTimeTV.setOnClickListener(mOnClickListener);
-        mSurfaceView.setOnClickListener(mOnClickListener);
-        mPreviousIB.setOnClickListener(mOnClickListener);
-        mPlayIB.setOnClickListener(mOnClickListener);
-        mPauseIB.setOnClickListener(mOnClickListener);
-        mNextIB.setOnClickListener(mOnClickListener);
 
         if (mFFMPEGPlayer == null) {
             mFFMPEGPlayer = FFMPEG.getDefault();
@@ -288,7 +304,6 @@ public class PlayerWrapper {
         }
     }
 
-    @SuppressLint("SourceLockedOrientationActivity")
     private void uiHandleMessage(Message msg) {
         if (msg == null) {
             return;
@@ -331,12 +346,14 @@ public class PlayerWrapper {
                 mLoadingView.setVisibility(View.GONE);
                 mPlayIB.setVisibility(View.VISIBLE);
                 mPauseIB.setVisibility(View.GONE);
-                if (mContext.getResources().getConfiguration().orientation
+                mControllerPanelLayout.setVisibility(View.GONE);
+
+                /*if (mContext.getResources().getConfiguration().orientation
                         == Configuration.ORIENTATION_LANDSCAPE) {
                     mControllerPanelLayout.setVisibility(View.GONE);// INVISIBLE
                 } else {
                     mControllerPanelLayout.setVisibility(View.VISIBLE);// INVISIBLE
-                }
+                }*/
 
                 SharedPreferences.Editor edit = mSP.edit();
                 edit.putString(PLAYBACK_ADDRESS, mPath);
@@ -351,24 +368,49 @@ public class PlayerWrapper {
                 mPlayIB.setVisibility(View.GONE);
                 mPauseIB.setVisibility(View.VISIBLE);
                 mLoadingView.setVisibility(View.VISIBLE);
-                mControllerPanelLayout.setVisibility(View.VISIBLE);
+                mControllerPanelLayout.setVisibility(View.GONE);
+                break;
+            case Callback.MSG_ON_FINISHED:
+                if (mHasError) {
+                    mHasError = false;
+                    // 重新开始播放
+                    startPlayback();
+                } else {
+                    MyToast.show("Safe Exit");
+                    // 播放结束
+                    if (mService != null) {
+                        if (!mService.needToPlaybackOtherVideo()) {
+                            mService.removeView();
+                            mSurfaceHolder.removeCallback(mSurfaceCallback);
+                            mSurfaceHolder = null;
+                        }
+                    } else if (mActivity != null) {
+                        mActivity.finish();
+                        mActivity.exitActivity();
+                        mSurfaceHolder.removeCallback(mSurfaceCallback);
+                        mSurfaceHolder = null;
+                    }
+                }
+                break;
+            case Callback.MSG_ON_INFO:
                 break;
             case Callback.MSG_ON_ERROR:
-                if (msg.obj == null) {
-                    return;
-                }
                 mHasError = false;
                 int error = msg.arg1;
-                String errorInfo = (String) msg.obj;
+                String errorInfo = null;
+                if (msg.obj != null) {
+                    errorInfo = (String) msg.obj;
+                }
                 switch (error) {
                     case Callback.ERROR_TIME_OUT:
                     case Callback.ERROR_DATA_EXCEPTION:
                         // 需要重新播放
                         mHasError = true;
-                        MLog.e(TAG, "Callback.MSG_ON_ERROR " + errorInfo);
+                        MLog.e(TAG, "Callback.MSG_ON_ERROR errorInfo: " + errorInfo);
                         break;
                     case Callback.ERROR_FFMPEG_INIT:
-                        MLog.e(TAG, "Callback.ERROR_FFMPEG_INIT " + errorInfo);
+                        MLog.e(TAG, "Callback.ERROR_FFMPEG_INIT errorInfo: " + errorInfo);
+                        MyToast.show("音视频初始化失败");
                         // 不需要重新播放
                         if (mService != null) {
                             mService.removeView();
@@ -384,29 +426,6 @@ public class PlayerWrapper {
                     default:
                         break;
                 }
-                break;
-            case Callback.MSG_ON_FINISHED:
-                if (mHasError) {
-                    mHasError = false;
-                    // 重新开始播放
-                    startPlayback();
-                } else {
-                    // 播放结束
-                    if (mService != null) {
-                        if (!mService.needToPlaybackOtherVideo()) {
-                            MyToast.show("Safe Exit");
-                            mService.removeView();
-                            mSurfaceHolder.removeCallback(mSurfaceCallback);
-                            mSurfaceHolder = null;
-                        }
-                    } else if (mActivity != null) {
-                        mActivity.finish();
-                        mActivity.exitActivity();
-                        mSurfaceHolder.removeCallback(mSurfaceCallback);
-                        mSurfaceHolder = null;
-                    }
-                }
-
                 break;
             case Callback.MSG_ON_PROGRESS_UPDATED:
                 if (msg.obj == null) {
@@ -428,80 +447,43 @@ public class PlayerWrapper {
                 mSP.edit().putLong(PLAYBACK_POSITION, mPresentationTime).commit();
                 break;
             case KeyEvent.KEYCODE_HEADSETHOOK:// 单击事件
-                if (firstFlag && secondFlag && threeFlag && fourFlag) {
-                    /*Log.d(TAG, "onKeyDown() 4");*/
-
-                    if (mService != null) {
-                        // 如果当前是横屏
-                        if (mContext.getResources().getConfiguration().orientation ==
-                                Configuration.ORIENTATION_LANDSCAPE) {
-                            MLog.d(TAG, "onKeyDown() 4 横屏");
-                            // 强制横屏
-                            // 执行全屏操作
-                            // 重新计算mScreenWidth和mScreenHeight的值
-
-                            if (JniPlayerActivity.isAliveJniPlayerActivity) {
-                                handleLandscapeScreen(0);
-                            } else {
-                                handleLandscapeScreen(1);
-                            }
-                        } else if (mContext.getResources().getConfiguration().orientation ==
-                                Configuration.ORIENTATION_PORTRAIT) {
-                            MLog.d(TAG, "onKeyDown() 4 竖屏");
-                            // 强制竖屏
-                            // 取消全屏操作
-                            // 重新计算mScreenWidth和mScreenHeight的值
-
-                            handlePortraitScreen();
-                        }
-                    } else if (mActivity != null) {
-                        // 如果当前是横屏
-                        if (mContext.getResources().getConfiguration().orientation ==
-                                Configuration.ORIENTATION_LANDSCAPE) {
-                            // 强制竖屏
-                            mActivity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
-                            // 取消全屏操作
-                            setFullscreen(mActivity, false);
-                        } else if (mContext.getResources().getConfiguration().orientation ==
-                                Configuration.ORIENTATION_PORTRAIT) {
-                            // 强制横屏
-                            mActivity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
-                            // 执行全屏操作
-                            setFullscreen(mActivity, true);
-                        }
-                    }
-                } else if (firstFlag && secondFlag && threeFlag) {
-                    /*Log.d(TAG, "onKeyDown() 3");*/
-
-                    if (mControllerPanelLayout.getVisibility() == View.VISIBLE) {
-                        mControllerPanelLayout.setVisibility(View.GONE);
-                    } else {
-                        mControllerPanelLayout.setVisibility(View.VISIBLE);
-                    }
-                } else if (firstFlag && secondFlag) {
-                    /*Log.d(TAG, "onKeyDown() 2");*/
-
-                    // 播放与暂停
-                    if (mFFMPEGPlayer != null) {
-                        if (mFFMPEGPlayer.isRunning()) {
-                            if (mFFMPEGPlayer.isPlaying()) {
-                                mPlayIB.setVisibility(View.GONE);
-                                mPauseIB.setVisibility(View.VISIBLE);
-                                mFFMPEGPlayer.pause();
-                            } else {
-                                mPlayIB.setVisibility(View.VISIBLE);
-                                mPauseIB.setVisibility(View.GONE);
-                                mFFMPEGPlayer.play();
-                            }
-                        }
-                    }
-                } else {
-                    /*Log.d(TAG, "onKeyDown() 1");*/
+                if (clickCounts > NEED_CLICK_COUNTS) {
+                    clickCounts = NEED_CLICK_COUNTS;
                 }
-                firstFlag = false;
-                secondFlag = false;
-                threeFlag = false;
-                fourFlag = false;
+                switch (clickCounts) {
+                    case 1:
+                        //MLog.d(TAG, "onKeyDown() 1");
+                        clickOne();
+                        break;
+                    case 2:
+                        //MLog.d(TAG, "onKeyDown() 2");
+                        clickTwo();
+                        break;
+                    case 3:
+                        //MLog.d(TAG, "onKeyDown() 3");
+                        clickThree();
+                        break;
+                    case 4:
+                        //MLog.d(TAG, "onKeyDown() 4");
+                        clickFour();
+                        break;
+                    case 5:
+                        break;
+                    case 6:
+                        break;
+                    case 7:
+                        break;
+                    case 8:
+                        break;
+                    case 9:
+                        break;
+                    case 10:
+                        break;
+                    default:
+                        break;
+                }
+
+                clickCounts = 0;
                 mNeedToSyncProgressBar = true;
                 break;
             case MSG_START_PLAYBACK:
@@ -527,6 +509,8 @@ public class PlayerWrapper {
     }
 
     public void startPlayback() {
+        mVolumeNormal.setVisibility(View.VISIBLE);
+        mVolumeMute.setVisibility(View.GONE);
         if (mSurfaceHolder == null) {
             mSurfaceHolder = mSurfaceView.getHolder();
         }
@@ -543,9 +527,10 @@ public class PlayerWrapper {
             @Override
             public void run() {
                 if (mFFMPEGPlayer.initPlayer() != 0) {
-                    MyToast.show("音视频初始化失败");
-                    mUiHandler.removeMessages(Callback.MSG_ON_ERROR);
-                    mUiHandler.sendEmptyMessage(Callback.MSG_ON_ERROR);
+                    // 不在这里做事了.遇到error会从底层回调到java端的
+                    //MyToast.show("音视频初始化失败");
+                    //mUiHandler.removeMessages(Callback.MSG_ON_ERROR);
+                    //mUiHandler.sendEmptyMessage(Callback.MSG_ON_ERROR);
                     return;
                 }
 
@@ -596,10 +581,6 @@ public class PlayerWrapper {
                             View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
         } else {
             getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LOW_PROFILE);
-        }*/
-
-        /*if (mScreenWidth > mScreenHeight) {
-            return;
         }*/
 
         MLog.d(TAG, "Callback.MSG_ON_CHANGE_WINDOW handleLandscapeScreen");
@@ -658,6 +639,23 @@ public class PlayerWrapper {
     public void handlePortraitScreen() {
         MLog.d(TAG, "Callback.MSG_ON_CHANGE_WINDOW handlePortraitScreen");
 
+        if (mService != null) {
+            SeekBar seekBar = mRootView.findViewById(R.id.progress_bar);
+            RelativeLayout show_time_rl = mRootView.findViewById(R.id.show_time_rl);
+            ImageButton button_prev = mRootView.findViewById(R.id.button_prev);
+            ImageButton button_next = mRootView.findViewById(R.id.button_next);
+            if (mFFMPEGPlayer.getDuration() <= 0) {
+                seekBar.setVisibility(View.GONE);
+                show_time_rl.setVisibility(View.GONE);
+                button_prev.setVisibility(View.INVISIBLE);
+                button_next.setVisibility(View.INVISIBLE);
+            } else {
+                seekBar.setVisibility(View.VISIBLE);
+                show_time_rl.setVisibility(View.VISIBLE);
+                button_prev.setVisibility(View.VISIBLE);
+                button_next.setVisibility(View.VISIBLE);
+            }
+        }
         mControllerPanelLayout.setVisibility(View.VISIBLE);
 
         // mScreenWidth: 1080 mScreenHeight: 2244
@@ -678,14 +676,31 @@ public class PlayerWrapper {
         RelativeLayout.LayoutParams relativeParams =
                 (RelativeLayout.LayoutParams) mSurfaceView.getLayoutParams();
         relativeParams.setMargins(0, 0, 0, 0);
+        mNeedVideoWidth = mScreenWidth;
         mNeedVideoHeight = (mScreenWidth * mVideoHeight) / mVideoWidth;
         if (mNeedVideoHeight > mScreenHeight) {
             mNeedVideoHeight = mScreenHeight;
         }
-        relativeParams.width = mScreenWidth;
+
+        /*if (mVideoWidth >= mScreenWidth) {
+            relativeParams.setMargins(0, 0, 0, 0);
+            mNeedVideoWidth = mScreenWidth;
+            mNeedVideoHeight = (mScreenWidth * mVideoHeight) / mVideoWidth;
+            if (mNeedVideoHeight > mScreenHeight) {
+                mNeedVideoHeight = mScreenHeight;
+            }
+        } else {
+            relativeParams.setMargins((mScreenWidth - mVideoWidth) / 2, 0, 0, 0);
+            mNeedVideoWidth = mVideoWidth;
+            mNeedVideoHeight = mVideoHeight;
+            if (mNeedVideoHeight > mScreenHeight) {
+                mNeedVideoHeight = mScreenHeight;
+            }
+        }*/
+        relativeParams.width = mNeedVideoWidth;
         relativeParams.height = mNeedVideoHeight;
-        MLog.d(TAG, "Callback.MSG_ON_CHANGE_WINDOW relativeParams.width: " +
-                relativeParams.width + " relativeParams.height: " + relativeParams.height);
+        MLog.d(TAG, "Callback.MSG_ON_CHANGE_WINDOW mNeedVideoWidth: " +
+                mNeedVideoWidth + " mNeedVideoHeight: " + mNeedVideoHeight);
         mSurfaceView.setLayoutParams(relativeParams);
 
         // 改变ControllerPanelLayout高度
@@ -795,30 +810,108 @@ public class PlayerWrapper {
                         mFFMPEGPlayer.seekTo(mProgress);
                     }
                     break;
+                case R.id.button_prev2:
+                    if (mService != null) {
+                        mService.removeView();
+                    }
+                    break;
+                case R.id.volume_normal:
+                    mVolumeNormal.setVisibility(View.GONE);
+                    mVolumeMute.setVisibility(View.VISIBLE);
+                    mFFMPEGPlayer.setVolume(FFMPEG.VOLUME_MUTE);
+                    break;
+                case R.id.volume_mute:
+                    mVolumeNormal.setVisibility(View.VISIBLE);
+                    mVolumeMute.setVisibility(View.GONE);
+                    mFFMPEGPlayer.setVolume(FFMPEG.VOLUME_NORMAL);
+                    break;
                 default:
                     break;
             }
         }
     };
 
-    private boolean firstFlag = false;
-    private boolean secondFlag = false;
-    private boolean threeFlag = false;
-    private boolean fourFlag = false;
+    private void clickOne() {
+
+    }
+
+    private void clickTwo() {
+        // 播放与暂停
+        if (mFFMPEGPlayer != null) {
+            if (mFFMPEGPlayer.isRunning()) {
+                if (mFFMPEGPlayer.isPlaying()) {
+                    mPlayIB.setVisibility(View.GONE);
+                    mPauseIB.setVisibility(View.VISIBLE);
+                    mFFMPEGPlayer.pause();
+                } else {
+                    mPlayIB.setVisibility(View.VISIBLE);
+                    mPauseIB.setVisibility(View.GONE);
+                    mFFMPEGPlayer.play();
+                }
+            }
+        }
+    }
+
+    private void clickThree() {
+        if (mControllerPanelLayout.getVisibility() == View.VISIBLE) {
+            mControllerPanelLayout.setVisibility(View.GONE);
+        } else {
+            mControllerPanelLayout.setVisibility(View.VISIBLE);
+        }
+    }
+
+    @SuppressLint("SourceLockedOrientationActivity")
+    private void clickFour() {
+        if (mService != null) {
+            // 如果当前是横屏
+            if (mContext.getResources().getConfiguration().orientation ==
+                    Configuration.ORIENTATION_LANDSCAPE) {
+                MLog.d(TAG, "onKeyDown() 4 横屏");
+                // 强制横屏
+                // 执行全屏操作
+                // 重新计算mScreenWidth和mScreenHeight的值
+
+                if (JniPlayerActivity.isAliveJniPlayerActivity) {
+                    handleLandscapeScreen(0);
+                } else {
+                    handleLandscapeScreen(1);
+                }
+            } else if (mContext.getResources().getConfiguration().orientation ==
+                    Configuration.ORIENTATION_PORTRAIT) {
+                MLog.d(TAG, "onKeyDown() 4 竖屏");
+                // 强制竖屏
+                // 取消全屏操作
+                // 重新计算mScreenWidth和mScreenHeight的值
+
+                handlePortraitScreen();
+            }
+        } else if (mActivity != null) {
+            // 如果当前是横屏
+            if (mContext.getResources().getConfiguration().orientation ==
+                    Configuration.ORIENTATION_LANDSCAPE) {
+                // 强制竖屏
+                mActivity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+                // 取消全屏操作
+                setFullscreen(mActivity, false);
+            } else if (mContext.getResources().getConfiguration().orientation ==
+                    Configuration.ORIENTATION_PORTRAIT) {
+                // 强制横屏
+                mActivity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
+                // 执行全屏操作
+                setFullscreen(mActivity, true);
+            }
+        }
+    }
+
+    private static final int NEED_CLICK_COUNTS = 4;
+    private int clickCounts = 0;
 
     private Object onEvent(int what, Object[] objArray) {
         Object result = null;
         switch (what) {
             case KeyEvent.KEYCODE_HEADSETHOOK:
-                if (!firstFlag) {
-                    firstFlag = true;
-                } else if (firstFlag && !secondFlag) {
-                    secondFlag = true;
-                } else if (firstFlag && secondFlag && !threeFlag) {
-                    threeFlag = true;
-                } else if (firstFlag && secondFlag && threeFlag && !fourFlag) {
-                    fourFlag = true;
-                }
+                ++clickCounts;
+
                 // 单位时间内按1次,2次,3次分别实现单击,双击,三击
                 mUiHandler.removeMessages(KeyEvent.KEYCODE_HEADSETHOOK);
                 mUiHandler.sendEmptyMessageDelayed(KeyEvent.KEYCODE_HEADSETHOOK, 300);

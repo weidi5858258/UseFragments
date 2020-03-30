@@ -150,7 +150,7 @@ public class JniPlayerActivity2 extends BaseActivity {
     private PowerManager.WakeLock mPowerWakeLock;
 
     private void initData() {
-        // Volume change should always affect media volume
+        // Volume change should always affect media volume_normal
         setVolumeControlStream(AudioManager.STREAM_MUSIC);
 
         mSurfaceView = findViewById(R.id.surfaceView);

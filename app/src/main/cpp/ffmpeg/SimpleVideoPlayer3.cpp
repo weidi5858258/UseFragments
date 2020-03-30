@@ -332,7 +332,7 @@ namespace alexander_media {
         preProgress = 0;
         audioPts = 0.0;
         videoPts = 0.0;
-        videoPtsPre = 0.0;
+        videoPtsPre = 0;
         runOneTime = true;
         runCounts = 0;
         averageTimeDiff = 0.0;
@@ -798,7 +798,7 @@ namespace alexander_media {
         videoWrapper->srcWidth = videoWrapper->father->avCodecContext->width;
         videoWrapper->srcHeight = videoWrapper->father->avCodecContext->height;
         videoWrapper->srcAVPixelFormat = videoWrapper->father->avCodecContext->pix_fmt;
-        onChangeWindow(videoWrapper->srcWidth, videoWrapper->srcHeight);
+        //onChangeWindow(videoWrapper->srcWidth, videoWrapper->srcHeight);
         LOGW("---------------------------------\n");
         LOGW("srcWidth            : %d\n", videoWrapper->srcWidth);
         LOGW("srcHeight           : %d\n", videoWrapper->srcHeight);
@@ -898,6 +898,7 @@ namespace alexander_media {
         avcodec_flush_buffers(videoWrapper->father->avCodecContext);
         timeStamp = -1;
         preProgress = 0;
+        videoPtsPre = 0;
         audioWrapper->father->isPausedForSeek = false;
         videoWrapper->father->isPausedForSeek = false;
         LOGI("seekToImpl() av_seek_frame end\n");
@@ -2016,6 +2017,17 @@ namespace alexander_media {
             return -1;
         }
 
+        if (!audioWrapper->father->isReading
+            || !audioWrapper->father->isHandling
+            || !videoWrapper->father->isReading
+            || !videoWrapper->father->isHandling) {
+            closeAudio();
+            closeVideo();
+            onFinished();
+            LOGW("%s\n", "initPlayer() finish");
+            return -1;
+        }
+
         audioWrapper->father->duration =
         videoWrapper->father->duration = avFormatContext->duration / AV_TIME_BASE;
         LOGD("initPlayer()      duration: %ld\n", (long) audioWrapper->father->duration);
@@ -2037,6 +2049,7 @@ namespace alexander_media {
             LOGD("initPlayer() media seconds: %d\n", (int) audioWrapper->father->duration);
             LOGD("initPlayer() media          %02d:%02d:%02d\n", hours, mins, seconds);
         }
+        onChangeWindow(videoWrapper->srcWidth, videoWrapper->srcHeight);
 
         LOGW("%s\n", "initPlayer() end");
         return 0;

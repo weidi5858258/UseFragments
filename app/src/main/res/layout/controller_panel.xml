@@ -33,6 +33,7 @@
         <!--android:progressDrawable="@drawable/playback_progress_bar"-->
 
     <RelativeLayout
+        android:id="@+id/show_time_rl"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginEnd="@dimen/dimen_16_dp"
@@ -83,7 +84,7 @@
             android:layout_alignParentStart="true"
             android:layout_marginStart="@dimen/dimen_80_dp"
             android:contentDescription="Previous2"
-            android:src="@drawable/media_ic_prev"
+            android:src="@drawable/remove_view"
             android:visibility="gone"/>
 
         <ImageButton
@@ -108,12 +109,21 @@
             android:visibility="gone"/>
 
         <ImageButton
-            android:id="@+id/button_next2"
+            android:id="@+id/volume_normal"
             style="@style/StyleImageButton"
             android:layout_alignParentEnd="true"
             android:layout_marginEnd="@dimen/dimen_80_dp"
-            android:contentDescription="Next2"
-            android:src="@drawable/media_ic_next"
+            android:contentDescription="Previous2"
+            android:src="@drawable/volume_normal"
+            android:visibility="gone"/>
+
+        <ImageButton
+            android:id="@+id/volume_mute"
+            style="@style/StyleImageButton"
+            android:layout_alignParentEnd="true"
+            android:layout_marginEnd="@dimen/dimen_80_dp"
+            android:contentDescription="volume"
+            android:src="@drawable/volume_mute"
             android:visibility="gone"/>
 
         <ImageButton

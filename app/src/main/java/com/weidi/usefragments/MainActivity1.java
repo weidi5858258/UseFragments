@@ -188,7 +188,7 @@ public class MainActivity1 extends BaseActivity
                 WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON,
                 WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         super.onCreate(savedInstanceState);
-        // Volume change should always affect media volume
+        // Volume change should always affect media volume_normal
         setVolumeControlStream(AudioManager.STREAM_MUSIC);
         mRootView = View.inflate(this, R.layout.activity_main, null);
         FrameLayout contentLayout = getContentLayout(this);

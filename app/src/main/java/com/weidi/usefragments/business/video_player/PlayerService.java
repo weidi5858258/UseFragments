@@ -95,21 +95,6 @@ public class PlayerService extends Service {
     public WindowManager.LayoutParams mLayoutParams;
     public View mRootView;
 
-    public SurfaceView mSurfaceView;
-    public LinearLayout mControllerPanelLayout;
-    public ProgressBar mLoadingView;
-    public SeekBar mProgressBar;
-    public TextView mFileNameTV;
-    public TextView mProgressTimeTV;
-    public TextView mDurationTimeTV;
-    public ImageButton mPreviousIB;
-    public ImageButton mPlayIB;
-    public ImageButton mPauseIB;
-    public ImageButton mNextIB;
-
-    public ImageButton mPreviousIB2;
-    public ImageButton mNextIB2;
-
     private void internalCreate() {
         EventBusUtils.register(this);
 
@@ -277,25 +262,6 @@ public class PlayerService extends Service {
         mLayoutParams.x = 0;
         mLayoutParams.y = 0;
 
-        mSurfaceView = mRootView.findViewById(R.id.surfaceView);
-        mControllerPanelLayout = mRootView.findViewById(R.id.controller_panel_layout);
-        mLoadingView = mRootView.findViewById(R.id.loading_view);
-        mProgressBar = mRootView.findViewById(R.id.progress_bar);
-        mFileNameTV = mRootView.findViewById(R.id.file_name_tv);
-        mProgressTimeTV = mRootView.findViewById(R.id.progress_time_tv);
-        mDurationTimeTV = mRootView.findViewById(R.id.duration_time_tv);
-        mPreviousIB = mRootView.findViewById(R.id.button_prev);
-        mPlayIB = mRootView.findViewById(R.id.button_play);
-        mPauseIB = mRootView.findViewById(R.id.button_pause);
-        mNextIB = mRootView.findViewById(R.id.button_next);
-
-        mPreviousIB2 = mRootView.findViewById(R.id.button_prev2);
-        mNextIB2 = mRootView.findViewById(R.id.button_next2);
-        mPreviousIB2.setVisibility(View.VISIBLE);
-        mNextIB2.setVisibility(View.VISIBLE);
-        mPreviousIB2.setOnClickListener(mOnClickListener);
-        mNextIB2.setOnClickListener(mOnClickListener);
-
         /*mCurPath = "/storage/1532-48AD/Android/data/" +
                 "com.weidi.usefragments/files/Movies/哪吒之魔童降世.mp4";*/
         //        mPath = "/storage/1532-48AD/Videos/vodeo/c7f879de3a6baacf2ad81c5a65379718.mp4";
@@ -351,6 +317,7 @@ public class PlayerService extends Service {
     }
 
     private class PlayerOnTouchListener implements View.OnTouchListener {
+        private int x;
         private int y;
 
         @Override
@@ -374,21 +341,5 @@ public class PlayerService extends Service {
             return true;
         }
     }
-
-    private View.OnClickListener mOnClickListener = new View.OnClickListener() {
-        @Override
-        public void onClick(View v) {
-            switch (v.getId()) {
-                case R.id.button_prev2:
-                    removeView();
-                    break;
-                case R.id.button_next2:
-                    removeView();
-                    break;
-                default:
-                    break;
-            }
-        }
-    };
 
 }

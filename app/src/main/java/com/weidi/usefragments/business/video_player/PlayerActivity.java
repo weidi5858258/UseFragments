@@ -213,7 +213,7 @@ public class PlayerActivity extends BaseActivity {
 
     private void initData() {
         // startService(new Intent(this, MediaDataService.class));
-        // Volume change should always affect media volume
+        // Volume change should always affect media volume_normal
         setVolumeControlStream(AudioManager.STREAM_MUSIC);
 
         mUiHandler = new Handler(Looper.getMainLooper()) {
