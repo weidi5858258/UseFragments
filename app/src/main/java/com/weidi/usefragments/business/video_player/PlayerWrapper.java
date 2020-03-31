@@ -321,6 +321,7 @@ public class PlayerWrapper {
                 mProgressBar.setProgress(0);
                 mFileNameTV.setText(Contents.getTitle());
                 mLoadingView.setVisibility(View.VISIBLE);
+                mControllerPanelLayout.setVisibility(View.VISIBLE);
                 break;
             case Callback.MSG_ON_CHANGE_WINDOW:
                 // 视频宽高

@@ -490,6 +490,7 @@ namespace alexander_media {
         if (avFormatContext == NULL) {
             return -1;
         }
+        LOGI("findStreamIndex() start\n");
         // stream counts
         int streams = avFormatContext->nb_streams;
         LOGI("Stream counts   : %d\n", streams);
@@ -535,6 +536,7 @@ namespace alexander_media {
         audioWrapper->father->next_pts = AV_NOPTS_VALUE;
         audioWrapper->father->next_pts_tb = audioWrapper->father->avStream->time_base;
 
+        LOGI("findStreamIndex() end\n");
         return 0;
     }
 
@@ -543,6 +545,7 @@ namespace alexander_media {
             || audioWrapper->father->streamIndex == -1) {
             return -1;
         }
+        LOGI("findAndOpenAVCodecForAudio() start\n");
         // audio
         if (audioWrapper->father->streamIndex != -1) {
             // 获取音频解码器
@@ -603,6 +606,7 @@ namespace alexander_media {
             }
         }
 
+        LOGI("findAndOpenAVCodecForAudio() end\n");
         return 0;
     }
 
@@ -611,6 +615,7 @@ namespace alexander_media {
             || videoWrapper->father->streamIndex == -1) {
             return -1;
         }
+        LOGI("findAndOpenAVCodecForVideo() start\n");
         // video
         if (videoWrapper->father->streamIndex != -1) {
             // avcodec_find_decoder_by_name
@@ -666,10 +671,12 @@ namespace alexander_media {
             }
         }
 
+        LOGI("findAndOpenAVCodecForVideo() end\n");
         return 0;
     }
 
     int createSwrContent() {
+        LOGI("createSwrContent() start\n");
         // src
         audioWrapper->srcSampleRate = audioWrapper->father->avCodecContext->sample_rate;
         audioWrapper->srcNbSamples = audioWrapper->father->avCodecContext->frame_size;
@@ -791,10 +798,12 @@ namespace alexander_media {
         audioWrapper->father->outBuffer1 = (unsigned char *) av_malloc(MAX_AUDIO_FRAME_SIZE);
         audioWrapper->father->outBufferSize = MAX_AUDIO_FRAME_SIZE;
 
+        LOGI("createSwrContent() end\n");
         return 0;
     }
 
     int createSwsContext() {
+        LOGI("createSwsContext() start\n");
         videoWrapper->srcWidth = videoWrapper->father->avCodecContext->width;
         videoWrapper->srcHeight = videoWrapper->father->avCodecContext->height;
         videoWrapper->srcAVPixelFormat = videoWrapper->father->avCodecContext->pix_fmt;
@@ -851,6 +860,7 @@ namespace alexander_media {
         }
         LOGW("---------------------------------\n");
 
+        LOGI("createSwsContext() end\n");
         return 0;
     }
 
@@ -974,6 +984,22 @@ namespace alexander_media {
 
     void *readData(void *opaque) {
         LOGI("%s\n", "readData() start");
+
+        if (audioWrapper == NULL
+            || audioWrapper->father == NULL
+            || videoWrapper == NULL
+            || videoWrapper->father == NULL) {
+            return NULL;
+        } else if (!audioWrapper->father->isReading
+                   || !audioWrapper->father->isHandling
+                   || !videoWrapper->father->isReading
+                   || !videoWrapper->father->isHandling) {
+            closeAudio();
+            closeVideo();
+            onFinished();
+            LOGF("%s\n", "readData() finish");
+            return NULL;
+        }
 
         AVPacket *srcAVPacket = av_packet_alloc();
         AVPacket *copyAVPacket = av_packet_alloc();

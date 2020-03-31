@@ -7,8 +7,7 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:background="@android:color/transparent"
-    android:orientation="vertical"
-    android:visibility="invisible">
+    android:orientation="vertical">
 
     <!--<TextView
         android:id="@+id/file_name_tv2"
@@ -81,11 +80,12 @@
         <ImageButton
             android:id="@+id/button_prev2"
             style="@style/StyleImageButton"
+            android:layout_width="@dimen/dimen_16_dp"
+            android:layout_height="@dimen/dimen_16_dp"
             android:layout_alignParentStart="true"
             android:layout_marginStart="@dimen/dimen_80_dp"
             android:contentDescription="Previous2"
-            android:src="@drawable/remove_view"
-            android:visibility="gone"/>
+            android:src="@drawable/remove_view"/>
 
         <ImageButton
             android:id="@+id/button_play"
@@ -114,8 +114,7 @@
             android:layout_alignParentEnd="true"
             android:layout_marginEnd="@dimen/dimen_80_dp"
             android:contentDescription="Previous2"
-            android:src="@drawable/volume_normal"
-            android:visibility="gone"/>
+            android:src="@drawable/volume_normal"/>
 
         <ImageButton
             android:id="@+id/volume_mute"
