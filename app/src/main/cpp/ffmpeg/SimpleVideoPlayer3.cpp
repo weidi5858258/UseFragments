@@ -1489,9 +1489,9 @@ namespace alexander_media {
                     // 如果不是本地视频,从一千个左右的数据到0个数据的时间不超过30秒,那么就有问题了.
                     if ((wrapper->endHandleTime - wrapper->startHandleTime) <= 30000000) {
                         LOGE("handleData() maybeHasException\n");
-                        /*onError(0x102, "播放时发生异常");
+                        //onError(0x102, "播放时发生异常");
                         stop();
-                        break;*/
+                        break;
                     } else {
                         maybeHasException = false;
                     }
