@@ -11,6 +11,7 @@ import android.media.AudioManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.provider.Settings;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.Gravity;
@@ -32,6 +33,8 @@ import com.weidi.usefragments.receiver.MediaButtonReceiver;
 import com.weidi.usefragments.test_view.BubblePopupWindow;
 import com.weidi.usefragments.tool.MLog;
 import com.weidi.usefragments.tool.PermissionsUtils;
+
+import static com.weidi.usefragments.MainActivity1.isRunService;
 
 /***
 
@@ -247,6 +250,7 @@ public class JniPlayerActivity extends BaseActivity {
 
     private void internalCreate() {
         Intent intent = getIntent();
+        // 为flase时表示从外部打开一个视频进行播放.为true时只是使用Activity的全屏特性.
         noFinish = intent.getBooleanExtra(COMMAND_NO_FINISH, false);
 
         if (noFinish) {
@@ -263,6 +267,7 @@ public class JniPlayerActivity extends BaseActivity {
         if (noFinish) {
             return;
         }
+
         mPath = intent.getStringExtra(CONTENT_PATH);
         if (TextUtils.isEmpty(mPath)) {
             MLog.d(TAG, "internalCreate() mPath is null");
@@ -284,17 +289,34 @@ public class JniPlayerActivity extends BaseActivity {
             }
         }
 
-        FFMPEG.getDefault().setMode(FFMPEG.USE_MODE_MEDIA);
-        EventBusUtils.post(
-                PlayerService.class,
-                PlayerService.COMMAND_SHOW_WINDOW,
-                new Object[]{mPath});
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            if (!isRunService(this,
+                    "com.weidi.usefragments.business.video_player.PlayerService")) {
+                if (!Settings.canDrawOverlays(this)) {
+                    intent = new Intent(
+                            Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                            Uri.parse("package:" + getPackageName()));
+                    startActivityForResult(intent, 0);
+                } else {
+                    intent = new Intent();
+                    intent.setAction(PlayerService.COMMAND_ACTION);
+                    intent.putExtra(PlayerService.COMMAND_PATH, mPath);
+                    intent.putExtra(PlayerService.COMMAND_NAME, PlayerService.COMMAND_SHOW_WINDOW);
+                    startService(intent);
+                }
+            } else {
+                FFMPEG.getDefault().setMode(FFMPEG.USE_MODE_MEDIA);
+                EventBusUtils.post(
+                        PlayerService.class,
+                        PlayerService.COMMAND_SHOW_WINDOW,
+                        new Object[]{mPath});
+            }
+        }
 
         finish();
 
-        /*registerHeadsetPlugReceiver();
         // Volume change should always affect media volume_normal
-        setVolumeControlStream(AudioManager.STREAM_MUSIC);*/
+        /*setVolumeControlStream(AudioManager.STREAM_MUSIC);*/
 
         /*mSurfaceView = findViewById(R.id.surfaceView);
         mControllerPanelLayout = findViewById(R.id.controller_panel_layout);
@@ -355,76 +377,8 @@ public class JniPlayerActivity extends BaseActivity {
             }
         }
 
-        //unregisterHeadsetPlugReceiver();
         if (mPlayerWrapper != null) {
             mPlayerWrapper.onDestroy();
-        }
-    }
-
-    private int getStatusBarHeight() {
-        Resources resources = getResources();
-        int resourceId = resources.getIdentifier(
-                "status_bar_height",
-                "dimen",
-                "android");
-        int height = resources.getDimensionPixelSize(resourceId);
-        // getStatusBarHeight() height: 48 95
-        MLog.d(TAG, "getStatusBarHeight() height: " + height);
-        return height;
-    }
-
-    /////////////////////////////////////////////////////////////////
-
-    /***
-     下面是耳机操作
-     */
-
-    // Android监听耳机的插拔事件(只能动态注册,经过测试可行)
-    private HeadsetPlugReceiver mHeadsetPlugReceiver;
-    private AudioManager mAudioManager;
-    private ComponentName mMediaButtonReceiver;
-
-    private void registerHeadsetPlugReceiver() {
-        mHeadsetPlugReceiver = new HeadsetPlugReceiver();
-        IntentFilter filter = new IntentFilter();
-        filter.addAction("android.intent.action.HEADSET_PLUG");
-        filter.setPriority(2147483647);
-        registerReceiver(mHeadsetPlugReceiver, filter);
-
-        mAudioManager =
-                (AudioManager) getSystemService(Context.AUDIO_SERVICE);
-        mMediaButtonReceiver = new ComponentName(
-                getPackageName(), MediaButtonReceiver.class.getName());
-        mAudioManager.registerMediaButtonEventReceiver(mMediaButtonReceiver);
-    }
-
-    private void unregisterHeadsetPlugReceiver() {
-        if (mHeadsetPlugReceiver == null) {
-            return;
-        }
-
-        unregisterReceiver(mHeadsetPlugReceiver);
-        mAudioManager.unregisterMediaButtonEventReceiver(mMediaButtonReceiver);
-    }
-
-    private class HeadsetPlugReceiver extends BroadcastReceiver {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            if (intent.hasExtra("state")) {
-                switch (intent.getIntExtra("state", 0)) {
-                    case 0:
-                        if (DEBUG)
-                            MLog.d(TAG, "HeadsetPlugReceiver headset not connected");
-                        //pause();
-                        break;
-                    case 1:
-                        if (DEBUG)
-                            MLog.d(TAG, "HeadsetPlugReceiver headset has connected");
-                        //play();
-                        break;
-                    default:
-                }
-            }
         }
     }
 

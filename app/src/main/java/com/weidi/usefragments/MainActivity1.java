@@ -786,7 +786,7 @@ public class MainActivity1 extends BaseActivity
         return false;
     }
 
-    private boolean isRunService(Context context, String serviceName) {
+    public static boolean isRunService(Context context, String serviceName) {
         ActivityManager manager = (ActivityManager) context.getSystemService(ACTIVITY_SERVICE);
         for (ActivityManager.RunningServiceInfo
                 service : manager.getRunningServices(Integer.MAX_VALUE)) {

@@ -2,8 +2,12 @@ package com.weidi.usefragments.business.video_player;
 
 import android.annotation.SuppressLint;
 import android.app.Service;
+import android.content.BroadcastReceiver;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
+import android.media.AudioManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Handler;
@@ -27,6 +31,7 @@ import android.widget.TextView;
 
 import com.weidi.eventbus.EventBusUtils;
 import com.weidi.usefragments.R;
+import com.weidi.usefragments.receiver.MediaButtonReceiver;
 import com.weidi.usefragments.tool.MLog;
 
 /***
@@ -111,6 +116,7 @@ public class PlayerService extends Service {
     public static final String COMMAND_ACTION =
             "com.weidi.usefragments.business.video_player.PlayerService";
     public static final String COMMAND_NAME = "HandlePlayerService";
+    public static final String COMMAND_PATH = "HandlePlayerServicePath";
     public static final int COMMAND_SHOW_WINDOW = 1;
     public static final int COMMAND_HIDE_WINDOW = 2;
     public static final int COMMAND_STOP_SERVICE = 3;
@@ -124,14 +130,17 @@ public class PlayerService extends Service {
         }
 
         String action = intent.getAction();
-        Uri uri = intent.getData();
-        if (uri != null) {
-            mCurPath = uri.getPath();
-        }
-        MLog.d(TAG, "internalStartCommand() action: " + action);
+        MLog.d(TAG, "internalStartCommand()   action: " + action);
         if (!TextUtils.equals(COMMAND_ACTION, action)) {
             return;
         }
+        Uri uri = intent.getData();
+        if (uri != null) {
+            mCurPath = uri.getPath();
+        } else {
+            mCurPath = intent.getStringExtra(COMMAND_PATH);
+        }
+        MLog.d(TAG, "internalStartCommand() mCurPath: " + mCurPath);
         int commandName = intent.getIntExtra(COMMAND_NAME, 0);
         switch (commandName) {
             case COMMAND_SHOW_WINDOW:
@@ -280,6 +289,7 @@ public class PlayerService extends Service {
             MLog.e(TAG, "addView() mCurPath is empty");
             return;
         }
+        mPlayerWrapper.setPath(mCurPath);
         if (!mIsAddedView) {
             mPlayerWrapper.onResume();
             mWindowManager.addView(mRootView, mLayoutParams);
@@ -339,6 +349,62 @@ public class PlayerService extends Service {
                     break;
             }
             return true;
+        }
+    }
+
+    /////////////////////////////////////////////////////////////////
+
+    /***
+     下面是耳机操作
+     */
+
+    // Android监听耳机的插拔事件(只能动态注册,经过测试可行)
+    private HeadsetPlugReceiver mHeadsetPlugReceiver;
+    private AudioManager mAudioManager;
+    private ComponentName mMediaButtonReceiver;
+
+    private void registerHeadsetPlugReceiver() {
+        mHeadsetPlugReceiver = new HeadsetPlugReceiver();
+        IntentFilter filter = new IntentFilter();
+        filter.addAction("android.intent.action.HEADSET_PLUG");
+        filter.setPriority(2147483647);
+        registerReceiver(mHeadsetPlugReceiver, filter);
+
+        mAudioManager =
+                (AudioManager) getSystemService(Context.AUDIO_SERVICE);
+        mMediaButtonReceiver = new ComponentName(
+                getPackageName(), MediaButtonReceiver.class.getName());
+        mAudioManager.registerMediaButtonEventReceiver(mMediaButtonReceiver);
+    }
+
+    private void unregisterHeadsetPlugReceiver() {
+        if (mHeadsetPlugReceiver == null) {
+            return;
+        }
+
+        unregisterReceiver(mHeadsetPlugReceiver);
+        mAudioManager.unregisterMediaButtonEventReceiver(mMediaButtonReceiver);
+    }
+
+    private class HeadsetPlugReceiver extends BroadcastReceiver {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            if (intent == null) {
+                return;
+            }
+            if (intent.hasExtra("state")) {
+                switch (intent.getIntExtra("state", 0)) {
+                    case 0:
+                        if (DEBUG)
+                            MLog.d(TAG, "HeadsetPlugReceiver headset not connected");
+                        break;
+                    case 1:
+                        if (DEBUG)
+                            MLog.d(TAG, "HeadsetPlugReceiver headset has connected");
+                        break;
+                    default:
+                }
+            }
         }
     }
 
