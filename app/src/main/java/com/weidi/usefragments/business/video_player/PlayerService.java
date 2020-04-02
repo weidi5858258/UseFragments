@@ -290,6 +290,7 @@ public class PlayerService extends Service {
             return;
         }
         mPlayerWrapper.setPath(mCurPath);
+        MLog.i(TAG, "addView() mIsAddedView: " + mIsAddedView);
         if (!mIsAddedView) {
             mPlayerWrapper.onResume();
             mWindowManager.addView(mRootView, mLayoutParams);
@@ -304,6 +305,7 @@ public class PlayerService extends Service {
     }
 
     public void removeView() {
+        MLog.i(TAG, "removeView() mIsAddedView: " + mIsAddedView);
         if (mIsAddedView) {
             mPlayerWrapper.onPause();
             mWindowManager.removeView(mRootView);

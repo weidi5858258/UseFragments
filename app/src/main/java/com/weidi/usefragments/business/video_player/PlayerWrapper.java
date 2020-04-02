@@ -414,6 +414,7 @@ public class PlayerWrapper {
                         MyToast.show("音视频初始化失败");
                         // 不需要重新播放
                         if (mService != null) {
+                            MLog.i(TAG, "Callback.ERROR_FFMPEG_INIT mService.removeView()");
                             mService.removeView();
                             mSurfaceHolder.removeCallback(mSurfaceCallback);
                             mSurfaceHolder = null;

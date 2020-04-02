@@ -292,19 +292,24 @@ public class JniPlayerActivity extends BaseActivity {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             if (!isRunService(this,
                     "com.weidi.usefragments.business.video_player.PlayerService")) {
+                MLog.d(TAG, "internalCreate() PlayerService is not alive");
                 if (!Settings.canDrawOverlays(this)) {
+                    MLog.d(TAG, "internalCreate() startActivityForResult");
                     intent = new Intent(
                             Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
                             Uri.parse("package:" + getPackageName()));
                     startActivityForResult(intent, 0);
                 } else {
+                    MLog.d(TAG, "internalCreate() start PlayerService");
                     intent = new Intent();
+                    intent.setClass(this, PlayerService.class);
                     intent.setAction(PlayerService.COMMAND_ACTION);
                     intent.putExtra(PlayerService.COMMAND_PATH, mPath);
                     intent.putExtra(PlayerService.COMMAND_NAME, PlayerService.COMMAND_SHOW_WINDOW);
                     startService(intent);
                 }
             } else {
+                MLog.d(TAG, "internalCreate() PlayerService is alive");
                 FFMPEG.getDefault().setMode(FFMPEG.USE_MODE_MEDIA);
                 EventBusUtils.post(
                         PlayerService.class,
