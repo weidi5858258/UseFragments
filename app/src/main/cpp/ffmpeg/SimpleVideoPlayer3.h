@@ -49,6 +49,8 @@ extern "C" {
 #include <libavutil/error.h>
 #include <libavutil/time.h>
 
+//#include "libavdevice/avdevice.h"
+
 // 使用libyuv,将YUV转换RGB
 #include <libyuv/basic_types.h>
 #include <libyuv/compare.h>

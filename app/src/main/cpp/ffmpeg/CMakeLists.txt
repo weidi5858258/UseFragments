@@ -138,6 +138,13 @@ set_target_properties(swscale
         PROPERTIES IMPORTED_LOCATION
         ${LIBS_DIR}/${CPU_DIR}/libswscale.so)
 #################################################################
+#add_library(avdevice
+#        SHARED
+#        IMPORTED)
+#set_target_properties(avdevice
+#        PROPERTIES IMPORTED_LOCATION
+#        ${LIBS_DIR}/${CPU_DIR}/libavdevice.so)
+#################################################################
 add_library(yuv
         SHARED
         IMPORTED)

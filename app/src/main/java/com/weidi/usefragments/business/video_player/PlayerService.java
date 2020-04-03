@@ -113,6 +113,15 @@ public class PlayerService extends Service {
         initPlayerWindow();
     }
 
+    /***
+     adb shell am startservice \
+     -n com.weidi.usefragments/com.weidi.usefragments.business.video_player.PlayerService \
+     -a com.weidi.usefragments.business.video_player.PlayerService \
+     --ei HandlePlayerService 1 \
+     --es HandlePlayerServicePath "http://wttv-lh.akamaihd
+     .net:80/i/WTTVBreaking_1@333494/index_3000_av-b.m3u8"
+     */
+
     public static final String COMMAND_ACTION =
             "com.weidi.usefragments.business.video_player.PlayerService";
     public static final String COMMAND_NAME = "HandlePlayerService";

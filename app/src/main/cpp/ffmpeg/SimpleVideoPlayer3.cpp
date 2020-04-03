@@ -194,6 +194,12 @@ namespace alexander_media {
 
     // 不要各自拥有一个指针,音视频共用一个就行了
     static AVFormatContext *avFormatContext = NULL;
+    /*AVDictionary *sws_dict = NULL;
+    AVDictionary *swr_opts = NULL;
+    AVDictionary *format_opts = NULL, *codec_opts = NULL, *resample_opts = NULL;
+    AVInputFormat *iformat = NULL;
+    AVDictionaryEntry *dictionaryEntry = NULL;
+    int scan_all_pmts_set = 0;*/
 
     struct AudioWrapper *audioWrapper = NULL;
     struct VideoWrapper *videoWrapper = NULL;
@@ -320,11 +326,14 @@ namespace alexander_media {
         av_register_all();
         // 用于从网络接收数据,如果不是网络接收数据,可不用（如本例可不用）
         avcodec_register_all();
-        // 注册复用器和编解码器,所有的使用ffmpeg,首先必须调用这个函数
-        avformat_network_init();
+
+        // av_dict_set(&sws_dict, "flags", "bicubic", 0);
         // 注册设备的函数,如用获取摄像头数据或音频等,需要此函数先注册
         // avdevice_register_all();
-        LOGW("initAV() version: %s\n", av_version_info());
+        // 注册复用器和编解码器,所有的使用ffmpeg,首先必须调用这个函数
+        avformat_network_init();
+
+        LOGW("ffmpeg [av_version_info()] version: %s\n", av_version_info());
 
         readLockMutex = PTHREAD_MUTEX_INITIALIZER;
         readLockCondition = PTHREAD_COND_INITIALIZER;
@@ -467,9 +476,29 @@ namespace alexander_media {
             if (avformat_open_input(&avFormatContext,
                                     inFilePath,
                                     NULL, NULL) != 0) {
+                // 这里就是某些视频初始化失败的地方
                 LOGE("Couldn't open input stream.\n");
                 return -1;
             }
+            /*if (!av_dict_get(format_opts, "scan_all_pmts", NULL, AV_DICT_MATCH_CASE)) {
+                av_dict_set(&format_opts, "scan_all_pmts", "1", AV_DICT_DONT_OVERWRITE);
+                scan_all_pmts_set = 1;
+            }
+            if (avformat_open_input(&avFormatContext,
+                                    inFilePath,
+                                    iformat, &format_opts) != 0) {
+                // 这里就是某些视频初始化失败的地方
+                LOGE("Couldn't open input stream.\n");
+                return -1;
+            }
+            if (scan_all_pmts_set) {
+                av_dict_set(&format_opts, "scan_all_pmts", NULL, AV_DICT_MATCH_CASE);
+            }
+            if ((dictionaryEntry = av_dict_get(format_opts, "", NULL, AV_DICT_IGNORE_SUFFIX))) {
+                LOGE("Option %s not found.\n", dictionaryEntry->key);
+                return -1;
+            }
+            av_format_inject_global_side_data(avFormatContext);*/
         } else {
             if (avformat_open_input(&avFormatContext,
                                     inFilePath,
@@ -1886,6 +1915,26 @@ namespace alexander_media {
     }
 
     void closeVideo() {
+        /*if (swr_opts != NULL) {
+            av_dict_free(&swr_opts);
+            swr_opts = NULL;
+        }
+        if (sws_dict != NULL) {
+            av_dict_free(&sws_dict);
+            sws_dict = NULL;
+        }
+        if (format_opts != NULL) {
+            av_dict_free(&format_opts);
+            format_opts = NULL;
+        }
+        if (codec_opts != NULL) {
+            av_dict_free(&codec_opts);
+            codec_opts = NULL;
+        }
+        if (resample_opts != NULL) {
+            av_dict_free(&resample_opts);
+            resample_opts = NULL;
+        }*/
         if (avFormatContext != NULL) {
             avformat_free_context(avFormatContext);
             avFormatContext = NULL;
@@ -2004,7 +2053,7 @@ namespace alexander_media {
             LOGE("openAndFindAVFormatContext() failed\n");
             closeAudio();
             closeVideo();
-            onError(0x100, "");
+            onError(0x100, "openAndFindAVFormatContext() failed");
             return -1;
         }
         if (findStreamIndex() < 0) {

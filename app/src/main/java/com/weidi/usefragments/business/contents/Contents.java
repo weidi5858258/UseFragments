@@ -289,6 +289,10 @@ public class Contents {
                 "湖南卫视",
                 "rtmp://58.200.131.2:1935/livetv/hunantv");*/
 
+        movieMap.put(
+                "playlist_dvr",
+                "https://cdn1.ibizastream.biz:441/free/1/playlist_dvr.m3u8");
+
         // 本地视频
         movieMap.put(
                 "Amazing_Picture_Quality_8K_HDR_60FPS_Demo",
