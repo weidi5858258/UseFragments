@@ -2,7 +2,8 @@
 // Created by ex-wangliwei on 2016/2/14.
 //
 
-#include "SimpleVideoPlayer3.h"
+#include "ffmpeg.h"
+#include "MediaPlayer.h"
 #include "OnlyVideoPlayer.h"
 #include "OnlyAudioPlayer.h"
 
@@ -39,12 +40,7 @@ struct Callback {
     jmethodID onInfoMethodID = NULL;
 } callback;
 
-enum {
-    USE_MODE_MEDIA = 1,
-    USE_MODE_ONLY_VIDEO = 2,
-    USE_MODE_ONLY_AUDIO = 3
-};
-int use_mode = USE_MODE_ONLY_AUDIO;
+int use_mode = USE_MODE_MEDIA;
 
 // test
 int runCount = 0;
@@ -290,10 +286,11 @@ JNIEXPORT void JNICALL
 Java_com_weidi_usefragments_business_video_1player_FFMPEG_setMode(JNIEnv *env, jobject thiz,
                                                                   jint mode) {
     use_mode = (int) mode;
+    LOGI("setMode() use_mode: %d\n", use_mode);
     if (use_mode != USE_MODE_MEDIA
         && use_mode != USE_MODE_ONLY_VIDEO
         && use_mode != USE_MODE_ONLY_AUDIO) {
-        use_mode = USE_MODE_ONLY_AUDIO;
+        use_mode = USE_MODE_MEDIA;
     }
 }
 
@@ -438,7 +435,7 @@ Java_com_weidi_usefragments_business_video_1player_FFMPEG_audioHandleData(JNIEnv
             break;
         }
         case USE_MODE_ONLY_VIDEO: {
-            alexander_only_video::handleData(&type);
+            //alexander_only_video::handleData(&type);
             break;
         }
         case USE_MODE_ONLY_AUDIO: {
@@ -466,7 +463,7 @@ Java_com_weidi_usefragments_business_video_1player_FFMPEG_videoHandleData(JNIEnv
             break;
         }
         case USE_MODE_ONLY_AUDIO: {
-            alexander_only_audio::handleData(&type);
+            //alexander_only_audio::handleData(&type);
             break;
         }
         default:

@@ -6,21 +6,18 @@
 
 #define LOG "player_alexander"
 
+extern AVFormatContext *avFormatContext;
+extern struct AudioWrapper *audioWrapper;
+extern bool isLocal;
+extern bool isReading;
+// seek时间
+extern int64_t timeStamp;
+
 namespace alexander_only_audio {
 
-    char inFilePath[2048];
-    struct Wrapper *wrapper = NULL;
-    struct AudioWrapper *audioWrapper = NULL;
-
-    AVFormatContext *avFormatContext = NULL;
-    bool isLocal = false;
-    bool isReading = false;
-    bool isReadFinished = true;
-    // seek时间
-    int64_t timeStamp = -1;
-    int64_t fileLength = 0;
-    long preProgress = 0;
-    double audioTimeDifference = 0;
+    static char inFilePath[2048];
+    static long curProgress = 0;
+    static long preProgress = 0;
 
     /////////////////////////////////////////////////////
 
@@ -68,18 +65,7 @@ namespace alexander_only_audio {
 
     void initAudio() {
         LOGD("initAudio() start\n");
-        timeStamp = -1;
-        fileLength = 0;
-        preProgress = 0;
-        audioTimeDifference = 0.0;
-        isReading = true;
-        isReadFinished = true;
-
-        if (wrapper != NULL) {
-            av_free(wrapper);
-            wrapper = NULL;
-        }
-        wrapper = (struct Wrapper *) av_mallocz(sizeof(struct Wrapper));
+        struct Wrapper *wrapper = (struct Wrapper *) av_mallocz(sizeof(struct Wrapper));
         memset(wrapper, 0, sizeof(struct Wrapper));
 
         wrapper->type = TYPE_AUDIO;
@@ -410,53 +396,30 @@ namespace alexander_only_audio {
     }
 
     int seekToImpl() {
-        if (!isReadFinished) {
-            pthread_mutex_lock(&audioWrapper->father->readLockMutex);
-            LOGI("readData() audio list2 clear\n");
-            audioWrapper->father->list2->clear();
-            pthread_mutex_unlock(&audioWrapper->father->readLockMutex);
-        }
-
         while (!audioWrapper->father->needToSeek) {
-            // 休眠1毫秒
-            // audioSleep(1);
-            av_usleep(1000);// 单位:微秒(1000微秒=1毫秒)
+            // 单位:微秒(1000微秒=1毫秒)
+            av_usleep(1000);
         }
         LOGI("seekToImpl() av_seek_frame start\n");
         //LOGI("seekToImpl() timestamp: %" PRIu64 "\n", timestamp);
-        LOGI("seekToImpl() fileLength: %ld\n", (long) fileLength);
-        LOGI("seekToImpl() timeStamp : %ld\n", (long) timeStamp);
-        if (isReadFinished) {
-            int64_t tempLength = ((double) timeStamp / audioWrapper->father->duration) * fileLength;
-            LOGI("seekToImpl() tempLength: %ld\n", (long) tempLength);
-            int64_t size = 0;
-            int index = -1;
+        if (audioWrapper->father->list2->size() != 0) {
             std::list<AVPacket>::iterator iter;
-            AVPacket tempPkt;
             for (iter = audioWrapper->father->list2->begin();
                  iter != audioWrapper->father->list2->end();
                  iter++) {
-                AVPacket srcPkt = *iter;
-                size += srcPkt.size;
-                index++;
-                if (size >= tempLength) {
-                    av_packet_ref(&tempPkt, &srcPkt);
-                    wrapper->list1->push_back(tempPkt);
-                    //LOGI("seekToImpl() pos      : %ld, index: %d\n", (long) avPacket.pos, index);
-                    //break;
-                }
+                AVPacket avPacket = *iter;
+                av_packet_unref(&avPacket);
             }
-        } else {
-            int ret = av_seek_frame(
-                    avFormatContext,
-                    //audioWrapper->father->streamIndex,
-                    -1,
-                    timeStamp * AV_TIME_BASE,
-                    //AVSEEK_FLAG_ANY);
-                    AVSEEK_FLAG_BACKWARD | AVSEEK_FLAG_FRAME);
-            LOGI("seekToImpl() ret      : %d\n", ret);
+            audioWrapper->father->list2->clear();
         }
-
+        av_seek_frame(
+                avFormatContext,
+                -1,
+                timeStamp * AV_TIME_BASE,
+                //AVSEEK_FLAG_ANY);
+                AVSEEK_FLAG_BACKWARD | AVSEEK_FLAG_FRAME);
+        // 清空解码器的缓存
+        avcodec_flush_buffers(audioWrapper->father->avCodecContext);
         timeStamp = -1;
         preProgress = 0;
         audioWrapper->father->isPausedForSeek = false;
@@ -467,7 +430,6 @@ namespace alexander_only_audio {
         av_packet_ref(copyAVPacket, srcAVPacket);
         av_packet_unref(srcAVPacket);
 
-        fileLength += copyAVPacket->size;
         pthread_mutex_lock(&wrapper->readLockMutex);
         // 存数据
         wrapper->list2->push_back(*copyAVPacket);
@@ -476,7 +438,6 @@ namespace alexander_only_audio {
 
         if (!wrapper->isReadList1Full
             && list2Size == wrapper->list1LimitCounts) {
-            isReadFinished = false;
             // 把list2中的内容全部复制给list1
             wrapper->list1->clear();
             wrapper->list1->assign(wrapper->list2->begin(), wrapper->list2->end());
@@ -486,7 +447,6 @@ namespace alexander_only_audio {
             notifyToHandle(wrapper);
             LOGD("readDataImpl() audio 已填满数据可以播放了\n");
         } else if (list2Size >= wrapper->list2LimitCounts) {
-            isReadFinished = false;
             LOGD("readDataImpl() audio list1: %d\n", audioWrapper->father->list1->size());
             LOGD("readDataImpl() audio list2: %d\n", audioWrapper->father->list2->size());
             LOGI("readDataImpl() notifyToReadWait start\n");
@@ -499,11 +459,12 @@ namespace alexander_only_audio {
 
     void *readData(void *opaque) {
         LOGD("%s\n", "readData() start");
+        preProgress = 0;
+        isReading = true;
 
         AVPacket *srcAVPacket = av_packet_alloc();
         AVPacket *copyAVPacket = av_packet_alloc();
 
-        int count_12 = 0;
         int readFrame = 0;
         /***
          有几种情况:
@@ -518,36 +479,25 @@ namespace alexander_only_audio {
                 break;
             }
 
-            readFrame = 0;
-
             // seekTo
             if (audioWrapper->father->isPausedForSeek
                 && timeStamp != -1) {
                 seekToImpl();
-                if (isReadFinished) {
-                    readFrame = AVERROR_EOF;
-                }
             }
 
             // 0 if OK, < 0 on error or end of file
-            if (readFrame == 0) {
-                readFrame = av_read_frame(avFormatContext, srcAVPacket);
-            }
+            readFrame = av_read_frame(avFormatContext, srcAVPacket);
             //LOGI("readFrame           : %d\n", readFrame);
             if (readFrame < 0) {
                 // 有些视频一直返回-12
                 // LOGF("readData() readFrame            : %d\n", readFrame);
-                if (readFrame != AVERROR_EOF) {
-                    if (readFrame == -12) {
-                        ++count_12;
-                    }
-                    if (count_12 <= 500) {
-                        continue;
-                    }
+                if (readFrame != -12 && readFrame != AVERROR_EOF) {
+                    LOGE("readData() readFrame  : %d\n", readFrame);
+                    continue;
                 }
 
-                // readData() video AVERROR_EOF readFrame: -541478725
-                LOGF("readData() AVERROR_EOF readFrame: %d\n", readFrame);
+                LOGF("readData() AVERROR_EOF: %d\n", AVERROR_EOF);
+                LOGF("readData() readFrame  : %d\n", readFrame);
                 LOGF("readData() 文件已经读完了\n");
                 LOGF("readData() audio list2: %d\n", audioWrapper->father->list2->size());
 
@@ -555,7 +505,6 @@ namespace alexander_only_audio {
                 audioWrapper->father->isReading = false;
                 audioWrapper->father->isReadList1Full = true;
                 // 说明歌曲长度比较短,达不到"规定值",因此处理数据线程还在等待
-                notifyToHandle(audioWrapper->father);
                 notifyToHandle(audioWrapper->father);
 
                 // 不退出线程
@@ -610,18 +559,17 @@ namespace alexander_only_audio {
                 onPlayed();
             }
 
-            audioTimeDifference =
-                    decodedAVFrame->pts * av_q2d(stream->time_base);
+            double audioPts = decodedAVFrame->pts * av_q2d(stream->time_base);
             //LOGD("handleData() audio audioTimeDifference: %lf\n", audioTimeDifference);
 
             //int64_t relativeTime = av_gettime_relative();
             //LOGD("handleAudioDataImpl() audio relativeTime: %d\n", (int) relativeTime);
 
             // 显示时间进度
-            long progress = (long) audioTimeDifference;
-            if (progress > preProgress) {
-                preProgress = progress;
-                onProgressUpdated(progress);
+            curProgress = (long) audioPts;
+            if (curProgress > preProgress) {
+                preProgress = curProgress;
+                onProgressUpdated(curProgress);
             }
 
             // 获取给定音频参数所需的缓冲区大小
@@ -644,6 +592,22 @@ namespace alexander_only_audio {
         return ret;
     }
 
+    int handleDataClose(Wrapper *wrapper) {
+        LOGF("%s\n", "handleData() audio end");
+
+        // 让"读线程"退出
+        LOGD("%s\n", "handleData() notifyToRead");
+        notifyToRead(wrapper);
+
+        while (isReading) {
+            av_usleep(1000);
+        }
+
+        closeAudio();
+        onFinished();
+        LOGF("%s\n", "Safe Exit");
+    }
+
     void *handleData(void *opaque) {
         if (opaque == NULL) {
             return NULL;
@@ -660,10 +624,16 @@ namespace alexander_only_audio {
             return NULL;
         }
 
+        LOGD("handleData() audio start\n");
         // 线程等待
         LOGD("handleData() wait() audio start\n");
         notifyToHandleWait(wrapper);
         LOGD("handleData() wait() audio end\n");
+
+        if (!wrapper->isHandling) {
+            handleDataClose(wrapper);
+            return NULL;
+        }
 
         AVStream *stream = avFormatContext->streams[wrapper->streamIndex];
         AVPacket *srcAVPacket = av_packet_alloc();
@@ -673,8 +643,6 @@ namespace alexander_only_audio {
 
         int ret = 0;
         bool allowDecode = false;
-        bool isFinished = false;
-        LOGD("handleData() start\n");
         for (;;) {
             if (!wrapper->isHandling) {
                 // for (;;) end
@@ -687,9 +655,18 @@ namespace alexander_only_audio {
                 bool isPausedForSeek = wrapper->isPausedForSeek;
                 if (isPausedForSeek) {
                     LOGD("handleData() wait() Seek  audio start\n");
-                    wrapper->needToSeek = true;
+                    if (wrapper->list1->size() != 0) {
+                        std::list<AVPacket>::iterator iter;
+                        for (iter = wrapper->list1->begin();
+                             iter != wrapper->list1->end();
+                             iter++) {
+                            AVPacket avPacket = *iter;
+                            av_packet_unref(&avPacket);
+                        }
+                        wrapper->list1->clear();
+                    }
                     wrapper->isReadList1Full = false;
-                    wrapper->list1->clear();
+                    wrapper->needToSeek = true;
                 } else {
                     LOGD("handleData() wait() User  audio start\n");
                 }
@@ -738,16 +715,13 @@ namespace alexander_only_audio {
                         pthread_mutex_lock(&wrapper->readLockMutex);
                         wrapper->list1->clear();
                         wrapper->list1->assign(wrapper->list2->begin(), wrapper->list2->end());
-                        if (!isReadFinished) {
-                            wrapper->list2->clear();
-                        }
+                        wrapper->list2->clear();
                         pthread_mutex_unlock(&wrapper->readLockMutex);
 
                         LOGD("handleData() audio 最后要处理的数据还有 list1: %d\n",
                              wrapper->list1->size());
                     } else {
                         wrapper->isHandling = false;
-                        isFinished = true;
                     }
                 }
             }
@@ -793,7 +767,7 @@ namespace alexander_only_audio {
                 case AVERROR(ENOMEM):
                 case AVERROR_EOF:
                     LOGE("handleData() audio avcodec_send_packet 发送数据包到解码器时出错 %d", ret);
-                    wrapper->isHandling = false;
+                    // wrapper->isHandling = false;
                     break;
                 case 0:
                 default:
@@ -819,7 +793,7 @@ namespace alexander_only_audio {
                     // codec打不开,或者是一个encoder
                 case AVERROR_EOF:
                     // 已经完全刷新,不会再有输出帧了
-                    wrapper->isHandling = false;
+                    // wrapper->isHandling = false;
                     break;
                 case 0: {
                     // 解码成功,返回一个输出帧
@@ -866,26 +840,14 @@ namespace alexander_only_audio {
             copyAVPacket = NULL;
         }
 
-        // 让"读线程"退出
-        LOGW("%s\n", "handleData() notifyToRead");
-        notifyToRead(audioWrapper->father);
+        handleDataClose(wrapper);
 
-        while (isReading) {
-            av_usleep(1000);
-        }
-        closeAudio();
-        if (isFinished) {
-            onFinished();
-        }
-
-        LOGD("handleData() end\n");
         return NULL;
     }
 
     void closeAudio() {
         // audio
         if (audioWrapper == NULL
-            || wrapper == NULL
             || audioWrapper->father == NULL) {
             return;
         }
@@ -921,10 +883,26 @@ namespace alexander_only_audio {
         pthread_mutex_destroy(&audioWrapper->father->handleLockMutex);
         pthread_cond_destroy(&audioWrapper->father->handleLockCondition);
 
-        //av_free(audioWrapper->father->list1);
-        //av_free(audioWrapper->father->list2);
-        audioWrapper->father->list1->clear();
-        audioWrapper->father->list2->clear();
+        if (audioWrapper->father->list1->size() != 0) {
+            LOGD("closeAudio() list1 is not empty, %d\n", audioWrapper->father->list1->size());
+            std::list<AVPacket>::iterator iter;
+            for (iter = audioWrapper->father->list1->begin();
+                 iter != audioWrapper->father->list1->end();
+                 iter++) {
+                AVPacket avPacket = *iter;
+                av_packet_unref(&avPacket);
+            }
+        }
+        if (audioWrapper->father->list2->size() != 0) {
+            LOGD("closeAudio() list2 is not empty, %d\n", audioWrapper->father->list2->size());
+            std::list<AVPacket>::iterator iter;
+            for (iter = audioWrapper->father->list2->begin();
+                 iter != audioWrapper->father->list2->end();
+                 iter++) {
+                AVPacket avPacket = *iter;
+                av_packet_unref(&avPacket);
+            }
+        }
         delete (audioWrapper->father->list1);
         delete (audioWrapper->father->list2);
         audioWrapper->father->list1 = NULL;
@@ -932,8 +910,7 @@ namespace alexander_only_audio {
 
         avformat_free_context(avFormatContext);
         avFormatContext = NULL;
-        av_free(wrapper);
-        wrapper = NULL;
+        av_free(audioWrapper->father);
         audioWrapper->father = NULL;
         av_free(audioWrapper);
         audioWrapper = NULL;
@@ -1016,7 +993,6 @@ namespace alexander_only_audio {
 
     int stop() {
         if (audioWrapper != NULL
-            && wrapper != NULL
             && audioWrapper->father != NULL) {
             LOGI("stop() start\n");
             timeStamp = -1;
@@ -1087,21 +1063,33 @@ namespace alexander_only_audio {
 
     // 返回值单位是秒
     long getDuration() {
-        int64_t audioDuration = 0;
-        if (audioWrapper != NULL && audioWrapper->father != NULL) {
+        int64_t audioDuration = -1;
+        if (audioWrapper != NULL
+            && audioWrapper->father != NULL) {
             audioDuration = audioWrapper->father->duration;
         }
 
-        //return (long) audioDuration * 1000 * 1000;
         return audioDuration;
     }
 
     void stepAdd() {
-
+        if (getDuration() > 0) {
+            if (getDuration() > 300) {
+                seekTo(curProgress + 30);
+            } else {
+                seekTo(curProgress + 10);
+            }
+        }
     }
 
     void stepSubtract() {
-
+        if (getDuration() > 0) {
+            if (getDuration() > 300) {
+                seekTo(curProgress - 30);
+            } else {
+                seekTo(curProgress - 10);
+            }
+        }
     }
 
     /***

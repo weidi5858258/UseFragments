@@ -5,6 +5,12 @@
 #ifndef USEFRAGMENTS_FFMPEG_H
 #define USEFRAGMENTS_FFMPEG_H
 
+enum {
+    USE_MODE_MEDIA = 1,
+    USE_MODE_ONLY_VIDEO = 2,
+    USE_MODE_ONLY_AUDIO = 3
+};
+
 void createAudioTrack(int sampleRateInHz,
                       int channelCount,
                       int audioFormat);

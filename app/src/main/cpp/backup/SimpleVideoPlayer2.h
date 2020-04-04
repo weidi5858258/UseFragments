@@ -72,7 +72,7 @@ extern "C" {// 不能少
 
 };// extern "C" end
 
-#include "ffmpeg.h"
+#include "../ffmpeg/ffmpeg.h"
 #include "MyHeader.h"
 
 namespace alexander {

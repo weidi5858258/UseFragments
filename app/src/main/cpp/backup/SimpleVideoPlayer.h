@@ -5,7 +5,7 @@
 #ifndef USEFRAGMENTS_SIMPLEVIDEOPLAYER_H
 #define USEFRAGMENTS_SIMPLEVIDEOPLAYER_H
 
-#include "ffmpeg.h"
+#include "../ffmpeg/ffmpeg.h"
 #include "MyHeader.h"
 extern "C" {
 #include <libavcodec/avcodec.h>

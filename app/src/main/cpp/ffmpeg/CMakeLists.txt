@@ -25,7 +25,7 @@ add_library(ffmpeg
         ffmpeg.cpp
         OnlyAudioPlayer.cpp
         OnlyVideoPlayer.cpp
-        SimpleVideoPlayer3.cpp
+        MediaPlayer.cpp
         AudioRecord.cpp
         AudioTrack.cpp
 
