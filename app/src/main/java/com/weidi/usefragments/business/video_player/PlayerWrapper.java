@@ -834,7 +834,11 @@ public class PlayerWrapper {
     };
 
     private void clickOne() {
-
+        if (mControllerPanelLayout.getVisibility() == View.VISIBLE) {
+            mControllerPanelLayout.setVisibility(View.GONE);
+        } else {
+            mControllerPanelLayout.setVisibility(View.VISIBLE);
+        }
     }
 
     private void clickTwo() {
@@ -855,11 +859,7 @@ public class PlayerWrapper {
     }
 
     private void clickThree() {
-        if (mControllerPanelLayout.getVisibility() == View.VISIBLE) {
-            mControllerPanelLayout.setVisibility(View.GONE);
-        } else {
-            mControllerPanelLayout.setVisibility(View.VISIBLE);
-        }
+
     }
 
     @SuppressLint("SourceLockedOrientationActivity")

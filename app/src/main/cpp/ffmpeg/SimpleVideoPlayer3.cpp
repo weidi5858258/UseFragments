@@ -555,16 +555,6 @@ namespace alexander_media {
         videoWrapper->father->avStream = avFormatContext->streams[videoWrapper->father->streamIndex];
         audioWrapper->father->avStream = avFormatContext->streams[audioWrapper->father->streamIndex];
 
-        videoWrapper->father->start_pts = AV_NOPTS_VALUE;
-        videoWrapper->father->start_pts_tb = videoWrapper->father->avStream->time_base;
-        audioWrapper->father->start_pts = AV_NOPTS_VALUE;
-        audioWrapper->father->start_pts_tb = audioWrapper->father->avStream->time_base;
-
-        videoWrapper->father->next_pts = AV_NOPTS_VALUE;
-        videoWrapper->father->next_pts_tb = videoWrapper->father->avStream->time_base;
-        audioWrapper->father->next_pts = AV_NOPTS_VALUE;
-        audioWrapper->father->next_pts_tb = audioWrapper->father->avStream->time_base;
-
         LOGI("findStreamIndex() end\n");
         return 0;
     }

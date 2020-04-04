@@ -94,6 +94,7 @@ namespace alexander_media {
 #define TYPE_UNKNOW -1
 #define TYPE_AUDIO 1
 #define TYPE_VIDEO 2
+#define TYPE_AUDIO_VIDEO 3
 
     // 不能无限制读取数据进行保存,这样要出错的(能播放,但不是想要的结果)
 #define MAX_AVPACKET_COUNT         10000
@@ -170,19 +171,6 @@ namespace alexander_media {
         // AVPacket *avPacket = NULL;
         // 视频使用到sws_scale函数时需要定义这些变量,音频也要用到
         // unsigned char *srcData[4] = {NULL}, dstData[4] = {NULL};
-
-        /////////////////////////////////
-
-        //Frame frameQueue[FRAME_QUEUE_SIZE];
-
-        // 开始的时间戳
-        int64_t start_pts = 0;
-        // 开始的额外参数
-        AVRational start_pts_tb;
-        // 下一帧时间戳
-        int64_t next_pts = 0;
-        // 下一帧的额外参数
-        AVRational next_pts_tb;
     };
 
     struct AudioWrapper {
