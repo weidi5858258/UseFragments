@@ -8,7 +8,8 @@
 enum {
     USE_MODE_MEDIA = 1,
     USE_MODE_ONLY_VIDEO = 2,
-    USE_MODE_ONLY_AUDIO = 3
+    USE_MODE_ONLY_AUDIO = 3,
+    USE_MODE_AUDIO_VIDEO = 4
 };
 
 void createAudioTrack(int sampleRateInHz,

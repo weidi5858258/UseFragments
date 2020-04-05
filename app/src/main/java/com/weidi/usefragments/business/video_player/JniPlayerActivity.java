@@ -310,7 +310,7 @@ public class JniPlayerActivity extends BaseActivity {
                 }
             } else {
                 MLog.d(TAG, "internalCreate() PlayerService is alive");
-                FFMPEG.getDefault().setMode(FFMPEG.USE_MODE_MEDIA);
+                //FFMPEG.getDefault().setMode(FFMPEG.USE_MODE_MEDIA);
                 EventBusUtils.post(
                         PlayerService.class,
                         PlayerService.COMMAND_SHOW_WINDOW,

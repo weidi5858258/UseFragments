@@ -248,7 +248,7 @@ public class ContentsFragment extends BaseFragment {
                 return;
             }
 
-            FFMPEG.getDefault().setMode(FFMPEG.USE_MODE_MEDIA);
+            //FFMPEG.getDefault().setMode(FFMPEG.USE_MODE_MEDIA);
             EventBusUtils.post(
                     PlayerService.class,
                     PlayerService.COMMAND_SHOW_WINDOW,
@@ -460,7 +460,7 @@ public class ContentsFragment extends BaseFragment {
 
                         switch (viewId) {
                             case R.id.item_root_layout:
-                                FFMPEG.getDefault().setMode(FFMPEG.USE_MODE_MEDIA);
+                                //FFMPEG.getDefault().setMode(FFMPEG.USE_MODE_MEDIA);
 
                                 // Test
                                 /*long position_ = mPreferences.getLong(PLAYBACK_POSITION, 0);
@@ -563,7 +563,7 @@ public class ContentsFragment extends BaseFragment {
                     Contents.setPath(videoPlaybackPath);
                 }
 
-                FFMPEG.getDefault().setMode(FFMPEG.USE_MODE_MEDIA);
+                //FFMPEG.getDefault().setMode(FFMPEG.USE_MODE_MEDIA);
                 EventBusUtils.post(
                         PlayerService.class,
                         PlayerService.COMMAND_SHOW_WINDOW,
