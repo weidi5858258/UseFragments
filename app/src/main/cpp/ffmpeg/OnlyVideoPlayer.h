@@ -49,10 +49,9 @@ namespace alexander_only_video {
 
     int64_t getDuration();
 
-    void stepAdd();
+    void stepAdd(int64_t addStep);
 
-    void stepSubtract();
-
+    void stepSubtract(int64_t subtractStep);
 }
 
 

@@ -25,6 +25,7 @@ public class FFMPEG {
     public static final int USE_MODE_MEDIA = 1;
     public static final int USE_MODE_ONLY_VIDEO = 2;
     public static final int USE_MODE_ONLY_AUDIO = 3;
+    public static final int USE_MODE_AUDIO_VIDEO = 4;
 
     static {
         try {
@@ -87,10 +88,10 @@ public class FFMPEG {
     public native boolean isPlaying();
 
     // 快进
-    public native void stepAdd();
+    public native void stepAdd(long addStep);
 
     // 快退
-    public native void stepSubtract();
+    public native void stepSubtract(long subtractStep);
 
     // 单位: 秒
     public native int seekTo(long timestamp);

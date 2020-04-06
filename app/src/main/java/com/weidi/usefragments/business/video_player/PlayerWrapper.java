@@ -9,6 +9,7 @@ import android.content.pm.ActivityInfo;
 import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.graphics.PixelFormat;
+import android.net.Uri;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
@@ -41,6 +42,8 @@ import com.weidi.usefragments.tool.Callback;
 import com.weidi.usefragments.tool.MLog;
 import com.weidi.utils.MyToast;
 
+import java.io.File;
+
 import static com.weidi.usefragments.service.DownloadFileService.PREFERENCES_NAME;
 
 public class PlayerWrapper {
@@ -50,6 +53,8 @@ public class PlayerWrapper {
     public static final int PLAYBACK_PROGRESS_UPDATED = 200;
     private static final int MSG_ON_PROGRESS_UPDATED = 10;
     private static final int MSG_START_PLAYBACK = 11;
+    private static final int MSG_SEEK_TO_ADD = 12;
+    private static final int MSG_SEEK_TO_SUBTRACT = 13;
 
     public static final String PLAYBACK_ADDRESS = "playback_address";
     public static final String PLAYBACK_POSITION = "playback_position";
@@ -67,6 +72,7 @@ public class PlayerWrapper {
     private boolean mNeedToSyncProgressBar = true;
     private boolean mIsScreenPress = false;
     private boolean mHasError = false;
+    private boolean mIsSeparatedAudioVideo = false;
 
     private WindowManager mWindowManager;
     private WindowManager.LayoutParams mLayoutParams;
@@ -501,6 +507,35 @@ public class PlayerWrapper {
                         mFFMPEGPlayer.videoHandleData();
                     }
                 });
+
+                if (mIsSeparatedAudioVideo) {
+                    ThreadPool.getFixedThreadPool().execute(new Runnable() {
+                        @Override
+                        public void run() {
+                            SystemClock.sleep(500);
+                            mFFMPEGPlayer.readData();
+                        }
+                    });
+                    ThreadPool.getFixedThreadPool().execute(new Runnable() {
+                        @Override
+                        public void run() {
+                            SystemClock.sleep(1000);
+                            mFFMPEGPlayer.readData();
+                        }
+                    });
+                }
+                break;
+            case MSG_SEEK_TO_ADD:
+                if (mFFMPEGPlayer != null) {
+                    mFFMPEGPlayer.stepAdd(addStep);
+                    addStep = 0;
+                }
+                break;
+            case MSG_SEEK_TO_SUBTRACT:
+                if (mFFMPEGPlayer != null) {
+                    mFFMPEGPlayer.stepSubtract(subtractStep);
+                    subtractStep = 0;
+                }
                 break;
             case PLAYBACK_PROGRESS_UPDATED:
                 mProgressBar.setSecondaryProgress(mDownloadProgress);
@@ -519,15 +554,32 @@ public class PlayerWrapper {
         // 这里也要写
         mSurfaceHolder.setFormat(PixelFormat.RGBA_8888);
         // 底层有关参数的设置
-        mFFMPEGPlayer.setMode(FFMPEG.USE_MODE_MEDIA);
-        mFFMPEGPlayer.setCallback(mFFMPEGPlayer.mCallback);
         mFFMPEGPlayer.setHandler(mUiHandler);
-        mFFMPEGPlayer.setSurface(mPath, mSurfaceHolder.getSurface());
+        mFFMPEGPlayer.setCallback(mFFMPEGPlayer.mCallback);
+        // mFFMPEGPlayer.setSurface(mPath, mSurfaceHolder.getSurface());
 
         // 开启线程初始化ffmpeg
         ThreadPool.getFixedThreadPool().execute(new Runnable() {
             @Override
             public void run() {
+                mIsSeparatedAudioVideo = false;
+                String tempPath = "";
+                if (mPath.endsWith(".m4s")) {
+                    tempPath = mPath.substring(0, mPath.lastIndexOf("/"));
+                    File audioFile = new File(tempPath + "/audio.m4s");
+                    File videoFile = new File(tempPath + "/video.m4s");
+                    if (audioFile.exists() && videoFile.exists()) {
+                        mIsSeparatedAudioVideo = true;
+                    }
+                }
+                if (!mIsSeparatedAudioVideo) {
+                    mFFMPEGPlayer.setMode(FFMPEG.USE_MODE_MEDIA);
+                    mFFMPEGPlayer.setSurface(mPath, mSurfaceHolder.getSurface());
+                } else {
+                    mFFMPEGPlayer.setMode(FFMPEG.USE_MODE_AUDIO_VIDEO);
+                    mFFMPEGPlayer.setSurface(tempPath, mSurfaceHolder.getSurface());
+                }
+
                 if (mFFMPEGPlayer.initPlayer() != 0) {
                     // 不在这里做事了.遇到error会从底层回调到java端的
                     //MyToast.show("音视频初始化失败");
@@ -536,11 +588,13 @@ public class PlayerWrapper {
                     return;
                 }
 
+                MyToast.show("音视频初始化成功");
                 mUiHandler.removeMessages(MSG_START_PLAYBACK);
                 mUiHandler.sendEmptyMessage(MSG_START_PLAYBACK);
-                MyToast.show("音视频初始化成功");
-                SystemClock.sleep(500);
-                mFFMPEGPlayer.readData();
+                if (!mIsSeparatedAudioVideo) {
+                    SystemClock.sleep(500);
+                    mFFMPEGPlayer.readData();
+                }
             }
         });
     }
@@ -765,13 +819,22 @@ public class PlayerWrapper {
         }
     };
 
+    private long addStep = 0;
+    private long subtractStep = 0;
     private View.OnClickListener mOnClickListener = new View.OnClickListener() {
         @Override
         public void onClick(View v) {
             switch (v.getId()) {
                 case R.id.button_prev:
                     if (mFFMPEGPlayer != null) {
-                        mFFMPEGPlayer.stepSubtract();
+                        if (mFFMPEGPlayer.getDuration() > 300) {
+                            subtractStep += 30;
+                        } else {
+                            subtractStep += 10;
+                        }
+                        MLog.d(TAG, "onClick() subtractStep: " + subtractStep);
+                        mUiHandler.removeMessages(MSG_SEEK_TO_SUBTRACT);
+                        mUiHandler.sendEmptyMessageDelayed(MSG_SEEK_TO_SUBTRACT, 500);
                     }
                     break;
                 case R.id.button_play:
@@ -796,7 +859,14 @@ public class PlayerWrapper {
                     break;
                 case R.id.button_next:
                     if (mFFMPEGPlayer != null) {
-                        mFFMPEGPlayer.stepAdd();
+                        if (mFFMPEGPlayer.getDuration() > 300) {
+                            addStep += 30;
+                        } else {
+                            addStep += 10;
+                        }
+                        MLog.d(TAG, "onClick() addStep: " + addStep);
+                        mUiHandler.removeMessages(MSG_SEEK_TO_ADD);
+                        mUiHandler.sendEmptyMessageDelayed(MSG_SEEK_TO_ADD, 500);
                     }
                     break;
                 case R.id.surfaceView:

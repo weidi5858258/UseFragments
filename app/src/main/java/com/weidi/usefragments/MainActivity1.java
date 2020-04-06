@@ -239,9 +239,9 @@ public class MainActivity1 extends BaseActivity
         /*if (!isAccessibilitySettingsOn(getApplicationContext())) {
             startActivity(new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS));
         }*/
-        if (!isRunService(this, "com.weidi.usefragments.business.audio_player.JniMusicService")) {
+        /*if (!isRunService(this, "com.weidi.usefragments.business.audio_player.JniMusicService")) {
             startService(new Intent(this, JniMusicService.class));
-        }
+        }*/
 
         main1Fragment = new Main1Fragment();
         main2Fragment = new Main2Fragment();

@@ -444,7 +444,7 @@ namespace alexander {
          */
         audioWrapper->father->avFormatContext = avformat_alloc_context();
         if (audioWrapper->father->avFormatContext == NULL) {
-            LOGE("audioWrapper->father->avFormatContext is NULL.\n");
+            LOGE("audioWrapper->father->videoAVFormatContext is NULL.\n");
             return -1;
         }
         // 获取基本的文件信息
@@ -465,7 +465,7 @@ namespace alexander {
     int openAndFindAVFormatContextForVideo() {
         videoWrapper->father->avFormatContext = avformat_alloc_context();
         if (videoWrapper->father->avFormatContext == NULL) {
-            LOGE("videoWrapper->father->avFormatContext is NULL.\n");
+            LOGE("videoWrapper->father->videoAVFormatContext is NULL.\n");
             return -1;
         }
         if (avformat_open_input(&videoWrapper->father->avFormatContext,
@@ -1973,9 +1973,9 @@ namespace alexander {
         av_free(videoWrapper);
         videoWrapper = NULL;
 
-        /*if (avFormatContext != NULL) {
-            avformat_close_input(&avFormatContext);
-            avFormatContext = NULL;
+        /*if (videoAVFormatContext != NULL) {
+            avformat_close_input(&videoAVFormatContext);
+            videoAVFormatContext = NULL;
         }*/
 
         /*if (inFile != NULL) {
@@ -2061,9 +2061,9 @@ namespace alexander {
         memset(inFilePath, '\0', sizeof(inFilePath));
 //        const char *src = "/storage/emulated/0/Movies/权力的游戏第三季05.mp4";
 //        const char *src = "http://192.168.0.112:8080/tomcat_video/game_of_thrones/game_of_thrones_season_1/01.mp4";
-//        av_strlcpy(inFilePath, src, sizeof(inFilePath));
+//        av_strlcpy(inVideoFilePath, src, sizeof(inVideoFilePath));
         av_strlcpy(inFilePath, filePath, sizeof(inFilePath));
-        LOGI("setJniParameters() inFilePath: %s", inFilePath);
+        LOGI("setJniParameters() inVideoFilePath: %s", inFilePath);
         char *result = strstr(inFilePath, "http://");
         if (result == NULL) {
             result = strstr(inFilePath, "https://");

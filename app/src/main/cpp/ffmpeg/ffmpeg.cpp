@@ -6,6 +6,7 @@
 #include "MediaPlayer.h"
 #include "OnlyVideoPlayer.h"
 #include "OnlyAudioPlayer.h"
+#include "AudioVideoPlayer.h"
 
 // 这个是自定义的LOG的标识
 #define LOG "player_alexander"
@@ -289,7 +290,8 @@ Java_com_weidi_usefragments_business_video_1player_FFMPEG_setMode(JNIEnv *env, j
     LOGI("setMode() use_mode: %d\n", use_mode);
     if (use_mode != USE_MODE_MEDIA
         && use_mode != USE_MODE_ONLY_VIDEO
-        && use_mode != USE_MODE_ONLY_AUDIO) {
+        && use_mode != USE_MODE_ONLY_AUDIO
+        && use_mode != USE_MODE_AUDIO_VIDEO) {
         use_mode = USE_MODE_MEDIA;
     }
 }
@@ -331,6 +333,10 @@ Java_com_weidi_usefragments_business_video_1player_FFMPEG_setSurface(JNIEnv *env
         }
         case USE_MODE_ONLY_AUDIO: {
             alexander_only_audio::setJniParameters(env, filePath, NULL);
+            break;
+        }
+        case USE_MODE_AUDIO_VIDEO: {
+            alexander_audio_video::setJniParameters(env, filePath, surfaceObject);
             break;
         }
         default:
@@ -397,11 +403,16 @@ Java_com_weidi_usefragments_business_video_1player_FFMPEG_initPlayer(JNIEnv *env
         case USE_MODE_ONLY_AUDIO: {
             return (jint) alexander_only_audio::initPlayer();
         }
+        case USE_MODE_AUDIO_VIDEO: {
+            return (jint) alexander_audio_video::initPlayer();
+        }
         default:
             break;
     }
 }
 
+static int type;
+static int COUNTS = 1;
 extern "C"
 JNIEXPORT jint JNICALL
 Java_com_weidi_usefragments_business_video_1player_FFMPEG_readData(JNIEnv *env, jobject instance) {
@@ -416,6 +427,18 @@ Java_com_weidi_usefragments_business_video_1player_FFMPEG_readData(JNIEnv *env, 
         }
         case USE_MODE_ONLY_AUDIO: {
             alexander_only_audio::readData(NULL);
+            break;
+        }
+        case USE_MODE_AUDIO_VIDEO: {
+            if (COUNTS == 1) {
+                type = TYPE_AUDIO;
+                ++COUNTS;
+                alexander_audio_video::readData(&type);
+            } else {
+                type = TYPE_VIDEO;
+                --COUNTS;
+                alexander_audio_video::readData(&type);
+            }
             break;
         }
         default:
@@ -442,6 +465,10 @@ Java_com_weidi_usefragments_business_video_1player_FFMPEG_audioHandleData(JNIEnv
             alexander_only_audio::handleData(&type);
             break;
         }
+        case USE_MODE_AUDIO_VIDEO: {
+            alexander_audio_video::handleData(&type);
+            break;
+        }
         default:
             break;
     }
@@ -466,6 +493,10 @@ Java_com_weidi_usefragments_business_video_1player_FFMPEG_videoHandleData(JNIEnv
             //alexander_only_audio::handleData(&type);
             break;
         }
+        case USE_MODE_AUDIO_VIDEO: {
+            alexander_audio_video::handleData(&type);
+            break;
+        }
         default:
             break;
     }
@@ -486,6 +517,10 @@ Java_com_weidi_usefragments_business_video_1player_FFMPEG_play(JNIEnv *env, jobj
         }
         case USE_MODE_ONLY_AUDIO: {
             alexander_only_audio::play();
+            break;
+        }
+        case USE_MODE_AUDIO_VIDEO: {
+            alexander_audio_video::play();
             break;
         }
         default:
@@ -510,6 +545,10 @@ Java_com_weidi_usefragments_business_video_1player_FFMPEG_pause(JNIEnv *env, job
             alexander_only_audio::pause();
             break;
         }
+        case USE_MODE_AUDIO_VIDEO: {
+            alexander_audio_video::pause();
+            break;
+        }
         default:
             break;
     }
@@ -530,6 +569,10 @@ Java_com_weidi_usefragments_business_video_1player_FFMPEG_stop(JNIEnv *env, jobj
         }
         case USE_MODE_ONLY_AUDIO: {
             alexander_only_audio::stop();
+            break;
+        }
+        case USE_MODE_AUDIO_VIDEO: {
+            alexander_audio_video::stop();
             break;
         }
         default:
@@ -555,6 +598,10 @@ Java_com_weidi_usefragments_business_video_1player_FFMPEG_release(JNIEnv *env,
             alexander_only_audio::release();
             break;
         }
+        case USE_MODE_AUDIO_VIDEO: {
+            alexander_audio_video::release();
+            break;
+        }
         default:
             break;
     }
@@ -575,6 +622,9 @@ Java_com_weidi_usefragments_business_video_1player_FFMPEG_isRunning(JNIEnv *env,
         case USE_MODE_ONLY_AUDIO: {
             return (jboolean) alexander_only_audio::isRunning();
         }
+        case USE_MODE_AUDIO_VIDEO: {
+            return (jboolean) alexander_audio_video::isRunning();
+        }
         default:
             break;
     }
@@ -593,6 +643,9 @@ Java_com_weidi_usefragments_business_video_1player_FFMPEG_isPlaying(JNIEnv *env,
         }
         case USE_MODE_ONLY_AUDIO: {
             return (jboolean) alexander_only_audio::isPlaying();
+        }
+        case USE_MODE_AUDIO_VIDEO: {
+            return (jboolean) alexander_audio_video::isPlaying();
         }
         default:
             break;
@@ -613,6 +666,9 @@ Java_com_weidi_usefragments_business_video_1player_FFMPEG_seekTo(JNIEnv *env, jo
         case USE_MODE_ONLY_AUDIO: {
             return (jint) alexander_only_audio::seekTo((int64_t) timestamp);
         }
+        case USE_MODE_AUDIO_VIDEO: {
+            return (jint) alexander_audio_video::seekTo((int64_t) timestamp);
+        }
         default:
             break;
     }
@@ -632,6 +688,9 @@ Java_com_weidi_usefragments_business_video_1player_FFMPEG_getDuration(JNIEnv *en
         case USE_MODE_ONLY_AUDIO: {
             return (jlong) alexander_only_audio::getDuration();
         }
+        case USE_MODE_AUDIO_VIDEO: {
+            return (jlong) alexander_audio_video::getDuration();
+        }
         default:
             break;
     }
@@ -639,19 +698,23 @@ Java_com_weidi_usefragments_business_video_1player_FFMPEG_getDuration(JNIEnv *en
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_weidi_usefragments_business_video_1player_FFMPEG_stepAdd(JNIEnv *env,
-                                                                  jobject ffmpegObject) {
+Java_com_weidi_usefragments_business_video_1player_FFMPEG_stepAdd(JNIEnv *env, jobject ffmpegObject,
+                                                                  jlong addStep) {
     switch (use_mode) {
         case USE_MODE_MEDIA: {
-            alexander_media::stepAdd();
+            alexander_media::stepAdd((int64_t) addStep);
             break;
         }
         case USE_MODE_ONLY_VIDEO: {
-            alexander_only_video::stepAdd();
+            alexander_only_video::stepAdd((int64_t) addStep);
             break;
         }
         case USE_MODE_ONLY_AUDIO: {
-            alexander_only_audio::stepAdd();
+            alexander_only_audio::stepAdd((int64_t) addStep);
+            break;
+        }
+        case USE_MODE_AUDIO_VIDEO: {
+            alexander_audio_video::stepAdd((int64_t) addStep);
             break;
         }
         default:
@@ -662,18 +725,23 @@ Java_com_weidi_usefragments_business_video_1player_FFMPEG_stepAdd(JNIEnv *env,
 extern "C"
 JNIEXPORT void JNICALL
 Java_com_weidi_usefragments_business_video_1player_FFMPEG_stepSubtract(JNIEnv *env,
-                                                                       jobject ffmpegObject) {
+                                                                       jobject ffmpegObject,
+                                                                       jlong subtractStep) {
     switch (use_mode) {
         case USE_MODE_MEDIA: {
-            alexander_media::stepSubtract();
+            alexander_media::stepSubtract((int64_t) subtractStep);
             break;
         }
         case USE_MODE_ONLY_VIDEO: {
-            alexander_only_video::stepSubtract();
+            alexander_only_video::stepSubtract((int64_t) subtractStep);
             break;
         }
         case USE_MODE_ONLY_AUDIO: {
-            alexander_only_audio::stepSubtract();
+            alexander_only_audio::stepSubtract((int64_t) subtractStep);
+            break;
+        }
+        case USE_MODE_AUDIO_VIDEO: {
+            alexander_audio_video::stepSubtract((int64_t) subtractStep);
             break;
         }
         default:

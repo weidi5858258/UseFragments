@@ -78,8 +78,8 @@ namespace alexander {
     /*class SimpleVideoPlayer {
 
     private:
-        // char *inFilePath = "/storage/2430-1702/BaiduNetdisk/music/谭咏麟 - 水中花.mp3";
-        char *inFilePath = NULL;
+        // char *inVideoFilePath = "/storage/2430-1702/BaiduNetdisk/music/谭咏麟 - 水中花.mp3";
+        char *inVideoFilePath = NULL;
 
         ANativeWindow *pANativeWindow = NULL;
 

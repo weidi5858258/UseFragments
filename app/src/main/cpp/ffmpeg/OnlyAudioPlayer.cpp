@@ -109,13 +109,13 @@ namespace alexander_only_audio {
     int openAndFindAVFormatContext() {
         LOGD("openAndFindAVFormatContext() start\n");
         if (avFormatContext != NULL) {
-            LOGI("openAndFindAVFormatContext() avFormatContext isn't NULL\n");
+            LOGI("openAndFindAVFormatContext() videoAVFormatContext isn't NULL\n");
             avformat_free_context(avFormatContext);
             avFormatContext = NULL;
         }
         avFormatContext = avformat_alloc_context();
         if (avFormatContext == NULL) {
-            LOGE("avFormatContext is NULL.\n");
+            LOGE("videoAVFormatContext is NULL.\n");
             return -1;
         }
         LOGD("openAndFindAVFormatContext() avformat_open_input\n");
@@ -955,9 +955,9 @@ namespace alexander_only_audio {
         memset(inFilePath, '\0', sizeof(inFilePath));
 //        const char *src = "/storage/emulated/0/Movies/权力的游戏第三季05.mp4";
 //        const char *src = "http://192.168.0.112:8080/tomcat_video/game_of_thrones/game_of_thrones_season_1/01.mp4";
-//        av_strlcpy(inFilePath, src, sizeof(inFilePath));
+//        av_strlcpy(inVideoFilePath, src, sizeof(inVideoFilePath));
         av_strlcpy(inFilePath, filePath, sizeof(inFilePath));
-        LOGI("setJniParameters() inFilePath: %s", inFilePath);
+        LOGI("setJniParameters() inVideoFilePath: %s", inFilePath);
         char *result = strstr(inFilePath, "http://");
         if (result == NULL) {
             result = strstr(inFilePath, "https://");
@@ -1047,7 +1047,9 @@ namespace alexander_only_audio {
         if (((long) timestamp) < 0
             || audioWrapper == NULL
             || audioWrapper->father == NULL
-            || !isRunning()) {
+            || !isRunning()
+            || getDuration() < 0
+            || ((long) timestamp) > getDuration()) {
             return -1;
         }
 
@@ -1072,23 +1074,15 @@ namespace alexander_only_audio {
         return audioDuration;
     }
 
-    void stepAdd() {
+    void stepAdd(int64_t addStep) {
         if (getDuration() > 0) {
-            if (getDuration() > 300) {
-                seekTo(curProgress + 30);
-            } else {
-                seekTo(curProgress + 10);
-            }
+            seekTo(curProgress + addStep);
         }
     }
 
-    void stepSubtract() {
+    void stepSubtract(int64_t subtractStep) {
         if (getDuration() > 0) {
-            if (getDuration() > 300) {
-                seekTo(curProgress - 30);
-            } else {
-                seekTo(curProgress - 10);
-            }
+            seekTo(curProgress - subtractStep);
         }
     }
 

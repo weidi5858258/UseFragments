@@ -2,14 +2,12 @@
 // Created by root on 19-8-8.
 //
 
-#ifndef USEFRAGMENTS_ONLYAUDIOPLAYER_H
-#define USEFRAGMENTS_ONLYAUDIOPLAYER_H
+#ifndef USEFRAGMENTS_AUDIOVIDEOPLAYER_H
+#define USEFRAGMENTS_AUDIOVIDEOPLAYER_H
 
 #include "MediaPlayer.h"
-#include "ffmpeg.h"
-#include "../include/Log.h"
 
-namespace alexander_only_audio {
+namespace alexander_audio_video {
 
     void *readData(void *opaque);
 
@@ -19,15 +17,23 @@ namespace alexander_only_audio {
 
     void initAudio();
 
+    void initVideo();
+
     int openAndFindAVFormatContext();
 
     int findStreamIndex();
 
     int findAndOpenAVCodecForAudio();
 
+    int findAndOpenAVCodecForVideo();
+
     int createSwrContent();
 
+    int createSwsContext();
+
     void closeAudio();
+
+    void closeVideo();
 
     int initPlayer();
 
@@ -55,5 +61,4 @@ namespace alexander_only_audio {
 
 }
 
-
-#endif //USEFRAGMENTS_ONLYAUDIOPLAYER_H
+#endif //USEFRAGMENTS_AUDIOVIDEOPLAYER_H

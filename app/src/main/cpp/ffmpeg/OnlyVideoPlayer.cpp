@@ -124,13 +124,13 @@ namespace alexander_only_video {
     int openAndFindAVFormatContext() {
         LOGI("openAndFindAVFormatContext() start\n");
         if (avFormatContext != NULL) {
-            LOGI("openAndFindAVFormatContext() avFormatContext isn't NULL\n");
+            LOGI("openAndFindAVFormatContext() videoAVFormatContext isn't NULL\n");
             avformat_free_context(avFormatContext);
             avFormatContext = NULL;
         }
         avFormatContext = avformat_alloc_context();
         if (avFormatContext == NULL) {
-            LOGE("avFormatContext is NULL.\n");
+            LOGE("videoAVFormatContext is NULL.\n");
             return -1;
         }
         if (avformat_open_input(&avFormatContext,
@@ -963,12 +963,12 @@ namespace alexander_only_video {
     void setJniParameters(JNIEnv *env, const char *filePath, jobject surfaceJavaObject) {
 //        const char *src = "/storage/emulated/0/Movies/权力的游戏第三季05.mp4";
 //        const char *src = "http://192.168.0.112:8080/tomcat_video/game_of_thrones/game_of_thrones_season_1/01.mp4";
-//        av_strlcpy(inFilePath, src, sizeof(inFilePath));
+//        av_strlcpy(inVideoFilePath, src, sizeof(inVideoFilePath));
 
         isLocal = false;
         memset(inFilePath, '\0', sizeof(inFilePath));
         av_strlcpy(inFilePath, filePath, sizeof(inFilePath));
-        LOGI("setJniParameters() inFilePath: %s", inFilePath);
+        LOGI("setJniParameters() inVideoFilePath: %s", inFilePath);
         char *result = strstr(inFilePath, "http://");
         if (result == NULL) {
             result = strstr(inFilePath, "https://");
@@ -1068,7 +1068,9 @@ namespace alexander_only_video {
         if (timestamp < 0
             || videoWrapper == NULL
             || videoWrapper->father == NULL
-            || !isRunning()) {
+            || !isRunning()
+            || getDuration() < 0
+            || ((long) timestamp) > getDuration()) {
             return -1;
         }
 
@@ -1093,7 +1095,7 @@ namespace alexander_only_video {
         return videoDuration;
     }
 
-    void stepAdd() {
+    void stepAdd(int64_t addStep) {
         /*++videoSleepTime;
         char dest[50];
         sprintf(dest, "videoSleepTime: %d\n", videoSleepTime);
@@ -1101,15 +1103,11 @@ namespace alexander_only_video {
         LOGF("stepAdd()      videoSleepTime: %d\n", videoSleepTime);*/
 
         if (getDuration() > 0) {
-            if (getDuration() > 300) {
-                seekTo(curProgress + 30);
-            } else {
-                seekTo(curProgress + 10);
-            }
+            seekTo(curProgress + addStep);
         }
     }
 
-    void stepSubtract() {
+    void stepSubtract(int64_t subtractStep) {
         /*--videoSleepTime;
         char dest[50];
         sprintf(dest, "videoSleepTime: %d\n", videoSleepTime);
@@ -1117,11 +1115,7 @@ namespace alexander_only_video {
         LOGF("stepSubtract() videoSleepTime: %d\n", videoSleepTime);*/
 
         if (getDuration() > 0) {
-            if (getDuration() > 300) {
-                seekTo(curProgress - 30);
-            } else {
-                seekTo(curProgress - 10);
-            }
+            seekTo(curProgress - subtractStep);
         }
     }
 
