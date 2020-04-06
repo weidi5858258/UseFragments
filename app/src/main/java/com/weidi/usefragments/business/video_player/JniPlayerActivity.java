@@ -7,10 +7,12 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.res.Configuration;
 import android.content.res.Resources;
+import android.database.Cursor;
 import android.media.AudioManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.provider.MediaStore;
 import android.provider.Settings;
 import android.text.TextUtils;
 import android.util.Log;
@@ -33,6 +35,8 @@ import com.weidi.usefragments.receiver.MediaButtonReceiver;
 import com.weidi.usefragments.test_view.BubblePopupWindow;
 import com.weidi.usefragments.tool.MLog;
 import com.weidi.usefragments.tool.PermissionsUtils;
+
+import java.io.File;
 
 import static com.weidi.usefragments.MainActivity1.isRunService;
 
@@ -271,22 +275,54 @@ public class JniPlayerActivity extends BaseActivity {
         mPath = intent.getStringExtra(CONTENT_PATH);
         if (TextUtils.isEmpty(mPath)) {
             MLog.d(TAG, "internalCreate() mPath is null");
+            /***
+             uri : content://media/external/video/media/272775
+             path: /external/video/media/272775
+             uri : content://com.huawei.hidisk.fileprovider
+             /root/storage/1532-48AD/Videos/download/25068919/1/32/audio.m4s
+             path: /root/storage/1532-48AD/Videos/download/25068919/1/32/audio.m4s
+             */
             Uri uri = intent.getData();
             if (uri != null) {
+                MLog.d(TAG, "internalCreate()    uri: " + uri.toString());
                 mPath = uri.getPath();
-                MLog.d(TAG, "internalCreate() mPath: " + mPath);
+                if (!mPath.substring(mPath.lastIndexOf("/")).contains(".")) {
+                    // 如: /external/video/media/272775
+                    String[] proj = {MediaStore.Images.Media.DATA};
+                    Cursor actualimagecursor = this.managedQuery(
+                            uri, proj, null, null, null);
+                    int actual_image_column_index =
+                            actualimagecursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATA);
+                    actualimagecursor.moveToFirst();
+                    mPath = actualimagecursor.getString(actual_image_column_index);
+                }
+                // 这个路径是不对的
+                // /root/storage/1532-48AD/Videos/download/25068919/1/32/audio.m4s
+                MLog.d(TAG, "internalCreate() mPath1: " + mPath);
+                if (mPath.contains("/root")) {
+                    mPath = mPath.substring(5);
+                }
+                MLog.d(TAG, "internalCreate() mPath2: " + mPath);
                 if (TextUtils.isEmpty(mPath)) {
                     finish();
                     return;
                 }
             }
+            // audio/mpeg
+            // video/mp4
             String type = intent.getType();
             MLog.d(TAG, "internalCreate()  type: " + type);
-            if (!TextUtils.equals("video/*", type)) {
-                MLog.d(TAG, "internalCreate() path: " + mPath + " 此文件不是视频");
+            if (TextUtils.isEmpty(type)
+                    || (!type.startsWith("video/")
+                    && !type.startsWith("audio/"))) {
                 finish();
                 return;
             }
+            /*if (!TextUtils.equals("video/*", type)) {
+                MLog.d(TAG, "internalCreate() path: " + mPath + " 此文件不是视频");
+                finish();
+                return;
+            }*/
         }
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {

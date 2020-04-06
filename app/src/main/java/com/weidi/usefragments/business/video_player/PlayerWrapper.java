@@ -353,7 +353,11 @@ public class PlayerWrapper {
                 mLoadingView.setVisibility(View.GONE);
                 mPlayIB.setVisibility(View.VISIBLE);
                 mPauseIB.setVisibility(View.GONE);
-                mControllerPanelLayout.setVisibility(View.GONE);
+                if (mVideoWidth != 0 && mVideoHeight != 0) {
+                    mControllerPanelLayout.setVisibility(View.GONE);
+                } else {
+                    mControllerPanelLayout.setVisibility(View.VISIBLE);
+                }
 
                 /*if (mContext.getResources().getConfiguration().orientation
                         == Configuration.ORIENTATION_LANDSCAPE) {
@@ -388,14 +392,18 @@ public class PlayerWrapper {
                     if (mService != null) {
                         if (!mService.needToPlaybackOtherVideo()) {
                             mService.removeView();
-                            mSurfaceHolder.removeCallback(mSurfaceCallback);
-                            mSurfaceHolder = null;
+                            if (mSurfaceHolder != null) {
+                                mSurfaceHolder.removeCallback(mSurfaceCallback);
+                                mSurfaceHolder = null;
+                            }
                         }
                     } else if (mActivity != null) {
                         mActivity.finish();
                         mActivity.exitActivity();
-                        mSurfaceHolder.removeCallback(mSurfaceCallback);
-                        mSurfaceHolder = null;
+                        if (mSurfaceHolder != null) {
+                            mSurfaceHolder.removeCallback(mSurfaceCallback);
+                            mSurfaceHolder = null;
+                        }
                     }
                 }
                 break;
@@ -422,13 +430,17 @@ public class PlayerWrapper {
                         if (mService != null) {
                             MLog.i(TAG, "Callback.ERROR_FFMPEG_INIT mService.removeView()");
                             mService.removeView();
-                            mSurfaceHolder.removeCallback(mSurfaceCallback);
-                            mSurfaceHolder = null;
+                            if (mSurfaceHolder != null) {
+                                mSurfaceHolder.removeCallback(mSurfaceCallback);
+                                mSurfaceHolder = null;
+                            }
                         } else if (mActivity != null) {
                             mActivity.finish();
-                            mActivity.exitActivity();
-                            mSurfaceHolder.removeCallback(mSurfaceCallback);
-                            mSurfaceHolder = null;
+                            //mActivity.exitActivity();
+                            if (mSurfaceHolder != null) {
+                                mSurfaceHolder.removeCallback(mSurfaceCallback);
+                                mSurfaceHolder = null;
+                            }
                         }
                         break;
                     default:
@@ -546,6 +558,7 @@ public class PlayerWrapper {
     }
 
     public void startPlayback() {
+        MLog.d(TAG, "startPlayback()");
         mVolumeNormal.setVisibility(View.VISIBLE);
         mVolumeMute.setVisibility(View.GONE);
         if (mSurfaceHolder == null) {
@@ -564,14 +577,21 @@ public class PlayerWrapper {
             public void run() {
                 mIsSeparatedAudioVideo = false;
                 String tempPath = "";
+                MLog.d(TAG, "startPlayback()                  mPath: " + mPath);
                 if (mPath.endsWith(".m4s")) {
                     tempPath = mPath.substring(0, mPath.lastIndexOf("/"));
                     File audioFile = new File(tempPath + "/audio.m4s");
                     File videoFile = new File(tempPath + "/video.m4s");
+                    MLog.d(TAG,
+                            "startPlayback()                  audio: " + audioFile.getAbsolutePath());
+                    MLog.d(TAG,
+                            "startPlayback()                  video: " + videoFile.getAbsolutePath());
                     if (audioFile.exists() && videoFile.exists()) {
                         mIsSeparatedAudioVideo = true;
                     }
                 }
+
+                MLog.d(TAG, "startPlayback() mIsSeparatedAudioVideo: " + mIsSeparatedAudioVideo);
                 if (!mIsSeparatedAudioVideo) {
                     mFFMPEGPlayer.setMode(FFMPEG.USE_MODE_MEDIA);
                     mFFMPEGPlayer.setSurface(mPath, mSurfaceHolder.getSurface());
@@ -732,10 +752,19 @@ public class PlayerWrapper {
         RelativeLayout.LayoutParams relativeParams =
                 (RelativeLayout.LayoutParams) mSurfaceView.getLayoutParams();
         relativeParams.setMargins(0, 0, 0, 0);
-        mNeedVideoWidth = mScreenWidth;
-        mNeedVideoHeight = (mScreenWidth * mVideoHeight) / mVideoWidth;
-        if (mNeedVideoHeight > mScreenHeight) {
-            mNeedVideoHeight = mScreenHeight;
+        if (mVideoWidth != 0 && mVideoHeight != 0) {
+            mNeedVideoWidth = mScreenWidth;
+            mNeedVideoHeight = (mScreenWidth * mVideoHeight) / mVideoWidth;
+            if (mNeedVideoHeight > mScreenHeight) {
+                mNeedVideoHeight = mScreenHeight;
+            }
+            mControllerPanelLayout.setBackgroundColor(
+                    mContext.getResources().getColor(android.R.color.transparent));
+        } else {
+            mNeedVideoWidth = mScreenWidth;
+            mNeedVideoHeight = 1;
+            mControllerPanelLayout.setBackgroundColor(
+                    mContext.getResources().getColor(R.color.lightgray));
         }
 
         /*if (mVideoWidth >= mScreenWidth) {
@@ -773,10 +802,15 @@ public class PlayerWrapper {
         mControllerPanelLayout.setLayoutParams(frameParams);
 
         if (mService != null) {
-            if (mNeedVideoHeight > (int) (mScreenHeight * 2 / 3)) {
-                updateRootViewLayout(mScreenWidth, mNeedVideoHeight);
+            if (mVideoWidth != 0 && mVideoHeight != 0) {
+                if (mNeedVideoHeight > (int) (mScreenHeight * 2 / 3)) {
+                    updateRootViewLayout(mScreenWidth, mNeedVideoHeight);
+                } else {
+                    updateRootViewLayout(mScreenWidth,
+                            mNeedVideoHeight + mControllerPanelLayoutHeight);
+                }
             } else {
-                updateRootViewLayout(mScreenWidth, mNeedVideoHeight + mControllerPanelLayoutHeight);
+                updateRootViewLayout(mScreenWidth, mControllerPanelLayoutHeight + 1);
             }
         }
     }
@@ -824,6 +858,7 @@ public class PlayerWrapper {
     private View.OnClickListener mOnClickListener = new View.OnClickListener() {
         @Override
         public void onClick(View v) {
+            mNeedToSyncProgressBar = true;
             switch (v.getId()) {
                 case R.id.button_prev:
                     if (mFFMPEGPlayer != null) {
@@ -874,7 +909,7 @@ public class PlayerWrapper {
                     onEvent(KeyEvent.KEYCODE_HEADSETHOOK, null);
                     break;
                 case R.id.content_tv:
-                    mNeedToSyncProgressBar = true;
+                    //mNeedToSyncProgressBar = true;
                     mBubblePopupWindow.dismiss();
                     MLog.d(TAG, "onClick() mProgress: " + mProgress +
                             " " + DateUtils.formatElapsedTime(mProgress));

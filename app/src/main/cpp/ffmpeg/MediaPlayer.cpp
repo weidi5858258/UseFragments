@@ -2093,7 +2093,7 @@ namespace alexander_media {
             case USE_MODE_ONLY_AUDIO: {
                 audioWrapper->father->duration = duration;
                 closeVideo();
-                onChangeWindow(1080, 100);
+                onChangeWindow(0, 0);
                 break;
             }
             default:
