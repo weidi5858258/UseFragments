@@ -1006,8 +1006,8 @@ namespace alexander_audio_video {
                 // 正常情况下videoTimeDifference比audioTimeDifference大一些
                 // 如果发现小了,说明视频播放慢了,应丢弃这些帧
                 // break后videoTimeDifference增长的速度会加快
-                videoPts = audioPts + averageTimeDiff;
-                //return 0;
+                // videoPts = audioPts + averageTimeDiff;
+                return 0;
             }
 
             if (tempTimeDifference > 2.000000) {
@@ -1021,7 +1021,8 @@ namespace alexander_audio_video {
             // 如果videoTimeDifference比audioTimeDifference大出了一定的范围
             // 那么说明视频播放快了,应等待音频
             while (videoPts - audioPts > TIME_DIFFERENCE) {
-                if (videoWrapper->father->isPausedForSeek || !videoWrapper->father->isHandling) {
+                if (videoWrapper->father->isPausedForSeek
+                    || !videoWrapper->father->isHandling) {
                     return 0;
                 }
                 av_usleep(1000);

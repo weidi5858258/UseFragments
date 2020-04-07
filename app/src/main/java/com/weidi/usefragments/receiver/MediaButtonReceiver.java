@@ -8,6 +8,8 @@ import android.view.KeyEvent;
 
 import com.weidi.eventbus.EventBusUtils;
 import com.weidi.usefragments.business.video_player.JniPlayerActivity;
+import com.weidi.usefragments.business.video_player.PlayerService;
+import com.weidi.usefragments.tool.MLog;
 
 /***
  Created by root on 19-7-2.
@@ -18,15 +20,19 @@ import com.weidi.usefragments.business.video_player.JniPlayerActivity;
 
 public class MediaButtonReceiver extends BroadcastReceiver {
 
-    private static final String TAG =
-            MediaButtonReceiver.class.getSimpleName();
+    private static final String TAG = "player_alexander";
+    /*private static final String TAG =
+            MediaButtonReceiver.class.getSimpleName();*/
     private static final boolean DEBUG = true;
 
     @Override
     public void onReceive(Context context, Intent intent) {
+        if (intent == null) {
+            return;
+        }
+
         String intentAction = intent.getAction();
-        /*if (DEBUG)
-            MLog.d(TAG, "MediaButtonReceiver " + intentAction);*/
+        // MLog.d(TAG, "onReceive() intentAction: " + intentAction);
         if (Intent.ACTION_MEDIA_BUTTON.equals(intentAction)) {
             KeyEvent event = intent.getParcelableExtra(Intent.EXTRA_KEY_EVENT);
             if (event == null) {
@@ -37,11 +43,7 @@ public class MediaButtonReceiver extends BroadcastReceiver {
                 case KeyEvent.KEYCODE_HEADSETHOOK:
                     if (event.getAction() == KeyEvent.ACTION_DOWN) {
                         EventBusUtils.post(
-                                JniPlayerActivity.class, KeyEvent.KEYCODE_HEADSETHOOK, null);
-                        /*EventBusUtils.post(
-                                SimpleAudioPlayer2.class, KeyEvent.KEYCODE_HEADSETHOOK, null);
-                        EventBusUtils.post(
-                                SimpleVideoPlayer7.class, KeyEvent.KEYCODE_HEADSETHOOK, null);*/
+                                PlayerService.class, KeyEvent.KEYCODE_HEADSETHOOK, null);
                     }
                     break;
                 case KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE:
@@ -60,7 +62,7 @@ public class MediaButtonReceiver extends BroadcastReceiver {
                     break;
             }
         } else if (AudioManager.ACTION_AUDIO_BECOMING_NOISY.equals(intentAction)) {
-            // 耳机插拔
+            // 耳机插事件,没有拔事件
         }
     }
 

@@ -18,6 +18,7 @@ import android.support.annotation.Nullable;
 import android.text.TextUtils;
 import android.util.DisplayMetrics;
 import android.view.Gravity;
+import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.SurfaceView;
@@ -102,6 +103,7 @@ public class PlayerService extends Service {
 
     private void internalCreate() {
         EventBusUtils.register(this);
+        registerHeadsetPlugReceiver();
 
         mUiHandler = new Handler(Looper.getMainLooper()) {
             @Override
@@ -172,6 +174,7 @@ public class PlayerService extends Service {
     private void internalDestroy() {
         mPlayerWrapper.onDestroy();
         removeView();
+        unregisterHeadsetPlugReceiver();
         EventBusUtils.unregister(this);
     }
 
@@ -210,6 +213,9 @@ public class PlayerService extends Service {
             case COMMAND_HANDLE_PORTRAIT_SCREEN:
                 mUiHandler.removeMessages(COMMAND_HANDLE_PORTRAIT_SCREEN);
                 mUiHandler.sendEmptyMessage(COMMAND_HANDLE_PORTRAIT_SCREEN);
+                break;
+            case KeyEvent.KEYCODE_HEADSETHOOK:
+                mPlayerWrapper.onEvent(KeyEvent.KEYCODE_HEADSETHOOK, null);
                 break;
             default:
                 break;
@@ -366,7 +372,7 @@ public class PlayerService extends Service {
     /////////////////////////////////////////////////////////////////
 
     /***
-     下面是耳机操作
+     耳机操作
      */
 
     // Android监听耳机的插拔事件(只能动态注册,经过测试可行)
@@ -375,26 +381,31 @@ public class PlayerService extends Service {
     private ComponentName mMediaButtonReceiver;
 
     private void registerHeadsetPlugReceiver() {
-        mHeadsetPlugReceiver = new HeadsetPlugReceiver();
-        IntentFilter filter = new IntentFilter();
-        filter.addAction("android.intent.action.HEADSET_PLUG");
-        filter.setPriority(2147483647);
-        registerReceiver(mHeadsetPlugReceiver, filter);
+        if (mHeadsetPlugReceiver == null) {
+            mHeadsetPlugReceiver = new HeadsetPlugReceiver();
+            IntentFilter filter = new IntentFilter();
+            filter.addAction("android.intent.action.HEADSET_PLUG");
+            filter.setPriority(2147483647);
+            registerReceiver(mHeadsetPlugReceiver, filter);
+        }
 
-        mAudioManager =
-                (AudioManager) getSystemService(Context.AUDIO_SERVICE);
-        mMediaButtonReceiver = new ComponentName(
-                getPackageName(), MediaButtonReceiver.class.getName());
-        mAudioManager.registerMediaButtonEventReceiver(mMediaButtonReceiver);
+        if (mMediaButtonReceiver == null) {
+            mAudioManager =
+                    (AudioManager) getSystemService(Context.AUDIO_SERVICE);
+            mMediaButtonReceiver = new ComponentName(
+                    getPackageName(), MediaButtonReceiver.class.getName());
+            mAudioManager.registerMediaButtonEventReceiver(mMediaButtonReceiver);
+        }
     }
 
     private void unregisterHeadsetPlugReceiver() {
-        if (mHeadsetPlugReceiver == null) {
-            return;
+        if (mHeadsetPlugReceiver != null) {
+            unregisterReceiver(mHeadsetPlugReceiver);
         }
 
-        unregisterReceiver(mHeadsetPlugReceiver);
-        mAudioManager.unregisterMediaButtonEventReceiver(mMediaButtonReceiver);
+        if (mMediaButtonReceiver != null) {
+            mAudioManager.unregisterMediaButtonEventReceiver(mMediaButtonReceiver);
+        }
     }
 
     private class HeadsetPlugReceiver extends BroadcastReceiver {

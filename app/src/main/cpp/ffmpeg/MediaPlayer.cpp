@@ -1114,7 +1114,8 @@ namespace alexander_media {
         if (ret >= 0) {
             audioWrapper->father->isStarted = true;
             while (!videoWrapper->father->isStarted) {
-                if (audioWrapper->father->isPausedForSeek || !audioWrapper->father->isHandling) {
+                if (audioWrapper->father->isPausedForSeek
+                    || !audioWrapper->father->isHandling) {
                     return 0;
                 }
                 av_usleep(1000);
@@ -1160,7 +1161,9 @@ namespace alexander_media {
     int handleVideoDataImpl(AVStream *stream, AVFrame *decodedAVFrame) {
         videoWrapper->father->isStarted = true;
         while (!audioWrapper->father->isStarted) {
-            if (videoWrapper->father->isPausedForSeek || !videoWrapper->father->isHandling) {
+            if (videoWrapper->father->isPausedForSeek
+                || !videoWrapper->father->isHandling) {
+                LOGI("handleVideoDataImpl() videoWrapper->father->isStarted return\n");
                 return 0;
             }
             av_usleep(1000);
@@ -1184,6 +1187,11 @@ namespace alexander_media {
                 runCounts++;
                 double totleTimeDiff = 0;
                 for (int i = 0; i < RUN_COUNTS; i++) {
+                    if (videoWrapper->father->isPausedForSeek
+                        || !videoWrapper->father->isHandling) {
+                        LOGI("handleVideoDataImpl() RUN_COUNTS return\n");
+                        return 0;
+                    }
                     totleTimeDiff += timeDiff[i];
                 }
                 averageTimeDiff = totleTimeDiff / RUN_COUNTS;
@@ -1193,8 +1201,8 @@ namespace alexander_media {
                 // 正常情况下videoTimeDifference比audioTimeDifference大一些
                 // 如果发现小了,说明视频播放慢了,应丢弃这些帧
                 // break后videoTimeDifference增长的速度会加快
-                videoPts = audioPts + averageTimeDiff;
-                //return 0;
+                // videoPts = audioPts + averageTimeDiff;
+                return 0;
             }
 
             if (tempTimeDifference > 2.000000) {
@@ -1208,7 +1216,9 @@ namespace alexander_media {
             // 如果videoTimeDifference比audioTimeDifference大出了一定的范围
             // 那么说明视频播放快了,应等待音频
             while (videoPts - audioPts > TIME_DIFFERENCE) {
-                if (videoWrapper->father->isPausedForSeek || !videoWrapper->father->isHandling) {
+                if (videoWrapper->father->isPausedForSeek
+                    || !videoWrapper->father->isHandling) {
+                    LOGI("handleVideoDataImpl() TIME_DIFFERENCE return\n");
                     return 0;
                 }
                 av_usleep(1000);
@@ -1219,6 +1229,7 @@ namespace alexander_media {
         if (videoWrapper->father->isHandling) {
             // 3.lock锁定下一个即将要绘制的Surface
             ANativeWindow_lock(pANativeWindow, &mANativeWindow_Buffer, NULL);
+
             // 把decodedAVFrame的数据经过格式转换后保存到rgbAVFrame中
             sws_scale(videoWrapper->swsContext,
                       (uint8_t const *const *) decodedAVFrame->data,
@@ -1236,6 +1247,11 @@ namespace alexander_media {
             int dstStride = mANativeWindow_Buffer.stride * 4;
             // 由于window的stride和帧的stride不同,因此需要逐行复制
             for (int h = 0; h < videoWrapper->srcHeight; h++) {
+                if (videoWrapper->father->isPausedForSeek
+                    || !videoWrapper->father->isHandling) {
+                    LOGI("handleVideoDataImpl() memcpy return\n");
+                    return 0;
+                }
                 memcpy(dst + h * dstStride, src + h * srcStride, srcStride);
             }
 

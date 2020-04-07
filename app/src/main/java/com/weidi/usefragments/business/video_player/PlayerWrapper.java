@@ -190,6 +190,10 @@ public class PlayerWrapper {
         mPath = path;
     }
 
+    public Handler getUiHandler() {
+        return mUiHandler;
+    }
+
     public void onCreate() {
         EventBusUtils.register(this);
         mSP = mContext.getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE);
@@ -325,7 +329,7 @@ public class PlayerWrapper {
                     mProgressTimeTV.setText("00:00");
                 }
                 mProgressBar.setProgress(0);
-                mFileNameTV.setText(Contents.getTitle());
+                mFileNameTV.setText("");// Contents.getTitle()
                 mLoadingView.setVisibility(View.VISIBLE);
                 mControllerPanelLayout.setVisibility(View.VISIBLE);
                 break;
@@ -540,14 +544,14 @@ public class PlayerWrapper {
             case MSG_SEEK_TO_ADD:
                 if (mFFMPEGPlayer != null) {
                     mFFMPEGPlayer.stepAdd(addStep);
-                    addStep = 0;
                 }
+                addStep = 0;
                 break;
             case MSG_SEEK_TO_SUBTRACT:
                 if (mFFMPEGPlayer != null) {
                     mFFMPEGPlayer.stepSubtract(subtractStep);
-                    subtractStep = 0;
                 }
+                subtractStep = 0;
                 break;
             case PLAYBACK_PROGRESS_UPDATED:
                 mProgressBar.setSecondaryProgress(mDownloadProgress);
@@ -940,7 +944,9 @@ public class PlayerWrapper {
 
     private void clickOne() {
         if (mControllerPanelLayout.getVisibility() == View.VISIBLE) {
-            mControllerPanelLayout.setVisibility(View.GONE);
+            if (mVideoWidth != 0 && mVideoHeight != 0) {
+                mControllerPanelLayout.setVisibility(View.GONE);
+            }
         } else {
             mControllerPanelLayout.setVisibility(View.VISIBLE);
         }
@@ -1013,7 +1019,7 @@ public class PlayerWrapper {
     private static final int NEED_CLICK_COUNTS = 4;
     private int clickCounts = 0;
 
-    private Object onEvent(int what, Object[] objArray) {
+    public Object onEvent(int what, Object[] objArray) {
         Object result = null;
         switch (what) {
             case KeyEvent.KEYCODE_HEADSETHOOK:
