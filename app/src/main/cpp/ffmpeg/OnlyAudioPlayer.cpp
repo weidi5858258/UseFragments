@@ -945,6 +945,7 @@ namespace alexander_only_audio {
             closeAudio();
             return -1;
         }
+        onChangeWindow(0, 0);
 
         LOGW("%s\n", "initPlayer() end");
         return 0;

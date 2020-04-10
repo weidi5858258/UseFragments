@@ -297,7 +297,8 @@ public class RecordScreenFragment extends BaseFragment {
     /////////////////////////////////////////////////////////////////
 
     private static final String PATH =
-            "/storage/2430-1702/Android/data/com.weidi.usefragments/files";
+            "/storage/1532-48AD/Android/data/com.weidi.usefragments/files/Movies/";
+    //"/storage/2430-1702/Android/data/com.weidi.usefragments/files";
 
     private static final int REQUEST_CODE = 1000;
 
@@ -414,6 +415,11 @@ public class RecordScreenFragment extends BaseFragment {
         }
     }
 
+    private void releaseMediaCodec() {
+        MediaUtils.releaseMediaCodec(mAudioEncoderMediaCodec);
+        MediaUtils.releaseMediaCodec(mVideoEncoderMediaCodec);
+    }
+
     @InjectOnClick({R.id.start_btn, R.id.stop_btn, R.id.jump_btn})
     private void onClick(View v) {
         switch (v.getId()) {
@@ -456,43 +462,15 @@ public class RecordScreenFragment extends BaseFragment {
         if (mAudioRecord == null) {
             return;
         }
-        // MediaCodec
-        mAudioEncoderMediaCodec = MediaUtils.getAudioEncoderMediaCodec();
-        mVideoEncoderMediaCodec = MediaUtils.getVideoEncoderMediaCodec();
-        if (mVideoEncoderMediaCodec == null
-                || mAudioEncoderMediaCodec == null) {
-            return;
-        }
-        // MediaFormat
+
         mVideoEncoderMediaFormat = MediaUtils.getVideoEncoderMediaFormat(mWidth, mHeight);
         mAudioEncoderMediaFormat = MediaUtils.getAudioEncoderMediaFormat();
-        try {
-            mVideoEncoderMediaCodec.configure(
-                    mVideoEncoderMediaFormat,
-                    null,
-                    null,
-                    MediaCodec.CONFIGURE_FLAG_ENCODE);
-            mSurface = mVideoEncoderMediaCodec.createInputSurface();
-        } catch (MediaCodec.CodecException e) {
-            e.printStackTrace();
-            if (mVideoEncoderMediaCodec != null) {
-                mVideoEncoderMediaCodec.release();
-                mVideoEncoderMediaCodec = null;
-            }
-            return;
-        }
-        try {
-            mAudioEncoderMediaCodec.configure(
-                    mAudioEncoderMediaFormat,
-                    null,
-                    null,
-                    MediaCodec.CONFIGURE_FLAG_ENCODE);
-        } catch (MediaCodec.CodecException e) {
-            e.printStackTrace();
-            if (mAudioEncoderMediaCodec != null) {
-                mAudioEncoderMediaCodec.release();
-                mAudioEncoderMediaCodec = null;
-            }
+
+        // MediaCodec
+        mVideoEncoderMediaCodec = MediaUtils.getVideoEncoderMediaCodec(mVideoEncoderMediaFormat);
+        mAudioEncoderMediaCodec = MediaUtils.getAudioEncoderMediaCodec(mAudioEncoderMediaFormat);
+        if (mVideoEncoderMediaCodec == null
+                || mAudioEncoderMediaCodec == null) {
             return;
         }
 
@@ -502,14 +480,7 @@ public class RecordScreenFragment extends BaseFragment {
                     MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4);
         } catch (IOException e) {
             e.printStackTrace();
-            if (mVideoEncoderMediaCodec != null) {
-                mVideoEncoderMediaCodec.release();
-                mVideoEncoderMediaCodec = null;
-            }
-            if (mAudioEncoderMediaCodec != null) {
-                mAudioEncoderMediaCodec.release();
-                mAudioEncoderMediaCodec = null;
-            }
+            releaseMediaCodec();
             return;
         }
 
@@ -691,6 +662,9 @@ public class RecordScreenFragment extends BaseFragment {
         // MediaProjection对象是这样来的,所以要得到MediaProjection对象,必须同意权限
         mMediaProjection =
                 mMediaProjectionManager.getMediaProjection(resultCode, data);
+        if (mMediaProjection == null) {
+            return;
+        }
 
         mThreadHandler.sendEmptyMessage(START_RECORD_SCREEN);
     }

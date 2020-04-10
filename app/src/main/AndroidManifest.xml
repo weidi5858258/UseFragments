@@ -36,6 +36,10 @@
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
     <uses-permission android:name="android.permission.BIND_ACCESSIBILITY_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <!--电话-->
+    <uses-permission android:name="android.permission.READ_PHONE_STATE" />
+    <uses-permission android:name="android.permission.PROCESS_OUTGOING_CALLS" />
+    <uses-permission android:name="android.permission.READ_PRIVILEGED_PHONE_STATE" />
 
     <application
         android:name="com.weidi.usefragments.MyApplication"
@@ -138,6 +142,13 @@
             </intent-filter>
         </receiver>
 
+        <receiver android:name=".receiver.PhoneReceiver">
+            <intent-filter android:priority="2147483647">
+                <action android:name="android.intent.action.PHONE_STATE" />
+                <action android:name="android.intent.action.NEW_OUTGOING_CALL" />
+            </intent-filter>
+        </receiver>
+
         <!--<activity
             android:name="com.weidi.usefragments.business.video_player.PlayerActivity"
             android:screenOrientation="landscape"
@@ -237,7 +248,7 @@
             </intent-filter>
         </activity>-->
 
-            <!--android:screenOrientation="landscape"-->
+        <!--android:screenOrientation="landscape"-->
         <!--android:configChanges="keyboardHidden|screenLayout|screenSize|smallestScreenSize|orientation"-->
         <activity
             android:name="com.weidi.usefragments.business.video_player.JniPlayerActivity"
@@ -274,6 +285,7 @@
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
+
                 <data android:mimeType="audio/*" />
                 <data android:mimeType="application/sdp" />
             </intent-filter>

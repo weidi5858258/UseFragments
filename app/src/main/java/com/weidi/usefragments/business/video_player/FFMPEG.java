@@ -122,6 +122,8 @@ public class FFMPEG {
         setVolume(1.0f);
         if (mAudioTrack != null) {
             mAudioTrack.play();
+        } else {
+            MLog.i(TAG, "createAudioTrack() mAudioTrack is null");
         }
         MLog.i(TAG, "createAudioTrack() end");
     }

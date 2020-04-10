@@ -102,6 +102,8 @@ public class MediaUtils {
     // private static final int AUDIO_BIT_RATE = 64000;// 64kbps
     private static final int FRAME_RATE = 30;
     private static final int IFRAME_INTERVAL = 1;
+    private static final int WIDTH = 1920;
+    private static final int HEIGHT = 1080;
 
     /***
      AC4 is not supported in AOSP and MTK added ENCODING_AC4 in AOSP as 15.
@@ -476,7 +478,7 @@ public class MediaUtils {
             try {
                 encoder = MediaCodec.createByCodecName(mediaCodecInfo.getName());
                 encoder.configure(
-                        getAudioEncoderMediaFormat(),
+                        getVideoEncoderMediaFormat(WIDTH, HEIGHT),
                         surface, null,
                         MediaCodec.CONFIGURE_FLAG_ENCODE);
                 encoder.start();
@@ -487,6 +489,7 @@ public class MediaUtils {
                     | IllegalArgumentException
                     | IOException e) {
                 e.printStackTrace();
+                releaseMediaCodec(encoder);
                 encoder = null;
                 continue;
             }
@@ -555,6 +558,37 @@ public class MediaUtils {
         return encoder;
     }
 
+    public static MediaCodec getVideoEncoderMediaCodec(MediaFormat format) {
+        MediaCodec encoder = null;
+        MediaCodecInfo[] mediaCodecInfos = findAllEncodersByMime(VIDEO_MIME);
+        for (MediaCodecInfo mediaCodecInfo : mediaCodecInfos) {
+            if (mediaCodecInfo == null) {
+                continue;
+            }
+            try {
+                encoder = MediaCodec.createByCodecName(mediaCodecInfo.getName());
+                encoder.configure(
+                        format,
+                        null, null,
+                        MediaCodec.CONFIGURE_FLAG_ENCODE);
+                //encoder.start();
+                if (DEBUG)
+                    MLog.d(TAG, "getVideoEncoderMediaCodec() MediaCodec create success");
+                break;
+            } catch (NullPointerException
+                    | IllegalArgumentException
+                    | IOException e) {
+                e.printStackTrace();
+                releaseMediaCodec(encoder);
+                encoder = null;
+                continue;
+            }
+        }
+
+        return encoder;
+    }
+
+
     // 只用于录屏,因为MediaFormat是录屏的参数
     public static MediaCodec getVideoEncoderMediaCodec() {
         MediaCodec encoder = null;
@@ -566,7 +600,7 @@ public class MediaUtils {
             try {
                 encoder = MediaCodec.createByCodecName(mediaCodecInfo.getName());
                 encoder.configure(
-                        getAudioEncoderMediaFormat(),
+                        getVideoEncoderMediaFormat(WIDTH, HEIGHT),
                         null, null,
                         MediaCodec.CONFIGURE_FLAG_ENCODE);
                 encoder.start();
@@ -577,6 +611,38 @@ public class MediaUtils {
                     | IllegalArgumentException
                     | IOException e) {
                 e.printStackTrace();
+                releaseMediaCodec(encoder);
+                encoder = null;
+                continue;
+            }
+        }
+
+        return encoder;
+    }
+
+    public static MediaCodec getAudioEncoderMediaCodec(MediaFormat format) {
+        MediaCodec encoder = null;
+        MediaCodecInfo[] mediaCodecInfos = findAllEncodersByMime(AUDIO_MIME);
+        for (MediaCodecInfo mediaCodecInfo : mediaCodecInfos) {
+            if (mediaCodecInfo == null) {
+                continue;
+            }
+            try {
+                encoder = MediaCodec.createByCodecName(mediaCodecInfo.getName());
+                encoder.configure(
+                        format,
+                        null, null,
+                        MediaCodec.CONFIGURE_FLAG_ENCODE);
+                //encoder.start();
+                if (DEBUG)
+                    MLog.d(TAG, "getAudioEncoderMediaCodec() MediaCodec create success: " +
+                            mediaCodecInfo.getName());
+                break;
+            } catch (NullPointerException
+                    | IllegalArgumentException
+                    | IOException e) {
+                e.printStackTrace();
+                releaseMediaCodec(encoder);
                 encoder = null;
                 continue;
             }
@@ -611,6 +677,7 @@ public class MediaUtils {
                     | IllegalArgumentException
                     | IOException e) {
                 e.printStackTrace();
+                releaseMediaCodec(encoder);
                 encoder = null;
                 continue;
             }
@@ -701,6 +768,7 @@ public class MediaUtils {
                     | IllegalArgumentException
                     | IOException e) {
                 e.printStackTrace();
+                releaseMediaCodec(decoder);
                 decoder = null;
                 continue;
             }
@@ -737,6 +805,7 @@ public class MediaUtils {
                     | IllegalArgumentException
                     | IOException e) {
                 e.printStackTrace();
+                releaseMediaCodec(decoder);
                 decoder = null;
                 continue;
             }
@@ -795,6 +864,8 @@ public class MediaUtils {
      @return
      */
     public static MediaFormat getAudioEncoderMediaFormat() {
+        // channel-mask=12, sample-rate=44100, mime=audio/mp4a-latm, channel-count=2,
+        // aac-profile=2, bitrate=176400, max-input-size=14208
         MediaFormat format = MediaFormat.createAudioFormat(
                 AUDIO_MIME, sampleRateInHz, channelCount);
         format.setInteger(

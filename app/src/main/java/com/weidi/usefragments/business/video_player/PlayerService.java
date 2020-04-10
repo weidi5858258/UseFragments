@@ -15,6 +15,8 @@ import android.os.IBinder;
 import android.os.Looper;
 import android.os.Message;
 import android.support.annotation.Nullable;
+import android.telephony.PhoneStateListener;
+import android.telephony.TelephonyManager;
 import android.text.TextUtils;
 import android.util.DisplayMetrics;
 import android.view.Gravity;
@@ -102,8 +104,13 @@ public class PlayerService extends Service {
     public View mRootView;
 
     private void internalCreate() {
+        if (mPlayerWrapper == null) {
+            mPlayerWrapper = new PlayerWrapper();
+        }
+
         EventBusUtils.register(this);
         registerHeadsetPlugReceiver();
+        registerTelephonyReceiver();
 
         mUiHandler = new Handler(Looper.getMainLooper()) {
             @Override
@@ -120,6 +127,7 @@ public class PlayerService extends Service {
      -n com.weidi.usefragments/com.weidi.usefragments.business.video_player.PlayerService \
      -a com.weidi.usefragments.business.video_player.PlayerService \
      --ei HandlePlayerService 1 \
+     --es HandlePlayerServicePath "video/" \
      --es HandlePlayerServicePath "http://wttv-lh.akamaihd
      .net:80/i/WTTVBreaking_1@333494/index_3000_av-b.m3u8"
      */
@@ -128,6 +136,7 @@ public class PlayerService extends Service {
             "com.weidi.usefragments.business.video_player.PlayerService";
     public static final String COMMAND_NAME = "HandlePlayerService";
     public static final String COMMAND_PATH = "HandlePlayerServicePath";
+    public static final String COMMAND_TYPE = "HandlePlayerServiceType";
     public static final int COMMAND_SHOW_WINDOW = 1;
     public static final int COMMAND_HIDE_WINDOW = 2;
     public static final int COMMAND_STOP_SERVICE = 3;
@@ -151,6 +160,7 @@ public class PlayerService extends Service {
         } else {
             mCurPath = intent.getStringExtra(COMMAND_PATH);
         }
+        mPlayerWrapper.setType(intent.getStringExtra(COMMAND_TYPE));
         MLog.d(TAG, "internalStartCommand() mCurPath: " + mCurPath);
         int commandName = intent.getIntExtra(COMMAND_NAME, 0);
         switch (commandName) {
@@ -182,12 +192,10 @@ public class PlayerService extends Service {
         Object result = null;
         switch (what) {
             case COMMAND_SHOW_WINDOW:
-                if (objArray != null && objArray.length > 0) {
+                if (objArray != null && objArray.length >= 2) {
                     mCurPath = (String) objArray[0];
-                    if (mPlayerWrapper == null) {
-                        mPlayerWrapper = new PlayerWrapper();
-                    }
                     mPlayerWrapper.setPath(mCurPath);
+                    mPlayerWrapper.setType((String) objArray[1]);
                 }
                 mUiHandler.removeMessages(COMMAND_SHOW_WINDOW);
                 mUiHandler.sendEmptyMessage(COMMAND_SHOW_WINDOW);
@@ -290,9 +298,6 @@ public class PlayerService extends Service {
                 "com.weidi.usefragments/files/Movies/哪吒之魔童降世.mp4";*/
         //        mPath = "/storage/1532-48AD/Videos/vodeo/c7f879de3a6baacf2ad81c5a65379718.mp4";
         //        mPath = "http://ivi.bupt.edu.cn/hls/cctv9hd.m3u8";
-        if (mPlayerWrapper == null) {
-            mPlayerWrapper = new PlayerWrapper();
-        }
         mPlayerWrapper.setActivity(null, this);
         mPlayerWrapper.setPath(mCurPath);
         mPlayerWrapper.onCreate();
@@ -368,6 +373,38 @@ public class PlayerService extends Service {
             return true;
         }
     }
+
+    /////////////////////////////////////////////////////////////////
+
+    private TelephonyManager mTelephonyManager;
+
+    private void registerTelephonyReceiver() {
+        mTelephonyManager = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
+        mTelephonyManager.listen(mPhoneStateListener, PhoneStateListener.LISTEN_CALL_STATE);
+    }
+
+    private PhoneStateListener mPhoneStateListener = new PhoneStateListener() {
+        @Override
+        public void onCallStateChanged(int state, String phoneNumber) {
+            super.onCallStateChanged(state, phoneNumber);
+            switch (state) {
+                case TelephonyManager.CALL_STATE_IDLE:
+                    // 挂断
+                    MLog.i(TAG, "onCallStateChanged() TelephonyManager.CALL_STATE_IDLE");
+                    break;
+                case TelephonyManager.CALL_STATE_RINGING:
+                    // 来电
+                    MLog.i(TAG, "onCallStateChanged() TelephonyManager.CALL_STATE_RINGING");
+                    break;
+                case TelephonyManager.CALL_STATE_OFFHOOK:
+                    // 接听
+                    MLog.i(TAG, "onCallStateChanged() TelephonyManager.CALL_STATE_OFFHOOK");
+                    break;
+                default:
+                    break;
+            }
+        }
+    };
 
     /////////////////////////////////////////////////////////////////
 

@@ -15,6 +15,7 @@ import android.os.Looper;
 import android.os.Message;
 import android.os.PowerManager;
 import android.os.SystemClock;
+import android.text.TextUtils;
 import android.text.format.DateUtils;
 import android.util.DisplayMetrics;
 import android.view.KeyEvent;
@@ -65,6 +66,8 @@ public class PlayerWrapper {
     private SurfaceHolder mSurfaceHolder;
     private FFMPEG mFFMPEGPlayer;
     private String mPath;
+    // 有些mp3文件含有video,因此播放失败
+    private String mType;
     private long mProgress;
     private long mPresentationTime;
     private int mDownloadProgress = -1;
@@ -188,6 +191,10 @@ public class PlayerWrapper {
 
     public void setPath(String path) {
         mPath = path;
+    }
+
+    public void setType(String type) {
+        mType = type;
     }
 
     public Handler getUiHandler() {
@@ -331,7 +338,7 @@ public class PlayerWrapper {
                 mProgressBar.setProgress(0);
                 mFileNameTV.setText("");// Contents.getTitle()
                 mLoadingView.setVisibility(View.VISIBLE);
-                mControllerPanelLayout.setVisibility(View.VISIBLE);
+                mControllerPanelLayout.setVisibility(View.INVISIBLE);
                 break;
             case Callback.MSG_ON_CHANGE_WINDOW:
                 // 视频宽高
@@ -597,7 +604,12 @@ public class PlayerWrapper {
 
                 MLog.d(TAG, "startPlayback() mIsSeparatedAudioVideo: " + mIsSeparatedAudioVideo);
                 if (!mIsSeparatedAudioVideo) {
-                    mFFMPEGPlayer.setMode(FFMPEG.USE_MODE_MEDIA);
+                    if (TextUtils.isEmpty(mType)
+                            || mType.startsWith("video/")) {
+                        mFFMPEGPlayer.setMode(FFMPEG.USE_MODE_MEDIA);
+                    } else if (mType.startsWith("audio/")) {
+                        mFFMPEGPlayer.setMode(FFMPEG.USE_MODE_ONLY_AUDIO);
+                    }
                     mFFMPEGPlayer.setSurface(mPath, mSurfaceHolder.getSurface());
                 } else {
                     mFFMPEGPlayer.setMode(FFMPEG.USE_MODE_AUDIO_VIDEO);
@@ -736,7 +748,7 @@ public class PlayerWrapper {
                 button_next.setVisibility(View.VISIBLE);
             }
         }
-        mControllerPanelLayout.setVisibility(View.VISIBLE);
+        //mControllerPanelLayout.setVisibility(View.VISIBLE);
 
         // mScreenWidth: 1080 mScreenHeight: 2244
         // 屏幕宽高
@@ -762,8 +774,6 @@ public class PlayerWrapper {
             if (mNeedVideoHeight > mScreenHeight) {
                 mNeedVideoHeight = mScreenHeight;
             }
-            mControllerPanelLayout.setBackgroundColor(
-                    mContext.getResources().getColor(android.R.color.transparent));
         } else {
             mNeedVideoWidth = mScreenWidth;
             mNeedVideoHeight = 1;
@@ -798,8 +808,17 @@ public class PlayerWrapper {
         if (mNeedVideoHeight > (int) (mScreenHeight * 2 / 3)) {
             //frameParams.setMargins(0, (int) (mScreenHeight / 2), 0, 0);
             frameParams.setMargins(0, getStatusBarHeight(), 0, 0);
+            mControllerPanelLayout.setBackgroundColor(
+                    mContext.getResources().getColor(android.R.color.transparent));
         } else {
             frameParams.setMargins(0, mNeedVideoHeight, 0, 0);
+            if (mFFMPEGPlayer.getDuration() > 0) {
+                mControllerPanelLayout.setBackgroundColor(
+                        mContext.getResources().getColor(R.color.lightgray));
+            } else {
+                mControllerPanelLayout.setBackgroundColor(
+                        mContext.getResources().getColor(android.R.color.transparent));
+            }
         }
         frameParams.width = mScreenWidth;
         frameParams.height = mControllerPanelLayoutHeight;
@@ -862,7 +881,10 @@ public class PlayerWrapper {
     private View.OnClickListener mOnClickListener = new View.OnClickListener() {
         @Override
         public void onClick(View v) {
-            mNeedToSyncProgressBar = true;
+            if (!mNeedToSyncProgressBar) {
+                mNeedToSyncProgressBar = true;
+                return;
+            }
             switch (v.getId()) {
                 case R.id.button_prev:
                     if (mFFMPEGPlayer != null) {

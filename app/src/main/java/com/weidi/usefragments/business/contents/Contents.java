@@ -293,131 +293,6 @@ public class Contents {
                 "playlist_dvr",
                 "https://cdn1.ibizastream.biz:441/free/1/playlist_dvr.m3u8");
 
-        // 本地视频
-        movieMap.put(
-                "Amazing_Picture_Quality_8K_HDR_60FPS_Demo",
-                PATH + "Amazing_Picture_Quality_8K_HDR_60FPS_Demo.webm");
-        movieMap.put(
-                "痞子英雄2-黎明升起-local",
-                PATH + "痞子英雄2-黎明升起.mp4");
-
-        // 本地视频
-        movieMap.put(
-                "复仇者联盟4-终局之战-local",
-                PATH + "复仇者联盟4-终局之战.mp4");
-        movieMap.put(
-                "哪吒之魔童降世-local",
-                PATH + "哪吒之魔童降世.mp4");
-        movieMap.put(
-                "三傻大闹宝莱坞-local",
-                PATH + "三傻大闹宝莱坞.mp4");
-        movieMap.put(
-                "index.m3u8",
-                PATH + "index.m3u8.mp4");
-        movieMap.put(
-                "videoplayback",
-                PATH + "videoplayback.mp4");
-        movieMap.put(
-                "地狱男爵-血皇后崛起-local",
-                PATH + "地狱男爵-血皇后崛起.mp4");
-        movieMap.put(
-                "流浪的地球",
-                PATH + "流浪的地球.mp4");
-        movieMap.put(
-                "08_mm-MP4-H264_720x400_2997_AAC-LC_192_48",
-                PATH + "08_mm-MP4-H264_720x400_2997_AAC-LC_192_48.mp4");
-        movieMap.put(
-                "shape_of_my_heart",
-                PATH + "shape_of_my_heart.mp4");
-        movieMap.put(
-                "jlbhd5",
-                PATH + "jlbhd5.mp4");
-        movieMap.put(
-                "test",
-                PATH + "test.mp4");
-        movieMap.put(
-                "05",
-                PATH + "05.mp4");
-
-        movieMap.put(
-                "第4节标准流输入输出",
-                PATH + "/c_plus_plus_面向对象编程/第4节标准流输入输出.mp4");
-        movieMap.put(
-                "第5节标准库string类型",
-                PATH + "/c_plus_plus_面向对象编程/第5节标准库string类型.mp4");
-        movieMap.put(
-                "第6节标准库vector类型",
-                PATH + "/c_plus_plus_面向对象编程/第6节标准库vector类型.mp4");
-        movieMap.put(
-                "第7节再谈函数",
-                PATH + "/c_plus_plus_面向对象编程/第7节再谈函数.mp4");
-        movieMap.put(
-                "第8节面向对象基础",
-                PATH + "/c_plus_plus_面向对象编程/第8节面向对象基础.mp4");
-        movieMap.put(
-                "第9节定义类和对象",
-                PATH + "/c_plus_plus_面向对象编程/第9节定义类和对象.mp4");
-        movieMap.put(
-                "第10节类和对象的使用",
-                PATH + "/c_plus_plus_面向对象编程/第10节类和对象的使用.mp4");
-        movieMap.put(
-                "第11节构造函数和析构函数",
-                PATH + "/c_plus_plus_面向对象编程/第11节构造函数和析构函数.mp4");
-        movieMap.put(
-                "第12节this指针和复制构造函数",
-                PATH + "/c_plus_plus_面向对象编程/第12节this指针和复制构造函数.mp4");
-        movieMap.put(
-                "第13节类的静态成员",
-                PATH + "/c_plus_plus_面向对象编程/第13节类的静态成员.mp4");
-        movieMap.put(
-                "第14节const对象和const成员",
-                PATH + "/c_plus_plus_面向对象编程/第14节const对象和const成员.mp4");
-        movieMap.put(
-                "第15节友元",
-                PATH + "/c_plus_plus_面向对象编程/第15节友元.mp4");
-        movieMap.put(
-                "第16节运算符重载基础",
-                PATH + "/c_plus_plus_面向对象编程/第16节运算符重载基础.mp4");
-        movieMap.put(
-                "第17节运算符重载规则",
-                PATH + "/c_plus_plus_面向对象编程/第17节运算符重载规则.mp4");
-        movieMap.put(
-                "第18节重载二元和一元运算符",
-                PATH + "/c_plus_plus_面向对象编程/第18节重载二元和一元运算符.mp4");
-        movieMap.put(
-                "第19节流插入提取运算符和类型转换",
-                PATH + "/c_plus_plus_面向对象编程/第19节流插入提取运算符和类型转换.mp4");
-        movieMap.put(
-                "第20节定义自己的String类1",
-                PATH + "/c_plus_plus_面向对象编程/第20节定义自己的String类1.mp4");
-        movieMap.put(
-                "第21节定义自己的string类2",
-                PATH + "/c_plus_plus_面向对象编程/第21节定义自己的string类2.mp4");
-        movieMap.put(
-                "第22节继承与派生基础",
-                PATH + "/c_plus_plus_面向对象编程/第22节继承与派生基础.mp4");
-        movieMap.put(
-                "第23节派生类使用",
-                PATH + "/c_plus_plus_面向对象编程/第23节派生类使用.mp4");
-        movieMap.put(
-                "第24节多态",
-                PATH + "/c_plus_plus_面向对象编程/第24节多态.mp4");
-        movieMap.put(
-                "第25节文件操作",
-                PATH + "/c_plus_plus_面向对象编程/第25节文件操作.mp4");
-        movieMap.put(
-                "第26节STL顺序容器",
-                PATH + "/c_plus_plus_面向对象编程/第26节STL顺序容器.mp4");
-        movieMap.put(
-                "第27节STL关联容器和容器适配器",
-                PATH + "/c_plus_plus_面向对象编程/第27节STL关联容器和容器适配器.mp4");
-        movieMap.put(
-                "第28节STL迭代器和算法",
-                PATH + "/c_plus_plus_面向对象编程/第28节STL迭代器和算法.mp4");
-        movieMap.put(
-                "第29节STL实例",
-                PATH + "/c_plus_plus_面向对象编程/第29节STL实例.mp4");
-
         // {csd-1=java.nio.HeapByteBuffer[pos=0 lim=8 cap=8], mime=video/avc, frame-rate=24, track-id=2, profile=2, width=1280, height=720, max-input-size=151238, durationUs=6227930041, csd-0=java.nio.HeapByteBuffer[pos=0 lim=41 cap=41], bitrate-mode=0, level=512}
         // csd-0: {0, 0, 0, 1, 103, 77, 64, 31, -24, -128, 40, 2, -35, -128, -87, 1, 1, 1, 64, 0, 0, -6, 64, 0, 46, -32, 56, 24, 0, 21, 92, -64, 1, 83, -38, 76, 48, 15, -116, 24, -119}
         // csd-1: {0, 0, 0, 1, 104, -21, -20, -78}
@@ -929,7 +804,129 @@ public class Contents {
                 "盗墓笔记之怒海潜沙-秦岭神树40",
                 "http://xunlei.xiazai-zuida.com/1906/DM%E7%AC%94%E8%AE%B0%E4%B9%8B%E6%80%92%E6%B5%B7QS-40.mp4");
 
+        /*// 本地视频
+        movieMap.put(
+                "Amazing_Picture_Quality_8K_HDR_60FPS_Demo",
+                PATH + "Amazing_Picture_Quality_8K_HDR_60FPS_Demo.webm");
+        movieMap.put(
+                "痞子英雄2-黎明升起-local",
+                PATH + "痞子英雄2-黎明升起.mp4");
+        // 本地视频
+        movieMap.put(
+                "复仇者联盟4-终局之战-local",
+                PATH + "复仇者联盟4-终局之战.mp4");
+        movieMap.put(
+                "哪吒之魔童降世-local",
+                PATH + "哪吒之魔童降世.mp4");
+        movieMap.put(
+                "三傻大闹宝莱坞-local",
+                PATH + "三傻大闹宝莱坞.mp4");
+        movieMap.put(
+                "index.m3u8",
+                PATH + "index.m3u8.mp4");
+        movieMap.put(
+                "videoplayback",
+                PATH + "videoplayback.mp4");
+        movieMap.put(
+                "地狱男爵-血皇后崛起-local",
+                PATH + "地狱男爵-血皇后崛起.mp4");
+        movieMap.put(
+                "流浪的地球",
+                PATH + "流浪的地球.mp4");
+        movieMap.put(
+                "08_mm-MP4-H264_720x400_2997_AAC-LC_192_48",
+                PATH + "08_mm-MP4-H264_720x400_2997_AAC-LC_192_48.mp4");
+        movieMap.put(
+                "shape_of_my_heart",
+                PATH + "shape_of_my_heart.mp4");
+        movieMap.put(
+                "jlbhd5",
+                PATH + "jlbhd5.mp4");
+        movieMap.put(
+                "test",
+                PATH + "test.mp4");
+        movieMap.put(
+                "05",
+                PATH + "05.mp4");
 
+        movieMap.put(
+                "第4节标准流输入输出",
+                PATH + "/c_plus_plus_面向对象编程/第4节标准流输入输出.mp4");
+        movieMap.put(
+                "第5节标准库string类型",
+                PATH + "/c_plus_plus_面向对象编程/第5节标准库string类型.mp4");
+        movieMap.put(
+                "第6节标准库vector类型",
+                PATH + "/c_plus_plus_面向对象编程/第6节标准库vector类型.mp4");
+        movieMap.put(
+                "第7节再谈函数",
+                PATH + "/c_plus_plus_面向对象编程/第7节再谈函数.mp4");
+        movieMap.put(
+                "第8节面向对象基础",
+                PATH + "/c_plus_plus_面向对象编程/第8节面向对象基础.mp4");
+        movieMap.put(
+                "第9节定义类和对象",
+                PATH + "/c_plus_plus_面向对象编程/第9节定义类和对象.mp4");
+        movieMap.put(
+                "第10节类和对象的使用",
+                PATH + "/c_plus_plus_面向对象编程/第10节类和对象的使用.mp4");
+        movieMap.put(
+                "第11节构造函数和析构函数",
+                PATH + "/c_plus_plus_面向对象编程/第11节构造函数和析构函数.mp4");
+        movieMap.put(
+                "第12节this指针和复制构造函数",
+                PATH + "/c_plus_plus_面向对象编程/第12节this指针和复制构造函数.mp4");
+        movieMap.put(
+                "第13节类的静态成员",
+                PATH + "/c_plus_plus_面向对象编程/第13节类的静态成员.mp4");
+        movieMap.put(
+                "第14节const对象和const成员",
+                PATH + "/c_plus_plus_面向对象编程/第14节const对象和const成员.mp4");
+        movieMap.put(
+                "第15节友元",
+                PATH + "/c_plus_plus_面向对象编程/第15节友元.mp4");
+        movieMap.put(
+                "第16节运算符重载基础",
+                PATH + "/c_plus_plus_面向对象编程/第16节运算符重载基础.mp4");
+        movieMap.put(
+                "第17节运算符重载规则",
+                PATH + "/c_plus_plus_面向对象编程/第17节运算符重载规则.mp4");
+        movieMap.put(
+                "第18节重载二元和一元运算符",
+                PATH + "/c_plus_plus_面向对象编程/第18节重载二元和一元运算符.mp4");
+        movieMap.put(
+                "第19节流插入提取运算符和类型转换",
+                PATH + "/c_plus_plus_面向对象编程/第19节流插入提取运算符和类型转换.mp4");
+        movieMap.put(
+                "第20节定义自己的String类1",
+                PATH + "/c_plus_plus_面向对象编程/第20节定义自己的String类1.mp4");
+        movieMap.put(
+                "第21节定义自己的string类2",
+                PATH + "/c_plus_plus_面向对象编程/第21节定义自己的string类2.mp4");
+        movieMap.put(
+                "第22节继承与派生基础",
+                PATH + "/c_plus_plus_面向对象编程/第22节继承与派生基础.mp4");
+        movieMap.put(
+                "第23节派生类使用",
+                PATH + "/c_plus_plus_面向对象编程/第23节派生类使用.mp4");
+        movieMap.put(
+                "第24节多态",
+                PATH + "/c_plus_plus_面向对象编程/第24节多态.mp4");
+        movieMap.put(
+                "第25节文件操作",
+                PATH + "/c_plus_plus_面向对象编程/第25节文件操作.mp4");
+        movieMap.put(
+                "第26节STL顺序容器",
+                PATH + "/c_plus_plus_面向对象编程/第26节STL顺序容器.mp4");
+        movieMap.put(
+                "第27节STL关联容器和容器适配器",
+                PATH + "/c_plus_plus_面向对象编程/第27节STL关联容器和容器适配器.mp4");
+        movieMap.put(
+                "第28节STL迭代器和算法",
+                PATH + "/c_plus_plus_面向对象编程/第28节STL迭代器和算法.mp4");
+        movieMap.put(
+                "第29节STL实例",
+                PATH + "/c_plus_plus_面向对象编程/第29节STL实例.mp4");*/
 
     }
 

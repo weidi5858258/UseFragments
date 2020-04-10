@@ -225,6 +225,15 @@ void onFinished() {
     JNIEnv *jniEnv;
     bool isAttached = getEnv(&jniEnv);
     LOGF("onFinished() isAttached: %d\n", isAttached);
+    if (jniEnv == NULL) {
+        LOGI("onFinished() jniEnv = NULL\n");
+    }
+    if (callbackJavaObject == NULL) {
+        LOGI("onFinished() callbackJavaObject = NULL\n");
+    }
+    if (callback.onFinishedMethodID == NULL) {
+        LOGI("onFinished() callback.onFinishedMethodID = NULL\n");
+    }
     if (jniEnv != NULL
         && callbackJavaObject != NULL
         && callback.onFinishedMethodID != NULL) {

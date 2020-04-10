@@ -1247,11 +1247,12 @@ namespace alexander_media {
             int dstStride = mANativeWindow_Buffer.stride * 4;
             // 由于window的stride和帧的stride不同,因此需要逐行复制
             for (int h = 0; h < videoWrapper->srcHeight; h++) {
-                if (videoWrapper->father->isPausedForSeek
+                /*if (videoWrapper->father->isPausedForSeek
                     || !videoWrapper->father->isHandling) {
                     LOGI("handleVideoDataImpl() memcpy return\n");
+                    ANativeWindow_unlockAndPost(pANativeWindow);
                     return 0;
-                }
+                }*/
                 memcpy(dst + h * dstStride, src + h * srcStride, srcStride);
             }
 
@@ -2171,10 +2172,12 @@ namespace alexander_media {
 
     int pause() {
         LOGI("pause() start\n");
-        if (audioWrapper != NULL && audioWrapper->father != NULL) {
+        if (audioWrapper != NULL
+            && audioWrapper->father != NULL) {
             audioWrapper->father->isPausedForUser = true;
         }
-        if (videoWrapper != NULL && videoWrapper->father != NULL) {
+        if (videoWrapper != NULL
+            && videoWrapper->father != NULL) {
             videoWrapper->father->isPausedForUser = true;
         }
         LOGI("pause() end\n");
@@ -2225,11 +2228,13 @@ namespace alexander_media {
     bool isRunning() {
         bool audioRunning = false;
         bool videoRunning = false;
-        if (audioWrapper != NULL && audioWrapper->father != NULL) {
+        if (audioWrapper != NULL
+            && audioWrapper->father != NULL) {
             audioRunning = audioWrapper->father->isStarted
                            && audioWrapper->father->isHandling;
         }
-        if (videoWrapper != NULL && videoWrapper->father != NULL) {
+        if (videoWrapper != NULL
+            && videoWrapper->father != NULL) {
             videoRunning = videoWrapper->father->isStarted
                            && videoWrapper->father->isHandling;
         }
@@ -2240,13 +2245,15 @@ namespace alexander_media {
     bool isPlaying() {
         bool audioPlaying = false;
         bool videoPlaying = false;
-        if (audioWrapper != NULL && audioWrapper->father != NULL) {
+        if (audioWrapper != NULL
+            && audioWrapper->father != NULL) {
             audioPlaying = audioWrapper->father->isStarted
                            && audioWrapper->father->isHandling
                            && !audioWrapper->father->isPausedForUser
                            && !audioWrapper->father->isPausedForCache;
         }
-        if (videoWrapper != NULL && videoWrapper->father != NULL) {
+        if (videoWrapper != NULL
+            && videoWrapper->father != NULL) {
             videoPlaying = videoWrapper->father->isStarted
                            && videoWrapper->father->isHandling
                            && !videoWrapper->father->isPausedForUser
@@ -2272,7 +2279,8 @@ namespace alexander_media {
         LOGI("seekTo() timeStamp: %ld\n", (long) timestamp);
 
         if ((long) timestamp > 0
-            && (audioWrapper == NULL || videoWrapper == NULL)) {
+            && (audioWrapper == NULL
+                || videoWrapper == NULL)) {
             timeStamp = timestamp;
             return 0;
         }
@@ -2310,13 +2318,15 @@ namespace alexander_media {
         switch (use_mode) {
             case USE_MODE_MEDIA:
             case USE_MODE_ONLY_VIDEO: {
-                if (videoWrapper != NULL && videoWrapper->father != NULL) {
+                if (videoWrapper != NULL
+                    && videoWrapper->father != NULL) {
                     duration = videoWrapper->father->duration;
                 }
                 break;
             }
             case USE_MODE_ONLY_AUDIO: {
-                if (audioWrapper != NULL && audioWrapper->father != NULL) {
+                if (audioWrapper != NULL
+                    && audioWrapper->father != NULL) {
                     duration = audioWrapper->father->duration;
                 }
                 break;

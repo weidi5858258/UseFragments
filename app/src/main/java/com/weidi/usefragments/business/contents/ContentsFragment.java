@@ -252,7 +252,7 @@ public class ContentsFragment extends BaseFragment {
             EventBusUtils.post(
                     PlayerService.class,
                     PlayerService.COMMAND_SHOW_WINDOW,
-                    new Object[]{videoPlaybackPath});
+                    new Object[]{videoPlaybackPath, data.getType()});
 
             /*Intent intent = new Intent();
             intent.putExtra(PlayerActivity.CONTENT_PATH, videoPlaybackPath);
@@ -473,7 +473,7 @@ public class ContentsFragment extends BaseFragment {
                                 EventBusUtils.post(
                                         PlayerService.class,
                                         PlayerService.COMMAND_SHOW_WINDOW,
-                                        new Object[]{videoPlaybackPath});
+                                        new Object[]{videoPlaybackPath, "video/"});
 
                                 /*Intent intent = new Intent();
                                 intent.putExtra(PlayerActivity.CONTENT_PATH, videoPlaybackPath);
@@ -567,7 +567,7 @@ public class ContentsFragment extends BaseFragment {
                 EventBusUtils.post(
                         PlayerService.class,
                         PlayerService.COMMAND_SHOW_WINDOW,
-                        new Object[]{videoPlaybackPath});
+                        new Object[]{videoPlaybackPath, "video/"});
 
                 /*Intent intent = new Intent();
                 intent.setClass(getContext(), PlayerActivity.class);

@@ -254,7 +254,7 @@ public class JniPlayerActivity extends BaseActivity {
 
     private void internalCreate() {
         Intent intent = getIntent();
-        // 为flase时表示从外部打开一个视频进行播放.为true时只是使用Activity的全屏特性.
+        // 为flase时表示从外部打开一个视频进行播放.为true时只是使用Activity的全屏特性(在本应用打开).
         noFinish = intent.getBooleanExtra(COMMAND_NO_FINISH, false);
 
         if (noFinish) {
@@ -272,12 +272,15 @@ public class JniPlayerActivity extends BaseActivity {
             return;
         }
 
+        // 在本应用开启当前Activity时能得到这个路径,从其他应用打开时为null
         mPath = intent.getStringExtra(CONTENT_PATH);
         if (TextUtils.isEmpty(mPath)) {
             MLog.d(TAG, "internalCreate() mPath is null");
             /***
+             1.
              uri : content://media/external/video/media/272775
              path: /external/video/media/272775
+             2.
              uri : content://com.huawei.hidisk.fileprovider
              /root/storage/1532-48AD/Videos/download/25068919/1/32/audio.m4s
              path: /root/storage/1532-48AD/Videos/download/25068919/1/32/audio.m4s
@@ -308,8 +311,9 @@ public class JniPlayerActivity extends BaseActivity {
                     return;
                 }
             }
-            // audio/mpeg
             // video/mp4
+            // audio/mpeg audio/quicktime(flac) audio/x-ms-wma(wma) audio/x-wav(wav)
+            // audio/amr(amr) audio/mp3
             String type = intent.getType();
             MLog.d(TAG, "internalCreate()  type: " + type);
             if (TextUtils.isEmpty(type)
@@ -318,11 +322,6 @@ public class JniPlayerActivity extends BaseActivity {
                 finish();
                 return;
             }
-            /*if (!TextUtils.equals("video/*", type)) {
-                MLog.d(TAG, "internalCreate() path: " + mPath + " 此文件不是视频");
-                finish();
-                return;
-            }*/
         }
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
@@ -341,6 +340,7 @@ public class JniPlayerActivity extends BaseActivity {
                     intent.setClass(this, PlayerService.class);
                     intent.setAction(PlayerService.COMMAND_ACTION);
                     intent.putExtra(PlayerService.COMMAND_PATH, mPath);
+                    intent.putExtra(PlayerService.COMMAND_TYPE, intent.getType());
                     intent.putExtra(PlayerService.COMMAND_NAME, PlayerService.COMMAND_SHOW_WINDOW);
                     startService(intent);
                 }
@@ -350,7 +350,7 @@ public class JniPlayerActivity extends BaseActivity {
                 EventBusUtils.post(
                         PlayerService.class,
                         PlayerService.COMMAND_SHOW_WINDOW,
-                        new Object[]{mPath});
+                        new Object[]{mPath, intent.getType()});
             }
         }
 

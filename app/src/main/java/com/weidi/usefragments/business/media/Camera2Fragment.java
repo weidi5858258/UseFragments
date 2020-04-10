@@ -405,6 +405,18 @@ public class Camera2Fragment extends BaseFragment {
      */
     private static final int MAX_PREVIEW_HEIGHT = 1080;
 
+    /***
+     4320P(8K) 7680*4320
+     2160P(4K) 3840*2160
+     1440P(HD)
+     1080P(HD) 1920*1080
+     720P(HD) 1280*720
+     480P
+     360P
+     240P
+     144P
+     */
+
     private void onShow() {
         if (DEBUG)
             MLog.d(TAG, "onShow(): " + printThis());
@@ -413,7 +425,8 @@ public class Camera2Fragment extends BaseFragment {
 
         // When the screen is turned off and turned back on, the SurfaceTexture is already
         // available, and "onSurfaceTextureAvailable" will not be called. In that case, we can open
-        // a camera and start preview from here (otherwise, we wait until the surfaceJavaObject is ready in
+        // a camera and start preview from here (otherwise, we wait until the surfaceJavaObject
+        // is ready in
         // the SurfaceTextureListener).
         if (mTextureView.isAvailable()) {
             openCamera(mTextureView.getWidth(), mTextureView.getHeight());
@@ -478,18 +491,24 @@ public class Camera2Fragment extends BaseFragment {
                 @Override
                 public void onSurfaceTextureAvailable(
                         SurfaceTexture texture, int width, int height) {
+                    MLog.d(TAG,
+                            "onSurfaceTextureAvailable() width: " + width + " height: " + height);
                     openCamera(width, height);
                 }
 
                 @Override
                 public void onSurfaceTextureSizeChanged(
                         SurfaceTexture texture, int width, int height) {
+                    MLog.d(TAG,
+                            "onSurfaceTextureSizeChanged() width: " + width + " height: " + height);
                     configureTransform(width, height);
                 }
 
                 @Override
                 public boolean onSurfaceTextureDestroyed(
                         SurfaceTexture texture) {
+                    MLog.d(TAG,
+                            "onSurfaceTextureDestroyed()");
                     return true;
                 }
 
@@ -588,7 +607,8 @@ public class Camera2Fragment extends BaseFragment {
         @Override
         public void onImageAvailable(ImageReader reader) {
             // 当图片可得到的时候获取图片并保存
-            mBackgroundHandler.post(new Camera2Fragment.ImageSaver(reader.acquireNextImage(), mFile));
+            mBackgroundHandler.post(new Camera2Fragment.ImageSaver(reader.acquireNextImage(),
+                    mFile));
         }
 
     };
@@ -798,7 +818,8 @@ public class Camera2Fragment extends BaseFragment {
 
     private void requestCameraPermission() {
         if (FragmentCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.CAMERA)) {
-            new Camera2Fragment.ConfirmationDialog().show(getChildFragmentManager(), FRAGMENT_DIALOG);
+            new Camera2Fragment.ConfirmationDialog().show(getChildFragmentManager(),
+                    FRAGMENT_DIALOG);
         } else {
             FragmentCompat.requestPermissions(this, new String[]{Manifest.permission.CAMERA},
                     REQUEST_CAMERA_PERMISSION);
@@ -971,6 +992,7 @@ public class Camera2Fragment extends BaseFragment {
             return;
         }
 
+        MLog.d(TAG, "openCamera()" + " width: " + width + " height: " + height);
         setupCameraOutputs(width, height);
         configureTransform(width, height);
         Activity activity = getActivity();
