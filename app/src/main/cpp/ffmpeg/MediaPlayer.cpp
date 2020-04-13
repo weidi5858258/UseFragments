@@ -447,6 +447,7 @@ namespace alexander_media {
             avFormatContext->interrupt_callback.opaque = audioWrapper;
             /*AVDictionary *options = NULL;
             av_dict_set(&options, "stimeout", "10000000", 0);*/
+            int64_t startTime = av_gettime_relative();
             if (avformat_open_input(&avFormatContext,
                                     inFilePath,
                                     NULL, NULL) != 0) {
@@ -454,6 +455,9 @@ namespace alexander_media {
                 LOGE("Couldn't open input stream.\n");
                 return -1;
             }
+            int64_t endTime = av_gettime_relative();
+            LOGI("openAndFindAVFormatContext() avformat_open_input: %ld\n",
+                 (long) ((endTime - startTime) / 1000));
         } else {
             if (avformat_open_input(&avFormatContext,
                                     inFilePath,
@@ -935,6 +939,12 @@ namespace alexander_media {
 
         if (!wrapper->isHandleList1Full
             && list2Size == wrapper->list1LimitCounts) {
+            /***
+             什么时候走这里?
+             1.开始播放缓冲好的时候
+             2.因为缓冲原因
+             3.seek后
+             */
             // 下面两个都不行
             // std::move(wrapper->list2->begin(), wrapper->list2->end(), std::back_inserter(wrapper->list1));
             // wrapper->list1->swap((std::list<AVPacket> &) wrapper->list2);
@@ -949,27 +959,19 @@ namespace alexander_media {
 
             if (wrapper->type == TYPE_AUDIO) {
                 LOGD("readDataImpl() audio 填满数据了\n");
-                /*if (videoWrapper->father->isPausedForCache) {
-                    if (videoWrapper->father->list2->size() <
-                        videoWrapper->father->list1LimitCounts) {
-                        // 如果video的list2没有达到一定数量,那么等它达到了,让它通知继续播放好了
-                    }
-                } else {
-
-                }*/
             } else {
                 LOGW("readDataImpl() video 填满数据了\n");
             }
         } else if (wrapper->type == TYPE_VIDEO
                    && list2Size >= wrapper->list2LimitCounts) {
-            LOGD("readDataImpl() audio list1: %d\n", audioWrapper->father->list1->size());
-            LOGD("readDataImpl() audio list2: %d\n", audioWrapper->father->list2->size());
-            LOGW("readDataImpl() video list1: %d\n", videoWrapper->father->list1->size());
-            LOGW("readDataImpl() video list2: %d\n", videoWrapper->father->list2->size());
+            LOGI("readDataImpl() audio list1: %d\n", audioWrapper->father->list1->size());
+            LOGI("readDataImpl() audio list2: %d\n", audioWrapper->father->list2->size());
+            LOGI("readDataImpl() video list1: %d\n", videoWrapper->father->list1->size());
+            LOGI("readDataImpl() video list2: %d\n", videoWrapper->father->list2->size());
             if (audioWrapper->father->list2->size() > audioWrapper->father->list1LimitCounts) {
-                LOGI("readDataImpl() notifyToReadWait start\n");
+                LOGD("readDataImpl() notifyToReadWait start\n");
                 notifyToReadWait(videoWrapper->father);
-                LOGI("readDataImpl() notifyToReadWait end\n");
+                LOGD("readDataImpl() notifyToReadWait end\n");
             }
         }
         return 0;
@@ -1447,19 +1449,12 @@ namespace alexander_media {
                 break;
             }
 
-            if (!isLocal) {
+            /*if (!isLocal) {
                 if (wrapper->list1->size() >= wrapper->list1LimitCounts) {
                     wrapper->startHandleTime = av_gettime_relative();
                     maybeHasException = true;
-                    /*if (wrapper->type == TYPE_AUDIO) {
-                        LOGD("handleData() audio startHandleTime: %ld\n",
-                             (long) wrapper->startHandleTime);
-                    } else {
-                        LOGW("handleData() video startHandleTime: %ld\n",
-                             (long) wrapper->startHandleTime);
-                    }*/
                 }
-            }
+            }*/
 
             // region 从队列中取出一个AVPacket
 
@@ -1544,6 +1539,7 @@ namespace alexander_media {
                             LOGD("handleData() audio                   list2: %d\n",
                                  audioWrapper->father->list2->size());
                         }
+                        LOGI("===================================================\n");
                     }
                     notifyToRead(videoWrapper->father);
                 }
@@ -1559,6 +1555,7 @@ namespace alexander_media {
                         wrapper->list2->clear();
                         pthread_mutex_unlock(&wrapper->readLockMutex);
 
+                        LOGI("===================================================\n");
                         if (wrapper->type == TYPE_AUDIO) {
                             LOGD("handleData() audio 最后要处理的数据还有 list1: %d\n",
                                  wrapper->list1->size());
@@ -1578,6 +1575,7 @@ namespace alexander_media {
                             LOGD("handleData() audio                   list2: %d\n",
                                  audioWrapper->father->list2->size());
                         }
+                        LOGI("===================================================\n");
                     } else {
                         wrapper->isHandling = false;
                     }

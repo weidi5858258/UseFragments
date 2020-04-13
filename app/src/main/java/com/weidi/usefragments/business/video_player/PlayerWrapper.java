@@ -732,17 +732,17 @@ public class PlayerWrapper {
         MLog.d(TAG, "Callback.MSG_ON_CHANGE_WINDOW handlePortraitScreen");
 
         if (mService != null) {
-            SeekBar seekBar = mRootView.findViewById(R.id.progress_bar);
+            SeekBar progress_bar = mRootView.findViewById(R.id.progress_bar);
             RelativeLayout show_time_rl = mRootView.findViewById(R.id.show_time_rl);
             ImageButton button_prev = mRootView.findViewById(R.id.button_prev);
             ImageButton button_next = mRootView.findViewById(R.id.button_next);
             if (mFFMPEGPlayer.getDuration() <= 0) {
-                seekBar.setVisibility(View.GONE);
+                progress_bar.setVisibility(View.GONE);
                 show_time_rl.setVisibility(View.GONE);
                 button_prev.setVisibility(View.INVISIBLE);
                 button_next.setVisibility(View.INVISIBLE);
             } else {
-                seekBar.setVisibility(View.VISIBLE);
+                progress_bar.setVisibility(View.VISIBLE);
                 show_time_rl.setVisibility(View.VISIBLE);
                 button_prev.setVisibility(View.VISIBLE);
                 button_next.setVisibility(View.VISIBLE);

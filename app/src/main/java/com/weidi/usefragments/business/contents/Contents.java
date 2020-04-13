@@ -71,6 +71,22 @@ public class Contents {
                 "http://ivi.bupt.edu.cn/hls/chchd.m3u8");
 
         movieMap.put(
+                "斯坦森系列电影",
+                "https://zb3.qhqsnedu.com/live/jiesen/1586714637.ts");
+        movieMap.put(
+                "周星驰系列电影",
+                "https://zb3.qhqsnedu.com/live/zhouxingxinga/1586732383.ts?wsApp=HLS&wsMonitor=0");
+        movieMap.put(
+                "速度与激情系列电影",
+                "https://zb3.qhqsnedu.com/live/suduyujiqingxilie/1586728414.ts?wsApp=HLS&wsMonitor=0");
+        movieMap.put(
+                "林正英系列电影",
+                "https://zb3.qhqsnedu.com/live/chingyinglam/1586731344.ts?wsApp=HLS&wsMonitor=0");
+        movieMap.put(
+                "",
+                "");
+
+        movieMap.put(
                 "北京卫视高清",
                 "http://ivi.bupt.edu.cn/hls/btv1hd.m3u8");// http://ivi.bupt.edu.cn/hls/btv1.m3u8
         movieMap.put(
@@ -292,7 +308,28 @@ public class Contents {
         movieMap.put(
                 "playlist_dvr",
                 "https://cdn1.ibizastream.biz:441/free/1/playlist_dvr.m3u8");
+        movieMap.put(
+                "情欲教室之插画人妻",
+                "http://youku1.dianfubang.com/20200410/tNlxcUXB/index.m3u8?wsSecret=85984aea17feb2d44c8c252e89b29170&wsTime=1586739829");
+        movieMap.put(
+                "淫女收容所",
+                "http://youku1.dianfubang.com/20200410/zDZWiVis/index.m3u8?wsSecret=f52d8af4eefd46e64b990817f6802d97&wsTime=1586739973");
+        movieMap.put(
+                "",
+                "");
+        movieMap.put(
+                "",
+                "");
+        movieMap.put(
+                "",
+                "");
+        movieMap.put(
+                "",
+                "");
 
+        movieMap.put(
+                "敢死队",// ?wsSecret=794014929348ef69716f3f5925f30415&wsTime=1586740523
+                "https://meiju5.qhqsnedu.com/20190626/TJOX41iy/2000kb/hls/index.m3u8");
         // {csd-1=java.nio.HeapByteBuffer[pos=0 lim=8 cap=8], mime=video/avc, frame-rate=24, track-id=2, profile=2, width=1280, height=720, max-input-size=151238, durationUs=6227930041, csd-0=java.nio.HeapByteBuffer[pos=0 lim=41 cap=41], bitrate-mode=0, level=512}
         // csd-0: {0, 0, 0, 1, 103, 77, 64, 31, -24, -128, 40, 2, -35, -128, -87, 1, 1, 1, 64, 0, 0, -6, 64, 0, 46, -32, 56, 24, 0, 21, 92, -64, 1, 83, -38, 76, 48, 15, -116, 24, -119}
         // csd-1: {0, 0, 0, 1, 104, -21, -20, -78}
@@ -460,6 +497,9 @@ public class Contents {
                 "",
                 "");
 
+        movieMap.put(
+                "突袭",
+                "https://meiju4.qhqsnedu.com/20190211/fkJJsWpA/2000kb/hls/index.m3u8?wsSecret=f7ace8216a9bc07f7380fec0fcdc2de7&wsTime=1586740179");
         movieMap.put(
                 "突袭1",
                 "http://xunleib.zuida360.com/1806/%E7%AA%81%E8%A2%AD.BD1280%E9%AB%98%E6%B8%85%E4%B8%AD%E5%AD%97%E7%89%88.mp4");
