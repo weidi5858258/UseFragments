@@ -81,6 +81,13 @@ endif (${ANDROID_ABI} STREQUAL "x86_64")
 #             ${CPP_DIR}/ffmpeg_opt.c
 #             ${CPP_DIR}/ffmpeg_cmd.c )
 #################################################################
+add_library(avdevice
+        SHARED
+        IMPORTED)
+set_target_properties(avdevice
+        PROPERTIES IMPORTED_LOCATION
+        ${LIBS_DIR}/${CPU_DIR}/libavdevice.so)
+#################################################################
 # 下面都是添加库,然后引用库
 # 用于各种类型声音、图像编解码
 add_library( # 库名称
@@ -139,13 +146,6 @@ set_target_properties(swscale
         PROPERTIES IMPORTED_LOCATION
         ${LIBS_DIR}/${CPU_DIR}/libswscale.so)
 #################################################################
-#add_library(avdevice
-#        SHARED
-#        IMPORTED)
-#set_target_properties(avdevice
-#        PROPERTIES IMPORTED_LOCATION
-#        ${LIBS_DIR}/${CPU_DIR}/libavdevice.so)
-#################################################################
 add_library(yuv
         SHARED
         IMPORTED)
@@ -192,6 +192,7 @@ target_link_libraries(
         ${cutils-lib}
         ${utils-lib}]]
 
+        avdevice
         avformat
         avcodec
         avutil

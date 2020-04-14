@@ -71,17 +71,17 @@ public class Contents {
                 "http://ivi.bupt.edu.cn/hls/chchd.m3u8");
 
         movieMap.put(
-                "斯坦森系列电影",
-                "https://zb3.qhqsnedu.com/live/jiesen/1586714637.ts");
+                "斯坦森系列电影",//?wsSecret=9bd22fc2902c6c500fee03e060765100&wsTime=1586820749
+                "https://zb3.qhqsnedu.com/live/jiesen/playlist.m3u8");
         movieMap.put(
                 "周星驰系列电影",
-                "https://zb3.qhqsnedu.com/live/zhouxingxinga/1586732383.ts?wsApp=HLS&wsMonitor=0");
+                "https://zb3.qhqsnedu.com/live/zhouxingxinga/playlist.m3u8?wsSecret=c42b1a6c67341fa9c252615c5ea9364f&wsTime=1586820793");
         movieMap.put(
                 "速度与激情系列电影",
-                "https://zb3.qhqsnedu.com/live/suduyujiqingxilie/1586728414.ts?wsApp=HLS&wsMonitor=0");
+                "https://zb3.qhqsnedu.com/live/suduyujiqingxilie/playlist.m3u8?wsSecret=0094001ccf9fa3246949234baa6cad44&wsTime=1586820815");
         movieMap.put(
                 "林正英系列电影",
-                "https://zb3.qhqsnedu.com/live/chingyinglam/1586731344.ts?wsApp=HLS&wsMonitor=0");
+                "https://zb3.qhqsnedu.com/live/chingyinglam/playlist.m3u8?wsSecret=1502bea72119bc080d7036cea6f99ea3&wsTime=1586820846");
         movieMap.put(
                 "",
                 "");

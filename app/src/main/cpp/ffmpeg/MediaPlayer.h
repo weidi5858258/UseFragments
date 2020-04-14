@@ -51,7 +51,7 @@ extern "C" {
 #include <libavutil/error.h>
 #include <libavutil/time.h>
 
-//#include "libavdevice/avdevice.h"
+#include <libavdevice/avdevice.h>
 
 // 使用libyuv,将YUV转换RGB
 #include <libyuv/basic_types.h>
@@ -97,8 +97,8 @@ extern "C" {
 // 不能无限制读取数据进行保存,这样要出错的(能播放,但不是想要的结果)
 #define MAX_AVPACKET_COUNT         10000
 
-#define MAX_AVPACKET_COUNT_AUDIO_HTTP 380// 3000 1500
-#define MAX_AVPACKET_COUNT_VIDEO_HTTP 200// 2000 1000
+#define MAX_AVPACKET_COUNT_AUDIO_HTTP 190// 3000 1500 380
+#define MAX_AVPACKET_COUNT_VIDEO_HTTP 100// 2000 1000 200
 
 #define MAX_AVPACKET_COUNT_AUDIO_LOCAL 100
 #define MAX_AVPACKET_COUNT_VIDEO_LOCAL 100

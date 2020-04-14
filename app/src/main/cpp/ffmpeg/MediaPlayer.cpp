@@ -198,7 +198,7 @@ static pthread_mutex_t readLockMutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t readLockCondition = PTHREAD_COND_INITIALIZER;
 bool isLocal = false;
 bool isReading = false;
-bool isAudioHandling = false;
+bool isVideoHandling = false;
 bool isInterrupted = false;
 bool runOneTime = true;
 // seek时间
@@ -299,6 +299,8 @@ namespace alexander_media {
         av_register_all();
         // 用于从网络接收数据,如果不是网络接收数据,可不用（如本例可不用）
         avcodec_register_all();
+
+        avdevice_register_all();
 
         // 注册设备的函数,如用获取摄像头数据或音频等,需要此函数先注册
         // avdevice_register_all();
@@ -448,9 +450,15 @@ namespace alexander_media {
             /*AVDictionary *options = NULL;
             av_dict_set(&options, "stimeout", "10000000", 0);*/
             int64_t startTime = av_gettime_relative();
-            if (avformat_open_input(&avFormatContext,
-                                    inFilePath,
-                                    NULL, NULL) != 0) {
+
+
+            int ret = avformat_open_input(&avFormatContext,
+                                          inFilePath,
+                                          NULL, NULL);
+            if (ret) {
+                char buf[1024];
+                av_strerror(ret, buf, 1024);
+                LOGE("Couldn't open file: %s [ %d(%s) ]", inFilePath, ret, buf);
                 // 这里就是某些视频初始化失败的地方
                 LOGE("Couldn't open input stream.\n");
                 return -1;
@@ -1291,20 +1299,30 @@ namespace alexander_media {
 
         if (wrapper->type == TYPE_AUDIO) {
             LOGD("handleData() for (;;) audio end\n");
-            isAudioHandling = false;
-            LOGF("%s\n", "handleData() audio end");
-        } else {
-            LOGW("handleData() for (;;) video end\n");
-            while (isReading || isAudioHandling) {
+            while (isReading) {
                 av_usleep(1000);
             }
-            LOGF("%s\n", "handleData() video end");
+            LOGF("%s\n", "handleData() audio end");
+            int64_t startTime = av_gettime_relative();
+            int64_t endTime = -1;
+            while (isVideoHandling) {
+                endTime = av_gettime_relative();
+                if ((endTime - startTime) >= 5000000) {
+                    LOGE("%s\n", "Exception Exit");
+                    break;
+                }
+                av_usleep(1000);
+            }
             closeAudio();
             closeVideo();
             closeOther();
             // 必须保证每次退出都要执行到
             onFinished();
             LOGF("%s\n", "Safe Exit");
+        } else {
+            LOGW("handleData() for (;;) video end\n");
+            isVideoHandling = false;
+            LOGF("%s\n", "handleData() video end");
         }
     }
 
@@ -1344,7 +1362,6 @@ namespace alexander_media {
 
         if (wrapper->type == TYPE_AUDIO) {
             LOGD("handleData() for (;;) audio start\n");
-            isAudioHandling = true;
         } else {
             LOGW("handleData() ANativeWindow_setBuffersGeometry() start\n");
             // 2.设置缓冲区的属性（宽、高、像素格式）,像素格式要和SurfaceView的像素格式一直
@@ -1354,6 +1371,7 @@ namespace alexander_media {
                                              WINDOW_FORMAT_RGBA_8888);
             LOGW("handleData() ANativeWindow_setBuffersGeometry() end\n");
             LOGW("handleData() for (;;) video start\n");
+            isVideoHandling = true;
         }
 
         AVStream *stream = avFormatContext->streams[wrapper->streamIndex];
