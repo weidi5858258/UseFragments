@@ -1040,6 +1040,17 @@ namespace alexander_only_audio {
         return audioPlaying;
     }
 
+    bool isPausedForUser() {
+        bool audioPlaying = false;
+        if (audioWrapper != NULL
+            && audioWrapper->father != NULL) {
+            audioPlaying = audioWrapper->father->isStarted
+                           && audioWrapper->father->isHandling
+                           && audioWrapper->father->isPausedForUser;
+        }
+        return audioPlaying;
+    }
+
     int seekTo(int64_t timestamp) {
         LOGI("==================================================================\n");
         LOGI("seekTo() timestamp: %ld\n", (long) timestamp);

@@ -264,6 +264,8 @@ namespace alexander_media {
 
     bool isPlaying();
 
+    bool isPausedForUser();
+
     int seekTo(int64_t timestamp);
 
     long getDuration();

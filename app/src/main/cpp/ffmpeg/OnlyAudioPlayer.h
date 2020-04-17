@@ -45,6 +45,8 @@ namespace alexander_only_audio {
 
     bool isPlaying();
 
+    bool isPausedForUser();
+
     int seekTo(int64_t timestamp);
 
     long getDuration();

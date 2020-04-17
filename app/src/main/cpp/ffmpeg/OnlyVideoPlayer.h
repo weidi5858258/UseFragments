@@ -45,6 +45,8 @@ namespace alexander_only_video {
 
     bool isPlaying();
 
+    bool isPausedForUser();
+
     int seekTo(int64_t timestamp);
 
     int64_t getDuration();

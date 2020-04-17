@@ -881,12 +881,9 @@ public class PlayerWrapper {
     private View.OnClickListener mOnClickListener = new View.OnClickListener() {
         @Override
         public void onClick(View v) {
-            if (!mNeedToSyncProgressBar) {
-                mNeedToSyncProgressBar = true;
-                return;
-            }
             switch (v.getId()) {
                 case R.id.button_prev:
+                    mNeedToSyncProgressBar = true;
                     if (mFFMPEGPlayer != null) {
                         if (mFFMPEGPlayer.getDuration() > 300) {
                             subtractStep += 30;
@@ -899,6 +896,7 @@ public class PlayerWrapper {
                     }
                     break;
                 case R.id.button_play:
+                    mNeedToSyncProgressBar = true;
                     if (mFFMPEGPlayer != null) {
                         if (mFFMPEGPlayer.isRunning()) {
                             if (mFFMPEGPlayer.isPlaying()) {
@@ -910,6 +908,7 @@ public class PlayerWrapper {
                     }
                     break;
                 case R.id.button_pause:
+                    mNeedToSyncProgressBar = true;
                     if (mFFMPEGPlayer != null) {
                         if (!mFFMPEGPlayer.isPlaying()) {
                             mPlayIB.setVisibility(View.VISIBLE);
@@ -919,6 +918,7 @@ public class PlayerWrapper {
                     }
                     break;
                 case R.id.button_next:
+                    mNeedToSyncProgressBar = true;
                     if (mFFMPEGPlayer != null) {
                         if (mFFMPEGPlayer.getDuration() > 300) {
                             addStep += 30;
@@ -931,6 +931,10 @@ public class PlayerWrapper {
                     }
                     break;
                 case R.id.surfaceView:
+                    if (!mNeedToSyncProgressBar) {
+                        mNeedToSyncProgressBar = true;
+                        return;
+                    }
                     mIsScreenPress = true;
                     onEvent(KeyEvent.KEYCODE_HEADSETHOOK, null);
                     break;
@@ -949,11 +953,13 @@ public class PlayerWrapper {
                     }
                     break;
                 case R.id.volume_normal:
+                    mNeedToSyncProgressBar = true;
                     mVolumeNormal.setVisibility(View.GONE);
                     mVolumeMute.setVisibility(View.VISIBLE);
                     mFFMPEGPlayer.setVolume(FFMPEG.VOLUME_MUTE);
                     break;
                 case R.id.volume_mute:
+                    mNeedToSyncProgressBar = true;
                     mVolumeNormal.setVisibility(View.VISIBLE);
                     mVolumeMute.setVisibility(View.GONE);
                     mFFMPEGPlayer.setVolume(FFMPEG.VOLUME_NORMAL);
@@ -995,6 +1001,8 @@ public class PlayerWrapper {
 
     }
 
+    private boolean handleLandscapeScreenFlag = false;
+
     @SuppressLint("SourceLockedOrientationActivity")
     private void clickFour() {
         if (mService != null) {
@@ -1009,7 +1017,13 @@ public class PlayerWrapper {
                 if (JniPlayerActivity.isAliveJniPlayerActivity) {
                     handleLandscapeScreen(0);
                 } else {
-                    handleLandscapeScreen(1);
+                    if (handleLandscapeScreenFlag) {
+                        handleLandscapeScreenFlag = false;
+                        handleLandscapeScreen(0);
+                    } else {
+                        handleLandscapeScreenFlag = true;
+                        handleLandscapeScreen(1);
+                    }
                 }
             } else if (mContext.getResources().getConfiguration().orientation ==
                     Configuration.ORIENTATION_PORTRAIT) {

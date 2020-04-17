@@ -90,15 +90,16 @@ set_target_properties(avdevice
 #################################################################
 # 下面都是添加库,然后引用库
 # 用于各种类型声音、图像编解码
+# 添加库
 add_library( # 库名称
         avcodec
 
-        # 动态库，生成so文件
+        # 动态库
         SHARED
 
         # 表示该库是引用的不是生成的
         IMPORTED)
-# 引用库文件
+# 引用库
 set_target_properties( # 库名称
         avcodec
 
@@ -145,6 +146,34 @@ add_library(swscale
 set_target_properties(swscale
         PROPERTIES IMPORTED_LOCATION
         ${LIBS_DIR}/${CPU_DIR}/libswscale.so)
+#################################################################
+add_library(crypto
+        STATIC
+        IMPORTED)
+set_target_properties(crypto
+        PROPERTIES IMPORTED_LOCATION
+        ${LIBS_DIR}/${CPU_DIR}/libcrypto.a)
+#################################################################
+add_library(ssl
+        STATIC
+        IMPORTED)
+set_target_properties(ssl
+        PROPERTIES IMPORTED_LOCATION
+        ${LIBS_DIR}/${CPU_DIR}/libssl.a)
+#################################################################
+#add_library(crypto
+#        SHARED
+#        IMPORTED)
+#set_target_properties(crypto
+#        PROPERTIES IMPORTED_LOCATION
+#        ${LIBS_DIR}/${CPU_DIR}/libcrypto.so)
+#################################################################
+#add_library(ssl
+#        SHARED
+#        IMPORTED)
+#set_target_properties(ssl
+#        PROPERTIES IMPORTED_LOCATION
+#        ${LIBS_DIR}/${CPU_DIR}/libssl.so)
 #################################################################
 add_library(yuv
         SHARED
@@ -199,6 +228,8 @@ target_link_libraries(
         avfilter
         swresample
         swscale
+        crypto
+        ssl
         yuv
 )
 #################################################################

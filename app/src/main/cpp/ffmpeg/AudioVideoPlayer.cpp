@@ -1974,6 +1974,24 @@ namespace alexander_audio_video {
         return audioPlaying && videoPlaying;
     }
 
+    bool isPausedForUser() {
+        bool audioPlaying = false;
+        bool videoPlaying = false;
+        if (audioWrapper != NULL
+            && audioWrapper->father != NULL) {
+            audioPlaying = audioWrapper->father->isStarted
+                           && audioWrapper->father->isHandling
+                           && audioWrapper->father->isPausedForUser;
+        }
+        if (videoWrapper != NULL
+            && videoWrapper->father != NULL) {
+            videoPlaying = videoWrapper->father->isStarted
+                           && videoWrapper->father->isHandling
+                           && videoWrapper->father->isPausedForUser;
+        }
+        return audioPlaying && videoPlaying;
+    }
+
     /***
      1.暂停状态下seek
      2.播放状态下seek

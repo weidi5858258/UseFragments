@@ -662,6 +662,28 @@ Java_com_weidi_usefragments_business_video_1player_FFMPEG_isPlaying(JNIEnv *env,
 }
 
 extern "C"
+JNIEXPORT jboolean JNICALL
+Java_com_weidi_usefragments_business_video_1player_FFMPEG_isPausedForUser(JNIEnv *env,
+                                                                          jobject thiz) {
+    switch (use_mode) {
+        case USE_MODE_MEDIA: {
+            return (jboolean) alexander_media::isPausedForUser();
+        }
+        case USE_MODE_ONLY_VIDEO: {
+            return (jboolean) alexander_only_video::isPausedForUser();
+        }
+        case USE_MODE_ONLY_AUDIO: {
+            return (jboolean) alexander_only_audio::isPausedForUser();
+        }
+        case USE_MODE_AUDIO_VIDEO: {
+            return (jboolean) alexander_audio_video::isPausedForUser();
+        }
+        default:
+            break;
+    }
+}
+
+extern "C"
 JNIEXPORT jint JNICALL
 Java_com_weidi_usefragments_business_video_1player_FFMPEG_seekTo(JNIEnv *env, jobject ffmpegObject,
                                                                  jlong timestamp) {

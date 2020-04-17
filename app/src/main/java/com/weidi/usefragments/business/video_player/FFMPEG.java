@@ -87,6 +87,8 @@ public class FFMPEG {
 
     public native boolean isPlaying();
 
+    public native boolean isPausedForUser();
+
     // 快进
     public native void stepAdd(long addStep);
 

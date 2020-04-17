@@ -236,6 +236,31 @@ namespace alexander_media {
 
     void closeOther();
 
+    /***
+     在Android logcat中打印FFmpeg调试信息
+     https://zhuanlan.zhihu.com/p/48384062
+     FFmpeg日志输出到adb logcat
+     https://blog.csdn.net/matrix_laboratory/article/details/57080891
+     */
+    static void log_callback_null(void *ptr, int level, const char *fmt, va_list vl) {
+        static int print_prefix = 1;
+        static int count;
+        static char prev[1024];
+        char line[1024];
+        static int is_atty;
+
+        av_log_format_line(ptr, level, fmt, vl, line, sizeof(line), &print_prefix);
+
+        strcpy(prev, line);
+        //sanitize((uint8_t *)line);
+
+        if (level <= AV_LOG_WARNING) {
+            LOGE("%s", line);
+        } else {
+            LOGI("%s", line);
+        }
+    }
+
     void notifyToRead() {
         pthread_mutex_lock(&readLockMutex);
         pthread_cond_signal(&readLockCondition);
@@ -307,7 +332,28 @@ namespace alexander_media {
         // 注册复用器和编解码器,所有的使用ffmpeg,首先必须调用这个函数
         avformat_network_init();
 
+        //av_log_set_callback(log_callback_null);
+
         LOGW("ffmpeg [av_version_info()] version: %s\n", av_version_info());
+
+        /*AVCodec *codecName = av_codec_next(NULL);
+        while (codecName) {
+            switch (codecName->type) {
+                case AVMEDIA_TYPE_VIDEO: {
+                    LOGI("ffmpeg AVMEDIA_TYPE_VIDEO: %s\n", codecName->name);
+                    break;
+                }
+                case AVMEDIA_TYPE_AUDIO: {
+                    LOGI("ffmpeg AVMEDIA_TYPE_AUDIO: %s\n", codecName->name);
+                    break;
+                }
+                default: {
+                    LOGI("ffmpeg other: %s\n", codecName->name);
+                    break;
+                }
+            }
+            codecName = codecName->next;
+        }*/
 
         readLockMutex = PTHREAD_MUTEX_INITIALIZER;
         readLockCondition = PTHREAD_COND_INITIALIZER;
@@ -450,15 +496,19 @@ namespace alexander_media {
             /*AVDictionary *options = NULL;
             av_dict_set(&options, "stimeout", "10000000", 0);*/
             int64_t startTime = av_gettime_relative();
-
-
+            /***
+             -104(Connection reset by peer)
+             -875574520(Server returned 404 Not Found)
+             -1094995529(Invalid data found when processing input)
+             -1330794744(Protocol not found)
+             */
             int ret = avformat_open_input(&avFormatContext,
                                           inFilePath,
                                           NULL, NULL);
             if (ret) {
                 char buf[1024];
                 av_strerror(ret, buf, 1024);
-                LOGE("Couldn't open file: %s [ %d(%s) ]", inFilePath, ret, buf);
+                LOGE("Couldn't open file, because this: [ %d(%s) ]", ret, buf);
                 // 这里就是某些视频初始化失败的地方
                 LOGE("Couldn't open input stream.\n");
                 return -1;
@@ -615,6 +665,7 @@ namespace alexander_media {
         LOGI("findAndOpenAVCodecForVideo() start\n");
         // video
         if (videoWrapper->father->streamIndex != -1) {
+            videoWrapper->father->decoderAVCodec = NULL;
             // avcodec_find_decoder_by_name
             AVCodecID codecID = videoWrapper->father->avCodecParameters->codec_id;
             switch (codecID) {
@@ -646,8 +697,10 @@ namespace alexander_media {
                     break;
                 }
             }
-            // 有相应的so库时这句就不要执行了
-            videoWrapper->father->decoderAVCodec = avcodec_find_decoder(codecID);
+            if (!videoWrapper->father->decoderAVCodec) {
+                // 有相应的so库时这句就不要执行了
+                videoWrapper->father->decoderAVCodec = avcodec_find_decoder(codecID);
+            }
             if (videoWrapper->father->decoderAVCodec != NULL) {
                 videoWrapper->father->avCodecContext = avcodec_alloc_context3(
                         videoWrapper->father->decoderAVCodec);
@@ -1467,12 +1520,12 @@ namespace alexander_media {
                 break;
             }
 
-            /*if (!isLocal) {
+            if (!isLocal) {
                 if (wrapper->list1->size() >= wrapper->list1LimitCounts) {
                     wrapper->startHandleTime = av_gettime_relative();
                     maybeHasException = true;
                 }
-            }*/
+            }
 
             // region 从队列中取出一个AVPacket
 
@@ -1505,19 +1558,19 @@ namespace alexander_media {
             if (!isLocal) {
                 if (maybeHasException && wrapper->list1->size() == 0) {
                     wrapper->endHandleTime = av_gettime_relative();
-                    /*if (wrapper->type == TYPE_AUDIO) {
-                        LOGD("handleData() audio      handleTime: %ld\n",
-                             (long) (wrapper->endHandleTime - wrapper->startHandleTime));
-                    } else {
-                        LOGW("handleData() video      handleTime: %ld\n",
-                             (long) (wrapper->endHandleTime - wrapper->startHandleTime));
-                    }*/
                     // 如果不是本地视频,从一千个左右的数据到0个数据的时间不超过30秒,那么就有问题了.
-                    if ((wrapper->endHandleTime - wrapper->startHandleTime) <= 30000000) {
+                    if ((wrapper->endHandleTime - wrapper->startHandleTime) <= 1000000) {
+                        if (wrapper->type == TYPE_AUDIO) {
+                            LOGE("handleData()  audio handleTime: %ld\n",
+                                 (long) (wrapper->endHandleTime - wrapper->startHandleTime));
+                        } else {
+                            LOGE("handleData()  video handleTime: %ld\n",
+                                 (long) (wrapper->endHandleTime - wrapper->startHandleTime));
+                        }
                         LOGE("handleData() maybeHasException\n");
-                        //onError(0x102, "播放时发生异常");
+                        onError(0x102, "播放时发生异常");
                         stop();
-                        break;
+                        //break;
                     } else {
                         maybeHasException = false;
                     }
@@ -2020,6 +2073,7 @@ namespace alexander_media {
 
     void closeOther() {
         if (avFormatContext != NULL) {
+            avformat_close_input(&avFormatContext);
             avformat_free_context(avFormatContext);
             avFormatContext = NULL;
         }
@@ -2274,6 +2328,26 @@ namespace alexander_media {
                            && videoWrapper->father->isHandling
                            && !videoWrapper->father->isPausedForUser
                            && !videoWrapper->father->isPausedForCache;
+        }
+        return audioPlaying && videoPlaying;
+    }
+
+    bool isPausedForUser() {
+        bool audioPlaying = false;
+        bool videoPlaying = false;
+        if (audioWrapper != NULL
+            && audioWrapper->father != NULL) {
+            audioPlaying = audioWrapper->father->isStarted
+                           && audioWrapper->father->isHandling
+                           && audioWrapper->father->isPausedForUser
+                           && videoWrapper->father->isPausedForCache;
+        }
+        if (videoWrapper != NULL
+            && videoWrapper->father != NULL) {
+            videoPlaying = videoWrapper->father->isStarted
+                           && videoWrapper->father->isHandling
+                           && videoWrapper->father->isPausedForUser
+                           && videoWrapper->father->isPausedForCache;
         }
         return audioPlaying && videoPlaying;
     }

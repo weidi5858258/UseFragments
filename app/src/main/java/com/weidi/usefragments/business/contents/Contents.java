@@ -71,16 +71,22 @@ public class Contents {
                 "http://ivi.bupt.edu.cn/hls/chchd.m3u8");
 
         movieMap.put(
-                "斯坦森系列电影",//?wsSecret=9bd22fc2902c6c500fee03e060765100&wsTime=1586820749
-                "https://zb3.qhqsnedu.com/live/jiesen/playlist.m3u8");
+                "斯坦森系列电影",// ?wsSecret=9bd22fc2902c6c500fee03e060765100&wsTime=1586820749
+                "http://zb3.qhqsnedu.com/live/jiesen/playlist.m3u8");
         movieMap.put(
-                "周星驰系列电影",
-                "https://zb3.qhqsnedu.com/live/zhouxingxinga/playlist.m3u8?wsSecret=c42b1a6c67341fa9c252615c5ea9364f&wsTime=1586820793");
+                "周星驰系列电影",// ?wsSecret=833f65604867cbf52b63678cc0985ddd&wsTime=1586840687
+                "http://zb3.qhqsnedu.com/live/zhouxingxinga/playlist.m3u8?wsSecret=833f65604867cbf52b63678cc0985ddd&wsTime=1586840687");
         movieMap.put(
-                "速度与激情系列电影",
-                "https://zb3.qhqsnedu.com/live/suduyujiqingxilie/playlist.m3u8?wsSecret=0094001ccf9fa3246949234baa6cad44&wsTime=1586820815");
+                "速度与激情系列电影",// ?wsSecret=0094001ccf9fa3246949234baa6cad44&wsTime=1586820815
+                "http://zb3.qhqsnedu.com/live/suduyujiqingxilie/playlist.m3u8");
         movieMap.put(
-                "林正英系列电影",
+                "林正英系列电影",// ?wsSecret=1502bea72119bc080d7036cea6f99ea3&wsTime=1586820846
+                "http://zb3.qhqsnedu.com/live/chingyinglam/playlist.m3u8");
+        movieMap.put(
+                "林正英系列电影2",// ?wsSecret=1502bea72119bc080d7036cea6f99ea3&wsTime=1586820846
+                "https://zb3.qhqsnedu.com/live/chingyinglam/playlist.m3u8");
+        movieMap.put(
+                "林正英系列电影3",
                 "https://zb3.qhqsnedu.com/live/chingyinglam/playlist.m3u8?wsSecret=1502bea72119bc080d7036cea6f99ea3&wsTime=1586820846");
         movieMap.put(
                 "",
@@ -306,30 +312,9 @@ public class Contents {
                 "rtmp://58.200.131.2:1935/livetv/hunantv");*/
 
         movieMap.put(
-                "playlist_dvr",
-                "https://cdn1.ibizastream.biz:441/free/1/playlist_dvr.m3u8");
-        movieMap.put(
-                "情欲教室之插画人妻",
-                "http://youku1.dianfubang.com/20200410/tNlxcUXB/index.m3u8?wsSecret=85984aea17feb2d44c8c252e89b29170&wsTime=1586739829");
-        movieMap.put(
-                "淫女收容所",
-                "http://youku1.dianfubang.com/20200410/zDZWiVis/index.m3u8?wsSecret=f52d8af4eefd46e64b990817f6802d97&wsTime=1586739973");
-        movieMap.put(
-                "",
-                "");
-        movieMap.put(
-                "",
-                "");
-        movieMap.put(
-                "",
-                "");
-        movieMap.put(
-                "",
-                "");
+                "敢死队",//?wsSecret=794014929348ef69716f3f5925f30415&wsTime=1586740523
+                "http://meiju5.qhqsnedu.com/20190626/TJOX41iy/2000kb/hls/index.m3u8");
 
-        movieMap.put(
-                "敢死队",// ?wsSecret=794014929348ef69716f3f5925f30415&wsTime=1586740523
-                "https://meiju5.qhqsnedu.com/20190626/TJOX41iy/2000kb/hls/index.m3u8");
         // {csd-1=java.nio.HeapByteBuffer[pos=0 lim=8 cap=8], mime=video/avc, frame-rate=24, track-id=2, profile=2, width=1280, height=720, max-input-size=151238, durationUs=6227930041, csd-0=java.nio.HeapByteBuffer[pos=0 lim=41 cap=41], bitrate-mode=0, level=512}
         // csd-0: {0, 0, 0, 1, 103, 77, 64, 31, -24, -128, 40, 2, -35, -128, -87, 1, 1, 1, 64, 0, 0, -6, 64, 0, 46, -32, 56, 24, 0, 21, 92, -64, 1, 83, -38, 76, 48, 15, -116, 24, -119}
         // csd-1: {0, 0, 0, 1, 104, -21, -20, -78}
@@ -499,7 +484,7 @@ public class Contents {
 
         movieMap.put(
                 "突袭",
-                "https://meiju4.qhqsnedu.com/20190211/fkJJsWpA/2000kb/hls/index.m3u8?wsSecret=f7ace8216a9bc07f7380fec0fcdc2de7&wsTime=1586740179");
+                "http://meiju4.qhqsnedu.com/20190211/fkJJsWpA/2000kb/hls/index.m3u8?wsSecret=f7ace8216a9bc07f7380fec0fcdc2de7&wsTime=1586740179");
         movieMap.put(
                 "突袭1",
                 "http://xunleib.zuida360.com/1806/%E7%AA%81%E8%A2%AD.BD1280%E9%AB%98%E6%B8%85%E4%B8%AD%E5%AD%97%E7%89%88.mp4");
@@ -631,8 +616,72 @@ public class Contents {
                 "神盾局特工第六季13",
                 "http://xunlei.zuidaxunlei.com/1908/%E7%A5%9E%E7%9B%BE%E5%B1%80%E7%89%B9%E5%B7%A5%E7%AC%AC%E5%85%AD%E5%AD%A3-13.mp4");
 
-
         movieMap.put(
+                "playlist_dvr",
+                "https://cdn1.ibizastream.biz:441/free/1/playlist_dvr.m3u8");
+        movieMap.put(
+                "情欲教室之插画人妻",
+                "http://youku1.dianfubang.com/20200410/tNlxcUXB/index.m3u8?wsSecret=85984aea17feb2d44c8c252e89b29170&wsTime=1586739829");
+        movieMap.put(
+                "淫女收容所",
+                "http://youku1.dianfubang.com/20200410/zDZWiVis/index.m3u8?wsSecret=f52d8af4eefd46e64b990817f6802d97&wsTime=1586739973");
+        movieMap.put(
+                "1",
+                "http://youku1.dianfubang.com/20200410/YwJQngTM/index.m3u8?wsSecret=ce5f9a40549eb0a2bc24b178a93426bf&wsTime=1587026665");
+        movieMap.put(
+                "",
+                "");
+        movieMap.put(
+                "3",
+                "http://youku1.dianfubang.com/20190401/X3rroxwE/index.m3u8?wsSecret=f52084a22a307d0c5ade1a3e86f30041&wsTime=1587026733");
+        movieMap.put(
+                "4",
+                "http://youku1.dianfubang.com/20200207/abZ9DGOc/index.m3u8?wsSecret=b47fd41839d36fb5c3256f75eceb113e&wsTime=1587026831");
+        movieMap.put(
+                "5",
+                "http://youku1.dianfubang.com/20190222/JK8mJKS5/2000kb/hls/index.m3u8?wsSecret=24b074a3663c331ea2a4c28a274eefc0&wsTime=1587026851");
+        movieMap.put(
+                "6",
+                "http://youku1.dianfubang.com/20190602/BgPUCxWc/index.m3u8?wsSecret=5cf90d28db8e30e243704914c1f54905&wsTime=1587026871");
+        movieMap.put(
+                "7",
+                "http://youku1.dianfubang.com/20190222/zKnS7pRh/index.m3u8?wsSecret=dab116df8e40279d80aa05c1bd98ad4e&wsTime=1587026892");
+        movieMap.put(
+                "8",
+                "http://youku1.dianfubang.com/20190221/Sr2Zsip3/index.m3u8?wsSecret=ac81da07ed89cf18952b706a0488ed0e&wsTime=1587026911");
+        movieMap.put(
+                "9",
+                "http://youku1.dianfubang.com/20190326/BdBFp4k3/index.m3u8?wsSecret=e4463b31d838e4d62c7a3eadeea06640&wsTime=1587026932");
+        movieMap.put(
+                "10",
+                "");
+        movieMap.put(
+                "11",
+                "");
+        movieMap.put(
+                "12",
+                "");
+        movieMap.put(
+                "13",
+                "");
+        movieMap.put(
+                "14",
+                "");
+        movieMap.put(
+                "15",
+                "");
+        movieMap.put(
+                "",
+                "");
+        movieMap.put(
+                "",
+                "");
+        movieMap.put(
+                "",
+                "");
+
+
+        /*movieMap.put(
                 "方谬神探01",
                 "http://xunlei.xiazai-zuida.com/1907/%E6%96%B9%E8%B0%AC%E7%A5%9E%E6%8E%A2-01.mp4");
         movieMap.put(
@@ -721,7 +770,7 @@ public class Contents {
                 "http://xunlei.xiazai-zuida.com/1907/%E6%96%B9%E8%B0%AC%E7%A5%9E%E6%8E%A2-29.mp4");
         movieMap.put(
                 "方谬神探30",
-                "http://xunlei.xiazai-zuida.com/1907/%E6%96%B9%E8%B0%AC%E7%A5%9E%E6%8E%A2-30.mp4");
+                "http://xunlei.xiazai-zuida.com/1907/%E6%96%B9%E8%B0%AC%E7%A5%9E%E6%8E%A2-30.mp4");*/
 
         movieMap.put(
                 "盗墓笔记之怒海潜沙-秦岭神树01",

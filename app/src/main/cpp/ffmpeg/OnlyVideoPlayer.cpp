@@ -1060,6 +1060,17 @@ namespace alexander_only_video {
         return videoPlaying;
     }
 
+    bool isPausedForUser() {
+        bool videoPlaying = false;
+        if (videoWrapper != NULL
+            && videoWrapper->father != NULL) {
+            videoPlaying = videoWrapper->father->isStarted
+                           && videoWrapper->father->isHandling
+                           && videoWrapper->father->isPausedForUser;
+        }
+        return videoPlaying;
+    }
+
     int seekTo(int64_t timestamp) {
         LOGI("==================================================================\n");
         LOGI("seekTo() timestamp: %ld\n", timestamp);
