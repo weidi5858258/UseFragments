@@ -53,6 +53,7 @@ int runCount = 0;
 jint JNI_OnLoad(JavaVM *vm, void *reserved) {
     LOGD("JNI_OnLoad\n");
     gJavaVm = vm;
+    //av_jni_set_java_vm(vm, NULL);
     return JNI_VERSION_1_6;
 }
 
@@ -243,7 +244,7 @@ void onFinished() {
     if (isAttached) {
         gJavaVm->DetachCurrentThread();
     }
-    close();
+    //close();
 }
 
 void onProgressUpdated(long seconds) {
@@ -265,7 +266,9 @@ void onError(int error, char *errorInfo) {
     LOGE("onError()\n");
     JNIEnv *jniEnv;
     bool isAttached = getEnv(&jniEnv);
-    if (jniEnv != NULL && callbackJavaObject != NULL && callback.onErrorMethodID != NULL) {
+    if (jniEnv != NULL
+        && callbackJavaObject != NULL
+        && callback.onErrorMethodID != NULL) {
         jniEnv->CallVoidMethod(callbackJavaObject, callback.onErrorMethodID,
                                error, jniEnv->NewStringUTF(errorInfo));
     }
@@ -353,6 +356,10 @@ Java_com_weidi_usefragments_business_video_1player_FFMPEG_setSurface(JNIEnv *env
     }
     env->ReleaseStringUTFChars(path, filePath);
 
+    if (ffmpegJavaObject != NULL) {
+        env->DeleteGlobalRef(ffmpegJavaObject);
+        ffmpegJavaObject = NULL;
+    }
     // java层native方法所对应的类对象
     // 在java层的native方法不是static的,因此需要用到java层的对象
     // ffmpegJavaObject = ffmpegObject;// error 直接赋值是不OK的
@@ -374,6 +381,10 @@ Java_com_weidi_usefragments_business_video_1player_FFMPEG_setCallback(JNIEnv *en
                                                                       jobject callbackObject) {
     jclass CallbackClass = env->FindClass("com/weidi/usefragments/tool/Callback");
 
+    if (callbackJavaObject != NULL) {
+        env->DeleteGlobalRef(callbackJavaObject);
+        callbackJavaObject = NULL;
+    }
     // 调用下面方法需要用到这个对象
     callbackJavaObject = reinterpret_cast<jobject>(env->NewGlobalRef(callbackObject));
 

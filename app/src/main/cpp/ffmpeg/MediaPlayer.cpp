@@ -211,8 +211,10 @@ static int videoSleepTime = 11;
 double TIME_DIFFERENCE = 1.000000;// 0.180000
 // 当前音频时间戳
 static double audioPts = 0;
+static double preAudioPts = 0;
 // 当前视频时间戳
 static double videoPts = 0;
+static double preVideoPts = 0;
 // 上一个时间戳
 static double videoPtsPre = 0;
 
@@ -229,8 +231,16 @@ namespace alexander_media {
     double averageTimeDiff = 0;
     double timeDiff[RUN_COUNTS];
 
+    long mediaDuration = -1;
     int64_t startReadTime = -1;
     int64_t endReadTime = -1;
+
+    int64_t startVideoLockedTime = -1;
+    int64_t endVideoLockedTime = -1;
+
+    int videoPtsCountsA = 0;
+    int videoPtsCountsB = 0;
+    bool isVideoLocked = false;
 
     char *getStrAVPixelFormat(AVPixelFormat format);
 
@@ -306,12 +316,12 @@ namespace alexander_media {
         AudioWrapper *audioWrapper = (AudioWrapper *) opaque;
         endReadTime = av_gettime_relative();
         if (!audioWrapper->father->isReading) {
-            LOGE("read_thread_interrupt_cb() return 1 退出了\n");
+            LOGE("read_thread_interrupt_cb() 退出\n");
             return 1;
         } else if ((audioWrapper->father->isPausedForCache || !audioWrapper->father->isStarted)
                    && startReadTime > 0
                    && (endReadTime - startReadTime) > MAX_RELATIVE_TIME) {
-            LOGE("read_thread_interrupt_cb() return 1 超时了\n");
+            LOGE("read_thread_interrupt_cb() 读取数据超时\n");
             isInterrupted = true;
             onError(0x101, "读取数据超时");
             return 1;
@@ -361,6 +371,8 @@ namespace alexander_media {
         preProgress = 0;
         audioPts = 0.0;
         videoPts = 0.0;
+        preAudioPts = 0.0;
+        preVideoPts = 0.0;
         videoPtsPre = 0;
         runOneTime = true;
         runCounts = 0;
@@ -369,6 +381,12 @@ namespace alexander_media {
         isInterrupted = false;
         startReadTime = -1;
         endReadTime = -1;
+        videoPtsCountsB = 0;
+        mediaDuration = -1;
+        isVideoLocked = false;
+        startVideoLockedTime = -1;
+        endVideoLockedTime = -1;
+        isReading = false;
     }
 
     void initAudio() {
@@ -496,6 +514,7 @@ namespace alexander_media {
             /*AVDictionary *options = NULL;
             av_dict_set(&options, "stimeout", "10000000", 0);*/
             int64_t startTime = av_gettime_relative();
+            startReadTime = startTime;
             /***
              -104(Connection reset by peer)
              -875574520(Server returned 404 Not Found)
@@ -1140,6 +1159,11 @@ namespace alexander_media {
                 }
             }// 文件已读完
 
+            // 关键帧的判断
+            /*if (srcAVPacket->flags & AV_PKT_FLAG_KEY) {
+                LOGI("read a key frame");
+            }*/
+
             if (srcAVPacket->stream_index == audioWrapper->father->streamIndex) {
                 if (audioWrapper->father->isReading) {
                     readDataImpl(audioWrapper->father, srcAVPacket, copyAVPacket);
@@ -1195,10 +1219,32 @@ namespace alexander_media {
             ////////////////////////////////////////////////////////////////////
 
             audioPts = decodedAVFrame->pts * av_q2d(stream->time_base);
-            curProgress = (long) audioPts;// 秒
-            if (curProgress > preProgress) {
-                preProgress = curProgress;
-                onProgressUpdated(curProgress);
+            if (preAudioPts > 0 && preAudioPts > audioPts) {
+                return 0;
+            }
+            preAudioPts = audioPts;
+            //LOGD("handleVideoDataImpl() audioPts: %lf\n", audioPts);
+            videoPtsCountsA = 0;
+            endVideoLockedTime = av_gettime_relative();
+            if (!isLocal
+                && mediaDuration < 0
+                && startVideoLockedTime > 0
+                && endVideoLockedTime > 0
+                && (endVideoLockedTime - startVideoLockedTime) > 10000000) {
+                // 说明video已经在ANativeWindow中被block住了
+                LOGE("handleAudioDataImpl() video已经在ANativeWindow中被锁住了\n");
+                //isVideoLocked = true;
+                //stop();
+            }
+
+            // 有时长时才更新时间进度
+            if (mediaDuration > 0) {
+                curProgress = (long) audioPts;// 秒
+                if (curProgress > preProgress
+                    && curProgress <= mediaDuration) {
+                    preProgress = curProgress;
+                    onProgressUpdated(curProgress);
+                }
             }
 
             ////////////////////////////////////////////////////////////////////
@@ -1221,6 +1267,7 @@ namespace alexander_media {
         return ret;
     }
 
+
     int handleVideoDataImpl(AVStream *stream, AVFrame *decodedAVFrame) {
         videoWrapper->father->isStarted = true;
         while (!audioWrapper->father->isStarted) {
@@ -1239,6 +1286,24 @@ namespace alexander_media {
          音频需要正常播放才是好的体验
          */
         videoPts = decodedAVFrame->pts * av_q2d(stream->time_base);
+        if (preVideoPts > 0 && preVideoPts > videoPts) {
+            return 0;
+        }
+        preVideoPts = videoPts;
+        //LOGW("handleVideoDataImpl() videoPts: %lf\n", videoPts);
+        if (isLocal && mediaDuration > 0) {
+            if (preAudioPts == audioPts) {
+                videoPtsCountsA++;
+            }
+            if (videoPtsCountsA == 3) {
+                videoPtsCountsB++;
+            }
+            if (videoPtsCountsB >= 20) {
+                videoSleep(4);
+            }
+            //LOGW("handleVideoDataImpl() videoPtsCountsB: %d\n", videoPtsCountsB);
+        }
+
         if (videoPts > 0 && audioPts > 0) {
             double tempTimeDifference = videoPts - audioPts;
             if (runCounts < RUN_COUNTS) {
@@ -1290,6 +1355,7 @@ namespace alexander_media {
 
         // 渲染画面
         if (videoWrapper->father->isHandling) {
+            startVideoLockedTime = av_gettime_relative();
             // 3.lock锁定下一个即将要绘制的Surface
             ANativeWindow_lock(pANativeWindow, &mANativeWindow_Buffer, NULL);
 
@@ -1371,6 +1437,10 @@ namespace alexander_media {
             closeOther();
             // 必须保证每次退出都要执行到
             onFinished();
+            if (isVideoLocked) {
+                // throw exception
+                audioWrapper->father->isStarted = false;
+            }
             LOGF("%s\n", "Safe Exit");
         } else {
             LOGW("handleData() for (;;) video end\n");
@@ -1440,7 +1510,10 @@ namespace alexander_media {
 
         int ret = 0;
         bool maybeHasException = false;
+        // test
+        //long count = 0;
         for (;;) {
+            //count++;
             if (!wrapper->isHandling) {
                 // for (;;) end
                 break;
@@ -1511,6 +1584,7 @@ namespace alexander_media {
                         LOGE("handleData() wait() Cache video end   被动暂停\n");
                     }
                 }
+                startVideoLockedTime = av_gettime_relative();
             }// 暂停装置 end
 
             // endregion
@@ -1558,6 +1632,9 @@ namespace alexander_media {
             if (!isLocal) {
                 if (maybeHasException && wrapper->list1->size() == 0) {
                     wrapper->endHandleTime = av_gettime_relative();
+                    /*if (count >= 500) {
+                        wrapper->endHandleTime = wrapper->startHandleTime;
+                    }*/
                     // 如果不是本地视频,从一千个左右的数据到0个数据的时间不超过30秒,那么就有问题了.
                     if ((wrapper->endHandleTime - wrapper->startHandleTime) <= 1000000) {
                         if (wrapper->type == TYPE_AUDIO) {
@@ -1569,6 +1646,7 @@ namespace alexander_media {
                         }
                         LOGE("handleData() maybeHasException\n");
                         onError(0x102, "播放时发生异常");
+                        //av_usleep(1 * 1000 * 1000);
                         stop();
                         //break;
                     } else {
@@ -1795,6 +1873,7 @@ namespace alexander_media {
                     break;
                 default:
                     if (wrapper->type == TYPE_AUDIO) {
+                        // audio 发送数据包时出现异常 -50531338
                         LOGE("audio 发送数据包时出现异常 %d", ret);// -1094995529
                     } else {
                         LOGE("video 发送数据包时出现异常 %d", ret);
@@ -2092,7 +2171,11 @@ namespace alexander_media {
             closeAudio();
             closeVideo();
             closeOther();
-            onError(0x100, "openAndFindAVFormatContext() failed");
+            if (isInterrupted) {
+                onFinished();
+            } else {
+                onError(0x100, "openAndFindAVFormatContext() failed");
+            }
             return -1;
         }
         if (findStreamIndex() < 0) {
@@ -2148,37 +2231,37 @@ namespace alexander_media {
             return -1;
         }
 
-        int64_t duration = avFormatContext->duration / AV_TIME_BASE;
-        LOGD("initPlayer()      duration: %ld\n", (long) duration);
+        mediaDuration = (long) (avFormatContext->duration / AV_TIME_BASE);
+        LOGI("initPlayer() mediaDuration: %ld\n", mediaDuration);
         if (avFormatContext->duration != AV_NOPTS_VALUE) {
             // 得到的是秒数
-            duration = (avFormatContext->duration + 5000) / AV_TIME_BASE;
-            int hours, mins, seconds;
-            seconds = duration;
+            mediaDuration = (long) ((avFormatContext->duration + 5000) / AV_TIME_BASE);
+            long hours, mins, seconds;
+            seconds = mediaDuration;
             mins = seconds / 60;
             seconds %= 60;
             hours = mins / 60;
             mins %= 60;
             // 00:54:16
             // 单位: 秒
-            LOGD("initPlayer() media seconds: %d\n", (int) duration);
-            LOGD("initPlayer() media          %02d:%02d:%02d\n", hours, mins, seconds);
+            LOGI("initPlayer() media seconds: %ld\n", mediaDuration);
+            LOGI("initPlayer() media          %02d:%02d:%02d\n", hours, mins, seconds);
         }
         switch (use_mode) {
             case USE_MODE_MEDIA: {
                 audioWrapper->father->duration =
-                videoWrapper->father->duration = duration;
+                videoWrapper->father->duration = mediaDuration;
                 onChangeWindow(videoWrapper->srcWidth, videoWrapper->srcHeight);
                 break;
             }
             case USE_MODE_ONLY_VIDEO: {
-                videoWrapper->father->duration = duration;
+                videoWrapper->father->duration = mediaDuration;
                 closeAudio();
                 onChangeWindow(videoWrapper->srcWidth, videoWrapper->srcHeight);
                 break;
             }
             case USE_MODE_ONLY_AUDIO: {
-                audioWrapper->father->duration = duration;
+                audioWrapper->father->duration = mediaDuration;
                 closeVideo();
                 onChangeWindow(0, 0);
                 break;
@@ -2382,8 +2465,8 @@ namespace alexander_media {
             || videoWrapper == NULL
             || videoWrapper->father == NULL
             || videoWrapper->father->isPausedForSeek
-            || getDuration() < 0
-            || ((long) timestamp) > getDuration()) {
+            || mediaDuration < 0
+            || ((long) timestamp) > mediaDuration) {
             return -1;
         }
 
@@ -2404,28 +2487,7 @@ namespace alexander_media {
 
     // 返回值单位是秒
     long getDuration() {
-        int64_t duration = -1;
-        switch (use_mode) {
-            case USE_MODE_MEDIA:
-            case USE_MODE_ONLY_VIDEO: {
-                if (videoWrapper != NULL
-                    && videoWrapper->father != NULL) {
-                    duration = videoWrapper->father->duration;
-                }
-                break;
-            }
-            case USE_MODE_ONLY_AUDIO: {
-                if (audioWrapper != NULL
-                    && audioWrapper->father != NULL) {
-                    duration = audioWrapper->father->duration;
-                }
-                break;
-            }
-            default:
-                break;
-        }
-
-        return duration;
+        return mediaDuration;
     }
 
     void stepAdd(int64_t addStep) {
@@ -2435,7 +2497,7 @@ namespace alexander_media {
         onInfo(dest);
         LOGF("stepAdd()      videoSleepTime: %d\n", videoSleepTime);*/
 
-        if (getDuration() > 0) {
+        if (mediaDuration > 0) {
             LOGI("stepAdd() addStep: %ld\n", (long) addStep);
             seekTo(curProgress + addStep);
         }
@@ -2448,7 +2510,7 @@ namespace alexander_media {
         onInfo(dest);
         LOGF("stepSubtract() videoSleepTime: %d\n", videoSleepTime);*/
 
-        if (getDuration() > 0) {
+        if (mediaDuration > 0) {
             LOGI("stepAdd() subtractStep: %ld\n", (long) subtractStep);
             seekTo(curProgress - subtractStep);
         }

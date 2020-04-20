@@ -52,11 +52,20 @@ public class Contents {
                 "CCTV-10科教高清",
                 "http://ivi.bupt.edu.cn/hls/cctv10hd.m3u8");
         movieMap.put(
+                "CCTV-11戏曲",
+                "http://ivi.bupt.edu.cn/hls/cctv11.m3u8");
+        movieMap.put(
                 "CCTV-12社会与法高清",
                 "http://ivi.bupt.edu.cn/hls/cctv12hd.m3u8");
         movieMap.put(
+                "CCTV-13新闻",
+                "http://ivi.bupt.edu.cn/hls/cctv13.m3u8");
+        movieMap.put(
                 "CCTV-14少儿高清",
                 "http://ivi.bupt.edu.cn/hls/cctv14hd.m3u8");
+        movieMap.put(
+                "CCTV-15音乐",
+                "http://ivi.bupt.edu.cn/hls/cctv15.m3u8");
         movieMap.put(
                 "CCTV-17农业农村高清",
                 "http://ivi.bupt.edu.cn/hls/cctv17hd.m3u8");
@@ -69,16 +78,19 @@ public class Contents {
         movieMap.put(
                 "CHC电影高清",
                 "http://ivi.bupt.edu.cn/hls/chchd.m3u8");
+        movieMap.put(
+                "CETV-1高清",
+                "http://ivi.bupt.edu.cn/hls/cetv1hd.m3u8");
 
+        movieMap.put(
+                "速度与激情系列电影",// ?wsSecret=0094001ccf9fa3246949234baa6cad44&wsTime=1586820815
+                "http://zb3.qhqsnedu.com/live/suduyujiqingxilie/playlist.m3u8");
         movieMap.put(
                 "斯坦森系列电影",// ?wsSecret=9bd22fc2902c6c500fee03e060765100&wsTime=1586820749
                 "http://zb3.qhqsnedu.com/live/jiesen/playlist.m3u8");
         movieMap.put(
                 "周星驰系列电影",// ?wsSecret=833f65604867cbf52b63678cc0985ddd&wsTime=1586840687
-                "http://zb3.qhqsnedu.com/live/zhouxingxinga/playlist.m3u8?wsSecret=833f65604867cbf52b63678cc0985ddd&wsTime=1586840687");
-        movieMap.put(
-                "速度与激情系列电影",// ?wsSecret=0094001ccf9fa3246949234baa6cad44&wsTime=1586820815
-                "http://zb3.qhqsnedu.com/live/suduyujiqingxilie/playlist.m3u8");
+                "http://zb3.qhqsnedu.com/live/zhouxingxinga/playlist.m3u8");
         movieMap.put(
                 "林正英系列电影",// ?wsSecret=1502bea72119bc080d7036cea6f99ea3&wsTime=1586820846
                 "http://zb3.qhqsnedu.com/live/chingyinglam/playlist.m3u8");
@@ -86,8 +98,8 @@ public class Contents {
                 "林正英系列电影2",// ?wsSecret=1502bea72119bc080d7036cea6f99ea3&wsTime=1586820846
                 "https://zb3.qhqsnedu.com/live/chingyinglam/playlist.m3u8");
         movieMap.put(
-                "林正英系列电影3",
-                "https://zb3.qhqsnedu.com/live/chingyinglam/playlist.m3u8?wsSecret=1502bea72119bc080d7036cea6f99ea3&wsTime=1586820846");
+                "202",
+                "http://fangao.qhqsnedu.com/video/20190901/6096d93e978046839d4bb8591bb0940b/cloudv-transfer/55555555o9qq22825556p165o15o8o3r_c02d0795cc714420bbe0275f6a30e53a_0_3.m3u8?wsSecret=549eebf998f8fec17add64904d321c3f&wsTime=1587376458");
         movieMap.put(
                 "",
                 "");
@@ -176,12 +188,10 @@ public class Contents {
         movieMap.put(
                 "贵州卫视高清",
                 "http://ivi.bupt.edu.cn/hls/gzhd.m3u8");// http://ivi.bupt.edu.cn/hls/gztv.m3u8
-        movieMap.put(
-                "CETV-1高清",
-                "http://ivi.bupt.edu.cn/hls/cetv1hd.m3u8");// http://ivi.bupt.edu.cn/hls/cetv1.m3u8
 
         /////////////////////////////////////////////////////////////////
 
+        // 非高清
         movieMap.put(
                 "北京科教",
                 "http://ivi.bupt.edu.cn/hls/btv3.m3u8");
@@ -243,6 +253,10 @@ public class Contents {
                 "延边卫视",
                 "http://ivi.bupt.edu.cn/hls/ybtv.m3u8");
 
+        // 上面已有高清
+        /*movieMap.put(
+                "CETV-1",
+                "http://ivi.bupt.edu.cn/hls/cetv1.m3u8");
         movieMap.put(
                 "CETV-3",
                 "http://ivi.bupt.edu.cn/hls/cetv3.m3u8");
@@ -277,23 +291,14 @@ public class Contents {
                 "CCTV-10科教",
                 "http://ivi.bupt.edu.cn/hls/cctv10.m3u8");
         movieMap.put(
-                "CCTV-11戏曲",
-                "http://ivi.bupt.edu.cn/hls/cctv11.m3u8");
-        movieMap.put(
                 "CCTV-12社会与法",
                 "http://ivi.bupt.edu.cn/hls/cctv12.m3u8");
-        movieMap.put(
-                "CCTV-13新闻",
-                "http://ivi.bupt.edu.cn/hls/cctv13.m3u8");
         movieMap.put(
                 "CCTV-14少儿",
                 "http://ivi.bupt.edu.cn/hls/cctv14.m3u8");
         movieMap.put(
-                "CCTV-15音乐",
-                "http://ivi.bupt.edu.cn/hls/cctv15.m3u8");
-        movieMap.put(
                 "CCTV-17农业农村",
-                "http://ivi.bupt.edu.cn/hls/cctv17.m3u8");
+                "http://ivi.bupt.edu.cn/hls/cctv17.m3u8");*/
 
         /*movieMap.put(
                 "东方卫视",
@@ -310,10 +315,6 @@ public class Contents {
         movieMap.put(
                 "湖南卫视",
                 "rtmp://58.200.131.2:1935/livetv/hunantv");*/
-
-        movieMap.put(
-                "敢死队",//?wsSecret=794014929348ef69716f3f5925f30415&wsTime=1586740523
-                "http://meiju5.qhqsnedu.com/20190626/TJOX41iy/2000kb/hls/index.m3u8");
 
         // {csd-1=java.nio.HeapByteBuffer[pos=0 lim=8 cap=8], mime=video/avc, frame-rate=24, track-id=2, profile=2, width=1280, height=720, max-input-size=151238, durationUs=6227930041, csd-0=java.nio.HeapByteBuffer[pos=0 lim=41 cap=41], bitrate-mode=0, level=512}
         // csd-0: {0, 0, 0, 1, 103, 77, 64, 31, -24, -128, 40, 2, -35, -128, -87, 1, 1, 1, 64, 0, 0, -6, 64, 0, 46, -32, 56, 24, 0, 21, 92, -64, 1, 83, -38, 76, 48, 15, -116, 24, -119}
@@ -483,8 +484,11 @@ public class Contents {
                 "");
 
         movieMap.put(
-                "突袭",
-                "http://meiju4.qhqsnedu.com/20190211/fkJJsWpA/2000kb/hls/index.m3u8?wsSecret=f7ace8216a9bc07f7380fec0fcdc2de7&wsTime=1586740179");
+                "敢死队",//?wsSecret=794014929348ef69716f3f5925f30415&wsTime=1586740523
+                "https://meiju5.qhqsnedu.com/20190626/TJOX41iy/2000kb/hls/index.m3u8");
+        movieMap.put(
+                "突袭",// ?wsSecret=f7ace8216a9bc07f7380fec0fcdc2de7&wsTime=1586740179
+                "https://meiju4.qhqsnedu.com/20190211/fkJJsWpA/2000kb/hls/index.m3u8");
         movieMap.put(
                 "突袭1",
                 "http://xunleib.zuida360.com/1806/%E7%AA%81%E8%A2%AD.BD1280%E9%AB%98%E6%B8%85%E4%B8%AD%E5%AD%97%E7%89%88.mp4");

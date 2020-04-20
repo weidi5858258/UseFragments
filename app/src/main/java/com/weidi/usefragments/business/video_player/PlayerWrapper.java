@@ -44,6 +44,7 @@ import com.weidi.usefragments.tool.MLog;
 import com.weidi.utils.MyToast;
 
 import java.io.File;
+import java.util.HashMap;
 
 import static com.weidi.usefragments.service.DownloadFileService.PREFERENCES_NAME;
 
@@ -61,6 +62,8 @@ public class PlayerWrapper {
     public static final String PLAYBACK_POSITION = "playback_position";
     public static final String PLAYBACK_ISLIVE = "playback_islive";
 
+    private HashMap<String, Long> mPathTimeMap = new HashMap<>();
+
     private SharedPreferences mSP;
     private PowerManager.WakeLock mPowerWakeLock;
     private SurfaceHolder mSurfaceHolder;
@@ -76,6 +79,7 @@ public class PlayerWrapper {
     private boolean mIsScreenPress = false;
     private boolean mHasError = false;
     private boolean mIsSeparatedAudioVideo = false;
+    private long mMediaDuration;
 
     private WindowManager mWindowManager;
     private WindowManager.LayoutParams mLayoutParams;
@@ -346,6 +350,7 @@ public class PlayerWrapper {
                 mVideoHeight = msg.arg2;
                 MLog.d(TAG, "Callback.MSG_ON_CHANGE_WINDOW videoWidth: " +
                         mVideoWidth + " videoHeight: " + mVideoHeight);
+                mMediaDuration = mFFMPEGPlayer.getDuration();
 
                 if (mContext.getResources().getConfiguration().orientation
                         == Configuration.ORIENTATION_LANDSCAPE) {
@@ -467,15 +472,21 @@ public class PlayerWrapper {
                 String curElapsedTime = DateUtils.formatElapsedTime(mPresentationTime);
                 mProgressTimeTV.setText(curElapsedTime);
 
-                int duration = (int) (mFFMPEGPlayer.getDuration());
-                if (mNeedToSyncProgressBar && duration > 0) {
+                if (mNeedToSyncProgressBar && mMediaDuration > 0) {
                     int currentPosition = (int) (mPresentationTime);
-                    float pos = (float) currentPosition / duration;
+                    float pos = (float) currentPosition / mMediaDuration;
                     int target = Math.round(pos * mProgressBar.getMax());
                     mProgressBar.setProgress(target);
                 }
 
-                mSP.edit().putLong(PLAYBACK_POSITION, mPresentationTime).commit();
+                if (mMediaDuration > 0) {
+                    if (mPresentationTime < mMediaDuration) {
+                        mPathTimeMap.put(mPath, mPresentationTime);
+                    } else {
+                        mPathTimeMap.remove(mPath);
+                    }
+                }
+                //mSP.edit().putLong(PLAYBACK_POSITION, mPresentationTime).commit();
                 break;
             case KeyEvent.KEYCODE_HEADSETHOOK:// 单击事件
                 if (clickCounts > NEED_CLICK_COUNTS) {
@@ -589,6 +600,13 @@ public class PlayerWrapper {
                 mIsSeparatedAudioVideo = false;
                 String tempPath = "";
                 MLog.d(TAG, "startPlayback()                  mPath: " + mPath);
+
+                if (mPathTimeMap.containsKey(mPath)) {
+                    long position = mPathTimeMap.get(mPath);
+                    MLog.d(TAG, "startPlayback()               position: " + position);
+                    FFMPEG.getDefault().seekTo(position);
+                }
+
                 if (mPath.endsWith(".m4s")) {
                     tempPath = mPath.substring(0, mPath.lastIndexOf("/"));
                     File audioFile = new File(tempPath + "/audio.m4s");
@@ -694,6 +712,8 @@ public class PlayerWrapper {
         mControllerPanelLayoutHeight = mControllerPanelLayout.getHeight();
         MLog.d(TAG, "Callback.MSG_ON_CHANGE_WINDOW mControllerPanelLayoutHeight: " +
                 mControllerPanelLayoutHeight);
+        mControllerPanelLayout.setBackgroundColor(
+                mContext.getResources().getColor(android.R.color.transparent));
 
         // 改变SurfaceView高度
         RelativeLayout.LayoutParams relativeParams =
@@ -731,12 +751,15 @@ public class PlayerWrapper {
     public void handlePortraitScreen() {
         MLog.d(TAG, "Callback.MSG_ON_CHANGE_WINDOW handlePortraitScreen");
 
+        int pauseRlHeight = 0;
         if (mService != null) {
+            RelativeLayout pause_rl = mRootView.findViewById(R.id.pause_rl);
+            pauseRlHeight = pause_rl.getHeight();
             SeekBar progress_bar = mRootView.findViewById(R.id.progress_bar);
             RelativeLayout show_time_rl = mRootView.findViewById(R.id.show_time_rl);
             ImageButton button_prev = mRootView.findViewById(R.id.button_prev);
             ImageButton button_next = mRootView.findViewById(R.id.button_next);
-            if (mFFMPEGPlayer.getDuration() <= 0) {
+            if (mMediaDuration <= 0) {
                 progress_bar.setVisibility(View.GONE);
                 show_time_rl.setVisibility(View.GONE);
                 button_prev.setVisibility(View.INVISIBLE);
@@ -812,13 +835,15 @@ public class PlayerWrapper {
                     mContext.getResources().getColor(android.R.color.transparent));
         } else {
             frameParams.setMargins(0, mNeedVideoHeight, 0, 0);
-            if (mFFMPEGPlayer.getDuration() > 0) {
+            mControllerPanelLayout.setBackgroundColor(
+                    mContext.getResources().getColor(R.color.lightgray));
+            /*if (mMediaDuration > 0) {
                 mControllerPanelLayout.setBackgroundColor(
                         mContext.getResources().getColor(R.color.lightgray));
             } else {
                 mControllerPanelLayout.setBackgroundColor(
                         mContext.getResources().getColor(android.R.color.transparent));
-            }
+            }*/
         }
         frameParams.width = mScreenWidth;
         frameParams.height = mControllerPanelLayoutHeight;
@@ -829,8 +854,13 @@ public class PlayerWrapper {
                 if (mNeedVideoHeight > (int) (mScreenHeight * 2 / 3)) {
                     updateRootViewLayout(mScreenWidth, mNeedVideoHeight);
                 } else {
-                    updateRootViewLayout(mScreenWidth,
-                            mNeedVideoHeight + mControllerPanelLayoutHeight);
+                    if (mMediaDuration < 0) {
+                        updateRootViewLayout(mScreenWidth,
+                                mNeedVideoHeight + pauseRlHeight);
+                    } else {
+                        updateRootViewLayout(mScreenWidth,
+                                mNeedVideoHeight + mControllerPanelLayoutHeight);
+                    }
                 }
             } else {
                 updateRootViewLayout(mScreenWidth, mControllerPanelLayoutHeight + 1);
@@ -939,7 +969,7 @@ public class PlayerWrapper {
                     onEvent(KeyEvent.KEYCODE_HEADSETHOOK, null);
                     break;
                 case R.id.content_tv:
-                    //mNeedToSyncProgressBar = true;
+                    mNeedToSyncProgressBar = true;
                     mBubblePopupWindow.dismiss();
                     MLog.d(TAG, "onClick() mProgress: " + mProgress +
                             " " + DateUtils.formatElapsedTime(mProgress));
@@ -948,6 +978,7 @@ public class PlayerWrapper {
                     }
                     break;
                 case R.id.button_prev2:
+                    mNeedToSyncProgressBar = true;
                     if (mService != null) {
                         mService.removeView();
                     }
@@ -1019,10 +1050,10 @@ public class PlayerWrapper {
                 } else {
                     if (handleLandscapeScreenFlag) {
                         handleLandscapeScreenFlag = false;
-                        handleLandscapeScreen(0);
+                        handleLandscapeScreen(1);
                     } else {
                         handleLandscapeScreenFlag = true;
-                        handleLandscapeScreen(1);
+                        handleLandscapeScreen(0);
                     }
                 }
             } else if (mContext.getResources().getConfiguration().orientation ==

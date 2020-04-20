@@ -224,6 +224,7 @@ public class FFMPEG {
 
         @Override
         public void onProgressUpdated(long presentationTime) {
+            // 视频时长小于0时,不回调
             if (mUiHandler != null) {
                 Message msg = mUiHandler.obtainMessage();
                 msg.what = Callback.MSG_ON_PROGRESS_UPDATED;
