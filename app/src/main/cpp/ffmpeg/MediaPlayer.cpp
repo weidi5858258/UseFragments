@@ -882,13 +882,12 @@ namespace alexander_media {
         videoWrapper->srcWidth = videoWrapper->father->avCodecContext->width;
         videoWrapper->srcHeight = videoWrapper->father->avCodecContext->height;
         videoWrapper->srcAVPixelFormat = videoWrapper->father->avCodecContext->pix_fmt;
-        //onChangeWindow(videoWrapper->srcWidth, videoWrapper->srcHeight);
         LOGW("---------------------------------\n");
         LOGW("srcWidth            : %d\n", videoWrapper->srcWidth);
         LOGW("srcHeight           : %d\n", videoWrapper->srcHeight);
         LOGW("srcAVPixelFormat    : %d %s\n",
              videoWrapper->srcAVPixelFormat, getStrAVPixelFormat(videoWrapper->srcAVPixelFormat));
-        LOGW("dstAVPixelFormat    : %d %s\n",
+        LOGW("dstAVPixelFormat    : %d %s\n",// 在initVideo()中初始化设置
              videoWrapper->dstAVPixelFormat, getStrAVPixelFormat(videoWrapper->dstAVPixelFormat));
         videoWrapper->dstWidth = videoWrapper->srcWidth;
         videoWrapper->dstHeight = videoWrapper->srcHeight;
@@ -903,8 +902,6 @@ namespace alexander_media {
         int imageGetBufferSize = av_image_get_buffer_size(
                 videoWrapper->dstAVPixelFormat, videoWrapper->srcWidth, videoWrapper->srcHeight, 1);
         videoWrapper->father->outBufferSize = imageGetBufferSize * sizeof(unsigned char);
-        LOGW("imageGetBufferSize1 : %d\n", imageGetBufferSize);
-        LOGW("imageGetBufferSize2 : %d\n", videoWrapper->father->outBufferSize);
         videoWrapper->father->outBuffer1 =
                 (unsigned char *) av_malloc(videoWrapper->father->outBufferSize);
         int imageFillArrays = av_image_fill_arrays(
@@ -915,6 +912,9 @@ namespace alexander_media {
                 videoWrapper->srcWidth,
                 videoWrapper->srcHeight,
                 1);
+        LOGW("imageGetBufferSize1 : %d\n", imageGetBufferSize);
+        LOGW("imageGetBufferSize2 : %d\n", videoWrapper->father->outBufferSize);
+        LOGW("imageFillArrays     : %d\n", imageFillArrays);
         if (imageFillArrays < 0) {
             LOGE("imageFillArrays     : %d\n", imageFillArrays);
             return -1;
@@ -1104,9 +1104,9 @@ namespace alexander_media {
                 break;
             }
 
+            // seekTo
             if ((audioWrapper->father->isPausedForSeek || videoWrapper->father->isPausedForSeek)
                 && timeStamp >= 0) {
-                // seekTo
                 seekToImpl();
             }
 
@@ -1614,7 +1614,7 @@ namespace alexander_media {
                 wrapper->allowDecode = true;
             }
 
-            if (!isLocal) {
+            /*if (!isLocal) {
                 size_t list1Size = wrapper->list1->size();
                 if (wrapper->type == TYPE_AUDIO) {
                     if (list1Size % 1000 == 0) {
@@ -1625,7 +1625,7 @@ namespace alexander_media {
                         LOGW("handleData()   video list1Size: %d\n", list1Size);
                     }
                 }
-            }
+            }*/
 
             // endregion
 
@@ -1645,10 +1645,11 @@ namespace alexander_media {
                                  (long) (wrapper->endHandleTime - wrapper->startHandleTime));
                         }
                         LOGE("handleData() maybeHasException\n");
-                        onError(0x102, "播放时发生异常");
-                        //av_usleep(1 * 1000 * 1000);
+                        // 257
+                        onError(0x101, "播放时发生异常");
+                        // 258(见鬼了,"0x101"这个值正常,"0x102"这个值不正常)
+                        //onError(0x102, "播放时发生异常");
                         stop();
-                        //break;
                     } else {
                         maybeHasException = false;
                     }

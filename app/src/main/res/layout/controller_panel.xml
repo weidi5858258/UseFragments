@@ -7,7 +7,8 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:background="@android:color/transparent"
-    android:orientation="vertical">
+    android:orientation="vertical"
+    android:visibility="invisible">
 
     <!--<TextView
         android:id="@+id/file_name_tv2"
@@ -78,11 +79,11 @@
             android:contentDescription="Previous"
             android:src="@drawable/media_ic_prev"/>
 
+            <!--android:layout_width="@dimen/dimen_16_dp"
+            android:layout_height="@dimen/dimen_16_dp"-->
         <ImageButton
             android:id="@+id/button_prev2"
             style="@style/StyleImageButton"
-            android:layout_width="@dimen/dimen_16_dp"
-            android:layout_height="@dimen/dimen_16_dp"
             android:layout_alignParentStart="true"
             android:layout_marginStart="@dimen/dimen_80_dp"
             android:contentDescription="Previous2"

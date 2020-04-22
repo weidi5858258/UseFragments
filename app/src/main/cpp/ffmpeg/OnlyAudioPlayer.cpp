@@ -465,6 +465,13 @@ namespace alexander_only_audio {
         AVPacket *srcAVPacket = av_packet_alloc();
         AVPacket *copyAVPacket = av_packet_alloc();
 
+        // seekTo
+        if (timeStamp > 0) {
+            LOGI("readData() timeStamp: %ld\n", (long) timeStamp);
+            audioWrapper->father->needToSeek = true;
+            audioWrapper->father->isPausedForSeek = true;
+        }
+
         int readFrame = 0;
         /***
          有几种情况:
@@ -481,7 +488,7 @@ namespace alexander_only_audio {
 
             // seekTo
             if (audioWrapper->father->isPausedForSeek
-                && timeStamp != -1) {
+                && timeStamp >= 0) {
                 seekToImpl();
             }
 
@@ -1055,6 +1062,12 @@ namespace alexander_only_audio {
         LOGI("==================================================================\n");
         LOGI("seekTo() timestamp: %ld\n", (long) timestamp);
         //LOGI("seekTo() timestamp: %" PRIu64 "\n", timestamp);
+
+        if ((long) timestamp > 0
+            && audioWrapper == NULL) {
+            timeStamp = timestamp;
+            return 0;
+        }
 
         if (((long) timestamp) < 0
             || audioWrapper == NULL

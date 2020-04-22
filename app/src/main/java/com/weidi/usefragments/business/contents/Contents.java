@@ -1,5 +1,7 @@
 package com.weidi.usefragments.business.contents;
 
+import android.text.TextUtils;
+
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -1073,6 +1075,13 @@ public class Contents {
 
     public static String getTitle(){
         return mTitle;
+    }
+
+    public static String getTitle(String path) {
+        if (!TextUtils.isEmpty(path) && movieMap.containsKey(path)) {
+            return movieMap.get(path);
+        }
+        return null;
     }
 
     public static void setPath(String path) {

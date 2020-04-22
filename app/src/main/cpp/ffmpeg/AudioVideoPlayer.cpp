@@ -796,8 +796,20 @@ namespace alexander_audio_video {
 
         if (wrapper->type == TYPE_AUDIO) {
             isAudioReading = true;
+            // seekTo
+            if (timeStamp > 0) {
+                LOGD("readData() timeStamp: %ld\n", (long) timeStamp);
+                audioWrapper->father->needToSeek = true;
+                audioWrapper->father->isPausedForSeek = true;
+            }
         } else {
             isVideoReading = true;
+            // seekTo
+            if (timeStamp > 0) {
+                LOGW("readData() timeStamp: %ld\n", (long) timeStamp);
+                videoWrapper->father->needToSeek = true;
+                videoWrapper->father->isPausedForSeek = true;
+            }
         }
         int readFrame;
         /***
@@ -2007,6 +2019,13 @@ namespace alexander_audio_video {
     int seekTo(int64_t timestamp) {// 单位秒.比如seek到100秒,就传100
         LOGI("==================================================================\n");
         LOGI("seekTo() timeStamp: %ld\n", (long) timestamp);
+
+        if ((long) timestamp > 0
+            && (audioWrapper == NULL
+                || videoWrapper == NULL)) {
+            timeStamp = timestamp;
+            return 0;
+        }
 
         if ((long) timestamp > 0
             && (audioWrapper == NULL

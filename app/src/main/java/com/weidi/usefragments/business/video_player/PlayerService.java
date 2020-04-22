@@ -23,14 +23,8 @@ import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
-import android.view.SurfaceView;
 import android.view.View;
 import android.view.WindowManager;
-import android.widget.ImageButton;
-import android.widget.LinearLayout;
-import android.widget.ProgressBar;
-import android.widget.SeekBar;
-import android.widget.TextView;
 
 import com.weidi.eventbus.EventBusUtils;
 import com.weidi.usefragments.R;
@@ -194,7 +188,7 @@ public class PlayerService extends Service {
             case COMMAND_SHOW_WINDOW:
                 if (objArray != null && objArray.length >= 2) {
                     mCurPath = (String) objArray[0];
-                    mPlayerWrapper.setPath(mCurPath);
+                    mPlayerWrapper.setDataSource(mCurPath);
                     mPlayerWrapper.setType((String) objArray[1]);
                 }
                 mUiHandler.removeMessages(COMMAND_SHOW_WINDOW);
@@ -299,7 +293,7 @@ public class PlayerService extends Service {
         //        mPath = "/storage/1532-48AD/Videos/vodeo/c7f879de3a6baacf2ad81c5a65379718.mp4";
         //        mPath = "http://ivi.bupt.edu.cn/hls/cctv9hd.m3u8";
         mPlayerWrapper.setActivity(null, this);
-        mPlayerWrapper.setPath(mCurPath);
+        mPlayerWrapper.setDataSource(mCurPath);
         mPlayerWrapper.onCreate();
     }
 
@@ -309,7 +303,7 @@ public class PlayerService extends Service {
             MLog.e(TAG, "addView() mCurPath is empty");
             return;
         }
-        mPlayerWrapper.setPath(mCurPath);
+        mPlayerWrapper.setDataSource(mCurPath);
         MLog.i(TAG, "addView() mIsAddedView: " + mIsAddedView);
         if (!mIsAddedView) {
             mPlayerWrapper.onResume();
