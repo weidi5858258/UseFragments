@@ -246,14 +246,14 @@ namespace alexander_media {
 
     ///////////////////////////////////////////////////////
 
+    static bool needToDownload = false;
+    static bool isInitSuccess = false;
     static char audioOutFilePath[2048];
     static char videoOutFilePath[2048];
     static AVFormatContext *avFormatContextAudioOutput = NULL;
     static AVFormatContext *avFormatContextVideoOutput = NULL;
     static AVStream *audio_out_stream = NULL;
     static AVStream *video_out_stream = NULL;
-    static AVPacket *audioOutPkt = NULL;
-    static AVPacket *videoOutPkt = NULL;
 
     ///////////////////////////////////////////////////////
 
@@ -516,80 +516,63 @@ namespace alexander_media {
         char videoPath[] = "/storage/1532-48AD/Android/data/com.weidi.usefragments/files/Movies/video.h264";
 
         memset(audioOutFilePath, '\0', sizeof(audioOutFilePath));
-        av_strlcpy(audioOutFilePath, audioPath, sizeof(audioPath));
+        av_strlcpy(audioOutFilePath, audioPath, sizeof(audioOutFilePath));
 
         memset(videoOutFilePath, '\0', sizeof(videoOutFilePath));
-        av_strlcpy(videoOutFilePath, videoPath, sizeof(videoPath));
+        av_strlcpy(videoOutFilePath, videoPath, sizeof(videoOutFilePath));
 
-        // audio
+        LOGI("initDownload() audioOutFilePath: %s\n", audioOutFilePath);
+        LOGI("initDownload() videoOutFilePath: %s\n", videoOutFilePath);
+
         AVOutputFormat *audio_out_fmt = av_guess_format(NULL, audioOutFilePath, NULL);
+        AVOutputFormat *video_out_fmt = av_guess_format(NULL, videoOutFilePath, NULL);
         if (!audio_out_fmt) {
             LOGE("initDownload() audio_out_fmt is NULL.\n");
             return -1;
         }
+        if (!video_out_fmt) {
+            LOGE("initDownload() video_out_fmt is NULL.\n");
+            return -1;
+        }
 
         avFormatContextAudioOutput = avformat_alloc_context();
+        avFormatContextVideoOutput = avformat_alloc_context();
         avFormatContextAudioOutput->oformat = audio_out_fmt;
+        avFormatContextVideoOutput->oformat = video_out_fmt;
         audio_out_stream = avformat_new_stream(avFormatContextAudioOutput, NULL);
+        video_out_stream = avformat_new_stream(avFormatContextVideoOutput, NULL);
         if (!audio_out_stream) {
             LOGE("initDownload() audio_out_stream is NULL.\n");
             return -1;
         }
+        if (!video_out_stream) {
+            LOGE("initDownload() video_out_stream is NULL.\n");
+            return -1;
+        }
 
         AVStream *audioAVStream = audioWrapper->father->avStream;
-        //参数信息
         AVCodecParameters *audio_codecpar = audioAVStream->codecpar;
+        AVStream *videoAVStream = videoWrapper->father->avStream;
+        AVCodecParameters *video_codecpar = videoAVStream->codecpar;
 
         int ret = avcodec_parameters_copy(audio_out_stream->codecpar, audio_codecpar);
         if (ret < 0) {
             LOGE("initDownload() audio avcodec_parameters_copy occurs error.\n");
             return -1;
         }
-
-        audio_out_stream->codecpar->codec_tag = 0;
-        ret = avio_open(&avFormatContextAudioOutput->pb, audioOutFilePath, AVIO_FLAG_WRITE);
-        if (ret < 0) {
-            LOGE("initDownload() audio avio_open occurs error.\n");
-            return -1;
-        }
-
-        // 写头部信息
-        if (avformat_write_header(avFormatContextAudioOutput, NULL) < 0) {
-            LOGE("initDownload() audio avformat_write_header occurs error.\n");
-            return -1;
-        }
-
-        audioOutPkt = av_packet_alloc();
-        av_init_packet(audioOutPkt);
-        audioOutPkt->data = NULL;
-        audioOutPkt->size = 0;
-
-        // video
-        AVOutputFormat *video_out_fmt = av_guess_format(NULL, videoOutFilePath, NULL);
-        if (!video_out_fmt) {
-            LOGE("initDownload() video_out_fmt is NULL.\n");
-            return -1;
-        }
-
-        avFormatContextVideoOutput = avformat_alloc_context();
-        avFormatContextVideoOutput->oformat = video_out_fmt;
-        video_out_stream = avformat_new_stream(avFormatContextVideoOutput, NULL);
-        if (!video_out_stream) {
-            LOGE("initDownload() video_out_stream is NULL.\n");
-            return -1;
-        }
-
-        AVStream *videoAVStream = videoWrapper->father->avStream;
-        //参数信息
-        AVCodecParameters *video_codecpar = videoAVStream->codecpar;
-
         ret = avcodec_parameters_copy(video_out_stream->codecpar, video_codecpar);
         if (ret < 0) {
             LOGE("initDownload() video avcodec_parameters_copy occurs error.\n");
             return -1;
         }
 
+        audio_out_stream->codecpar->codec_tag = 0;
         video_out_stream->codecpar->codec_tag = 0;
+        ret = avio_open(&avFormatContextAudioOutput->pb, audioOutFilePath, AVIO_FLAG_WRITE);
+        if (ret < 0) {
+            LOGE("initDownload() audio avio_open occurs error.\n");
+            return -1;
+        }
         ret = avio_open(&avFormatContextVideoOutput->pb, videoOutFilePath, AVIO_FLAG_WRITE);
         if (ret < 0) {
             LOGE("initDownload() video avio_open occurs error.\n");
@@ -597,50 +580,18 @@ namespace alexander_media {
         }
 
         // 写头部信息
-        if (avformat_write_header(avFormatContextVideoOutput, NULL) < 0) {
+        ret = avformat_write_header(avFormatContextAudioOutput, NULL);
+        if (ret < 0) {
+            LOGE("initDownload() audio avformat_write_header occurs error.\n");
+            return -1;
+        }
+        ret = avformat_write_header(avFormatContextVideoOutput, NULL);
+        if (ret < 0) {
             LOGE("initDownload() video avformat_write_header occurs error.\n");
             return -1;
         }
 
-        videoOutPkt = av_packet_alloc();
-        av_init_packet(videoOutPkt);
-        videoOutPkt->data = NULL;
-        videoOutPkt->size = 0;
-
-        AVPacket pkt;
-        av_init_packet(&pkt);
-        pkt.data = NULL;
-        pkt.size = 0;
-        int audio_stream_index = 0;
-        while (av_read_frame(avFormatContext, &pkt) >= 0) {
-            if (pkt.stream_index == audio_stream_index) {
-                pkt.pts = av_rescale_q_rnd(pkt.pts, audioAVStream->time_base,
-                                           audio_out_stream->time_base,
-                                           (AVRounding) (AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX));
-                pkt.dts = av_rescale_q_rnd(pkt.dts, audioAVStream->time_base,
-                                           audio_out_stream->time_base,
-                                           (AVRounding) (AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX));
-
-                pkt.duration = av_rescale_q(pkt.duration, audioAVStream->time_base,
-                                            audio_out_stream->time_base);
-                pkt.pos = -1;
-                pkt.stream_index = 0;
-                //将包写到输出媒体文件
-                av_interleaved_write_frame(avFormatContextAudioOutput, &pkt);
-                av_packet_unref(&pkt);
-            }
-        }
-
-        //写尾部信息
-        av_write_trailer(avFormatContextAudioOutput);
-
-        avio_close(avFormatContextAudioOutput->pb);
-
-        if (avFormatContextAudioOutput != NULL) {
-            //avformat_close_input(&avFormatContextAudioOutput);
-            avformat_free_context(avFormatContextAudioOutput);
-            avFormatContextAudioOutput = NULL;
-        }
+        return 0;
     }
 
     int openAndFindAVFormatContext() {
@@ -1186,6 +1137,40 @@ namespace alexander_media {
         return 0;
     }
 
+    int downloadImpl(Wrapper *wrapper, AVPacket *srcAVPacket, AVPacket *copyAVPacket) {
+        av_packet_ref(copyAVPacket, srcAVPacket);
+
+        AVRational time_base;
+        if (wrapper->type == TYPE_AUDIO) {
+            time_base = audio_out_stream->time_base;
+        } else {
+            time_base = video_out_stream->time_base;
+        }
+        copyAVPacket->pts = av_rescale_q_rnd(copyAVPacket->pts,
+                                             wrapper->avStream->time_base,
+                                             time_base,
+                                             (AVRounding) (AV_ROUND_NEAR_INF |
+                                                           AV_ROUND_PASS_MINMAX));
+        copyAVPacket->dts = av_rescale_q_rnd(copyAVPacket->dts,
+                                             wrapper->avStream->time_base,
+                                             time_base,
+                                             (AVRounding) (AV_ROUND_NEAR_INF |
+                                                           AV_ROUND_PASS_MINMAX));
+        copyAVPacket->duration = av_rescale_q(copyAVPacket->duration,
+                                              wrapper->avStream->time_base,
+                                              time_base);
+        copyAVPacket->pos = -1;
+        copyAVPacket->stream_index = 0;
+        //将包写到输出媒体文件
+        if (wrapper->type == TYPE_AUDIO) {
+            av_interleaved_write_frame(avFormatContextAudioOutput, copyAVPacket);
+        } else {
+            av_interleaved_write_frame(avFormatContextVideoOutput, copyAVPacket);
+        }
+
+        av_packet_unref(copyAVPacket);
+    }
+
     int readDataImpl(Wrapper *wrapper, AVPacket *srcAVPacket, AVPacket *copyAVPacket) {
         wrapper->readFramesCount++;
         // 复制数据
@@ -1272,6 +1257,12 @@ namespace alexander_media {
 
         AVPacket *srcAVPacket = av_packet_alloc();
         AVPacket *copyAVPacket = av_packet_alloc();
+        av_init_packet(srcAVPacket);
+        srcAVPacket->data = NULL;
+        srcAVPacket->size = 0;
+        av_init_packet(copyAVPacket);
+        copyAVPacket->data = NULL;
+        copyAVPacket->size = 0;
 
         // seekTo
         if (timeStamp > 0) {
@@ -1281,6 +1272,13 @@ namespace alexander_media {
             audioWrapper->father->isPausedForSeek = true;
             videoWrapper->father->isPausedForSeek = true;
         }
+
+        if (initDownload() < 0) {
+            isInitSuccess = false;
+        } else {
+            isInitSuccess = true;
+        }
+        LOGI("readData() isInitSuccess: %d\n", isInitSuccess);
 
         isReading = true;
         /***
@@ -1359,14 +1357,29 @@ namespace alexander_media {
 
             if (srcAVPacket->stream_index == audioWrapper->father->streamIndex) {
                 if (audioWrapper->father->isReading) {
+                    if (needToDownload && isInitSuccess) {
+                        downloadImpl(audioWrapper->father, srcAVPacket, copyAVPacket);
+                    }
                     readDataImpl(audioWrapper->father, srcAVPacket, copyAVPacket);
                 }
             } else if (srcAVPacket->stream_index == videoWrapper->father->streamIndex) {
                 if (videoWrapper->father->isReading) {
+                    if (needToDownload && isInitSuccess) {
+                        downloadImpl(videoWrapper->father, srcAVPacket, copyAVPacket);
+                    }
                     readDataImpl(videoWrapper->father, srcAVPacket, copyAVPacket);
                 }
             }
         }// for(;;) end
+
+        if (isInitSuccess) {
+            // 写尾部信息
+            av_write_trailer(avFormatContextAudioOutput);
+            avio_close(avFormatContextAudioOutput->pb);
+
+            av_write_trailer(avFormatContextVideoOutput);
+            avio_close(avFormatContextVideoOutput->pb);
+        }
 
         if (srcAVPacket != NULL) {
             av_packet_unref(srcAVPacket);
@@ -2370,14 +2383,6 @@ namespace alexander_media {
         }
         if (video_out_stream != NULL) {
         }
-        if (audioOutPkt != NULL) {
-            av_packet_unref(audioOutPkt);
-            audioOutPkt = NULL;
-        }
-        if (videoOutPkt != NULL) {
-            av_packet_unref(videoOutPkt);
-            videoOutPkt = NULL;
-        }
     }
 
     int initPlayer() {
@@ -2502,7 +2507,7 @@ namespace alexander_media {
 //        av_strlcpy(inVideoFilePath, src, sizeof(inVideoFilePath));
 
         memset(inFilePath, '\0', sizeof(inFilePath));
-        av_strlcpy(inFilePath, filePath, sizeof(filePath));
+        av_strlcpy(inFilePath, filePath, sizeof(inFilePath));
         LOGI("setJniParameters() filePath  : %s", inFilePath);
 
         isLocal = false;
