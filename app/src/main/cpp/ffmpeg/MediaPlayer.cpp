@@ -191,10 +191,7 @@ pthread_join(videoHandleDataThread, NULL);
 #define LOG "player_alexander"
 
 static char inFilePath[2048];
-static char outFilePath[2048];
 AVFormatContext *avFormatContext = NULL;
-static AVFormatContext *avFormatContextAudioOutput = NULL;
-static AVFormatContext *avFormatContextVideoOutput = NULL;
 struct AudioWrapper *audioWrapper = NULL;
 struct VideoWrapper *videoWrapper = NULL;
 static pthread_mutex_t readLockMutex = PTHREAD_MUTEX_INITIALIZER;
@@ -235,6 +232,7 @@ namespace alexander_media {
     double timeDiff[RUN_COUNTS];
 
     long mediaDuration = -1;
+    // 读线程超时变量
     int64_t startReadTime = -1;
     int64_t endReadTime = -1;
 
@@ -245,6 +243,19 @@ namespace alexander_media {
     int videoPtsCountsA = 0;
     int videoPtsCountsB = 0;
     bool isVideoLocked = false;
+
+    ///////////////////////////////////////////////////////
+
+    static char audioOutFilePath[2048];
+    static char videoOutFilePath[2048];
+    static AVFormatContext *avFormatContextAudioOutput = NULL;
+    static AVFormatContext *avFormatContextVideoOutput = NULL;
+    static AVStream *audio_out_stream = NULL;
+    static AVStream *video_out_stream = NULL;
+    static AVPacket *audioOutPkt = NULL;
+    static AVPacket *videoOutPkt = NULL;
+
+    ///////////////////////////////////////////////////////
 
     char *getStrAVPixelFormat(AVPixelFormat format);
 
@@ -498,6 +509,138 @@ namespace alexander_media {
         videoWrapper->dstAVPixelFormat = AV_PIX_FMT_RGBA;
         videoWrapper->srcWidth = 0;
         videoWrapper->srcHeight = 0;
+    }
+
+    int initDownload() {
+        char audioPath[] = "/storage/1532-48AD/Android/data/com.weidi.usefragments/files/Movies/audio.aac";
+        char videoPath[] = "/storage/1532-48AD/Android/data/com.weidi.usefragments/files/Movies/video.h264";
+
+        memset(audioOutFilePath, '\0', sizeof(audioOutFilePath));
+        av_strlcpy(audioOutFilePath, audioPath, sizeof(audioPath));
+
+        memset(videoOutFilePath, '\0', sizeof(videoOutFilePath));
+        av_strlcpy(videoOutFilePath, videoPath, sizeof(videoPath));
+
+        // audio
+        AVOutputFormat *audio_out_fmt = av_guess_format(NULL, audioOutFilePath, NULL);
+        if (!audio_out_fmt) {
+            LOGE("initDownload() audio_out_fmt is NULL.\n");
+            return -1;
+        }
+
+        avFormatContextAudioOutput = avformat_alloc_context();
+        avFormatContextAudioOutput->oformat = audio_out_fmt;
+        audio_out_stream = avformat_new_stream(avFormatContextAudioOutput, NULL);
+        if (!audio_out_stream) {
+            LOGE("initDownload() audio_out_stream is NULL.\n");
+            return -1;
+        }
+
+        AVStream *audioAVStream = audioWrapper->father->avStream;
+        //参数信息
+        AVCodecParameters *audio_codecpar = audioAVStream->codecpar;
+
+        int ret = avcodec_parameters_copy(audio_out_stream->codecpar, audio_codecpar);
+        if (ret < 0) {
+            LOGE("initDownload() audio avcodec_parameters_copy occurs error.\n");
+            return -1;
+        }
+
+        audio_out_stream->codecpar->codec_tag = 0;
+        ret = avio_open(&avFormatContextAudioOutput->pb, audioOutFilePath, AVIO_FLAG_WRITE);
+        if (ret < 0) {
+            LOGE("initDownload() audio avio_open occurs error.\n");
+            return -1;
+        }
+
+        // 写头部信息
+        if (avformat_write_header(avFormatContextAudioOutput, NULL) < 0) {
+            LOGE("initDownload() audio avformat_write_header occurs error.\n");
+            return -1;
+        }
+
+        audioOutPkt = av_packet_alloc();
+        av_init_packet(audioOutPkt);
+        audioOutPkt->data = NULL;
+        audioOutPkt->size = 0;
+
+        // video
+        AVOutputFormat *video_out_fmt = av_guess_format(NULL, videoOutFilePath, NULL);
+        if (!video_out_fmt) {
+            LOGE("initDownload() video_out_fmt is NULL.\n");
+            return -1;
+        }
+
+        avFormatContextVideoOutput = avformat_alloc_context();
+        avFormatContextVideoOutput->oformat = video_out_fmt;
+        video_out_stream = avformat_new_stream(avFormatContextVideoOutput, NULL);
+        if (!video_out_stream) {
+            LOGE("initDownload() video_out_stream is NULL.\n");
+            return -1;
+        }
+
+        AVStream *videoAVStream = videoWrapper->father->avStream;
+        //参数信息
+        AVCodecParameters *video_codecpar = videoAVStream->codecpar;
+
+        ret = avcodec_parameters_copy(video_out_stream->codecpar, video_codecpar);
+        if (ret < 0) {
+            LOGE("initDownload() video avcodec_parameters_copy occurs error.\n");
+            return -1;
+        }
+
+        video_out_stream->codecpar->codec_tag = 0;
+        ret = avio_open(&avFormatContextVideoOutput->pb, videoOutFilePath, AVIO_FLAG_WRITE);
+        if (ret < 0) {
+            LOGE("initDownload() video avio_open occurs error.\n");
+            return -1;
+        }
+
+        // 写头部信息
+        if (avformat_write_header(avFormatContextVideoOutput, NULL) < 0) {
+            LOGE("initDownload() video avformat_write_header occurs error.\n");
+            return -1;
+        }
+
+        videoOutPkt = av_packet_alloc();
+        av_init_packet(videoOutPkt);
+        videoOutPkt->data = NULL;
+        videoOutPkt->size = 0;
+
+        AVPacket pkt;
+        av_init_packet(&pkt);
+        pkt.data = NULL;
+        pkt.size = 0;
+        int audio_stream_index = 0;
+        while (av_read_frame(avFormatContext, &pkt) >= 0) {
+            if (pkt.stream_index == audio_stream_index) {
+                pkt.pts = av_rescale_q_rnd(pkt.pts, audioAVStream->time_base,
+                                           audio_out_stream->time_base,
+                                           (AVRounding) (AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX));
+                pkt.dts = av_rescale_q_rnd(pkt.dts, audioAVStream->time_base,
+                                           audio_out_stream->time_base,
+                                           (AVRounding) (AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX));
+
+                pkt.duration = av_rescale_q(pkt.duration, audioAVStream->time_base,
+                                            audio_out_stream->time_base);
+                pkt.pos = -1;
+                pkt.stream_index = 0;
+                //将包写到输出媒体文件
+                av_interleaved_write_frame(avFormatContextAudioOutput, &pkt);
+                av_packet_unref(&pkt);
+            }
+        }
+
+        //写尾部信息
+        av_write_trailer(avFormatContextAudioOutput);
+
+        avio_close(avFormatContextAudioOutput->pb);
+
+        if (avFormatContextAudioOutput != NULL) {
+            //avformat_close_input(&avFormatContextAudioOutput);
+            avformat_free_context(avFormatContextAudioOutput);
+            avFormatContextAudioOutput = NULL;
+        }
     }
 
     int openAndFindAVFormatContext() {
@@ -2207,10 +2350,33 @@ namespace alexander_media {
     void closeOther() {
         if (avFormatContext != NULL) {
             LOGI("%s\n", "closeOther() start");
+            //ffmpeg 4.0版本不能调用
             //avformat_close_input(&avFormatContext);
             avformat_free_context(avFormatContext);
             avFormatContext = NULL;
             LOGI("%s\n", "closeOther() end");
+        }
+        if (avFormatContextAudioOutput != NULL) {
+            //avformat_close_input(&avFormatContextAudioOutput);
+            avformat_free_context(avFormatContextAudioOutput);
+            avFormatContextAudioOutput = NULL;
+        }
+        if (avFormatContextVideoOutput != NULL) {
+            //avformat_close_input(&avFormatContextVideoOutput);
+            avformat_free_context(avFormatContextVideoOutput);
+            avFormatContextVideoOutput = NULL;
+        }
+        if (audio_out_stream != NULL) {
+        }
+        if (video_out_stream != NULL) {
+        }
+        if (audioOutPkt != NULL) {
+            av_packet_unref(audioOutPkt);
+            audioOutPkt = NULL;
+        }
+        if (videoOutPkt != NULL) {
+            av_packet_unref(videoOutPkt);
+            videoOutPkt = NULL;
         }
     }
 
@@ -2336,7 +2502,7 @@ namespace alexander_media {
 //        av_strlcpy(inVideoFilePath, src, sizeof(inVideoFilePath));
 
         memset(inFilePath, '\0', sizeof(inFilePath));
-        av_strlcpy(inFilePath, filePath, sizeof(inFilePath));
+        av_strlcpy(inFilePath, filePath, sizeof(filePath));
         LOGI("setJniParameters() filePath  : %s", inFilePath);
 
         isLocal = false;
@@ -2735,35 +2901,36 @@ namespace alexander_media {
         return info;
     }
 
-    /*void test() {
+    void test() {
         //avFormatContextVideoOutput = avformat_alloc_context();
         //avFormatContextVideoOutput->oformat = outputFormat;
+        char path[] = "/storage/1532-48AD/Android/data/com.weidi.usefragments/files/Movies/audio.m4s";
         // 先实现音频吧
-        AVOutputFormat *output_fmt = av_guess_format(NULL, outFilePath, NULL);
-        if (!output_fmt) {
+        AVOutputFormat *audio_out_fmt = av_guess_format(NULL, audioOutFilePath, NULL);
+        if (!audio_out_fmt) {
 
         }
 
         avFormatContextAudioOutput = avformat_alloc_context();
 
-        avFormatContextAudioOutput->oformat = output_fmt;
+        avFormatContextAudioOutput->oformat = audio_out_fmt;
 
-        AVStream *out_stream = avformat_new_stream(avFormatContextAudioOutput, NULL);
-        if (!out_stream) {
+        AVStream *audio_out_stream = avformat_new_stream(avFormatContextAudioOutput, NULL);
+        if (!audio_out_stream) {
 
         }
 
         AVStream *avStream = audioWrapper->father->avStream;
         //参数信息
-        AVCodecParameters *in_codecpar = avStream->codecpar;
+        AVCodecParameters *codecpar = avStream->codecpar;
 
-        int err_code = avcodec_parameters_copy(out_stream->codecpar, in_codecpar);
+        int err_code = avcodec_parameters_copy(audio_out_stream->codecpar, codecpar);
         if (err_code < 0) {
 
         }
 
-        out_stream->codecpar->codec_tag = 0;
-        err_code = avio_open(&avFormatContextAudioOutput->pb, outFilePath, AVIO_FLAG_WRITE);
+        audio_out_stream->codecpar->codec_tag = 0;
+        err_code = avio_open(&avFormatContextAudioOutput->pb, audioOutFilePath, AVIO_FLAG_WRITE);
         if (err_code < 0) {
 
         }
@@ -2782,13 +2949,15 @@ namespace alexander_media {
         int audio_stream_index = 0;
         while (av_read_frame(avFormatContext, &pkt) >= 0) {
             if (pkt.stream_index == audio_stream_index) {
-                pkt.pts = av_rescale_q_rnd(pkt.pts, avStream->time_base, out_stream->time_base,
-                                           (AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX));
-                pkt.dts = av_rescale_q_rnd(pkt.dts, avStream->time_base, out_stream->time_base,
-                                           (AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX));
+                pkt.pts = av_rescale_q_rnd(pkt.pts, avStream->time_base,
+                                           audio_out_stream->time_base,
+                                           (AVRounding) (AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX));
+                pkt.dts = av_rescale_q_rnd(pkt.dts, avStream->time_base,
+                                           audio_out_stream->time_base,
+                                           (AVRounding) (AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX));
 
                 pkt.duration = av_rescale_q(pkt.duration, avStream->time_base,
-                                            out_stream->time_base);
+                                            audio_out_stream->time_base);
                 pkt.pos = -1;
                 pkt.stream_index = 0;
                 //将包写到输出媒体文件
@@ -2796,7 +2965,6 @@ namespace alexander_media {
                 av_packet_unref(&pkt);
             }
         }
-
 
         //写尾部信息
         av_write_trailer(avFormatContextAudioOutput);
@@ -2808,6 +2976,6 @@ namespace alexander_media {
             avformat_free_context(avFormatContextAudioOutput);
             avFormatContextAudioOutput = NULL;
         }
-    }*/
+    }
 
 }

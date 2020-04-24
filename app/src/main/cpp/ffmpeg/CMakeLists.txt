@@ -221,6 +221,7 @@ target_link_libraries(
         ${cutils-lib}
         ${utils-lib}]]
 
+        # 编译当前库时需要引用的第三方库
         avdevice
         avformat
         avcodec
