@@ -63,6 +63,7 @@ public class PlayerWrapper {
     public static final String PLAYBACK_ISLIVE = "playback_islive";
     // 是否正常结束
     public static final String PLAYBACK_NORMAL_FINISH = "playback_normal_finish";
+    public static final String PLAYBACK_MEDIA_TYPE = "playback_media_type";
 
     private HashMap<String, Long> mPathTimeMap = new HashMap<>();
 
@@ -398,6 +399,7 @@ public class PlayerWrapper {
                     edit.putString(PLAYBACK_ADDRESS, mPath);
                     // 开始播放设置为false,表示初始化状态
                     edit.putBoolean(PLAYBACK_NORMAL_FINISH, false);
+                    edit.putString(PLAYBACK_MEDIA_TYPE, mType);
                     edit.commit();
                 }
                 break;
@@ -474,14 +476,17 @@ public class PlayerWrapper {
                     case Callback.ERROR_DATA_EXCEPTION:
                         // 需要重新播放
                         mHasError = true;
-                        MLog.e(TAG, "Callback.MSG_ON_ERROR errorInfo: " + errorInfo);
+                        MLog.e(TAG, "PlayerWrapper Callback.MSG_ON_ERROR errorInfo: " + errorInfo);
                         break;
                     case Callback.ERROR_FFMPEG_INIT:
-                        MLog.e(TAG, "Callback.ERROR_FFMPEG_INIT errorInfo: " + errorInfo);
+                        MLog.e(TAG,
+                                "PlayerWrapper Callback.ERROR_FFMPEG_INIT errorInfo: " + errorInfo);
                         MyToast.show("音视频初始化失败");
                         // 不需要重新播放
                         if (mService != null) {
-                            MLog.i(TAG, "Callback.ERROR_FFMPEG_INIT mService.removeView()");
+                            MLog.i(TAG,
+                                    "PlayerWrapper Callback.ERROR_FFMPEG_INIT " +
+                                            "mService.removeView()");
                             mService.removeView();
                             if (mSurfaceHolder != null) {
                                 mSurfaceHolder.removeCallback(mSurfaceCallback);

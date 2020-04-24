@@ -191,7 +191,10 @@ pthread_join(videoHandleDataThread, NULL);
 #define LOG "player_alexander"
 
 static char inFilePath[2048];
+static char outFilePath[2048];
 AVFormatContext *avFormatContext = NULL;
+static AVFormatContext *avFormatContextAudioOutput = NULL;
+static AVFormatContext *avFormatContextVideoOutput = NULL;
 struct AudioWrapper *audioWrapper = NULL;
 struct VideoWrapper *videoWrapper = NULL;
 static pthread_mutex_t readLockMutex = PTHREAD_MUTEX_INITIALIZER;
@@ -238,6 +241,7 @@ namespace alexander_media {
     int64_t startVideoLockedTime = -1;
     int64_t endVideoLockedTime = -1;
 
+    int frameRate = 0;
     int videoPtsCountsA = 0;
     int videoPtsCountsB = 0;
     bool isVideoLocked = false;
@@ -620,25 +624,19 @@ namespace alexander_media {
             AVCodecID codecID = audioWrapper->father->avCodecParameters->codec_id;
             // audio是没有下面这些东西的
             switch (codecID) {
-                case AV_CODEC_ID_HEVC: {
-                    LOGD("findAndOpenAVCodecForAudio() hevc_mediacodec\n");
-                    // 硬解码265
-                    audioWrapper->father->decoderAVCodec = avcodec_find_decoder_by_name(
-                            "hevc_mediacodec");
-                    break;
-                }
-                case AV_CODEC_ID_H264: {
-                    LOGD("findAndOpenAVCodecForAudio() h264_mediacodec\n");
+                case AV_CODEC_ID_FLAC: {
+                    LOGD("findAndOpenAVCodecForAudio() AV_CODEC_ID_FLAC\n");
                     // 硬解码264
-                    audioWrapper->father->decoderAVCodec = avcodec_find_decoder_by_name(
-                            "h264_mediacodec");
+                    /*audioWrapper->father->decoderAVCodec = avcodec_find_decoder_by_name(
+                            "h264_mediacodec");*/
                     break;
                 }
-                case AV_CODEC_ID_MPEG4: {
-                    LOGD("findAndOpenAVCodecForAudio() mpeg4_mediacodec\n");
-                    // 硬解码mpeg4
-                    audioWrapper->father->decoderAVCodec = avcodec_find_decoder_by_name(
-                            "mpeg4_mediacodec");
+                case AV_CODEC_ID_AAC: {
+                    LOGD("findAndOpenAVCodecForAudio() AV_CODEC_ID_AAC\n");
+                    break;
+                }
+                case AV_CODEC_ID_AAC_LATM: {
+                    LOGD("findAndOpenAVCodecForAudio() AV_CODEC_ID_AAC_LATM\n");
                     break;
                 }
                 default: {
@@ -716,10 +714,11 @@ namespace alexander_media {
                     break;
                 }
             }
-            if (!videoWrapper->father->decoderAVCodec) {
+            /*if (!videoWrapper->father->decoderAVCodec) {
                 // 有相应的so库时这句就不要执行了
                 videoWrapper->father->decoderAVCodec = avcodec_find_decoder(codecID);
-            }
+            }*/
+            videoWrapper->father->decoderAVCodec = avcodec_find_decoder(codecID);
             if (videoWrapper->father->decoderAVCodec != NULL) {
                 videoWrapper->father->avCodecContext = avcodec_alloc_context3(
                         videoWrapper->father->decoderAVCodec);
@@ -882,7 +881,58 @@ namespace alexander_media {
         videoWrapper->srcWidth = videoWrapper->father->avCodecContext->width;
         videoWrapper->srcHeight = videoWrapper->father->avCodecContext->height;
         videoWrapper->srcAVPixelFormat = videoWrapper->father->avCodecContext->pix_fmt;
+
+        int64_t bit_rate = videoWrapper->father->avCodecContext->bit_rate;
+        int bit_rate_tolerance = videoWrapper->father->avCodecContext->bit_rate_tolerance;
+        int bits_per_coded_sample = videoWrapper->father->avCodecContext->bits_per_coded_sample;
+        int bits_per_raw_sample = videoWrapper->father->avCodecContext->bits_per_raw_sample;
+        int delay = videoWrapper->father->avCodecContext->delay;
+        int frame_number = videoWrapper->father->avCodecContext->frame_number;
+        int frame_size = videoWrapper->father->avCodecContext->frame_size;
+        int level = videoWrapper->father->avCodecContext->level;
         LOGW("---------------------------------\n");
+        LOGW("bit_rate            : %ld\n", (long) bit_rate);
+        LOGW("bit_rate_tolerance  : %d\n", bit_rate_tolerance);
+        LOGW("bits_per_coded_sample: %d\n", bits_per_coded_sample);
+        LOGW("bits_per_raw_sample : %d\n", bits_per_raw_sample);
+        LOGW("delay               : %d\n", delay);
+        LOGW("level               : %d\n", level);
+        LOGW("frame_size          : %d\n", frame_size);
+        LOGW("frame_number        : %d\n", frame_number);
+
+        AVStream *stream = avFormatContext->streams[videoWrapper->father->streamIndex];
+        // 帧数
+        int64_t videoFrames = stream->nb_frames;
+        /***
+         帧率:fps每秒显示帧数(frames) Frame per Second(fps)/Hz
+         码率:bps(比特率,数据率)确定整体视频/音频质量的参数，秒为单位处理的字节数，码率和视频质量成正比
+         肉眼想看到连续移动图像至少需要15帧。
+         值得一提的是手机视频拍摄中，无论是720P还是1080P基本都是30帧每秒。
+         目前受到硬件迭代更新的影响，拍摄帧率有达到60fps/120fps，但基本还是30的倍数。
+         电影放映的标准是每秒放映24帧，中国的电视、广告、动画播放每秒25帧，
+         这个帧率属于PAL制式，在亚洲和欧洲电视台较为常用，而美国加拿大一般都是NTSC制式每秒29.97帧。
+
+         看起来好像比较正常
+         30fps 1480kbps
+         30fps 6704kbps
+
+         30fps 12897kbps快
+         30fps 14739kbps快
+         30fps 11697kbps快
+         30fps 1948kbps 快
+         29fps 1119kbps 快
+         25fps 895kbps  快
+         29fps 622kbps  快
+         23fps 1212kbps 快
+         29fps 38572kbps慢
+         */
+        if (stream->avg_frame_rate.den) {
+            frameRate = stream->avg_frame_rate.num / stream->avg_frame_rate.den;
+        }
+        int bitRate = avFormatContext->bit_rate / 1000;
+        LOGW("videoFrames         : %d\n", (long) videoFrames);
+        LOGW("frameRate           : %d fps/Hz\n", frameRate);
+        LOGW("bitRate             : %d kbps\n", bitRate);
         LOGW("srcWidth            : %d\n", videoWrapper->srcWidth);
         LOGW("srcHeight           : %d\n", videoWrapper->srcHeight);
         LOGW("srcAVPixelFormat    : %d %s\n",
@@ -1291,7 +1341,7 @@ namespace alexander_media {
         }
         preVideoPts = videoPts;
         //LOGW("handleVideoDataImpl() videoPts: %lf\n", videoPts);
-        if (isLocal && mediaDuration > 0) {
+        /*if (isLocal && mediaDuration > 0) {
             if (preAudioPts == audioPts) {
                 videoPtsCountsA++;
             }
@@ -1302,7 +1352,7 @@ namespace alexander_media {
                 videoSleep(4);
             }
             //LOGW("handleVideoDataImpl() videoPtsCountsB: %d\n", videoPtsCountsB);
-        }
+        }*/
 
         if (videoPts > 0 && audioPts > 0) {
             double tempTimeDifference = videoPts - audioPts;
@@ -1635,15 +1685,18 @@ namespace alexander_media {
                     /*if (count >= 500) {
                         wrapper->endHandleTime = wrapper->startHandleTime;
                     }*/
+                    if (wrapper->type == TYPE_AUDIO) {
+                        LOGE("handleData()  audio handleTime: %ld\n",
+                             (long) (wrapper->endHandleTime - wrapper->startHandleTime));
+                    } else {
+                        LOGE("handleData()  video handleTime: %ld\n",
+                             (long) (wrapper->endHandleTime - wrapper->startHandleTime));
+                    }
+                    /***
+                     830377 243952 227061 251820 243842
+                     */
                     // 如果不是本地视频,从一千个左右的数据到0个数据的时间不超过30秒,那么就有问题了.
-                    if ((wrapper->endHandleTime - wrapper->startHandleTime) <= 1000000) {
-                        if (wrapper->type == TYPE_AUDIO) {
-                            LOGE("handleData()  audio handleTime: %ld\n",
-                                 (long) (wrapper->endHandleTime - wrapper->startHandleTime));
-                        } else {
-                            LOGE("handleData()  video handleTime: %ld\n",
-                                 (long) (wrapper->endHandleTime - wrapper->startHandleTime));
-                        }
+                    if ((wrapper->endHandleTime - wrapper->startHandleTime) < 251820) {
                         LOGE("handleData() maybeHasException\n");
                         // 257
                         onError(0x101, "播放时发生异常");
@@ -2153,9 +2206,11 @@ namespace alexander_media {
 
     void closeOther() {
         if (avFormatContext != NULL) {
-            avformat_close_input(&avFormatContext);
+            LOGI("%s\n", "closeOther() start");
+            //avformat_close_input(&avFormatContext);
             avformat_free_context(avFormatContext);
             avFormatContext = NULL;
+            LOGI("%s\n", "closeOther() end");
         }
     }
 
@@ -2342,6 +2397,7 @@ namespace alexander_media {
         LOGI("stop() start\n");
         if (audioWrapper != NULL
             && audioWrapper->father != NULL) {
+            LOGI("stop() audio\n");
             // audio
             audioWrapper->father->isStarted = false;
             audioWrapper->father->isReading = false;
@@ -2356,6 +2412,7 @@ namespace alexander_media {
 
         if (videoWrapper != NULL
             && videoWrapper->father != NULL) {
+            LOGI("stop() video\n");
             // video
             videoWrapper->father->isStarted = false;
             videoWrapper->father->isReading = false;
@@ -2677,5 +2734,80 @@ namespace alexander_media {
 
         return info;
     }
+
+    /*void test() {
+        //avFormatContextVideoOutput = avformat_alloc_context();
+        //avFormatContextVideoOutput->oformat = outputFormat;
+        // 先实现音频吧
+        AVOutputFormat *output_fmt = av_guess_format(NULL, outFilePath, NULL);
+        if (!output_fmt) {
+
+        }
+
+        avFormatContextAudioOutput = avformat_alloc_context();
+
+        avFormatContextAudioOutput->oformat = output_fmt;
+
+        AVStream *out_stream = avformat_new_stream(avFormatContextAudioOutput, NULL);
+        if (!out_stream) {
+
+        }
+
+        AVStream *avStream = audioWrapper->father->avStream;
+        //参数信息
+        AVCodecParameters *in_codecpar = avStream->codecpar;
+
+        int err_code = avcodec_parameters_copy(out_stream->codecpar, in_codecpar);
+        if (err_code < 0) {
+
+        }
+
+        out_stream->codecpar->codec_tag = 0;
+        err_code = avio_open(&avFormatContextAudioOutput->pb, outFilePath, AVIO_FLAG_WRITE);
+        if (err_code < 0) {
+
+        }
+
+        AVPacket pkt;
+        av_init_packet(&pkt);
+        pkt.data = NULL;
+        pkt.size = 0;
+
+        // 写头部信息
+        if (avformat_write_header(avFormatContextAudioOutput, NULL) < 0) {
+            av_log(NULL, AV_LOG_DEBUG, "写入头部信息失败！");
+            exit(1);
+        }
+
+        int audio_stream_index = 0;
+        while (av_read_frame(avFormatContext, &pkt) >= 0) {
+            if (pkt.stream_index == audio_stream_index) {
+                pkt.pts = av_rescale_q_rnd(pkt.pts, avStream->time_base, out_stream->time_base,
+                                           (AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX));
+                pkt.dts = av_rescale_q_rnd(pkt.dts, avStream->time_base, out_stream->time_base,
+                                           (AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX));
+
+                pkt.duration = av_rescale_q(pkt.duration, avStream->time_base,
+                                            out_stream->time_base);
+                pkt.pos = -1;
+                pkt.stream_index = 0;
+                //将包写到输出媒体文件
+                av_interleaved_write_frame(avFormatContextAudioOutput, &pkt);
+                av_packet_unref(&pkt);
+            }
+        }
+
+
+        //写尾部信息
+        av_write_trailer(avFormatContextAudioOutput);
+
+        avio_close(avFormatContextAudioOutput->pb);
+
+        if (avFormatContextAudioOutput != NULL) {
+            //avformat_close_input(&avFormatContextAudioOutput);
+            avformat_free_context(avFormatContextAudioOutput);
+            avFormatContextAudioOutput = NULL;
+        }
+    }*/
 
 }

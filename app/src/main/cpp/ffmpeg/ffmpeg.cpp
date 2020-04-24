@@ -263,7 +263,7 @@ void onProgressUpdated(long seconds) {
 }
 
 void onError(int error, char *errorInfo) {
-    LOGE("           onError() error: %d errorInfo: %s\n", error, errorInfo);
+    LOGE("jni onError() error: %d errorInfo: %s\n", error, errorInfo);
     JNIEnv *jniEnv;
     bool isAttached = getEnv(&jniEnv);
     if (jniEnv != NULL

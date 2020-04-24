@@ -7,6 +7,7 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.media.AudioManager;
 import android.net.Uri;
 import android.os.Build;
@@ -27,9 +28,12 @@ import android.view.View;
 import android.view.WindowManager;
 
 import com.weidi.eventbus.EventBusUtils;
+import com.weidi.usefragments.MainActivity1;
 import com.weidi.usefragments.R;
 import com.weidi.usefragments.receiver.MediaButtonReceiver;
 import com.weidi.usefragments.tool.MLog;
+
+import static com.weidi.usefragments.service.DownloadFileService.PREFERENCES_NAME;
 
 /***
  Created by root on 19-8-5.
@@ -140,6 +144,23 @@ public class PlayerService extends Service {
     // 测试时使用
     private void internalStartCommand(Intent intent, int flags, int startId) {
         if (intent == null) {
+            // app crash后的操作
+            SharedPreferences sp = getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE);
+            boolean isNormalFinish = sp.getBoolean(PlayerWrapper.PLAYBACK_NORMAL_FINISH, true);
+            mCurPath = sp.getString(PlayerWrapper.PLAYBACK_ADDRESS, null);
+            if (!isNormalFinish && !TextUtils.isEmpty(mCurPath)) {
+                String type = sp.getString(PlayerWrapper.PLAYBACK_MEDIA_TYPE, null);
+                if (TextUtils.isEmpty(type)
+                        || type.startsWith("video/")) {
+                    intent = new Intent();
+                    intent.setClass(getApplicationContext(), MainActivity1.class);
+                    startActivity(intent);
+
+                    mPlayerWrapper.setType(type);
+                    mUiHandler.removeMessages(COMMAND_SHOW_WINDOW);
+                    mUiHandler.sendEmptyMessageDelayed(COMMAND_SHOW_WINDOW, 3000);
+                }
+            }
             return;
         }
 

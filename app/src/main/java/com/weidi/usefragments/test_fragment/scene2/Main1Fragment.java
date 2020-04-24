@@ -240,7 +240,8 @@ public class Main1Fragment extends BaseFragment {
         if (DEBUG)
             MLog.d(TAG, "onShow(): " + this);
 
-        mTitleView.setText(Main1Fragment.class.getSimpleName());
+        //mTitleView.setText(Main1Fragment.class.getSimpleName());
+        mTitleView.setText("");
         mJumpBtn.setText("跳转到");
         setStatusBar(getAttachedActivity(), true);
     }

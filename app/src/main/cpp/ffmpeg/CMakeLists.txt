@@ -147,33 +147,33 @@ set_target_properties(swscale
         PROPERTIES IMPORTED_LOCATION
         ${LIBS_DIR}/${CPU_DIR}/libswscale.so)
 #################################################################
-add_library(crypto
-        STATIC
-        IMPORTED)
-set_target_properties(crypto
-        PROPERTIES IMPORTED_LOCATION
-        ${LIBS_DIR}/${CPU_DIR}/libcrypto.a)
-#################################################################
-add_library(ssl
-        STATIC
-        IMPORTED)
-set_target_properties(ssl
-        PROPERTIES IMPORTED_LOCATION
-        ${LIBS_DIR}/${CPU_DIR}/libssl.a)
-#################################################################
 #add_library(crypto
-#        SHARED
+#        STATIC
 #        IMPORTED)
 #set_target_properties(crypto
 #        PROPERTIES IMPORTED_LOCATION
-#        ${LIBS_DIR}/${CPU_DIR}/libcrypto.so)
+#        ${LIBS_DIR}/${CPU_DIR}/libcrypto.a)
 #################################################################
 #add_library(ssl
-#        SHARED
+#        STATIC
 #        IMPORTED)
 #set_target_properties(ssl
 #        PROPERTIES IMPORTED_LOCATION
-#        ${LIBS_DIR}/${CPU_DIR}/libssl.so)
+#        ${LIBS_DIR}/${CPU_DIR}/libssl.a)
+#################################################################
+add_library(crypto
+        SHARED
+        IMPORTED)
+set_target_properties(crypto
+        PROPERTIES IMPORTED_LOCATION
+        ${LIBS_DIR}/${CPU_DIR}/libcrypto.so)
+#################################################################
+add_library(ssl
+        SHARED
+        IMPORTED)
+set_target_properties(ssl
+        PROPERTIES IMPORTED_LOCATION
+        ${LIBS_DIR}/${CPU_DIR}/libssl.so)
 #################################################################
 add_library(yuv
         SHARED

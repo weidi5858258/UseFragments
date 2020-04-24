@@ -29,6 +29,18 @@ public class FFMPEG {
 
     static {
         try {
+            System.loadLibrary("crypto");
+        } catch (java.lang.UnsatisfiedLinkError error) {
+            MLog.e(TAG, "卧槽, crypto库加载失败了!!!");
+            error.printStackTrace();
+        }
+        try {
+            System.loadLibrary("ssl");
+        } catch (java.lang.UnsatisfiedLinkError error) {
+            MLog.e(TAG, "卧槽, ssl库加载失败了!!!");
+            error.printStackTrace();
+        }
+        try {
             System.loadLibrary("ffmpeg");
         } catch (java.lang.UnsatisfiedLinkError error) {
             MLog.e(TAG, "卧槽, ffmpeg库加载失败了!!!");
@@ -55,6 +67,9 @@ public class FFMPEG {
     private AudioTrack mAudioTrack;
     public static final float VOLUME_NORMAL = 1.0f;
     public static final float VOLUME_MUTE = 0.0f;
+
+    //virtual status_t onTransact(
+    // uint32_t code, const Parcel &data, Parcel *reply, uint32_t flags = 0);
 
     public native void setMode(int mode);
 
@@ -236,7 +251,7 @@ public class FFMPEG {
 
         @Override
         public void onError(int error, String errorInfo) {
-            MLog.e(TAG, "onError() error: " + error + " errorInfo: " + errorInfo);
+            MLog.e(TAG, "FFMPEG onError() error: " + error + " errorInfo: " + errorInfo);
             if (mUiHandler != null) {
                 Message msg = mUiHandler.obtainMessage();
                 msg.what = Callback.MSG_ON_ERROR;
