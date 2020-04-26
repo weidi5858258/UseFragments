@@ -44,6 +44,8 @@ namespace alexander_audio_video {
     double averageTimeDiff = 0;
     double timeDiff[RUN_COUNTS];
 
+    static int frameRate = 0;
+
     char *getStrAVPixelFormat(AVPixelFormat format);
 
     // 通知读线程开始读(其中有一个队列空的情况)
@@ -562,8 +564,36 @@ namespace alexander_audio_video {
         videoWrapper->srcWidth = videoWrapper->father->avCodecContext->width;
         videoWrapper->srcHeight = videoWrapper->father->avCodecContext->height;
         videoWrapper->srcAVPixelFormat = videoWrapper->father->avCodecContext->pix_fmt;
-        //onChangeWindow(videoWrapper->srcWidth, videoWrapper->srcHeight);
+
+        int64_t bit_rate = videoWrapper->father->avCodecContext->bit_rate;
+        int bit_rate_tolerance = videoWrapper->father->avCodecContext->bit_rate_tolerance;
+        int bits_per_coded_sample = videoWrapper->father->avCodecContext->bits_per_coded_sample;
+        int bits_per_raw_sample = videoWrapper->father->avCodecContext->bits_per_raw_sample;
+        int delay = videoWrapper->father->avCodecContext->delay;
+        int frame_number = videoWrapper->father->avCodecContext->frame_number;
+        int frame_size = videoWrapper->father->avCodecContext->frame_size;
+        int level = videoWrapper->father->avCodecContext->level;
         LOGW("---------------------------------\n");
+        LOGW("bit_rate            : %ld\n", (long) bit_rate);
+        LOGW("bit_rate_tolerance  : %d\n", bit_rate_tolerance);
+        LOGW("bits_per_coded_sample: %d\n", bits_per_coded_sample);
+        LOGW("bits_per_raw_sample : %d\n", bits_per_raw_sample);
+        LOGW("delay               : %d\n", delay);
+        LOGW("level               : %d\n", level);
+        LOGW("frame_size          : %d\n", frame_size);
+        LOGW("frame_number        : %d\n", frame_number);
+
+        AVStream *stream = videoAVFormatContext->streams[videoWrapper->father->streamIndex];
+        // 帧数
+        int64_t videoFrames = stream->nb_frames;
+        if (stream->avg_frame_rate.den) {
+            frameRate = stream->avg_frame_rate.num / stream->avg_frame_rate.den;
+        }
+        int bitRate = videoAVFormatContext->bit_rate / 1000;
+        LOGW("videoFrames         : %d\n", (long) videoFrames);
+        LOGW("frameRate           : %d fps/Hz\n", frameRate);
+        LOGW("bitRate             : %d kbps\n", bitRate);
+
         LOGW("srcWidth            : %d\n", videoWrapper->srcWidth);
         LOGW("srcHeight           : %d\n", videoWrapper->srcHeight);
         LOGW("srcAVPixelFormat    : %d %s\n",

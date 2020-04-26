@@ -139,9 +139,6 @@ public class Contents {
                 "安徽卫视高清",
                 "http://ivi.bupt.edu.cn/hls/ahhd.m3u8");// http://ivi.bupt.edu.cn/hls/ahtv.m3u8
         movieMap.put(
-                "黑龙江卫视高清",
-                "http://ivi.bupt.edu.cn/hls/hljhd.m3u8");// http://ivi.bupt.edu.cn/hls/hljtv.m3u8
-        movieMap.put(
                 "辽宁卫视高清",
                 "http://ivi.bupt.edu.cn/hls/lnhd.m3u8");// http://ivi.bupt.edu.cn/hls/lntv.m3u8
         movieMap.put(
@@ -151,14 +148,8 @@ public class Contents {
                 "广东卫视高清",
                 "http://ivi.bupt.edu.cn/hls/gdhd.m3u8");// http://ivi.bupt.edu.cn/hls/gdtv.m3u8
         movieMap.put(
-                "天津卫视高清",
-                "http://ivi.bupt.edu.cn/hls/tjhd.m3u8");// http://ivi.bupt.edu.cn/hls/tjtv.m3u8
-        movieMap.put(
                 "湖北卫视高清",
                 "http://ivi.bupt.edu.cn/hls/hbhd.m3u8");// http://ivi.bupt.edu.cn/hls/hbtv.m3u8
-        movieMap.put(
-                "山东卫视高清",
-                "http://ivi.bupt.edu.cn/hls/sdhd.m3u8");// http://ivi.bupt.edu.cn/hls/sdtv.m3u8
         movieMap.put(
                 "重庆卫视高清",
                 "http://ivi.bupt.edu.cn/hls/cqhd.m3u8");// http://ivi.bupt.edu.cn/hls/cqtv.m3u8
@@ -186,6 +177,16 @@ public class Contents {
         movieMap.put(
                 "贵州卫视高清",
                 "http://ivi.bupt.edu.cn/hls/gzhd.m3u8");// http://ivi.bupt.edu.cn/hls/gztv.m3u8
+        // 下面三个有问题
+        movieMap.put(
+                "山东卫视高清",
+                "http://ivi.bupt.edu.cn/hls/sdhd.m3u8");// http://ivi.bupt.edu.cn/hls/sdtv.m3u8
+        movieMap.put(
+                "黑龙江卫视高清",
+                "http://ivi.bupt.edu.cn/hls/hljhd.m3u8");// http://ivi.bupt.edu.cn/hls/hljtv.m3u8
+        movieMap.put(
+                "天津卫视高清",
+                "http://ivi.bupt.edu.cn/hls/tjhd.m3u8");// http://ivi.bupt.edu.cn/hls/tjtv.m3u8
 
         /////////////////////////////////////////////////////////////////
 
@@ -247,6 +248,7 @@ public class Contents {
         movieMap.put(
                 "兵团卫视",
                 "http://ivi.bupt.edu.cn/hls/bttv.m3u8");
+        // 有问题
         movieMap.put(
                 "延边卫视",
                 "http://ivi.bupt.edu.cn/hls/ybtv.m3u8");
@@ -313,6 +315,89 @@ public class Contents {
         movieMap.put(
                 "湖南卫视",
                 "rtmp://58.200.131.2:1935/livetv/hunantv");*/
+
+        movieMap.put(
+                "007之幽灵党",
+                "https://meiju9.qhqsnedu.com/20190815/igHxzD0W/2000kb/hls/index.m3u8");
+        movieMap.put(
+                "007之大破天幕杀机",
+                "https://meiju10.qhqsnedu.com/20191108/KOVyXj4N/index.m3u8");
+        movieMap.put(
+                "007之择日而亡",
+                "https://meiju9.qhqsnedu.com/20190813/a354Z6Fp/2000kb/hls/index.m3u8");
+        movieMap.put(
+                "007之大战皇家赌场",
+                "https://meiju10.qhqsnedu.com/20200418/RKHFz2vN/index.m3u8");
+        movieMap.put(
+                "007之黄金眼",
+                "https://meiju10.qhqsnedu.com/20191030/PHvxvNWG/2000kb/hls/index.m3u8");
+        movieMap.put(
+                "007之黑日危机",
+                "https://meiju9.qhqsnedu.com/20190815/3Stxbnv0/2000kb/hls/index.m3u8");
+        movieMap.put(
+                "007之明日帝国",
+                "https://meiju9.qhqsnedu.com/20190815/oxdJ5v5q/2000kb/hls/index.m3u8");
+        movieMap.put(
+                "007之大破量子危机",
+                "https://meiju5.qhqsnedu.com/20190626/SwBqXHA4/2000kb/hls/index.m3u8");
+        movieMap.put(
+                "007之海底城",
+                "https://meiju9.qhqsnedu.com/20190815/kgxvSwx9/2000kb/hls/index.m3u8");
+        movieMap.put(
+                "007之俄罗斯之恋",
+                "https://meiju10.qhqsnedu.com/20200325/w2t1Actm/3000kb/hls/index.m3u8");
+        movieMap.put(
+                "007之诺博士",
+                "https://meiju9.qhqsnedu.com/20190813/cCIyG4dP/index.m3u8");
+        movieMap.put(
+                "007之黎明生机",
+                "https://meiju10.qhqsnedu.com/20191205/BlWRg1Gl/2000kb/hls/index.m3u8");
+        movieMap.put(
+                "007之杀人执照",
+                "https://meiju9.qhqsnedu.com/20190819/TJ0E1qkG/2000kb/hls/index.m3u8");
+        movieMap.put(
+                "007之雷霆谷",
+                "https://meiju9.qhqsnedu.com/20190815/fTxQgYcC/2000kb/hls/index.m3u8");
+        movieMap.put(
+                "007之你死我活",
+                "https://meiju9.qhqsnedu.com/20190812/QrO4XN1q/2000kb/hls/index.m3u8");
+        movieMap.put(
+                "007之八爪女",
+                "https://meiju9.qhqsnedu.com/20190812/hP9qcmCA//2000kb/hls/index.m3u8");
+        movieMap.put(
+                "007之太空城",
+                "https://meiju9.qhqsnedu.com/20190812/2ltVmXOg/2000kb/hls/index.m3u8");
+        movieMap.put(
+                "007之女王密使",
+                "https://meiju9.qhqsnedu.com/20190813/JKaBeWiX/index.m3u8");
+        movieMap.put(
+                "007之金刚钻",
+                "https://meiju9.qhqsnedu.com/20190813/b9fJ3IZa/2000kb/hls/index.m3u8");
+        movieMap.put(
+                "007之最高机密",
+                "https://meiju9.qhqsnedu.com/20190813/qSOsPYbc/2000kb/hls/index.m3u8");
+        movieMap.put(
+                "007之雷霆杀机",
+                "https://meiju9.qhqsnedu.com/20190813/0dFkO6ZB/2000kb/hls/index.m3u8");
+        movieMap.put(
+                "007之霹雳弹",
+                "https://meiju9.qhqsnedu.com/20190815/1TBZeD4d/2000kb/hls/index.m3u8");
+        movieMap.put(
+                "007之金枪人",
+                "https://meiju9.qhqsnedu.com/20190815/N9vjUsdX/2000kb/hls/index.m3u8");
+        movieMap.put(
+                "007之金手指",
+                "https://meiju9.qhqsnedu.com/20190815/skLu2dAS/2000kb/hls/index.m3u8");
+
+        movieMap.put(
+                "功夫",
+                "https://meiju9.qhqsnedu.com/20190823/1RSrZA26/2000kb/hls/index.m3u8");
+        movieMap.put(
+                "美人鱼",
+                "https://meiju5.qhqsnedu.com/20190603/HzUd8h9l/2000kb/hls/index.m3u8");
+        movieMap.put(
+                "我不是药神",
+                "https://meiju5.qhqsnedu.com/20190609/EC9Nyh4p/2000kb/hls/index.m3u8");
 
         // {csd-1=java.nio.HeapByteBuffer[pos=0 lim=8 cap=8], mime=video/avc, frame-rate=24,
         // track-id=2, profile=2, width=1280, height=720, max-input-size=151238,
@@ -557,6 +642,9 @@ public class Contents {
                 "蜘蛛侠-英雄远征",
                 "http://okzy.xzokzyzy.com/20190912/14951_fdda0cb4/YXYZ.2019.1080P" +
                         ".%E5%9B%BD%E8%AF%AD%E4%B8%AD%E5%AD%97.mp4");
+        movieMap.put(
+                "蜘蛛侠-英雄归来",
+                "https://meiju5.qhqsnedu.com/20190706/ndOwybjr/2000kb/hls/index.m3u8");
         //"http://anning.luanniao-zuida.com/1909/ZZ%E4%BE%A0%EF%BC%9A%E8%8B%B1%E9%9B%84%E8%BF%9C
         // %E5%BE%81.HD1280%E9%AB%98%E6%B8%85%E5%9B%BD%E8%AF%AD%E4%B8%AD%E8%8B%B1%E5%8F%8C%E5%AD
         // %97%E7%89%88.mp4");
@@ -592,15 +680,6 @@ public class Contents {
                 "重生",
                 "https://meiju5.qhqsnedu.com/20190624/ToFlZvvi/index.m3u8");
         movieMap.put(
-                "007之大破天幕杀机",
-                "https://meiju10.qhqsnedu.com/20191108/KOVyXj4N/index.m3u8");
-        movieMap.put(
-                "007之幽灵党",
-                "https://meiju9.qhqsnedu.com/20190815/igHxzD0W/2000kb/hls/index.m3u8");
-        movieMap.put(
-                "007之大战皇家赌场",
-                "https://meiju10.qhqsnedu.com/20200418/RKHFz2vN/index.m3u8");
-        movieMap.put(
                 "幽冥",
                 "https://meiju5.qhqsnedu.com/20190702/sDshh5O4/2000kb/hls/index.m3u8");
         movieMap.put(
@@ -621,42 +700,29 @@ public class Contents {
 
         movieMap.put(
                 "伸冤人1",
-                "http://xunleib.zuida360.com/1805/%E4%BC%B8%E5%86%A4%E4%BA%BA" +
-                        ".BD1280%E9%AB%98%E6%B8%85%E4%B8%AD%E8%8B%B1%E5%8F%8C%E5%AD%97%E7%89%88" +
-                        ".mp4");
+                "https://meiju10.qhqsnedu.com/20191221/AL9q074X/index.m3u8");
         movieMap.put(
                 "伸冤人2",
-                "http://vip.zuiku8.com/1810/%E4%BC%B8%E5%86%A4%E4%BA%BA2" +
-                        ".BD1280%E9%AB%98%E6%B8%85%E4%B8%AD%E5%AD%97%E7%89%88.mp4");
+                "https://meiju10.qhqsnedu.com/20191221/6WmYSeg1/2000kb/hls/index.m3u8");
 
         movieMap.put(
                 "碟中谍1",
-                "http://xunleib.zuida360.com/1804/%E7%A2%9F%E4%B8%AD%E8%B0%8D1" +
-                        ".BD1280%E9%AB%98%E6%B8%85%E4%B8%AD%E8%8B%B1%E5%8F%8C%E5%AD%97%E7%89%88" +
-                        ".mp4");
+                "https://meiju5.qhqsnedu.com/20190724/67WcWbEB/2000kb/hls/index.m3u8");
         movieMap.put(
                 "碟中谍2",
-                "http://xunleib.zuida360.com/1804/%E7%A2%9F%E4%B8%AD%E8%B0%8D2" +
-                        ".BD1280%E9%AB%98%E6%B8%85%E4%B8%AD%E8%8B%B1%E5%8F%8C%E5%AD%97%E7%89%88" +
-                        ".mp4");
+                "https://meiju5.qhqsnedu.com/20190602/SjJaU8A7/2000kb/hls/index.m3u8");
         movieMap.put(
                 "碟中谍3",
-                "http://xunleib.zuida360.com/1804/%E7%A2%9F%E4%B8%AD%E8%B0%8D3" +
-                        ".BD1280%E9%AB%98%E6%B8%85%E4%B8%AD%E8%8B%B1%E5%8F%8C%E5%AD%97%E7%89%88" +
-                        ".mp4");
+                "https://meiju5.qhqsnedu.com/20190530/1ml7A53O/2000kb/hls/index.m3u8");
         movieMap.put(
-                "碟中谍4",
-                "http://xunleib.zuida360.com/1804/%E7%A2%9F%E4%B8%AD%E8%B0%8D4" +
-                        ".BD1280%E9%AB%98%E6%B8%85%E4%B8%AD%E8%8B%B1%E5%8F%8C%E5%AD%97%E7%89%88" +
-                        ".mp4");
+                "碟中谍4-幽灵协议",
+                "https://meiju5.qhqsnedu.com/20190724/znNFAcH2/2000kb/hls/index.m3u8");
         movieMap.put(
                 "碟中谍5-神秘国度",
-                "http://xunlei.jingpin88.com/20171026/mVnlRJDm/mp4/mVnlRJDm.mp4");
+                "https://meiju5.qhqsnedu.com/20190530/Os2mIzC2/2000kb/hls/index.m3u8");
         movieMap.put(
                 "碟中谍6-全面瓦解",
-                "http://vip.zuiku8.com/1809/D%E4%B8%AD%E8%B0%8D6%EF%BC%9A%E5%85%A8%E9%9D%A2%E7%93" +
-                        "%A6%E8%A7%A3.HD1280%E9%AB%98%E6%B8%85%E4%B8%AD%E8%8B%B1%E5%8F%8C%E5%AD" +
-                        "%97%E9%9F%A9%E7%89%88.mp4");
+                "https://meiju5.qhqsnedu.com/20190725/JarhGgIR/2000kb/hls/index.m3u8");
 
         movieMap.put(
                 "哈利波特1-神秘的魔法石",
@@ -964,6 +1030,62 @@ public class Contents {
                 "盗墓笔记之怒海潜沙-秦岭神树40",
                 "http://xunlei.xiazai-zuida.com/1906/DM%E7%AC%94%E8%AE%B0%E4%B9%8B%E6%80%92%E6%B5" +
                         "%B7QS-40.mp4");
+
+        movieMap.put(
+                "202",
+                "https://fangao.qhqsnedu.com/video/20190901/6096d93e978046839d4bb8591bb0940b/cloudv-transfer/55555555o9qq22825556p165o15o8o3r_c02d0795cc714420bbe0275f6a30e53a_0_3.m3u8");
+        movieMap.put(
+                "203",
+                "https://fangao.qhqsnedu.com/video/20190901/fe544dfa7dfd4bf9a2e4572dc0d21cd8/cloudv-transfer/55555555n5o54srr5556p165546o8o3r_28f8eee45c5e4c5ca9ab9b457e23f786_0_3.m3u8");
+        movieMap.put(
+                "204",
+                "https://fangao.qhqsnedu.com/video/20190901/abd8f0295ce84f4ca14cef9b806ca9fe/cloudv-transfer/555555556778o3q25556p165873o8o3r_c89a4295032f41f8889930a2f1c4fa5c_0_3.m3u8");
+        movieMap.put(
+                "205",
+                "https://fangao.qhqsnedu.com/video/20190901/89cc34d4345d4a989ebebccc0ba8c1e8/cloudv-transfer/5555555526nso9o25556p16530pp8o3r_9774f5a8e6d5485f86c8f722492933b2_0_3.m3u8");
+        movieMap.put(
+                "206",
+                "https://fangao.qhqsnedu.com/video/20190901/88c29da8beab47778c7329ec9444a9a4/cloudv-transfer/55555555ps61060q5556p165341q8o3r_f533a63031c74bbdb159da0479f79482_0_3.m3u8");
+        movieMap.put(
+                "207",
+                "https://fangao.qhqsnedu.com/video/20190901/20676e308bb14e66b6dae06ad1ec2bfa/cloudv-transfer/55555555o3q962ss5556p165497r8o3r_0fc7a752a4184e4597c5e669e9012c07_0_3.m3u8");
+        movieMap.put(
+                "208",
+                "https://fangao.qhqsnedu.com/video/20190901/a90fbeb0948749479921cdb724ef7dd8/cloudv-transfer/555555553316o0n75556p16546qr8o3r_6726e2e2e29b4ccfae5d41bc500f4cee_0_3.m3u8");
+        movieMap.put(
+                "209",
+                "https://fangao.qhqsnedu.com/video/20190901/eddf44b7fcb6412b85d80da3623f688f/cloudv-transfer/555555554o1sp9025556p165qq0s8o3r_b5ca74c8cc5248c19536a60c7575b55e_0_3.m3u8");
+        movieMap.put(
+                "210",
+                "https://fangao.qhqsnedu.com/video/20190901/a99f05ee79f644cfbe5f7f555733fcaa/cloudv-transfer/5555555522n6n1025556p1651n929o3r_c55a65e8e0ed41f89d3d1eb05b18f11f_0_3.m3u8");
+        movieMap.put(
+                "211",
+                "https://fangao.qhqsnedu.com/video/20190901/c71bd6b166e045609488c0ba5b063e41/cloudv-transfer/55555555014389n25556p16512129o3r_469725ac367647aeb6f5c46d65417db1_0_3.m3u8");
+        movieMap.put(
+                "212",
+                "https://fangao.qhqsnedu.com/video/20190901/600a4323da7c497a83fa86ccef0f3054/cloudv-transfer/555555552ss414325556p1658q129o3r_5fc0f538e01e442f83971edf40814c02_0_3.m3u8");
+        movieMap.put(
+                "213",
+                "https://fangao.qhqsnedu.com/video/20190901/00a65e463e4948299e436d54dc4f8e07/cloudv-transfer/55555555812232s35556p16536139o3r_d61565bd42a44fd0b0950bab238b976d_0_3.m3u8");
+        movieMap.put(
+                "214",
+                "https://fangao.qhqsnedu.com/video/20190901/71b25e0d115f45f0a6a2ba75520a8ca4/cloudv-transfer/555555557rr1so175556p16532549o3r_3d0c88357db341af938c054f6af9b2af_0_3.m3u8");
+        movieMap.put(
+                "215",
+                "https://fangao.qhqsnedu.com/video/20190901/512e9758f19c46158849cb62230a0d4c/cloudv-transfer/555555559772pqr95556p165010n9o3r_13e3f3f7db364b21b3d9f3540f42b958_0_3.m3u8");
+        movieMap.put(
+                "216",
+                "https://fangao.qhqsnedu.com/video/20190901/1bbc493684fd47238f63e25aa72a1060/cloudv-transfer/5555555553117p745556p1658p4o9o3r_73cbc7987ac74edc81692b52822d2b68_0_3.m3u8");
+        movieMap.put(
+                "217",
+                "https://fangao.qhqsnedu.com/video/20190901/bf1462d37d2c424f8b7ef2bc6de4b39c/cloudv-transfer/555555554nr90np05556p1656o180o3r_8bd739e884a74c1fbd67d85bc02f4a01_0_3.m3u8");
+        movieMap.put(
+                "218",
+                "https://fangao.qhqsnedu.com/video/20190901/8dd4bae4a8114dce8c0369f73ab9a72a/cloudv-transfer/555555553pr923o75556p165rrn80o3r_9aeab38153524f91987d7d7e49366ec6_0_3.m3u8");
+
+        movieMap.put(
+                "301",
+                "");
 
         movieMap.put(
                 "playlist_dvr",

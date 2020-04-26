@@ -246,8 +246,14 @@ namespace alexander_media {
 
     static bool needToDownload = false;
     static bool isInitSuccess = false;
-    static char audioOutFilePath[2048];
-    static char videoOutFilePath[2048];
+    // 下载时音视频为一个文件
+    static char outFilePath[2048];
+    static AVFormatContext *avFormatContextOutput = NULL;
+    static int64_t *dts_start_from = NULL;
+    static int64_t *pts_start_from = NULL;
+    // 下载时音视频分开
+    static char audioOutFilePath[0];// 2048
+    static char videoOutFilePath[0];// 2048
     static AVFormatContext *avFormatContextAudioOutput = NULL;
     static AVFormatContext *avFormatContextVideoOutput = NULL;
     static AVStream *audio_out_stream = NULL;
@@ -510,6 +516,102 @@ namespace alexander_media {
     }
 
     int initDownload() {
+        char outPath[] = "/storage/1532-48AD/Android/data/com.weidi.usefragments/files/Movies/media.mp4";
+        memset(outFilePath, '\0', sizeof(outFilePath));
+        av_strlcpy(outFilePath, outPath, sizeof(outFilePath));
+        LOGI("initDownload() outFilePath: %s\n", outFilePath);
+
+        AVOutputFormat *out_fmt = av_guess_format(NULL, outFilePath, NULL);
+        if (!out_fmt) {
+            LOGE("initDownload() out_fmt is NULL.\n");
+            return -1;
+        }
+
+        if (avFormatContextOutput != NULL) {
+            //avformat_close_input(&avFormatContextOutput);
+            avformat_free_context(avFormatContextOutput);
+            avFormatContextOutput = NULL;
+        }
+        avFormatContextOutput = avformat_alloc_context();
+        avFormatContextOutput->oformat = out_fmt;
+
+        int nb_streams = avFormatContext->nb_streams;
+        for (int i = 0; i < nb_streams; i++) {
+            AVStream *in_stream = avFormatContext->streams[i];
+            AVStream *out_stream = avformat_new_stream(avFormatContextOutput, NULL);
+            if (!out_stream) {
+                LOGE("initDownload() out_stream is NULL.\n");
+                return -1;
+            }
+            avcodec_parameters_copy(out_stream->codecpar, in_stream->codecpar);
+            out_stream->codecpar->codec_tag = 0;
+        }
+
+        /*audio_out_stream = avformat_new_stream(avFormatContextOutput, NULL);
+        video_out_stream = avformat_new_stream(avFormatContextOutput, NULL);
+        if (!audio_out_stream) {
+            LOGE("initDownload() audio_out_stream is NULL.\n");
+            return -1;
+        }
+        if (!video_out_stream) {
+            LOGE("initDownload() video_out_stream is NULL.\n");
+            return -1;
+        }
+        AVCodecParameters *audio_codecpar = audioWrapper->father->avStream->codecpar;
+        AVCodecParameters *video_codecpar = videoWrapper->father->avStream->codecpar;
+        int ret = avcodec_parameters_copy(audio_out_stream->codecpar, audio_codecpar);
+        if (ret < 0) {
+            LOGE("initDownload() audio avcodec_parameters_copy occurs error.\n");
+            return -1;
+        }
+        ret = avcodec_parameters_copy(video_out_stream->codecpar, video_codecpar);
+        if (ret < 0) {
+            LOGE("initDownload() video avcodec_parameters_copy occurs error.\n");
+            return -1;
+        }
+        audio_out_stream->codecpar->codec_tag = 0;
+        video_out_stream->codecpar->codec_tag = 0;*/
+
+        int ret = avio_open(&avFormatContextOutput->pb, outFilePath, AVIO_FLAG_WRITE);
+        if (ret < 0) {
+            LOGE("initDownload() avio_open occurs error.\n");
+            return -1;
+        }
+
+        // 写头部信息
+        ret = avformat_write_header(avFormatContextOutput, NULL);
+        if (ret < 0) {
+            LOGE("initDownload() avformat_write_header occurs error.\n");
+            return -1;
+        }
+
+        // 根据流数量申请空间，并全部初始化为0
+        if (dts_start_from != NULL) {
+            free(dts_start_from);
+            dts_start_from = NULL;
+        }
+        if (pts_start_from != NULL) {
+            free(pts_start_from);
+            pts_start_from = NULL;
+        }
+        size_t size = sizeof(int64_t) * nb_streams;
+        dts_start_from = (int64_t *) malloc(size);
+        pts_start_from = (int64_t *) malloc(size);
+        if (!dts_start_from) {
+            LOGE("initDownload() dts_start_from is NULL.\n");
+            return -1;
+        }
+        if (!pts_start_from) {
+            LOGE("initDownload() pts_start_from is NULL.\n");
+            return -1;
+        }
+        memset(dts_start_from, 0, size);
+        memset(pts_start_from, 0, size);
+
+        return 0;
+    }
+
+    int initDownload2() {
         char audioPath[] = "/storage/1532-48AD/Android/data/com.weidi.usefragments/files/Movies/audio.aac";
         char videoPath[] = "/storage/1532-48AD/Android/data/com.weidi.usefragments/files/Movies/video.h264";
 
@@ -857,8 +959,17 @@ namespace alexander_media {
         audioWrapper->srcChannelLayout = av_get_default_channel_layout(audioWrapper->srcNbChannels);
         LOGD("srcChannelLayout2   : %d\n", audioWrapper->srcChannelLayout);
         LOGD("---------------------------------\n");
-        if (audioWrapper->srcNbSamples <= 0) {
+        if (!audioWrapper->srcSampleRate) {
+            audioWrapper->srcSampleRate = 48000;
+        }
+        if (!audioWrapper->srcNbChannels) {
+            audioWrapper->srcNbChannels = 2;
+        }
+        if (!audioWrapper->srcNbSamples) {
             audioWrapper->srcNbSamples = 1024;
+        }
+        if (!audioWrapper->srcChannelLayout) {
+            audioWrapper->srcChannelLayout = 3;
         }
         // dst
         // Android中跟音频有关的参数: dstSampleRate dstNbChannels 位宽
@@ -1078,7 +1189,7 @@ namespace alexander_media {
         LOGW("---------------------------------\n");
 
         if (frameRate <= 23) {
-            TIME_DIFFERENCE = 0.001;
+            TIME_DIFFERENCE = 0.0008;
         }
         LOGI("createSwsContext()    TIME_DIFFERENCE    : %lf\n", TIME_DIFFERENCE);
 
@@ -1141,6 +1252,83 @@ namespace alexander_media {
     }
 
     int downloadImpl(Wrapper *wrapper, AVPacket *srcAVPacket, AVPacket *copyAVPacket) {
+        av_packet_ref(copyAVPacket, srcAVPacket);
+
+        AVStream *in_stream, *out_stream;
+        in_stream = avFormatContext->streams[copyAVPacket->stream_index];
+        out_stream = avFormatContextOutput->streams[copyAVPacket->stream_index];
+
+        // 将截取后的每个流的起始dts,pts保存下来,作为开始时间,用来做后面的时间基转换
+        if (dts_start_from[copyAVPacket->stream_index] == 0) {
+            dts_start_from[copyAVPacket->stream_index] = copyAVPacket->dts;
+        }
+        if (pts_start_from[copyAVPacket->stream_index] == 0) {
+            pts_start_from[copyAVPacket->stream_index] = copyAVPacket->pts;
+        }
+
+        // 时间基转换
+        copyAVPacket->pts = av_rescale_q_rnd(
+                copyAVPacket->pts - pts_start_from[copyAVPacket->stream_index],
+                in_stream->time_base,
+                out_stream->time_base,
+                (AVRounding) (AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX));
+        copyAVPacket->dts = av_rescale_q_rnd(
+                copyAVPacket->dts - dts_start_from[copyAVPacket->stream_index],
+                in_stream->time_base,
+                out_stream->time_base,
+                (AVRounding) (AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX));
+
+        if (copyAVPacket->pts < 0) {
+            copyAVPacket->pts = 0;
+        }
+        if (copyAVPacket->dts < 0) {
+            copyAVPacket->dts = 0;
+        }
+
+        copyAVPacket->duration = (int) av_rescale_q(
+                (int64_t) copyAVPacket->duration,
+                in_stream->time_base,
+                out_stream->time_base);
+        copyAVPacket->pos = -1;
+        //copyAVPacket->stream_index = 0;
+
+        // 一帧视频播放时间必须在解码时间点之后,当出现pkt.pts < pkt.dts时会导致程序异常,
+        // 所以我们丢掉有问题的帧,不会有太大影响
+        if (copyAVPacket->pts < copyAVPacket->dts) {
+            return 0;
+        }
+
+        av_interleaved_write_frame(avFormatContextOutput, copyAVPacket);
+
+        /*AVRational time_base;
+        if (wrapper->type == TYPE_AUDIO) {
+            time_base = audio_out_stream->time_base;
+        } else {
+            time_base = video_out_stream->time_base;
+        }
+        copyAVPacket->pts = av_rescale_q_rnd(copyAVPacket->pts,
+                                             wrapper->avStream->time_base,
+                                             time_base,
+                                             (AVRounding) (AV_ROUND_NEAR_INF |
+                                                           AV_ROUND_PASS_MINMAX));
+        copyAVPacket->dts = av_rescale_q_rnd(copyAVPacket->dts,
+                                             wrapper->avStream->time_base,
+                                             time_base,
+                                             (AVRounding) (AV_ROUND_NEAR_INF |
+                                                           AV_ROUND_PASS_MINMAX));
+        copyAVPacket->duration = av_rescale_q(copyAVPacket->duration,
+                                              wrapper->avStream->time_base,
+                                              time_base);
+        copyAVPacket->pos = -1;
+        //将包写到输出媒体文件
+        av_interleaved_write_frame(avFormatContextOutput, copyAVPacket);
+        copyAVPacket->stream_index = 0;*/
+
+        av_packet_unref(copyAVPacket);
+    }
+
+    // 音视频分开保存时
+    int downloadImpl2(Wrapper *wrapper, AVPacket *srcAVPacket, AVPacket *copyAVPacket) {
         av_packet_ref(copyAVPacket, srcAVPacket);
 
         AVRational time_base;
@@ -1226,8 +1414,8 @@ namespace alexander_media {
         } else if (wrapper->type == TYPE_VIDEO
                    && list2Size >= wrapper->list2LimitCounts) {
             LOGI("readDataImpl() audio list1: %d\n", audioWrapper->father->list1->size());
-            LOGI("readDataImpl() audio list2: %d\n", audioWrapper->father->list2->size());
             LOGI("readDataImpl() video list1: %d\n", videoWrapper->father->list1->size());
+            LOGI("readDataImpl() audio list2: %d\n", audioWrapper->father->list2->size());
             LOGI("readDataImpl() video list2: %d\n", videoWrapper->father->list2->size());
             if (audioWrapper->father->list2->size() > audioWrapper->father->list1LimitCounts) {
                 LOGD("readDataImpl() notifyToReadWait start\n");
@@ -1276,10 +1464,12 @@ namespace alexander_media {
             videoWrapper->father->isPausedForSeek = true;
         }
 
-        if (initDownload() < 0) {
-            isInitSuccess = false;
-        } else {
-            isInitSuccess = true;
+        if (needToDownload) {
+            if (initDownload() < 0) {
+                isInitSuccess = false;
+            } else {
+                isInitSuccess = true;
+            }
         }
         LOGI("readData() isInitSuccess: %d\n", isInitSuccess);
 
@@ -1375,13 +1565,15 @@ namespace alexander_media {
             }
         }// for(;;) end
 
-        if (isInitSuccess) {
+        if (needToDownload && isInitSuccess) {
             // 写尾部信息
-            av_write_trailer(avFormatContextAudioOutput);
-            avio_close(avFormatContextAudioOutput->pb);
+            av_write_trailer(avFormatContextOutput);
+            avio_close(avFormatContextOutput->pb);
 
+            /*av_write_trailer(avFormatContextAudioOutput);
+            avio_close(avFormatContextAudioOutput->pb);
             av_write_trailer(avFormatContextVideoOutput);
-            avio_close(avFormatContextVideoOutput->pb);
+            avio_close(avFormatContextVideoOutput->pb);*/
         }
 
         if (srcAVPacket != NULL) {
@@ -1521,8 +1713,8 @@ namespace alexander_media {
                 averageTimeDiff = totleTimeDiff / RUN_COUNTS;
                 LOGI("handleVideoDataImpl() averageTimeDiff    : %lf\n", averageTimeDiff);
                 if (frameRate <= 23) {
-                    if (averageTimeDiff > 0.02) {
-                        averageTimeDiff = 0.001;
+                    if (averageTimeDiff > 0.01) {
+                        averageTimeDiff = 0.0008;
                     }
                     TIME_DIFFERENCE = averageTimeDiff;
                 }
@@ -2370,6 +2562,11 @@ namespace alexander_media {
             avFormatContext = NULL;
             LOGI("%s\n", "closeOther() end");
         }
+        if (avFormatContextOutput != NULL) {
+            //avformat_close_input(&avFormatContextOutput);
+            avformat_free_context(avFormatContextOutput);
+            avFormatContextOutput = NULL;
+        }
         if (avFormatContextAudioOutput != NULL) {
             //avformat_close_input(&avFormatContextAudioOutput);
             avformat_free_context(avFormatContextAudioOutput);
@@ -2383,6 +2580,14 @@ namespace alexander_media {
         if (audio_out_stream != NULL) {
         }
         if (video_out_stream != NULL) {
+        }
+        if (dts_start_from != NULL) {
+            free(dts_start_from);
+            dts_start_from = NULL;
+        }
+        if (pts_start_from != NULL) {
+            free(pts_start_from);
+            pts_start_from = NULL;
         }
     }
 
