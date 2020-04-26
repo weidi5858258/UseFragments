@@ -527,6 +527,7 @@ public class PlayerWrapper {
                     } else {
                         mPathTimeMap.remove(mPath);
                     }
+                    //MLog.d(TAG, "Callback.MSG_ON_PROGRESS_UPDATED "+mPathTimeMap.size());
                 }
                 //mSP.edit().putLong(PLAYBACK_POSITION, mPresentationTime).commit();
                 break;

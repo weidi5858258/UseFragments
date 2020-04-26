@@ -239,9 +239,7 @@ namespace alexander_media {
     int64_t startVideoLockedTime = -1;
     int64_t endVideoLockedTime = -1;
 
-    int frameRate = 0;
-    int videoPtsCountsA = 0;
-    int videoPtsCountsB = 0;
+    static int frameRate = 0;
     bool isVideoLocked = false;
 
     ///////////////////////////////////////////////////////
@@ -382,6 +380,7 @@ namespace alexander_media {
 
         readLockMutex = PTHREAD_MUTEX_INITIALIZER;
         readLockCondition = PTHREAD_COND_INITIALIZER;
+        TIME_DIFFERENCE = 1.000000;
         videoSleepTime = 11;
         preProgress = 0;
         audioPts = 0.0;
@@ -396,7 +395,6 @@ namespace alexander_media {
         isInterrupted = false;
         startReadTime = -1;
         endReadTime = -1;
-        videoPtsCountsB = 0;
         mediaDuration = -1;
         isVideoLocked = false;
         startVideoLockedTime = -1;
@@ -1079,6 +1077,11 @@ namespace alexander_media {
         }
         LOGW("---------------------------------\n");
 
+        if (frameRate <= 23) {
+            TIME_DIFFERENCE = 0.001;
+        }
+        LOGI("createSwsContext()    TIME_DIFFERENCE    : %lf\n", TIME_DIFFERENCE);
+
         LOGI("createSwsContext() end\n");
         return 0;
     }
@@ -1425,12 +1428,11 @@ namespace alexander_media {
             ////////////////////////////////////////////////////////////////////
 
             audioPts = decodedAVFrame->pts * av_q2d(stream->time_base);
-            if (preAudioPts > 0 && preAudioPts > audioPts) {
+            if (mediaDuration < 0 && preAudioPts > 0 && preAudioPts > audioPts) {
                 return 0;
             }
             preAudioPts = audioPts;
             //LOGD("handleVideoDataImpl() audioPts: %lf\n", audioPts);
-            videoPtsCountsA = 0;
             endVideoLockedTime = av_gettime_relative();
             if (!isLocal
                 && mediaDuration < 0
@@ -1492,23 +1494,11 @@ namespace alexander_media {
          音频需要正常播放才是好的体验
          */
         videoPts = decodedAVFrame->pts * av_q2d(stream->time_base);
-        if (preVideoPts > 0 && preVideoPts > videoPts) {
+        if (mediaDuration < 0 && preVideoPts > 0 && preVideoPts > videoPts) {
             return 0;
         }
         preVideoPts = videoPts;
         //LOGW("handleVideoDataImpl() videoPts: %lf\n", videoPts);
-        /*if (isLocal && mediaDuration > 0) {
-            if (preAudioPts == audioPts) {
-                videoPtsCountsA++;
-            }
-            if (videoPtsCountsA == 3) {
-                videoPtsCountsB++;
-            }
-            if (videoPtsCountsB >= 20) {
-                videoSleep(4);
-            }
-            //LOGW("handleVideoDataImpl() videoPtsCountsB: %d\n", videoPtsCountsB);
-        }*/
 
         if (videoPts > 0 && audioPts > 0) {
             double tempTimeDifference = videoPts - audioPts;
@@ -1530,6 +1520,13 @@ namespace alexander_media {
                 }
                 averageTimeDiff = totleTimeDiff / RUN_COUNTS;
                 LOGI("handleVideoDataImpl() averageTimeDiff    : %lf\n", averageTimeDiff);
+                if (frameRate <= 23) {
+                    if (averageTimeDiff > 0.02) {
+                        averageTimeDiff = 0.001;
+                    }
+                    TIME_DIFFERENCE = averageTimeDiff;
+                }
+                LOGI("handleVideoDataImpl() TIME_DIFFERENCE    : %lf\n", TIME_DIFFERENCE);
             }
             if (tempTimeDifference < 0) {
                 // 正常情况下videoTimeDifference比audioTimeDifference大一些
@@ -1835,6 +1832,8 @@ namespace alexander_media {
 
             // endregion
 
+            // region 播放异常处理
+
             if (!isLocal) {
                 if (maybeHasException && wrapper->list1->size() == 0) {
                     wrapper->endHandleTime = av_gettime_relative();
@@ -1864,6 +1863,8 @@ namespace alexander_media {
                     }
                 }
             }
+
+            // endregion
 
             // region 复制数据
 
@@ -2701,6 +2702,9 @@ namespace alexander_media {
 
         LOGD("seekTo() signal() to Read and Handle\n");
         timeStamp = timestamp;
+        if (!isLocal && (long) timestamp == 0) {
+            timeStamp = 5;
+        }
         audioWrapper->father->isPausedForSeek = true;
         videoWrapper->father->isPausedForSeek = true;
         audioWrapper->father->needToSeek = false;
