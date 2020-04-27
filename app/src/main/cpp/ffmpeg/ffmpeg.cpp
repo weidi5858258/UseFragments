@@ -294,6 +294,33 @@ void onInfo(char *info) {
 
 /////////////////////////////////////////////////////////////////////////
 
+// 避免最常见的 10 大 JNI 编程错误的技巧和工具
+// https://blog.csdn.net/lubeijing2008xu/article/details/37569809
+
+extern "C"
+JNIEXPORT jint JNICALL
+Java_com_weidi_usefragments_business_video_1player_FFMPEG_onTransact(JNIEnv *env, jobject thiz,
+                                                                     jint code,
+                                                                     jobjectArray objects) {
+    //
+    jsize count = env->GetArrayLength(objects);
+    for (jsize i = 0; i < count; i++) {
+        jobject element = env->GetObjectArrayElement(objects, i);
+        if (env->ExceptionOccurred()) {
+            break;
+        }
+
+        /* do something with array element */
+
+        env->DeleteLocalRef(element);
+    }
+
+    switch (code) {
+        default:
+            break;
+    }
+}
+
 extern "C"
 JNIEXPORT void JNICALL
 Java_com_weidi_usefragments_business_video_1player_FFMPEG_setMode(JNIEnv *env, jobject thiz,

@@ -1084,7 +1084,7 @@ public class Contents {
                 "https://fangao.qhqsnedu.com/video/20190901/8dd4bae4a8114dce8c0369f73ab9a72a/cloudv-transfer/555555553pr923o75556p165rrn80o3r_9aeab38153524f91987d7d7e49366ec6_0_3.m3u8");
 
         movieMap.put(
-                "301",
+                "",
                 "");
 
         movieMap.put(
@@ -1106,8 +1106,8 @@ public class Contents {
                 "3",
                 "http://youku1.dianfubang.com/20190401/X3rroxwE/index.m3u8");
         movieMap.put(
-                "4",
-                "http://youku1.dianfubang.com/20200207/abZ9DGOc/index.m3u8");
+                "",
+                "");
         movieMap.put(
                 "5",
                 "http://youku1.dianfubang.com/20190222/JK8mJKS5/2000kb/hls/index.m3u8");
@@ -1115,8 +1115,8 @@ public class Contents {
                 "6",
                 "http://youku1.dianfubang.com/20190602/BgPUCxWc/index.m3u8");
         movieMap.put(
-                "7",
-                "http://youku1.dianfubang.com/20190222/zKnS7pRh/index.m3u8");
+                "",
+                "");
         movieMap.put(
                 "百日刹那",//?wsSecret=445042e0c366db48a88ae8aa881e8a28&wsTime=1587682804
                 "http://youku1.dianfubang.com/20200410/4nFqZee8/index.m3u8");
@@ -1211,35 +1211,77 @@ public class Contents {
                 "不可抗拒的侮辱",
                 "http://youku1.dianfubang.com/20190320/pWKyWFF3/index.m3u8");
         movieMap.put(
-                "",
-                "");
+                "AV女优发迹史",
+                "http://youku1.dianfubang.com/20200410/cvnsKQ16/3254kb/hls/index.m3u8");
         movieMap.put(
-                "",
-                "");
+                "未来的性爱",
+                "http://youku1.dianfubang.com/20190412/Iiq9T6GO/index.m3u8");
         movieMap.put(
-                "",
-                "");
+                "整个天使",
+                "http://youku1.dianfubang.com/20200410/flMlNUNa/3232kb/hls/index.m3u8");
         movieMap.put(
-                "",
-                "");
+                "两个小姨子",
+                "http://youku1.dianfubang.com/20190222/1bmt61qK/index.m3u8");
         movieMap.put(
-                "",
-                "");
+                "三姐妹性交换",
+                "http://youku1.dianfubang.com/20200123/QSSHmoU5/index.m3u8");
         movieMap.put(
-                "",
-                "");
+                "我爱背入",
+                "http://youku1.dianfubang.com/20190401/COenvMVc/index.m3u8");
         movieMap.put(
-                "",
-                "");
+                "邻家女孩",
+                "http://youku1.dianfubang.com/20190320/BOJfjXPb/index.m3u8");
         movieMap.put(
-                "",
-                "");
+                "湿WET",
+                "http://youku1.dianfubang.com/20200410/1PkrXPwJ/index.m3u8");
         movieMap.put(
-                "",
-                "");
+                "梦回玛丽莲",
+                "http://youku1.dianfubang.com/20200131/DxC1BTv6/index.m3u8");
         movieMap.put(
-                "",
-                "");
+                "东京部落",
+                "http://youku1.dianfubang.com/20200410/v9PFlTXG/index.m3u8");
+        movieMap.put(
+                "性福一家",
+                "http://youku1.dianfubang.com/20190907/QVDbuaB1/index.m3u8");
+        movieMap.put(
+                "美容院-特殊服务3",
+                "http://youku1.dianfubang.com/20200207/abZ9DGOc/index.m3u8");
+        movieMap.put(
+                "鬼父小生意-动画片",
+                " http://youku1.dianfubang.com/20190315/GWtT7EeS/index.m3u8");
+        movieMap.put(
+                "秘书",
+                "http://youku1.dianfubang.com/20191112/gM1baGI1/index.m3u8");
+        movieMap.put(
+                "朋友的妈妈4",
+                "http://youku1.dianfubang.com/20190221/YJ1s0cOt/index.m3u8");
+        movieMap.put(
+                "赤足惊魂",
+                "http://youku1.dianfubang.com/20200410/gl3gg52g/3262kb/hls/index.m3u8");
+        movieMap.put(
+                "姨母的诱惑2",
+                "http://youku1.dianfubang.com/20200207/36LAeBaX/index.m3u8");
+        movieMap.put(
+                "公寓里一个妻子的经理",
+                "http://youku1.dianfubang.com/20190321/uJ5lR9bW/index.m3u8");
+        movieMap.put(
+                "淫乱房仲俏同事2",
+                "http://youku1.dianfubang.com/20190907/toZaZZV0/index.m3u8");
+        movieMap.put(
+                "女大学生的沙龙室",
+                "http://youku1.dianfubang.com/20190220/BFfh3jCI/index.m3u8");
+        movieMap.put(
+                "想做爱的日子",
+                "http://youku1.dianfubang.com/20190919/iJqXRjwG/index.m3u8");
+        movieMap.put(
+                "我的丈夫醉酒后",
+                "http://youku1.dianfubang.com/20190526/RgoqRlhn/index.m3u8");
+        movieMap.put(
+                "小姨子的姐妹情谊",
+                "http://youku1.dianfubang.com/20190710/8ImtygYC/index.m3u8");
+        movieMap.put(
+                "学生的妈妈3",
+                "http://youku1.dianfubang.com/20190220/knGxJ1w7/index.m3u8");
         movieMap.put(
                 "",
                 "");

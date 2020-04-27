@@ -57,6 +57,7 @@ public class PlayerWrapper {
     private static final int MSG_START_PLAYBACK = 11;
     private static final int MSG_SEEK_TO_ADD = 12;
     private static final int MSG_SEEK_TO_SUBTRACT = 13;
+    private static final int MSG_DOWNLOAD = 14;
 
     public static final String PLAYBACK_ADDRESS = "playback_address";
     public static final String PLAYBACK_POSITION = "playback_position";
@@ -104,6 +105,9 @@ public class PlayerWrapper {
     // 声音
     private ImageButton mVolumeNormal;
     private ImageButton mVolumeMute;
+    // 下载
+    private ImageButton mDownloadIB;//download_btn
+    private boolean mIsDownloading = false;
 
     // 跟气泡相关
     private LayoutInflater mLayoutInflater;
@@ -179,6 +183,7 @@ public class PlayerWrapper {
             mNextIB = mRootView.findViewById(R.id.button_next);
 
             mPreviousIB2 = mRootView.findViewById(R.id.button_prev2);
+            mDownloadIB = mRootView.findViewById(R.id.download_btn);
             mVolumeNormal = mRootView.findViewById(R.id.volume_normal);
             mVolumeMute = mRootView.findViewById(R.id.volume_mute);
 
@@ -192,6 +197,7 @@ public class PlayerWrapper {
             mPauseIB.setOnClickListener(mOnClickListener);
             mNextIB.setOnClickListener(mOnClickListener);
             mPreviousIB2.setOnClickListener(mOnClickListener);
+            mDownloadIB.setOnClickListener(mOnClickListener);
             mVolumeNormal.setOnClickListener(mOnClickListener);
             mVolumeMute.setOnClickListener(mOnClickListener);
         }
@@ -617,6 +623,15 @@ public class PlayerWrapper {
             case PLAYBACK_PROGRESS_UPDATED:
                 mProgressBar.setSecondaryProgress(mDownloadProgress);
                 break;
+            case MSG_DOWNLOAD:
+                if (!mIsDownloading) {
+                    mIsDownloading = true;
+                    mDownloadIB.setImageResource(R.drawable.download2);
+                } else {
+                    mIsDownloading = false;
+                    mDownloadIB.setImageResource(R.drawable.download1);
+                }
+                break;
             default:
                 break;
         }
@@ -1040,6 +1055,10 @@ public class PlayerWrapper {
                     mVolumeNormal.setVisibility(View.VISIBLE);
                     mVolumeMute.setVisibility(View.GONE);
                     mFFMPEGPlayer.setVolume(FFMPEG.VOLUME_NORMAL);
+                    break;
+                case R.id.download_btn:
+                    mUiHandler.removeMessages(MSG_DOWNLOAD);
+                    mUiHandler.sendEmptyMessageDelayed(MSG_DOWNLOAD, 500);
                     break;
                 default:
                     break;

@@ -521,19 +521,21 @@ namespace alexander_media {
         av_strlcpy(outFilePath, outPath, sizeof(outFilePath));
         LOGI("initDownload() outFilePath: %s\n", outFilePath);
 
-        AVOutputFormat *out_fmt = av_guess_format(NULL, outFilePath, NULL);
+        avformat_alloc_output_context2(&avFormatContextOutput, NULL, NULL, outFilePath);
+        //AVOutputFormat *out_fmt = av_guess_format(NULL, outFilePath, NULL);
+        AVOutputFormat *out_fmt = avFormatContextOutput->oformat;
         if (!out_fmt) {
             LOGE("initDownload() out_fmt is NULL.\n");
             return -1;
         }
 
-        if (avFormatContextOutput != NULL) {
+        /*if (avFormatContextOutput != NULL) {
             //avformat_close_input(&avFormatContextOutput);
             avformat_free_context(avFormatContextOutput);
             avFormatContextOutput = NULL;
         }
         avFormatContextOutput = avformat_alloc_context();
-        avFormatContextOutput->oformat = out_fmt;
+        avFormatContextOutput->oformat = out_fmt;*/
 
         int nb_streams = avFormatContext->nb_streams;
         for (int i = 0; i < nb_streams; i++) {
@@ -959,7 +961,7 @@ namespace alexander_media {
         audioWrapper->srcChannelLayout = av_get_default_channel_layout(audioWrapper->srcNbChannels);
         LOGD("srcChannelLayout2   : %d\n", audioWrapper->srcChannelLayout);
         LOGD("---------------------------------\n");
-        if (!audioWrapper->srcSampleRate) {
+        /*if (!audioWrapper->srcSampleRate) {
             audioWrapper->srcSampleRate = 48000;
         }
         if (!audioWrapper->srcNbChannels) {
@@ -970,7 +972,7 @@ namespace alexander_media {
         }
         if (!audioWrapper->srcChannelLayout) {
             audioWrapper->srcChannelLayout = 3;
-        }
+        }*/
         // dst
         // Android中跟音频有关的参数: dstSampleRate dstNbChannels 位宽
         // dstSampleRate, dstAVSampleFormat和dstChannelLayout指定
@@ -1290,7 +1292,6 @@ namespace alexander_media {
                 in_stream->time_base,
                 out_stream->time_base);
         copyAVPacket->pos = -1;
-        //copyAVPacket->stream_index = 0;
 
         // 一帧视频播放时间必须在解码时间点之后,当出现pkt.pts < pkt.dts时会导致程序异常,
         // 所以我们丢掉有问题的帧,不会有太大影响
@@ -1470,8 +1471,8 @@ namespace alexander_media {
             } else {
                 isInitSuccess = true;
             }
+            LOGI("readData() isInitSuccess: %d\n", isInitSuccess);
         }
-        LOGI("readData() isInitSuccess: %d\n", isInitSuccess);
 
         isReading = true;
         /***
@@ -1712,13 +1713,13 @@ namespace alexander_media {
                 }
                 averageTimeDiff = totleTimeDiff / RUN_COUNTS;
                 LOGI("handleVideoDataImpl() averageTimeDiff    : %lf\n", averageTimeDiff);
-                if (frameRate <= 23) {
+                /*if (frameRate <= 23) {
                     if (averageTimeDiff > 0.01) {
                         averageTimeDiff = 0.0008;
                     }
                     TIME_DIFFERENCE = averageTimeDiff;
                 }
-                LOGI("handleVideoDataImpl() TIME_DIFFERENCE    : %lf\n", TIME_DIFFERENCE);
+                LOGI("handleVideoDataImpl() TIME_DIFFERENCE    : %lf\n", TIME_DIFFERENCE);*/
             }
             if (tempTimeDifference < 0) {
                 // 正常情况下videoTimeDifference比audioTimeDifference大一些
@@ -3113,83 +3114,6 @@ namespace alexander_media {
         }
 
         return info;
-    }
-
-    void test() {
-        //avFormatContextVideoOutput = avformat_alloc_context();
-        //avFormatContextVideoOutput->oformat = outputFormat;
-        char path[] = "/storage/1532-48AD/Android/data/com.weidi.usefragments/files/Movies/audio.m4s";
-        // 先实现音频吧
-        AVOutputFormat *audio_out_fmt = av_guess_format(NULL, audioOutFilePath, NULL);
-        if (!audio_out_fmt) {
-
-        }
-
-        avFormatContextAudioOutput = avformat_alloc_context();
-
-        avFormatContextAudioOutput->oformat = audio_out_fmt;
-
-        AVStream *audio_out_stream = avformat_new_stream(avFormatContextAudioOutput, NULL);
-        if (!audio_out_stream) {
-
-        }
-
-        AVStream *avStream = audioWrapper->father->avStream;
-        //参数信息
-        AVCodecParameters *codecpar = avStream->codecpar;
-
-        int err_code = avcodec_parameters_copy(audio_out_stream->codecpar, codecpar);
-        if (err_code < 0) {
-
-        }
-
-        audio_out_stream->codecpar->codec_tag = 0;
-        err_code = avio_open(&avFormatContextAudioOutput->pb, audioOutFilePath, AVIO_FLAG_WRITE);
-        if (err_code < 0) {
-
-        }
-
-        AVPacket pkt;
-        av_init_packet(&pkt);
-        pkt.data = NULL;
-        pkt.size = 0;
-
-        // 写头部信息
-        if (avformat_write_header(avFormatContextAudioOutput, NULL) < 0) {
-            av_log(NULL, AV_LOG_DEBUG, "写入头部信息失败！");
-            exit(1);
-        }
-
-        int audio_stream_index = 0;
-        while (av_read_frame(avFormatContext, &pkt) >= 0) {
-            if (pkt.stream_index == audio_stream_index) {
-                pkt.pts = av_rescale_q_rnd(pkt.pts, avStream->time_base,
-                                           audio_out_stream->time_base,
-                                           (AVRounding) (AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX));
-                pkt.dts = av_rescale_q_rnd(pkt.dts, avStream->time_base,
-                                           audio_out_stream->time_base,
-                                           (AVRounding) (AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX));
-
-                pkt.duration = av_rescale_q(pkt.duration, avStream->time_base,
-                                            audio_out_stream->time_base);
-                pkt.pos = -1;
-                pkt.stream_index = 0;
-                //将包写到输出媒体文件
-                av_interleaved_write_frame(avFormatContextAudioOutput, &pkt);
-                av_packet_unref(&pkt);
-            }
-        }
-
-        //写尾部信息
-        av_write_trailer(avFormatContextAudioOutput);
-
-        avio_close(avFormatContextAudioOutput->pb);
-
-        if (avFormatContextAudioOutput != NULL) {
-            //avformat_close_input(&avFormatContextAudioOutput);
-            avformat_free_context(avFormatContextAudioOutput);
-            avFormatContextAudioOutput = NULL;
-        }
     }
 
 }

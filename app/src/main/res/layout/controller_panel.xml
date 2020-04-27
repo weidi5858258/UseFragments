@@ -111,11 +111,20 @@
             android:visibility="gone"/>
 
         <ImageButton
+            android:id="@+id/download_btn"
+            style="@style/StyleImageButton"
+            android:layout_width="@dimen/dimen_40_dp"
+            android:layout_height="@dimen/dimen_40_dp"
+            android:contentDescription="download"
+            android:layout_marginStart="@dimen/dimen_230_dp"
+            android:src="@drawable/download1" />
+
+        <ImageButton
             android:id="@+id/volume_normal"
             style="@style/StyleImageButton"
             android:layout_alignParentEnd="true"
             android:layout_marginEnd="@dimen/dimen_80_dp"
-            android:contentDescription="Previous2"
+            android:contentDescription="volume_normal"
             android:src="@drawable/volume_normal"/>
 
         <ImageButton
@@ -123,7 +132,7 @@
             style="@style/StyleImageButton"
             android:layout_alignParentEnd="true"
             android:layout_marginEnd="@dimen/dimen_80_dp"
-            android:contentDescription="volume"
+            android:contentDescription="volume_mute"
             android:src="@drawable/volume_mute"
             android:visibility="gone"/>
 
