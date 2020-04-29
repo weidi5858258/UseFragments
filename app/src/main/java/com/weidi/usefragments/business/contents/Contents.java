@@ -253,6 +253,132 @@ public class Contents {
                 "延边卫视",
                 "http://ivi.bupt.edu.cn/hls/ybtv.m3u8");
 
+        /////////////////////////////////////////////////////////////////
+
+        movieMap.put(
+                "中国教育一套",
+                "http://cctvtxyh5ca.liveplay.myqcloud.com/cstv/cetv1_2/index.m3u8");
+        movieMap.put(
+                "中国教育二套",
+                "http://cctvtxyh5ca.liveplay.myqcloud.com/cstv/cetv2_2/index.m3u8");
+        movieMap.put(
+                "中国教育三套",
+                "http://cctvtxyh5ca.liveplay.myqcloud.com/cstv/cetv3_2/index.m3u8");
+        movieMap.put(
+                "中国教育空中课堂",
+                "http://cctvtxyh5ca.liveplay.myqcloud.com/cstv/cetv4_2/index.m3u8");
+        movieMap.put(
+                "东方电影频道",
+                "http://117.156.28.60/PLTV/88888888/224/3221225656/index.m3u8");
+        movieMap.put(
+                "",
+                "");
+        movieMap.put(
+                "",
+                "");
+        movieMap.put(
+                "",
+                "");
+        movieMap.put(
+                "",
+                "");
+        movieMap.put(
+                "",
+                "");
+        movieMap.put(
+                "",
+                "");
+
+
+
+        /////////////////////////////////////////////////////////////////
+
+        // 外国节目
+        movieMap.put(
+                "美国Bloomberg TV Europe",
+                "http://cdn-videos.akamaized.net/btv/desktop/akamai/europe/live/primary.m3u8");
+        movieMap.put(
+                "美国CGTN (Opt-1)",
+                "http://live.cgtn.com/500/prog_index.m3u8");
+        movieMap.put(
+                "美国CGTN (Opt-2)",
+                "http://live.cgtn.com/1000/prog_index.m3u8");
+        movieMap.put(
+                "美国Bowie TV",
+                "http://granicusliveus3-a.akamaihd.net/cityofbowie/G0466_001/playlist.m3u8");
+        movieMap.put(
+                "美国Buffalo TV",
+                "http://na-all15.secdn.net/pegstream3-live/play/c3e1e4c4-7f11-4a54-8b8f-c590a95b4ade/playlist.m3u8");
+        movieMap.put(
+                "美国Denver 8 TV",
+                "http://granicusliveus8-a.akamaihd.net/denver/G0080_002/chunklist.m3u8");
+        movieMap.put(
+                "美国本土NBC 11 News (Bay Area)",
+                "http://kntvlive-f.akamaihd.net/i/kntvb2_1@15530/index_1286_av-p.m3u8");
+        movieMap.put(
+                "美国本土NBC 5 News (Chicago)",
+                "http://wmaqlive-f.akamaihd.net/i/wmaqa1_1@22923/master.m3u8");
+        movieMap.put(
+                "美国本土CBS 4 News (Indianapolis)",
+                "http://wttv-lh.akamaihd.net:80/i/WTTVBreaking_1@333494/index_3000_av-b.m3u8");
+        movieMap.put(
+                "Japan24news",
+                "https://n24-cdn-live.ntv.co.jp/ch01/High.m3u8");
+        movieMap.put(
+                "",
+                "");
+        movieMap.put(
+                "TRAVEL HD",
+                "http://31.13.223.104:1935/travel/community.stream/playlist.m3u8");
+        movieMap.put(
+                "高清时装台WFC",
+                "http://wfc.bonus-tv.ru:80/cdn/wfcint/tracks-v2a1/index.m3u8");
+        movieMap.put(
+                "加纳TV Africa (Ghana)",
+                "http://africatv.live.net.sa:1935/live/africatv/playlist.m3u8");
+        movieMap.put(
+                "卡塔尔 Al Kass Sports 4",
+                "http://www.elahmad.com/tv/m3u8/alkass.m3u8?id=alkass4");
+        movieMap.put(
+                "卡塔尔 Al Kass Sports 3",
+                "http://www.elahmad.com/tv/m3u8/alkass.m3u8?id=alkass3");
+        movieMap.put(
+                "阿拉伯联合酋长国Dubai One",
+                "http://www.elahmad.com/tv/m3u8/dubaitv.m3u8?id=dubaione");
+        movieMap.put(
+                "伊拉克 Sharqiya News",
+                "http://ns8.indexforce.com:1935/alsharqiyalive/mystream/playlist.m3u8");
+        movieMap.put(
+                "伊拉克 Al Sharqiya",
+                "http://ns8.indexforce.com:1935/home/mystream/playlist.m3u8");
+        movieMap.put(
+                "",
+                "");
+        movieMap.put(
+                "",
+                "");
+        movieMap.put(
+                "",
+                "");
+        movieMap.put(
+                "",
+                "");
+        movieMap.put(
+                "",
+                "");
+        movieMap.put(
+                "",
+                "");
+        movieMap.put(
+                "",
+                "");
+        movieMap.put(
+                "",
+                "");
+
+
+        /////////////////////////////////////////////////////////////////
+
         // 上面已有高清
         /*movieMap.put(
                 "CETV-1",
@@ -393,11 +519,59 @@ public class Contents {
                 "功夫",
                 "https://meiju9.qhqsnedu.com/20190823/1RSrZA26/2000kb/hls/index.m3u8");
         movieMap.put(
+                "疯狂的外星人",
+                "https://meiju4.qhqsnedu.com/20190210/0OJRDGal/2000kb/hls/index.m3u8");
+        movieMap.put(
+                "色戒",
+                "http://youku1.dianfubang.com/20191111/fCQchCIc/index.m3u8");
+        movieMap.put(
+                "唐人街探案",
+                "https://meiju5.qhqsnedu.com/20190612/9KF2DkcI/2000kb/hls/index.m3u8");
+        movieMap.put(
+                "唐人街探案2",
+                "https://meiju5.qhqsnedu.com/20190614/NbNQkw2D/2000kb/hls/index.m3u8");
+        movieMap.put(
+                "鬼吹灯之龙岭迷窟",
+                "https://meiju10.qhqsnedu.com/20200406/e1V2k9hd/3000kb/hls/index.m3u8");
+        movieMap.put(
+                "红海行动",
+                "https://meiju5.qhqsnedu.com/20190530/5yUSG8yk/2000kb/hls/index.m3u8");
+        movieMap.put(
+                "鬼吹灯之巫峡棺山",
+                "https://meiju4.qhqsnedu.com/20190621/EC1k7nWN/2000kb/hls/index.m3u8");
+        movieMap.put(
+                "盗墓笔记",
+                "https://meiju10.qhqsnedu.com/20191128/aebT3kPg/2000kb/hls/index.m3u8");
+        movieMap.put(
                 "美人鱼",
                 "https://meiju5.qhqsnedu.com/20190603/HzUd8h9l/2000kb/hls/index.m3u8");
         movieMap.put(
                 "我不是药神",
                 "https://meiju5.qhqsnedu.com/20190609/EC9Nyh4p/2000kb/hls/index.m3u8");
+        movieMap.put(
+                "",
+                "");
+        movieMap.put(
+                "",
+                "");
+        movieMap.put(
+                "",
+                "");
+        movieMap.put(
+                "",
+                "");
+        movieMap.put(
+                "",
+                "");
+        movieMap.put(
+                "",
+                "");
+        movieMap.put(
+                "",
+                "");
+        movieMap.put(
+                "",
+                "");
 
         // {csd-1=java.nio.HeapByteBuffer[pos=0 lim=8 cap=8], mime=video/avc, frame-rate=24,
         // track-id=2, profile=2, width=1280, height=720, max-input-size=151238,

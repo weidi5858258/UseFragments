@@ -117,7 +117,8 @@
             android:layout_height="@dimen/dimen_40_dp"
             android:contentDescription="download"
             android:layout_marginStart="@dimen/dimen_230_dp"
-            android:src="@drawable/download1" />
+            android:src="@drawable/download1"
+            android:visibility="gone"/>
 
         <ImageButton
             android:id="@+id/volume_normal"

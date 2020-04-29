@@ -3,13 +3,13 @@ package com.weidi.usefragments.business.video_player;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.Service;
+import android.app.UiModeManager;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
 import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.graphics.PixelFormat;
-import android.net.Uri;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
@@ -134,6 +134,9 @@ public class PlayerWrapper {
     private JniPlayerActivity mActivity;
     private PlayerService mService;
 
+    private boolean mIsPhoneDevice;
+    private boolean mIsPortraitScreen;
+
     // 必须首先被调用
     public void setActivity(Activity activity, Service service) {
         mActivity = null;
@@ -169,6 +172,7 @@ public class PlayerWrapper {
             mWindowManager = playerService.mWindowManager;
             mLayoutParams = playerService.mLayoutParams;
             mRootView = playerService.mRootView;
+            mRootView.setOnTouchListener(new PlayerOnTouchListener());
 
             mSurfaceView = mRootView.findViewById(R.id.surfaceView);
             mControllerPanelLayout = mRootView.findViewById(R.id.controller_panel_layout);
@@ -225,6 +229,8 @@ public class PlayerWrapper {
     public void onCreate() {
         EventBusUtils.register(this);
         mSP = mContext.getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE);
+
+        mIsPhoneDevice = isPhoneDevice();
 
         mUiHandler = new Handler(Looper.getMainLooper()) {
             @Override
@@ -387,15 +393,21 @@ public class PlayerWrapper {
                 String durationTime = DateUtils.formatElapsedTime(mMediaDuration);
                 mDurationTimeTV.setText(durationTime);
 
-                if (mContext.getResources().getConfiguration().orientation
-                        == Configuration.ORIENTATION_LANDSCAPE) {
-                    if (JniPlayerActivity.isAliveJniPlayerActivity) {
-                        handleLandscapeScreen(0);
+                if (mIsPhoneDevice) {
+                    MLog.i(TAG, "Callback.MSG_ON_CHANGE_WINDOW 手机");
+                    if (mContext.getResources().getConfiguration().orientation
+                            == Configuration.ORIENTATION_LANDSCAPE) {
+                        if (JniPlayerActivity.isAliveJniPlayerActivity) {
+                            handleLandscapeScreen(0);
+                        } else {
+                            handleLandscapeScreen(1);
+                        }
                     } else {
-                        handleLandscapeScreen(1);
+                        handlePortraitScreen();
                     }
                 } else {
-                    handlePortraitScreen();
+                    MLog.i(TAG, "Callback.MSG_ON_CHANGE_WINDOW 电视机");
+                    handlePortraitScreen2();
                 }
 
                 if (TextUtils.isEmpty(mType)
@@ -929,6 +941,106 @@ public class PlayerWrapper {
         }
     }
 
+    // 电视机专用
+    public void handlePortraitScreen2() {
+        MLog.d(TAG, "Callback.MSG_ON_CHANGE_WINDOW handlePortraitScreen2");
+
+        int pauseRlHeight = 0;
+        if (mService != null) {
+            RelativeLayout pause_rl = mRootView.findViewById(R.id.pause_rl);
+            pauseRlHeight = pause_rl.getHeight();
+            SeekBar progress_bar = mRootView.findViewById(R.id.progress_bar);
+            RelativeLayout show_time_rl = mRootView.findViewById(R.id.show_time_rl);
+            ImageButton button_prev = mRootView.findViewById(R.id.button_prev);
+            ImageButton button_next = mRootView.findViewById(R.id.button_next);
+            if (mMediaDuration <= 0) {
+                progress_bar.setVisibility(View.GONE);
+                show_time_rl.setVisibility(View.GONE);
+                button_prev.setVisibility(View.INVISIBLE);
+                button_next.setVisibility(View.INVISIBLE);
+            } else {
+                progress_bar.setVisibility(View.VISIBLE);
+                show_time_rl.setVisibility(View.VISIBLE);
+                button_prev.setVisibility(View.VISIBLE);
+                button_next.setVisibility(View.VISIBLE);
+            }
+        }
+
+        // mScreenWidth: 1080 mScreenHeight: 2244
+        // 屏幕宽高
+        DisplayMetrics displayMetrics = new DisplayMetrics();
+        mWindowManager.getDefaultDisplay().getRealMetrics(displayMetrics);
+        mScreenWidth = displayMetrics.widthPixels;
+        mScreenHeight = displayMetrics.heightPixels;
+        MLog.d(TAG, "Callback.MSG_ON_CHANGE_WINDOW mScreenWidth: " +
+                mScreenWidth + " mScreenHeight: " + mScreenHeight);
+
+        mScreenWidth = mScreenWidth / 3;
+
+        // 控制面板高度
+        mControllerPanelLayoutHeight = mControllerPanelLayout.getHeight();
+        MLog.d(TAG, "Callback.MSG_ON_CHANGE_WINDOW mControllerPanelLayoutHeight: " +
+                mControllerPanelLayoutHeight);
+
+        // 改变SurfaceView高度
+        RelativeLayout.LayoutParams relativeParams =
+                (RelativeLayout.LayoutParams) mSurfaceView.getLayoutParams();
+        relativeParams.setMargins(0, 0, 0, 0);
+        if (mVideoWidth != 0 && mVideoHeight != 0) {
+            mNeedVideoWidth = mScreenWidth;
+            mNeedVideoHeight = (mScreenWidth * mVideoHeight) / mVideoWidth;
+            if (mNeedVideoHeight > mScreenHeight) {
+                mNeedVideoHeight = mScreenHeight;
+            }
+        } else {
+            mNeedVideoWidth = mScreenWidth;
+            mNeedVideoHeight = 1;
+            mControllerPanelLayout.setBackgroundColor(
+                    mContext.getResources().getColor(R.color.lightgray));
+        }
+
+        relativeParams.width = mNeedVideoWidth;
+        relativeParams.height = mNeedVideoHeight;
+        MLog.d(TAG, "Callback.MSG_ON_CHANGE_WINDOW mNeedVideoWidth: " +
+                mNeedVideoWidth + " mNeedVideoHeight: " + mNeedVideoHeight);
+        mSurfaceView.setLayoutParams(relativeParams);
+
+        // 改变ControllerPanelLayout高度
+        FrameLayout.LayoutParams frameParams =
+                (FrameLayout.LayoutParams) mControllerPanelLayout.getLayoutParams();
+        if (mNeedVideoHeight > (int) (mScreenHeight * 2 / 3)) {
+            //frameParams.setMargins(0, (int) (mScreenHeight / 2), 0, 0);
+            frameParams.setMargins(0, getStatusBarHeight(), 0, 0);
+            mControllerPanelLayout.setBackgroundColor(
+                    mContext.getResources().getColor(android.R.color.transparent));
+        } else {
+            frameParams.setMargins(0, mNeedVideoHeight, 0, 0);
+            mControllerPanelLayout.setBackgroundColor(
+                    mContext.getResources().getColor(R.color.lightgray));
+        }
+        frameParams.width = mScreenWidth;
+        frameParams.height = mControllerPanelLayoutHeight;
+        mControllerPanelLayout.setLayoutParams(frameParams);
+
+        if (mService != null) {
+            if (mVideoWidth != 0 && mVideoHeight != 0) {
+                if (mNeedVideoHeight > (int) (mScreenHeight * 2 / 3)) {
+                    updateRootViewLayout(mScreenWidth, mNeedVideoHeight);
+                } else {
+                    if (mMediaDuration < 0) {
+                        updateRootViewLayout(mScreenWidth,
+                                mNeedVideoHeight + pauseRlHeight);
+                    } else {
+                        updateRootViewLayout(mScreenWidth,
+                                mNeedVideoHeight + mControllerPanelLayoutHeight);
+                    }
+                }
+            } else {
+                updateRootViewLayout(mScreenWidth, mControllerPanelLayoutHeight + 1);
+            }
+        }
+    }
+
     private void updateRootViewLayout(int width, int height) {
         if (mService != null && mService.mIsAddedView) {
             mLayoutParams.width = width;
@@ -1101,49 +1213,84 @@ public class PlayerWrapper {
 
     @SuppressLint("SourceLockedOrientationActivity")
     private void clickFour() {
-        if (mService != null) {
-            // 如果当前是横屏
-            if (mContext.getResources().getConfiguration().orientation ==
-                    Configuration.ORIENTATION_LANDSCAPE) {
-                MLog.d(TAG, "onKeyDown() 4 横屏");
-                // 强制横屏
-                // 执行全屏操作
-                // 重新计算mScreenWidth和mScreenHeight的值
+        if (mIsPhoneDevice) {
+            if (mService != null) {
+                // 如果当前是横屏
+                if (mContext.getResources().getConfiguration().orientation ==
+                        Configuration.ORIENTATION_LANDSCAPE) {
+                    MLog.d(TAG, "onKeyDown() 4 横屏");
+                    // 强制横屏
+                    // 执行全屏操作
+                    // 重新计算mScreenWidth和mScreenHeight的值
 
-                if (JniPlayerActivity.isAliveJniPlayerActivity) {
-                    handleLandscapeScreen(0);
-                } else {
-                    if (handleLandscapeScreenFlag) {
-                        handleLandscapeScreenFlag = false;
-                        handleLandscapeScreen(1);
-                    } else {
-                        handleLandscapeScreenFlag = true;
+                    if (JniPlayerActivity.isAliveJniPlayerActivity) {
                         handleLandscapeScreen(0);
+                    } else {
+                        if (handleLandscapeScreenFlag) {
+                            handleLandscapeScreenFlag = false;
+                            handleLandscapeScreen(1);
+                        } else {
+                            handleLandscapeScreenFlag = true;
+                            handleLandscapeScreen(0);
+                        }
                     }
-                }
-            } else if (mContext.getResources().getConfiguration().orientation ==
-                    Configuration.ORIENTATION_PORTRAIT) {
-                MLog.d(TAG, "onKeyDown() 4 竖屏");
-                // 强制竖屏
-                // 取消全屏操作
-                // 重新计算mScreenWidth和mScreenHeight的值
+                } else if (mContext.getResources().getConfiguration().orientation ==
+                        Configuration.ORIENTATION_PORTRAIT) {
+                    MLog.d(TAG, "onKeyDown() 4 竖屏");
+                    // 强制竖屏
+                    // 取消全屏操作
+                    // 重新计算mScreenWidth和mScreenHeight的值
 
-                handlePortraitScreen();
+                    handlePortraitScreen();
+                }
+            } else if (mActivity != null) {
+                // 如果当前是横屏
+                if (mContext.getResources().getConfiguration().orientation ==
+                        Configuration.ORIENTATION_LANDSCAPE) {
+                    // 强制竖屏
+                    mActivity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+                    // 取消全屏操作
+                    setFullscreen(mActivity, false);
+                } else if (mContext.getResources().getConfiguration().orientation ==
+                        Configuration.ORIENTATION_PORTRAIT) {
+                    // 强制横屏
+                    mActivity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
+                    // 执行全屏操作
+                    setFullscreen(mActivity, true);
+                }
             }
-        } else if (mActivity != null) {
-            // 如果当前是横屏
-            if (mContext.getResources().getConfiguration().orientation ==
-                    Configuration.ORIENTATION_LANDSCAPE) {
-                // 强制竖屏
-                mActivity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
-                // 取消全屏操作
-                setFullscreen(mActivity, false);
-            } else if (mContext.getResources().getConfiguration().orientation ==
-                    Configuration.ORIENTATION_PORTRAIT) {
-                // 强制横屏
-                mActivity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
-                // 执行全屏操作
-                setFullscreen(mActivity, true);
+        } else {
+            // 电视机
+            if (handleLandscapeScreenFlag) {
+                handleLandscapeScreenFlag = false;
+                handleLandscapeScreen(0);
+            } else {
+                handleLandscapeScreenFlag = true;
+                handlePortraitScreen2();
+            }
+        }
+    }
+
+    private boolean isPhoneDevice() {
+        boolean isPhoneDevice = true;
+        UiModeManager uiModeManager =
+                (UiModeManager) mContext.getSystemService(Context.UI_MODE_SERVICE);
+        if (uiModeManager.getCurrentModeType() != Configuration.UI_MODE_TYPE_TELEVISION) {
+            isPhoneDevice = true;
+        } else {
+            isPhoneDevice = false;
+        }
+        return isPhoneDevice;
+    }
+
+    public void pausePlayerWithTelephonyCall() {
+        if (mFFMPEGPlayer != null) {
+            if (mFFMPEGPlayer.isRunning()) {
+                if (mFFMPEGPlayer.isPlaying()) {
+                    mPlayIB.setVisibility(View.GONE);
+                    mPauseIB.setVisibility(View.VISIBLE);
+                    mFFMPEGPlayer.pause();
+                }
             }
         }
     }
@@ -1165,6 +1312,37 @@ public class PlayerWrapper {
                 break;
         }
         return result;
+    }
+
+    private class PlayerOnTouchListener implements View.OnTouchListener {
+        private int x;
+        private int y;
+
+        @Override
+        public boolean onTouch(View view, MotionEvent event) {
+            switch (event.getAction()) {
+                case MotionEvent.ACTION_DOWN:
+                    x = (int) event.getRawX();
+                    y = (int) event.getRawY();
+                    break;
+                case MotionEvent.ACTION_MOVE:
+                    int nowX = (int) event.getRawX();
+                    int nowY = (int) event.getRawY();
+                    int movedX = nowX - x;
+                    int movedY = nowY - y;
+                    x = nowX;
+                    y = nowY;
+                    mLayoutParams.x = mLayoutParams.x + movedX;
+                    mLayoutParams.y = mLayoutParams.y + movedY;
+
+                    // 更新悬浮窗控件布局
+                    mWindowManager.updateViewLayout(view, mLayoutParams);
+                    break;
+                default:
+                    break;
+            }
+            return true;
+        }
     }
 
 }

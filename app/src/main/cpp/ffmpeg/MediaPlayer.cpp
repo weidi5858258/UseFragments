@@ -340,10 +340,13 @@ namespace alexander_media {
         } else if ((audioWrapper->father->isPausedForCache || !audioWrapper->father->isStarted)
                    && startReadTime > 0
                    && (endReadTime - startReadTime) > MAX_RELATIVE_TIME) {
-            LOGE("read_thread_interrupt_cb() 读取数据超时\n");
-            isInterrupted = true;
-            onError(0x101, "读取数据超时");
-            return 1;
+            if (audioWrapper->father->list1->size() < audioWrapper->father->list1LimitCounts
+                && videoWrapper->father->list1->size() < videoWrapper->father->list1LimitCounts) {
+                LOGE("read_thread_interrupt_cb() 读取数据超时\n");
+                isInterrupted = true;
+                onError(0x101, "读取数据超时");
+                return 1;
+            }
         }
         return 0;
     }
@@ -521,21 +524,21 @@ namespace alexander_media {
         av_strlcpy(outFilePath, outPath, sizeof(outFilePath));
         LOGI("initDownload() outFilePath: %s\n", outFilePath);
 
-        avformat_alloc_output_context2(&avFormatContextOutput, NULL, NULL, outFilePath);
-        //AVOutputFormat *out_fmt = av_guess_format(NULL, outFilePath, NULL);
-        AVOutputFormat *out_fmt = avFormatContextOutput->oformat;
+        //avformat_alloc_output_context2(&avFormatContextOutput, NULL, NULL, outFilePath);
+        //AVOutputFormat *out_fmt = avFormatContextOutput->oformat;
+        AVOutputFormat *out_fmt = av_guess_format(NULL, outFilePath, NULL);
         if (!out_fmt) {
             LOGE("initDownload() out_fmt is NULL.\n");
             return -1;
         }
 
-        /*if (avFormatContextOutput != NULL) {
+        if (avFormatContextOutput != NULL) {
             //avformat_close_input(&avFormatContextOutput);
             avformat_free_context(avFormatContextOutput);
             avFormatContextOutput = NULL;
         }
         avFormatContextOutput = avformat_alloc_context();
-        avFormatContextOutput->oformat = out_fmt;*/
+        avFormatContextOutput->oformat = out_fmt;
 
         int nb_streams = avFormatContext->nb_streams;
         for (int i = 0; i < nb_streams; i++) {

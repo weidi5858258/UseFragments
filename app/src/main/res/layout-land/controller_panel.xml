@@ -62,6 +62,7 @@
     </RelativeLayout>
 
     <RelativeLayout
+        android:id="@+id/pause_rl"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:paddingTop="0dp"
@@ -114,7 +115,8 @@
             android:layout_height="@dimen/dimen_40_dp"
             android:contentDescription="download"
             android:layout_marginStart="@dimen/dimen_470_dp"
-            android:src="@drawable/download1" />
+            android:src="@drawable/download1"
+            android:visibility="gone"/>
 
         <ImageButton
             android:id="@+id/volume_normal"

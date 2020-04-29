@@ -293,7 +293,6 @@ public class PlayerService extends Service {
         LayoutInflater inflater =
                 (LayoutInflater) getSystemService(Context.LAYOUT_INFLATER_SERVICE);
         mRootView = inflater.inflate(R.layout.activity_player, null);
-        mRootView.setOnTouchListener(new PlayerOnTouchListener());
 
         mLayoutParams = new WindowManager.LayoutParams();
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -363,32 +362,6 @@ public class PlayerService extends Service {
         return false;
     }
 
-    private class PlayerOnTouchListener implements View.OnTouchListener {
-        private int x;
-        private int y;
-
-        @Override
-        public boolean onTouch(View view, MotionEvent event) {
-            switch (event.getAction()) {
-                case MotionEvent.ACTION_DOWN:
-                    y = (int) event.getRawY();
-                    break;
-                case MotionEvent.ACTION_MOVE:
-                    int nowY = (int) event.getRawY();
-                    int movedY = nowY - y;
-                    y = nowY;
-                    mLayoutParams.y = mLayoutParams.y + movedY;
-
-                    // 更新悬浮窗控件布局
-                    mWindowManager.updateViewLayout(view, mLayoutParams);
-                    break;
-                default:
-                    break;
-            }
-            return true;
-        }
-    }
-
     /////////////////////////////////////////////////////////////////
 
     private TelephonyManager mTelephonyManager;
@@ -404,12 +377,13 @@ public class PlayerService extends Service {
             super.onCallStateChanged(state, phoneNumber);
             switch (state) {
                 case TelephonyManager.CALL_STATE_IDLE:
-                    // 挂断
+                    // 挂断或启动监听时
                     MLog.i(TAG, "onCallStateChanged() TelephonyManager.CALL_STATE_IDLE");
                     break;
                 case TelephonyManager.CALL_STATE_RINGING:
                     // 来电
                     MLog.i(TAG, "onCallStateChanged() TelephonyManager.CALL_STATE_RINGING");
+                    mPlayerWrapper.pausePlayerWithTelephonyCall();
                     break;
                 case TelephonyManager.CALL_STATE_OFFHOOK:
                     // 接听
