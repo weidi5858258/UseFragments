@@ -1241,7 +1241,7 @@ public class Contents {
                 "");
 
         movieMap.put(
-                "playlist_dvr",
+                "广告",
                 "https://cdn1.ibizastream.biz:441/free/1/playlist_dvr.m3u8");
         movieMap.put(
                 "情欲教室之插画人妻",//?wsSecret=85984aea17feb2d44c8c252e89b29170&wsTime=1586739829

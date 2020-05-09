@@ -253,12 +253,15 @@ namespace alexander_media {
     static int64_t *dts_start_from = NULL;
     static int64_t *pts_start_from = NULL;
     // 下载时音视频分开
-    static char audioOutFilePath[2048];// 2048
     static char videoOutFilePath[2048];// 2048
-    static AVFormatContext *avFormatContextAudioOutput = NULL;
+    static char audioOutFilePath[2048];// 2048
     static AVFormatContext *avFormatContextVideoOutput = NULL;
-    static AVStream *audio_out_stream = NULL;
+    static AVFormatContext *avFormatContextAudioOutput = NULL;
     static AVStream *video_out_stream = NULL;
+    static AVStream *audio_out_stream = NULL;
+
+    FILE *videoFile = NULL;
+    FILE *audioFile = NULL;
 
     ///////////////////////////////////////////////////////
 
@@ -613,23 +616,22 @@ namespace alexander_media {
     }
 
     int initDownload2() {
-        AVOutputFormat *audio_out_fmt = av_guess_format(NULL, audioOutFilePath, NULL);
-        if (!audio_out_fmt) {
-            LOGE("initDownload() audio_out_fmt is NULL.\n");
-            return -1;
-        }
+        int ret = -1;
         AVOutputFormat *video_out_fmt = av_guess_format(NULL, videoOutFilePath, NULL);
         if (!video_out_fmt) {
             LOGE("initDownload() video_out_fmt is NULL.\n");
             return -1;
         }
-
-        avFormatContextAudioOutput = avformat_alloc_context();
-        avFormatContextAudioOutput->oformat = audio_out_fmt;
-        audio_out_stream = avformat_new_stream(avFormatContextAudioOutput, NULL);
-        if (!audio_out_stream) {
-            LOGE("initDownload() audio_out_stream is NULL.\n");
+        AVOutputFormat *audio_out_fmt = av_guess_format(NULL, audioOutFilePath, NULL);
+        if (!audio_out_fmt) {
+            LOGE("initDownload() audio_out_fmt is NULL.\n");
             return -1;
+        }
+
+        if (avFormatContextVideoOutput != NULL) {
+            //avformat_close_input(&avFormatContextVideoOutput);
+            avformat_free_context(avFormatContextVideoOutput);
+            avFormatContextVideoOutput = NULL;
         }
         avFormatContextVideoOutput = avformat_alloc_context();
         avFormatContextVideoOutput->oformat = video_out_fmt;
@@ -638,45 +640,67 @@ namespace alexander_media {
             LOGE("initDownload() video_out_stream is NULL.\n");
             return -1;
         }
-
-        AVStream *audioAVStream = audioWrapper->father->avStream;
-        AVCodecParameters *audio_codecpar = audioAVStream->codecpar;
-        AVStream *videoAVStream = videoWrapper->father->avStream;
-        AVCodecParameters *video_codecpar = videoAVStream->codecpar;
-
-        int ret = avcodec_parameters_copy(audio_out_stream->codecpar, audio_codecpar);
-        if (ret < 0) {
-            LOGE("initDownload() audio avcodec_parameters_copy occurs error.\n");
+        if (avFormatContextAudioOutput != NULL) {
+            //avformat_close_input(&avFormatContextAudioOutput);
+            avformat_free_context(avFormatContextAudioOutput);
+            avFormatContextAudioOutput = NULL;
+        }
+        avFormatContextAudioOutput = avformat_alloc_context();
+        avFormatContextAudioOutput->oformat = audio_out_fmt;
+        audio_out_stream = avformat_new_stream(avFormatContextAudioOutput, NULL);
+        if (!audio_out_stream) {
+            LOGE("initDownload() audio_out_stream is NULL.\n");
             return -1;
         }
+
+        AVStream *videoAVStream = videoWrapper->father->avStream;
+        AVCodecParameters *video_codecpar = videoAVStream->codecpar;
+        AVStream *audioAVStream = audioWrapper->father->avStream;
+        AVCodecParameters *audio_codecpar = audioAVStream->codecpar;
+
         ret = avcodec_parameters_copy(video_out_stream->codecpar, video_codecpar);
         if (ret < 0) {
             LOGE("initDownload() video avcodec_parameters_copy occurs error.\n");
             return -1;
         }
-
-        audio_out_stream->codecpar->codec_tag = 0;
-        video_out_stream->codecpar->codec_tag = 0;
-        ret = avio_open(&avFormatContextAudioOutput->pb, audioOutFilePath, AVIO_FLAG_WRITE);
+        ret = avcodec_parameters_copy(audio_out_stream->codecpar, audio_codecpar);
         if (ret < 0) {
-            LOGE("initDownload() audio avio_open occurs error.\n");
+            LOGE("initDownload() audio avcodec_parameters_copy occurs error.\n");
             return -1;
         }
+
+        video_out_stream->codecpar->codec_tag = 0;
+        audio_out_stream->codecpar->codec_tag = 0;
         ret = avio_open(&avFormatContextVideoOutput->pb, videoOutFilePath, AVIO_FLAG_WRITE);
         if (ret < 0) {
             LOGE("initDownload() video avio_open occurs error.\n");
             return -1;
         }
+        ret = avio_open(&avFormatContextAudioOutput->pb, audioOutFilePath, AVIO_FLAG_WRITE);
+        if (ret < 0) {
+            LOGE("initDownload() audio avio_open occurs error.\n");
+            return -1;
+        }
 
         // 写头部信息
+        ret = avformat_write_header(avFormatContextVideoOutput, NULL);
+        if (ret < 0) {
+            LOGE("initDownload() video avformat_write_header occurs error.\n");
+            return -1;
+        }
         ret = avformat_write_header(avFormatContextAudioOutput, NULL);
         if (ret < 0) {
             LOGE("initDownload() audio avformat_write_header occurs error.\n");
             return -1;
         }
-        ret = avformat_write_header(avFormatContextVideoOutput, NULL);
-        if (ret < 0) {
-            LOGE("initDownload() video avformat_write_header occurs error.\n");
+
+        return 0;
+    }
+
+    int initDownload3() {
+        audioFile = fopen(audioOutFilePath, "wb");
+        videoFile = fopen(videoOutFilePath, "wb");
+        if (!audioFile || !videoFile) {
             return -1;
         }
 
@@ -1397,6 +1421,18 @@ namespace alexander_media {
         av_packet_unref(copyAVPacket);
     }
 
+    int downloadImpl3(Wrapper *wrapper, AVPacket *srcAVPacket, AVPacket *copyAVPacket) {
+        av_packet_ref(copyAVPacket, srcAVPacket);
+
+        if (wrapper->type == TYPE_AUDIO) {
+            fwrite(copyAVPacket->data, copyAVPacket->size, 1, audioFile);
+        } else {
+            fwrite(copyAVPacket->data, copyAVPacket->size, 1, videoFile);
+        }
+
+        av_packet_unref(copyAVPacket);
+    }
+
     int readDataImpl(Wrapper *wrapper, AVPacket *srcAVPacket, AVPacket *copyAVPacket) {
         wrapper->readFramesCount++;
         // 复制数据
@@ -1564,16 +1600,24 @@ namespace alexander_media {
 
                 pthread_mutex_lock(&readLockMutex);
                 if (needToDownload && isInitSuccess) {
+                    LOGI("readData() 文件读完,已经停止下载\n");
                     needToDownload = false;
                     isInitSuccess = false;
                     // 写尾部信息
-                    av_write_trailer(avFormatContextAudioOutput);
-                    avio_close(avFormatContextAudioOutput->pb);
                     av_write_trailer(avFormatContextVideoOutput);
                     avio_close(avFormatContextVideoOutput->pb);
-                    LOGI("readData() 文件读完,已经停止下载\n");
+                    av_write_trailer(avFormatContextAudioOutput);
+                    avio_close(avFormatContextAudioOutput->pb);
                     /*av_write_trailer(avFormatContextOutput);
                     avio_close(avFormatContextOutput->pb);*/
+                    /*if (audioFile) {
+                        fclose(audioFile);
+                        audioFile = NULL;
+                    }
+                    if (videoFile) {
+                        fclose(videoFile);
+                        videoFile = NULL;
+                    }*/
                 }
                 pthread_mutex_unlock(&readLockMutex);
 
@@ -1617,16 +1661,24 @@ namespace alexander_media {
 
         pthread_mutex_lock(&readLockMutex);
         if (needToDownload && isInitSuccess) {
+            LOGI("readData() 读线程退出,已经停止下载\n");
             needToDownload = false;
             isInitSuccess = false;
             // 写尾部信息
-            av_write_trailer(avFormatContextAudioOutput);
-            avio_close(avFormatContextAudioOutput->pb);
             av_write_trailer(avFormatContextVideoOutput);
             avio_close(avFormatContextVideoOutput->pb);
-            LOGI("readData() 读线程退出,已经停止下载\n");
+            av_write_trailer(avFormatContextAudioOutput);
+            avio_close(avFormatContextAudioOutput->pb);
             /*av_write_trailer(avFormatContextOutput);
             avio_close(avFormatContextOutput->pb);*/
+            if (audioFile) {
+                fclose(audioFile);
+                audioFile = NULL;
+            }
+            if (videoFile) {
+                fclose(videoFile);
+                videoFile = NULL;
+            }
         }
         pthread_mutex_unlock(&readLockMutex);
 
@@ -3047,23 +3099,22 @@ namespace alexander_media {
                 av_strlcpy(outFilePath, mediaPath.c_str(), sizeof(outFilePath));
                 LOGI("download() outFilePath: %s\n", outFilePath);*/
 
-                std::string audioPath;
                 std::string videoPath;
-                audioPath.append(filePath);
-                audioPath.append(fileName);
-                audioPath.append(".aac");
+                std::string audioPath;
                 videoPath.append(filePath);
                 videoPath.append(fileName);
                 videoPath.append(".h264");
-
-                memset(audioOutFilePath, '\0', sizeof(audioOutFilePath));
-                av_strlcpy(audioOutFilePath, audioPath.c_str(), sizeof(audioOutFilePath));
+                audioPath.append(filePath);
+                audioPath.append(fileName);
+                audioPath.append(".aac");
 
                 memset(videoOutFilePath, '\0', sizeof(videoOutFilePath));
                 av_strlcpy(videoOutFilePath, videoPath.c_str(), sizeof(videoOutFilePath));
+                memset(audioOutFilePath, '\0', sizeof(audioOutFilePath));
+                av_strlcpy(audioOutFilePath, audioPath.c_str(), sizeof(audioOutFilePath));
 
-                LOGI("download() audioOutFilePath: %s\n", audioOutFilePath);
                 LOGI("download() videoOutFilePath: %s\n", videoOutFilePath);
+                LOGI("download() audioOutFilePath: %s\n", audioOutFilePath);
 
                 if (initDownload2() < 0) {
                     needToDownload = false;
@@ -3079,17 +3130,25 @@ namespace alexander_media {
             case 1: {// 停止下载
                 pthread_mutex_lock(&readLockMutex);
                 if (needToDownload && isInitSuccess) {
+                    LOGI("download() 已经停止下载\n");
                     needToDownload = false;
                     isInitSuccess = false;
                     //av_usleep(1000 * 1000 * 3);// 3秒
                     // 写尾部信息
-                    av_write_trailer(avFormatContextAudioOutput);
-                    avio_close(avFormatContextAudioOutput->pb);
                     av_write_trailer(avFormatContextVideoOutput);
                     avio_close(avFormatContextVideoOutput->pb);
-                    LOGI("download() 已经停止下载\n");
+                    av_write_trailer(avFormatContextAudioOutput);
+                    avio_close(avFormatContextAudioOutput->pb);
                     /*av_write_trailer(avFormatContextOutput);
                     avio_close(avFormatContextOutput->pb);*/
+                    if (audioFile) {
+                        fclose(audioFile);
+                        audioFile = NULL;
+                    }
+                    if (videoFile) {
+                        fclose(videoFile);
+                        videoFile = NULL;
+                    }
                 }
                 pthread_mutex_unlock(&readLockMutex);
                 break;
