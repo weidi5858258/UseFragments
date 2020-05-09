@@ -11,6 +11,7 @@ import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.graphics.PixelFormat;
 import android.os.Handler;
+import android.os.HandlerThread;
 import android.os.Looper;
 import android.os.Message;
 import android.os.PowerManager;
@@ -38,12 +39,15 @@ import com.weidi.eventbus.EventBusUtils;
 import com.weidi.threadpool.ThreadPool;
 import com.weidi.usefragments.R;
 import com.weidi.usefragments.business.contents.Contents;
+import com.weidi.usefragments.business.media.AudioFragment;
 import com.weidi.usefragments.test_view.BubblePopupWindow;
 import com.weidi.usefragments.tool.Callback;
 import com.weidi.usefragments.tool.MLog;
 import com.weidi.utils.MyToast;
 
 import java.io.File;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.HashMap;
 
 import static com.weidi.usefragments.service.DownloadFileService.PREFERENCES_NAME;
@@ -65,6 +69,8 @@ public class PlayerWrapper {
     // 是否正常结束
     public static final String PLAYBACK_NORMAL_FINISH = "playback_normal_finish";
     public static final String PLAYBACK_MEDIA_TYPE = "playback_media_type";
+    // true表示静音
+    public static final String PLAYBACK_IS_MUTE = "playback_is_mute";
 
     private HashMap<String, Long> mPathTimeMap = new HashMap<>();
 
@@ -85,6 +91,7 @@ public class PlayerWrapper {
     private boolean mIsSeparatedAudioVideo = false;
     private long mMediaDuration;
     private boolean mIsLocal = true;
+    private SimpleDateFormat mSimpleDateFormat = new SimpleDateFormat("yyyyMMddHHmmss");
 
     private WindowManager mWindowManager;
     private WindowManager.LayoutParams mLayoutParams;
@@ -116,6 +123,8 @@ public class PlayerWrapper {
     private BubblePopupWindow mBubblePopupWindow;
 
     private Handler mUiHandler;
+    private Handler mThreadHandler;
+    private HandlerThread mHandlerThread;
     // 屏幕的宽高
     // 竖屏:width = 1080 height = 2244
     // 横屏:width = 2244 height = 1080
@@ -186,14 +195,24 @@ public class PlayerWrapper {
             mPauseIB = mRootView.findViewById(R.id.button_pause);
             mNextIB = mRootView.findViewById(R.id.button_next);
 
-            mPreviousIB2 = mRootView.findViewById(R.id.button_prev2);
+            mPreviousIB2 = mRootView.findViewById(R.id.button_exit);
             mDownloadIB = mRootView.findViewById(R.id.download_btn);
             mVolumeNormal = mRootView.findViewById(R.id.volume_normal);
             mVolumeMute = mRootView.findViewById(R.id.volume_mute);
 
             mPreviousIB2.setVisibility(View.VISIBLE);
-            mVolumeNormal.setVisibility(View.VISIBLE);
-            mVolumeMute.setVisibility(View.GONE);
+
+            if (mSP == null) {
+                mSP = mContext.getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE);
+            }
+            boolean isMute = mSP.getBoolean(PLAYBACK_IS_MUTE, false);
+            if (!isMute) {
+                mVolumeNormal.setVisibility(View.VISIBLE);
+                mVolumeMute.setVisibility(View.GONE);
+            } else {
+                mVolumeNormal.setVisibility(View.GONE);
+                mVolumeMute.setVisibility(View.VISIBLE);
+            }
 
             mSurfaceView.setOnClickListener(mOnClickListener);
             mPreviousIB.setOnClickListener(mOnClickListener);
@@ -208,6 +227,9 @@ public class PlayerWrapper {
     }
 
     public void setDataSource(String path) {
+        if (TextUtils.isEmpty(path)) {
+            return;
+        }
         mPath = path;
         mIsLocal = true;
         if (!TextUtils.isEmpty(mPath)) {
@@ -216,6 +238,7 @@ public class PlayerWrapper {
                 mIsLocal = false;
             }
         }
+        MLog.i(TAG, "setDataSource() mIsLocal: " + mIsLocal);
     }
 
     public void setType(String type) {
@@ -228,7 +251,9 @@ public class PlayerWrapper {
 
     public void onCreate() {
         EventBusUtils.register(this);
-        mSP = mContext.getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE);
+        if (mSP == null) {
+            mSP = mContext.getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE);
+        }
 
         mIsPhoneDevice = isPhoneDevice();
 
@@ -236,6 +261,15 @@ public class PlayerWrapper {
             @Override
             public void handleMessage(Message msg) {
                 PlayerWrapper.this.uiHandleMessage(msg);
+            }
+        };
+
+        mHandlerThread = new HandlerThread(TAG);
+        mHandlerThread.start();
+        mThreadHandler = new Handler(mHandlerThread.getLooper()) {
+            @Override
+            public void handleMessage(Message msg) {
+                PlayerWrapper.this.threadHandleMessage(msg);
             }
         };
 
@@ -249,6 +283,7 @@ public class PlayerWrapper {
         if (mFFMPEGPlayer == null) {
             mFFMPEGPlayer = FFMPEG.getDefault();
         }
+        mFFMPEGPlayer.setContext(mContext);
         int duration = (int) mMediaDuration;
         int currentPosition = (int) mPresentationTime;
         float pos = (float) currentPosition / duration;
@@ -339,6 +374,9 @@ public class PlayerWrapper {
             mFFMPEGPlayer.releaseAll();
             mFFMPEGPlayer = null;
         }
+        if (mHandlerThread != null) {
+            mHandlerThread.quit();
+        }
         EventBusUtils.unregister(this);
     }
 
@@ -358,8 +396,14 @@ public class PlayerWrapper {
                 mDurationTimeTV.setText("00:00:00");
                 mProgressBar.setProgress(0);
                 if (mService != null) {
-                    mVolumeNormal.setVisibility(View.VISIBLE);
-                    mVolumeMute.setVisibility(View.GONE);
+                    boolean isMute = mSP.getBoolean(PLAYBACK_IS_MUTE, false);
+                    if (!isMute) {
+                        mVolumeNormal.setVisibility(View.VISIBLE);
+                        mVolumeMute.setVisibility(View.GONE);
+                    } else {
+                        mVolumeNormal.setVisibility(View.GONE);
+                        mVolumeMute.setVisibility(View.VISIBLE);
+                    }
                 }
                 String title;
                 if (mIsLocal) {
@@ -424,9 +468,7 @@ public class PlayerWrapper {
             case Callback.MSG_ON_PLAYED:
                 mPlayIB.setVisibility(View.VISIBLE);
                 mPauseIB.setVisibility(View.GONE);
-                if (!mIsLocal) {
-                    mLoadingView.setVisibility(View.GONE);
-                }
+                mLoadingView.setVisibility(View.GONE);
 
                 /*if (mVideoWidth != 0 && mVideoHeight != 0) {
                     mControllerPanelLayout.setVisibility(View.GONE);
@@ -635,13 +677,48 @@ public class PlayerWrapper {
             case PLAYBACK_PROGRESS_UPDATED:
                 mProgressBar.setSecondaryProgress(mDownloadProgress);
                 break;
+            default:
+                break;
+        }
+    }
+
+    private void threadHandleMessage(Message msg) {
+        if (msg == null) {
+            return;
+        }
+
+        switch (msg.what) {
             case MSG_DOWNLOAD:
                 if (!mIsDownloading) {
                     mIsDownloading = true;
                     mDownloadIB.setImageResource(R.drawable.download2);
+                    String path =
+                            "/storage/1532-48AD/Android/data/com.weidi.usefragments/files/Movies/";
+                    StringBuilder sb = new StringBuilder();
+                    String title;
+                    if (mIsLocal) {
+                        title = mPath.substring(
+                                mPath.lastIndexOf("/") + 1, mPath.lastIndexOf("."));
+                    } else {
+                        title = Contents.getTitle(mPath);
+                    }
+                    if (TextUtils.isEmpty(title)) {
+                        sb.append("media-");
+                    } else {
+                        sb.append(title);
+                        sb.append("-");
+                    }
+                    sb.append(mSimpleDateFormat.format(new Date()));
+                    // 保存路径 文件名
+                    mFFMPEGPlayer.onTransact(
+                            FFMPEG.DO_SOMETHING_CODE_DOWNLOAD,
+                            new Object[]{"0", path, sb.toString()});
                 } else {
                     mIsDownloading = false;
                     mDownloadIB.setImageResource(R.drawable.download1);
+                    mFFMPEGPlayer.onTransact(
+                            FFMPEG.DO_SOMETHING_CODE_DOWNLOAD,
+                            new Object[]{"1", "", ""});
                 }
                 break;
             default:
@@ -688,6 +765,28 @@ public class PlayerWrapper {
                     if (audioFile.exists() && videoFile.exists()) {
                         mIsSeparatedAudioVideo = true;
                     }
+                } else if (mPath.endsWith(".h264") || mPath.endsWith(".aac")) {
+                    tempPath = mPath.substring(0, mPath.lastIndexOf("/"));
+                    String fileName = mPath.substring(
+                            mPath.lastIndexOf("/") + 1, mPath.lastIndexOf("."));
+                    MLog.d(TAG, "startPlayback()               fileName: " + fileName);
+                    StringBuilder sb = new StringBuilder(tempPath);
+                    sb.append("/");
+                    sb.append(fileName);
+                    sb.append(".aac");
+                    File audioFile = new File(sb.toString());
+                    sb = new StringBuilder(tempPath);
+                    sb.append("/");
+                    sb.append(fileName);
+                    sb.append(".h264");
+                    File videoFile = new File(sb.toString());
+                    MLog.d(TAG,
+                            "startPlayback()                  audio: " + audioFile.getAbsolutePath());
+                    MLog.d(TAG,
+                            "startPlayback()                  video: " + videoFile.getAbsolutePath());
+                    if (audioFile.exists() && videoFile.exists()) {
+                        mIsSeparatedAudioVideo = true;
+                    }
                 }
 
                 MLog.d(TAG, "startPlayback() mIsSeparatedAudioVideo: " + mIsSeparatedAudioVideo);
@@ -698,11 +797,12 @@ public class PlayerWrapper {
                     } else if (mType.startsWith("audio/")) {
                         mFFMPEGPlayer.setMode(FFMPEG.USE_MODE_ONLY_AUDIO);
                     }
-                    mFFMPEGPlayer.setSurface(mPath, mSurfaceHolder.getSurface());
+                    //mFFMPEGPlayer.setSurface(mPath, mSurfaceHolder.getSurface());
                 } else {
                     mFFMPEGPlayer.setMode(FFMPEG.USE_MODE_AUDIO_VIDEO);
-                    mFFMPEGPlayer.setSurface(tempPath, mSurfaceHolder.getSurface());
+                    //mFFMPEGPlayer.setSurface(tempPath, mSurfaceHolder.getSurface());
                 }
+                mFFMPEGPlayer.setSurface(mPath, mSurfaceHolder.getSurface());
 
                 if (mFFMPEGPlayer.initPlayer() != 0) {
                     // 不在这里做事了.遇到error会从底层回调到java端的
@@ -1150,7 +1250,7 @@ public class PlayerWrapper {
                         mFFMPEGPlayer.seekTo(mProgress);
                     }
                     break;
-                case R.id.button_prev2:
+                case R.id.button_exit:
                     mNeedToSyncProgressBar = true;
                     if (mService != null) {
                         mService.removeView();
@@ -1161,16 +1261,18 @@ public class PlayerWrapper {
                     mVolumeNormal.setVisibility(View.GONE);
                     mVolumeMute.setVisibility(View.VISIBLE);
                     mFFMPEGPlayer.setVolume(FFMPEG.VOLUME_MUTE);
+                    mSP.edit().putBoolean(PLAYBACK_IS_MUTE, true).commit();
                     break;
                 case R.id.volume_mute:
                     mNeedToSyncProgressBar = true;
                     mVolumeNormal.setVisibility(View.VISIBLE);
                     mVolumeMute.setVisibility(View.GONE);
                     mFFMPEGPlayer.setVolume(FFMPEG.VOLUME_NORMAL);
+                    mSP.edit().putBoolean(PLAYBACK_IS_MUTE, false).commit();
                     break;
                 case R.id.download_btn:
-                    mUiHandler.removeMessages(MSG_DOWNLOAD);
-                    mUiHandler.sendEmptyMessageDelayed(MSG_DOWNLOAD, 500);
+                    mThreadHandler.removeMessages(MSG_DOWNLOAD);
+                    mThreadHandler.sendEmptyMessageDelayed(MSG_DOWNLOAD, 500);
                     break;
                 default:
                     break;

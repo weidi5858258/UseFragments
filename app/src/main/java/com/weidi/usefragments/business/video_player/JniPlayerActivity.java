@@ -283,6 +283,7 @@ public class JniPlayerActivity extends BaseActivity {
              2.
              uri : content://com.huawei.hidisk.fileprovider
              /root/storage/1532-48AD/Videos/download/25068919/1/32/audio.m4s
+             // 这个路径是不对的
              path: /root/storage/1532-48AD/Videos/download/25068919/1/32/audio.m4s
              */
             Uri uri = intent.getData();
@@ -299,8 +300,6 @@ public class JniPlayerActivity extends BaseActivity {
                     actualimagecursor.moveToFirst();
                     mPath = actualimagecursor.getString(actual_image_column_index);
                 }
-                // 这个路径是不对的
-                // /root/storage/1532-48AD/Videos/download/25068919/1/32/audio.m4s
                 MLog.d(TAG, "internalCreate() mPath1: " + mPath);
                 if (mPath.contains("/root")) {
                     mPath = mPath.substring(5);
@@ -315,7 +314,7 @@ public class JniPlayerActivity extends BaseActivity {
             // audio/mpeg audio/quicktime(flac) audio/x-ms-wma(wma) audio/x-wav(wav)
             // audio/amr(amr) audio/mp3
             String type = intent.getType();
-            MLog.d(TAG, "internalCreate()  type: " + type);
+            MLog.d(TAG, "internalCreate()   type: " + type);
             if (TextUtils.isEmpty(type)
                     || (!type.startsWith("video/")
                     && !type.startsWith("audio/"))) {

@@ -186,6 +186,7 @@ pthread_join(videoHandleDataThread, NULL);
 //pthread_cancel(videoHandleDataThread);
  */
 
+#include <string>
 #include "MediaPlayer.h"
 
 #define LOG "player_alexander"
@@ -252,8 +253,8 @@ namespace alexander_media {
     static int64_t *dts_start_from = NULL;
     static int64_t *pts_start_from = NULL;
     // 下载时音视频分开
-    static char audioOutFilePath[0];// 2048
-    static char videoOutFilePath[0];// 2048
+    static char audioOutFilePath[2048];// 2048
+    static char videoOutFilePath[2048];// 2048
     static AVFormatContext *avFormatContextAudioOutput = NULL;
     static AVFormatContext *avFormatContextVideoOutput = NULL;
     static AVStream *audio_out_stream = NULL;
@@ -519,11 +520,6 @@ namespace alexander_media {
     }
 
     int initDownload() {
-        char outPath[] = "/storage/1532-48AD/Android/data/com.weidi.usefragments/files/Movies/media.mp4";
-        memset(outFilePath, '\0', sizeof(outFilePath));
-        av_strlcpy(outFilePath, outPath, sizeof(outFilePath));
-        LOGI("initDownload() outFilePath: %s\n", outFilePath);
-
         //avformat_alloc_output_context2(&avFormatContextOutput, NULL, NULL, outFilePath);
         //AVOutputFormat *out_fmt = avFormatContextOutput->oformat;
         AVOutputFormat *out_fmt = av_guess_format(NULL, outFilePath, NULL);
@@ -541,7 +537,7 @@ namespace alexander_media {
         avFormatContextOutput->oformat = out_fmt;
 
         int nb_streams = avFormatContext->nb_streams;
-        for (int i = 0; i < nb_streams; i++) {
+        /*for (int i = 0; i < nb_streams; i++) {
             AVStream *in_stream = avFormatContext->streams[i];
             AVStream *out_stream = avformat_new_stream(avFormatContextOutput, NULL);
             if (!out_stream) {
@@ -550,9 +546,9 @@ namespace alexander_media {
             }
             avcodec_parameters_copy(out_stream->codecpar, in_stream->codecpar);
             out_stream->codecpar->codec_tag = 0;
-        }
+        }*/
 
-        /*audio_out_stream = avformat_new_stream(avFormatContextOutput, NULL);
+        audio_out_stream = avformat_new_stream(avFormatContextOutput, NULL);
         video_out_stream = avformat_new_stream(avFormatContextOutput, NULL);
         if (!audio_out_stream) {
             LOGE("initDownload() audio_out_stream is NULL.\n");
@@ -575,9 +571,9 @@ namespace alexander_media {
             return -1;
         }
         audio_out_stream->codecpar->codec_tag = 0;
-        video_out_stream->codecpar->codec_tag = 0;*/
+        video_out_stream->codecpar->codec_tag = 0;
 
-        int ret = avio_open(&avFormatContextOutput->pb, outFilePath, AVIO_FLAG_WRITE);
+        ret = avio_open(&avFormatContextOutput->pb, outFilePath, AVIO_FLAG_WRITE);
         if (ret < 0) {
             LOGE("initDownload() avio_open occurs error.\n");
             return -1;
@@ -617,39 +613,27 @@ namespace alexander_media {
     }
 
     int initDownload2() {
-        char audioPath[] = "/storage/1532-48AD/Android/data/com.weidi.usefragments/files/Movies/audio.aac";
-        char videoPath[] = "/storage/1532-48AD/Android/data/com.weidi.usefragments/files/Movies/video.h264";
-
-        memset(audioOutFilePath, '\0', sizeof(audioOutFilePath));
-        av_strlcpy(audioOutFilePath, audioPath, sizeof(audioOutFilePath));
-
-        memset(videoOutFilePath, '\0', sizeof(videoOutFilePath));
-        av_strlcpy(videoOutFilePath, videoPath, sizeof(videoOutFilePath));
-
-        LOGI("initDownload() audioOutFilePath: %s\n", audioOutFilePath);
-        LOGI("initDownload() videoOutFilePath: %s\n", videoOutFilePath);
-
         AVOutputFormat *audio_out_fmt = av_guess_format(NULL, audioOutFilePath, NULL);
-        AVOutputFormat *video_out_fmt = av_guess_format(NULL, videoOutFilePath, NULL);
         if (!audio_out_fmt) {
             LOGE("initDownload() audio_out_fmt is NULL.\n");
             return -1;
         }
+        AVOutputFormat *video_out_fmt = av_guess_format(NULL, videoOutFilePath, NULL);
         if (!video_out_fmt) {
             LOGE("initDownload() video_out_fmt is NULL.\n");
             return -1;
         }
 
         avFormatContextAudioOutput = avformat_alloc_context();
-        avFormatContextVideoOutput = avformat_alloc_context();
         avFormatContextAudioOutput->oformat = audio_out_fmt;
-        avFormatContextVideoOutput->oformat = video_out_fmt;
         audio_out_stream = avformat_new_stream(avFormatContextAudioOutput, NULL);
-        video_out_stream = avformat_new_stream(avFormatContextVideoOutput, NULL);
         if (!audio_out_stream) {
             LOGE("initDownload() audio_out_stream is NULL.\n");
             return -1;
         }
+        avFormatContextVideoOutput = avformat_alloc_context();
+        avFormatContextVideoOutput->oformat = video_out_fmt;
+        video_out_stream = avformat_new_stream(avFormatContextVideoOutput, NULL);
         if (!video_out_stream) {
             LOGE("initDownload() video_out_stream is NULL.\n");
             return -1;
@@ -821,6 +805,7 @@ namespace alexander_media {
             // 获取音频解码器
             // 先通过AVCodecParameters找到AVCodec
             AVCodecID codecID = audioWrapper->father->avCodecParameters->codec_id;
+            LOGD("findAndOpenAVCodecForAudio() codecID: %d\n", codecID);
             // audio是没有下面这些东西的
             switch (codecID) {
                 case AV_CODEC_ID_FLAC: {
@@ -839,7 +824,6 @@ namespace alexander_media {
                     break;
                 }
                 default: {
-                    LOGD("findAndOpenAVCodecForAudio() codecID\n");
                     // 软解
                     // audioWrapper->father->decoderAVCodec = avcodec_find_decoder(codecID);
                     break;
@@ -867,7 +851,35 @@ namespace alexander_media {
                         }
                     }
                 }
+            } else {
+                LOGE("findAndOpenAVCodecForAudio() audioWrapper->father->decoderAVCodec is NULL\n");
+                audioWrapper->father->avCodecContext =
+                        avFormatContext->streams[audioWrapper->father->streamIndex]->codec;
+                if (audioWrapper->father->avCodecContext != NULL) {
+                    audioWrapper->father->decoderAVCodec =
+                            avcodec_find_decoder(audioWrapper->father->avCodecContext->codec_id);
+                    if (audioWrapper->father->decoderAVCodec != NULL) {
+                        // 关联操作
+                        if (avcodec_parameters_to_context(
+                                audioWrapper->father->avCodecContext,
+                                audioWrapper->father->avCodecParameters) < 0) {
+                            return -1;
+                        } else {
+                            // 打开AVCodec
+                            if (avcodec_open2(
+                                    audioWrapper->father->avCodecContext,
+                                    audioWrapper->father->decoderAVCodec, NULL) != 0) {
+                                LOGE("Could not open audio codec.\n");
+                                return -1;
+                            }
+                        }
+                    }
+                }
             }
+        }
+        if (audioWrapper->father->avCodecContext == NULL) {
+            LOGE("findAndOpenAVCodecForAudio() audioWrapper->father->avCodecContext is NULL\n");
+            return -1;
         }
 
         LOGI("findAndOpenAVCodecForAudio() end\n");
@@ -949,20 +961,20 @@ namespace alexander_media {
         LOGI("createSwrContent() start\n");
         // src
         audioWrapper->srcSampleRate = audioWrapper->father->avCodecContext->sample_rate;
-        audioWrapper->srcNbSamples = audioWrapper->father->avCodecContext->frame_size;
         audioWrapper->srcNbChannels = audioWrapper->father->avCodecContext->channels;
-        audioWrapper->srcChannelLayout = audioWrapper->father->avCodecContext->channel_layout;
         audioWrapper->srcAVSampleFormat = audioWrapper->father->avCodecContext->sample_fmt;
+        audioWrapper->srcNbSamples = audioWrapper->father->avCodecContext->frame_size;
+        audioWrapper->srcChannelLayout = audioWrapper->father->avCodecContext->channel_layout;
         LOGD("---------------------------------\n");
-        LOGD("srcSampleRate       : %d\n", audioWrapper->srcSampleRate);
-        LOGD("srcNbChannels       : %d\n", audioWrapper->srcNbChannels);
-        LOGD("srcAVSampleFormat   : %d\n", audioWrapper->srcAVSampleFormat);
-        LOGD("srcNbSamples        : %d\n", audioWrapper->srcNbSamples);
-        LOGD("srcChannelLayout1   : %d\n", audioWrapper->srcChannelLayout);
+        LOGD("srcSampleRate       : %d\n", audioWrapper->srcSampleRate);// 48000 48000 48000
+        LOGD("srcNbChannels       : %d\n", audioWrapper->srcNbChannels);// 2 6 0
+        LOGD("srcAVSampleFormat   : %d\n", audioWrapper->srcAVSampleFormat);// 8 -1 -1
+        LOGD("srcNbSamples        : %d\n", audioWrapper->srcNbSamples);// 1024 0 0
+        LOGD("srcChannelLayout1   : %d\n", audioWrapper->srcChannelLayout);// 3 0 0
         // 有些视频从源视频中得到的channel_layout与使用函数得到的channel_layout结果是一样的
         // 但是还是要使用函数得到的channel_layout为好
         audioWrapper->srcChannelLayout = av_get_default_channel_layout(audioWrapper->srcNbChannels);
-        LOGD("srcChannelLayout2   : %d\n", audioWrapper->srcChannelLayout);
+        LOGD("srcChannelLayout2   : %d\n", audioWrapper->srcChannelLayout);// 3 63 0
         LOGD("---------------------------------\n");
         /*if (!audioWrapper->srcSampleRate) {
             audioWrapper->srcSampleRate = 48000;
@@ -976,6 +988,20 @@ namespace alexander_media {
         if (!audioWrapper->srcChannelLayout) {
             audioWrapper->srcChannelLayout = 3;
         }*/
+
+        /*if (audioWrapper->srcNbChannels == 0 || audioWrapper->srcNbChannels == 6) {
+            audioWrapper->srcNbChannels = 2;
+        }
+        if (audioWrapper->srcAVSampleFormat == -1) {
+            audioWrapper->srcAVSampleFormat = AV_SAMPLE_FMT_FLTP;
+        }
+        if (audioWrapper->srcNbSamples == 0) {
+            audioWrapper->srcNbSamples = 1024;
+        }
+        if (audioWrapper->srcChannelLayout == 0 || audioWrapper->srcChannelLayout == 63) {
+            audioWrapper->srcChannelLayout = 3;
+        }*/
+
         // dst
         // Android中跟音频有关的参数: dstSampleRate dstNbChannels 位宽
         // dstSampleRate, dstAVSampleFormat和dstChannelLayout指定
@@ -986,11 +1012,14 @@ namespace alexander_media {
         audioWrapper->dstNbChannels = av_get_channel_layout_nb_channels(
                 audioWrapper->dstChannelLayout);
 
-        LOGD("dstSampleRate       : %d\n", audioWrapper->dstSampleRate);
-        LOGD("dstNbChannels       : %d\n", audioWrapper->dstNbChannels);
-        LOGD("dstAVSampleFormat   : %d\n", audioWrapper->dstAVSampleFormat);
-        LOGD("dstNbSamples        : %d\n", audioWrapper->dstNbSamples);
+        LOGD("dstSampleRate       : %d\n", audioWrapper->dstSampleRate);// 48000 48000
+        LOGD("dstNbChannels       : %d\n", audioWrapper->dstNbChannels);// 2 2
+        LOGD("dstAVSampleFormat   : %d\n", audioWrapper->dstAVSampleFormat);// 1 1
+        LOGD("dstNbSamples        : %d\n", audioWrapper->dstNbSamples);// 1024 0
         LOGD("---------------------------------\n");
+        /*if (audioWrapper->dstNbSamples == 0) {
+            audioWrapper->dstNbSamples = 1024;
+        }*/
 
         audioWrapper->swrContext = swr_alloc();
         swr_alloc_set_opts(audioWrapper->swrContext,
@@ -1358,8 +1387,10 @@ namespace alexander_media {
         copyAVPacket->stream_index = 0;
         //将包写到输出媒体文件
         if (wrapper->type == TYPE_AUDIO) {
+            //LOGD("downloadImpl2() audio copyAVPacket->pts: %d\n", (long) copyAVPacket->pts);
             av_interleaved_write_frame(avFormatContextAudioOutput, copyAVPacket);
         } else {
+            //LOGW("downloadImpl2() video copyAVPacket->pts: %d\n", (long) copyAVPacket->pts);
             av_interleaved_write_frame(avFormatContextVideoOutput, copyAVPacket);
         }
 
@@ -1468,14 +1499,14 @@ namespace alexander_media {
             videoWrapper->father->isPausedForSeek = true;
         }
 
-        if (needToDownload) {
-            if (initDownload() < 0) {
+        /*if (needToDownload) {
+            if (initDownload2() < 0) {
                 isInitSuccess = false;
             } else {
                 isInitSuccess = true;
             }
             LOGI("readData() isInitSuccess: %d\n", isInitSuccess);
-        }
+        }*/
 
         isReading = true;
         /***
@@ -1531,6 +1562,21 @@ namespace alexander_media {
                 notifyToHandle(audioWrapper->father);
                 notifyToHandle(videoWrapper->father);
 
+                pthread_mutex_lock(&readLockMutex);
+                if (needToDownload && isInitSuccess) {
+                    needToDownload = false;
+                    isInitSuccess = false;
+                    // 写尾部信息
+                    av_write_trailer(avFormatContextAudioOutput);
+                    avio_close(avFormatContextAudioOutput->pb);
+                    av_write_trailer(avFormatContextVideoOutput);
+                    avio_close(avFormatContextVideoOutput->pb);
+                    LOGI("readData() 文件读完,已经停止下载\n");
+                    /*av_write_trailer(avFormatContextOutput);
+                    avio_close(avFormatContextOutput->pb);*/
+                }
+                pthread_mutex_unlock(&readLockMutex);
+
                 // 不退出线程
                 LOGI("readData() notifyToReadWait start\n");
                 notifyToReadWait();
@@ -1555,30 +1601,34 @@ namespace alexander_media {
             if (srcAVPacket->stream_index == audioWrapper->father->streamIndex) {
                 if (audioWrapper->father->isReading) {
                     if (needToDownload && isInitSuccess) {
-                        downloadImpl(audioWrapper->father, srcAVPacket, copyAVPacket);
+                        downloadImpl2(audioWrapper->father, srcAVPacket, copyAVPacket);
                     }
                     readDataImpl(audioWrapper->father, srcAVPacket, copyAVPacket);
                 }
             } else if (srcAVPacket->stream_index == videoWrapper->father->streamIndex) {
                 if (videoWrapper->father->isReading) {
                     if (needToDownload && isInitSuccess) {
-                        downloadImpl(videoWrapper->father, srcAVPacket, copyAVPacket);
+                        downloadImpl2(videoWrapper->father, srcAVPacket, copyAVPacket);
                     }
                     readDataImpl(videoWrapper->father, srcAVPacket, copyAVPacket);
                 }
             }
         }// for(;;) end
 
+        pthread_mutex_lock(&readLockMutex);
         if (needToDownload && isInitSuccess) {
+            needToDownload = false;
+            isInitSuccess = false;
             // 写尾部信息
-            av_write_trailer(avFormatContextOutput);
-            avio_close(avFormatContextOutput->pb);
-
-            /*av_write_trailer(avFormatContextAudioOutput);
+            av_write_trailer(avFormatContextAudioOutput);
             avio_close(avFormatContextAudioOutput->pb);
             av_write_trailer(avFormatContextVideoOutput);
-            avio_close(avFormatContextVideoOutput->pb);*/
+            avio_close(avFormatContextVideoOutput->pb);
+            LOGI("readData() 读线程退出,已经停止下载\n");
+            /*av_write_trailer(avFormatContextOutput);
+            avio_close(avFormatContextOutput->pb);*/
         }
+        pthread_mutex_unlock(&readLockMutex);
 
         if (srcAVPacket != NULL) {
             av_packet_unref(srcAVPacket);
@@ -1607,6 +1657,7 @@ namespace alexander_media {
             audioWrapper->father->isStarted = true;
             while (!videoWrapper->father->isStarted) {
                 if (audioWrapper->father->isPausedForSeek
+                    || !videoWrapper->father->isHandling
                     || !audioWrapper->father->isHandling) {
                     return 0;
                 }
@@ -1676,6 +1727,7 @@ namespace alexander_media {
         videoWrapper->father->isStarted = true;
         while (!audioWrapper->father->isStarted) {
             if (videoWrapper->father->isPausedForSeek
+                || !audioWrapper->father->isHandling
                 || !videoWrapper->father->isHandling) {
                 LOGI("handleVideoDataImpl() videoWrapper->father->isStarted return\n");
                 return 0;
@@ -1708,6 +1760,7 @@ namespace alexander_media {
                 double totleTimeDiff = 0;
                 for (int i = 0; i < RUN_COUNTS; i++) {
                     if (videoWrapper->father->isPausedForSeek
+                        || !audioWrapper->father->isHandling
                         || !videoWrapper->father->isHandling) {
                         LOGI("handleVideoDataImpl() RUN_COUNTS return\n");
                         return 0;
@@ -1744,6 +1797,7 @@ namespace alexander_media {
             // 那么说明视频播放快了,应等待音频
             while (videoPts - audioPts > TIME_DIFFERENCE) {
                 if (videoWrapper->father->isPausedForSeek
+                    || !audioWrapper->father->isHandling
                     || !videoWrapper->father->isHandling) {
                     LOGI("handleVideoDataImpl() TIME_DIFFERENCE return\n");
                     return 0;
@@ -1756,7 +1810,9 @@ namespace alexander_media {
         if (videoWrapper->father->isHandling) {
             startVideoLockedTime = av_gettime_relative();
             // 3.lock锁定下一个即将要绘制的Surface
+            //LOGW("handleVideoDataImpl() ANativeWindow_lock 1\n");
             ANativeWindow_lock(pANativeWindow, &mANativeWindow_Buffer, NULL);
+            //LOGW("handleVideoDataImpl() ANativeWindow_lock 2\n");
 
             // 把decodedAVFrame的数据经过格式转换后保存到rgbAVFrame中
             sws_scale(videoWrapper->swsContext,
@@ -1807,7 +1863,9 @@ namespace alexander_media {
             ////////////////////////////////////////////////////////
 
             // 6.unlock绘制
+            //LOGW("handleVideoDataImpl() ANativeWindow_unlockAndPost 1\n");
             ANativeWindow_unlockAndPost(pANativeWindow);
+            //LOGW("handleVideoDataImpl() ANativeWindow_unlockAndPost 2\n");
         }
     }
 
@@ -1821,11 +1879,21 @@ namespace alexander_media {
                 av_usleep(1000);
             }
             LOGF("%s\n", "handleData() audio end");
+
+            LOGD("handleData() audio                   list1: %d\n",
+                 audioWrapper->father->list1->size());
+            LOGD("handleData() audio                   list2: %d\n",
+                 audioWrapper->father->list2->size());
+            LOGW("handleData() video                   list1: %d\n",
+                 wrapper->list1->size());
+            LOGW("handleData() video                   list2: %d\n",
+                 wrapper->list2->size());
+
             int64_t startTime = av_gettime_relative();
             int64_t endTime = -1;
             while (isVideoHandling) {
                 endTime = av_gettime_relative();
-                if ((endTime - startTime) >= 5000000) {
+                if ((endTime - startTime) >= 10000000) {
                     LOGE("%s\n", "Exception Exit");
                     break;
                 }
@@ -2134,6 +2202,11 @@ namespace alexander_media {
                         LOGI("===================================================\n");
                     } else {
                         wrapper->isHandling = false;
+                        if (wrapper->type == TYPE_AUDIO) {
+                            LOGD("handleData() audio wrapper->isHandling is false\n");
+                        } else {
+                            LOGW("handleData() video wrapper->isHandling is false\n");
+                        }
                     }
                 }
             }
@@ -2358,6 +2431,11 @@ namespace alexander_media {
                 && wrapper->list1->size() == 0
                 && wrapper->list2->size() == 0) {
                 wrapper->isHandling = false;
+                if (wrapper->type == TYPE_AUDIO) {
+                    LOGD("handleData() audio wrapper->isHandling is false 2\n");
+                } else {
+                    LOGW("handleData() video wrapper->isHandling is false 2\n");
+                }
             }
         }//for(;;) end
 
@@ -2956,6 +3034,77 @@ namespace alexander_media {
             LOGI("stepAdd() subtractStep: %ld\n", (long) subtractStep);
             seekTo(curProgress - subtractStep);
         }
+    }
+
+    int download(int flag, const char *filePath, const char *fileName) {
+        switch (flag) {
+            case 0: {// 下载音视频
+                /*std::string mediaPath;
+                mediaPath.append(filePath);
+                mediaPath.append(fileName);
+                mediaPath.append(".mp4");
+                memset(outFilePath, '\0', sizeof(outFilePath));
+                av_strlcpy(outFilePath, mediaPath.c_str(), sizeof(outFilePath));
+                LOGI("download() outFilePath: %s\n", outFilePath);*/
+
+                std::string audioPath;
+                std::string videoPath;
+                audioPath.append(filePath);
+                audioPath.append(fileName);
+                audioPath.append(".aac");
+                videoPath.append(filePath);
+                videoPath.append(fileName);
+                videoPath.append(".h264");
+
+                memset(audioOutFilePath, '\0', sizeof(audioOutFilePath));
+                av_strlcpy(audioOutFilePath, audioPath.c_str(), sizeof(audioOutFilePath));
+
+                memset(videoOutFilePath, '\0', sizeof(videoOutFilePath));
+                av_strlcpy(videoOutFilePath, videoPath.c_str(), sizeof(videoOutFilePath));
+
+                LOGI("download() audioOutFilePath: %s\n", audioOutFilePath);
+                LOGI("download() videoOutFilePath: %s\n", videoOutFilePath);
+
+                if (initDownload2() < 0) {
+                    needToDownload = false;
+                    isInitSuccess = false;
+                } else {
+                    needToDownload = true;
+                    isInitSuccess = true;
+                }
+                LOGI("download() isInitSuccess: %d\n", isInitSuccess);
+
+                break;
+            }
+            case 1: {// 停止下载
+                pthread_mutex_lock(&readLockMutex);
+                if (needToDownload && isInitSuccess) {
+                    needToDownload = false;
+                    isInitSuccess = false;
+                    //av_usleep(1000 * 1000 * 3);// 3秒
+                    // 写尾部信息
+                    av_write_trailer(avFormatContextAudioOutput);
+                    avio_close(avFormatContextAudioOutput->pb);
+                    av_write_trailer(avFormatContextVideoOutput);
+                    avio_close(avFormatContextVideoOutput->pb);
+                    LOGI("download() 已经停止下载\n");
+                    /*av_write_trailer(avFormatContextOutput);
+                    avio_close(avFormatContextOutput->pb);*/
+                }
+                pthread_mutex_unlock(&readLockMutex);
+                break;
+            }
+            case 2: {// 只下载音频
+                break;
+            }
+            case 3: {// 只下载视频
+                break;
+            }
+            default:
+                break;
+        }
+
+        return 0;
     }
 
     /***

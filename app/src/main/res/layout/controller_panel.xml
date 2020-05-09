@@ -82,12 +82,12 @@
             <!--android:layout_width="@dimen/dimen_16_dp"
             android:layout_height="@dimen/dimen_16_dp"-->
         <ImageButton
-            android:id="@+id/button_prev2"
+            android:id="@+id/button_exit"
             style="@style/StyleImageButton"
             android:layout_alignParentStart="true"
             android:layout_marginStart="@dimen/dimen_80_dp"
-            android:contentDescription="Previous2"
-            android:src="@drawable/remove_view"/>
+            android:contentDescription="Exit"
+            android:src="@drawable/exit_view"/>
 
         <ImageButton
             android:id="@+id/button_play"
@@ -118,7 +118,7 @@
             android:contentDescription="download"
             android:layout_marginStart="@dimen/dimen_230_dp"
             android:src="@drawable/download1"
-            android:visibility="gone"/>
+            android:visibility="visible"/>
 
         <ImageButton
             android:id="@+id/volume_normal"

@@ -13,9 +13,10 @@ namespace alexander_audio_video {
     static char inAudioFilePath[2048];
     static AVFormatContext *videoAVFormatContext = NULL;
     static AVFormatContext *audioAVFormatContext = NULL;
-    static struct AudioWrapper *audioWrapper = NULL;
     static struct VideoWrapper *videoWrapper = NULL;
+    static struct AudioWrapper *audioWrapper = NULL;
     static bool isLocal = false;
+    static bool isH264AAC = false;
     static bool isVideoReading = false;
     static bool isAudioReading = false;
     static bool isAudioHandling = false;
@@ -645,6 +646,12 @@ namespace alexander_audio_video {
         }
         LOGW("---------------------------------\n");
 
+        //if (frameRate <= 25 && bitRate == 0) {
+        /*if (isH264AAC) {
+            TIME_DIFFERENCE = 0.0008;
+        }*/
+        LOGI("createSwsContext()    TIME_DIFFERENCE    : %lf\n", TIME_DIFFERENCE);
+
         LOGI("createSwsContext() end\n");
         return 0;
     }
@@ -783,7 +790,7 @@ namespace alexander_audio_video {
             || videoWrapper == NULL
             || videoWrapper->father == NULL) {
             return NULL;
-        } else if (!audioWrapper->father->isReading
+        } /*else if (!audioWrapper->father->isReading
                    || !audioWrapper->father->isHandling
                    || !videoWrapper->father->isReading
                    || !videoWrapper->father->isHandling) {
@@ -792,7 +799,7 @@ namespace alexander_audio_video {
             onFinished();
             LOGF("%s\n", "readData() finish");
             return NULL;
-        }
+        }*/
 
         Wrapper *wrapper = NULL;
         int *type = (int *) opaque;
@@ -1028,6 +1035,11 @@ namespace alexander_audio_video {
          音频需要正常播放才是好的体验
          */
         videoPts = decodedAVFrame->pts * av_q2d(stream->time_base);
+        /*if (videoPts < 0) {
+            videoPts = audioPts + TIME_DIFFERENCE;
+        }*/
+        //LOGW("handleVideoDataImpl() audioPts: %lf\n", audioPts);
+        //LOGW("handleVideoDataImpl() videoPts: %lf\n", videoPts);
         if (videoPts > 0 && audioPts > 0) {
             double tempTimeDifference = videoPts - audioPts;
             if (runCounts < RUN_COUNTS) {
@@ -1039,6 +1051,12 @@ namespace alexander_audio_video {
                 runCounts++;
                 double totleTimeDiff = 0;
                 for (int i = 0; i < RUN_COUNTS; i++) {
+                    if (videoWrapper->father->isPausedForSeek
+                        || !audioWrapper->father->isHandling
+                        || !videoWrapper->father->isHandling) {
+                        LOGI("handleVideoDataImpl() RUN_COUNTS return\n");
+                        return 0;
+                    }
                     totleTimeDiff += timeDiff[i];
                 }
                 averageTimeDiff = totleTimeDiff / RUN_COUNTS;
@@ -1064,6 +1082,7 @@ namespace alexander_audio_video {
             // 那么说明视频播放快了,应等待音频
             while (videoPts - audioPts > TIME_DIFFERENCE) {
                 if (videoWrapper->father->isPausedForSeek
+                    || !audioWrapper->father->isHandling
                     || !videoWrapper->father->isHandling) {
                     return 0;
                 }
@@ -1097,23 +1116,27 @@ namespace alexander_audio_video {
 
             ////////////////////////////////////////////////////////
 
-            // timeDifference = 0.040000
-            // 单位: 毫秒
-            int tempSleep = ((int) ((videoPts - videoPtsPre) * 1000)) - 30;
-            if (videoSleepTime != tempSleep) {
-                videoSleepTime = tempSleep;
-                //LOGW("handleVideoDataImpl() videoSleepTime     : %d\n", videoSleepTime);
-            }
-            if (videoSleepTime < 12 && videoSleepTime > 0) {
-                videoSleep(videoSleepTime);
-            } else {
-                if (videoSleepTime > 0) {
-                    // 好像是个比较合理的值
-                    videoSleep(11);
+            if (videoPts > 0) {
+                // timeDifference = 0.040000
+                // 单位: 毫秒
+                int tempSleep = ((int) ((videoPts - videoPtsPre) * 1000)) - 30;
+                if (videoSleepTime != tempSleep) {
+                    videoSleepTime = tempSleep;
+                    //LOGW("handleVideoDataImpl() videoSleepTime     : %d\n", videoSleepTime);
                 }
-                // videoSleepTime <= 0时不需要sleep
+                if (videoSleepTime < 12 && videoSleepTime > 0) {
+                    videoSleep(videoSleepTime);
+                } else {
+                    if (videoSleepTime > 0) {
+                        // 好像是个比较合理的值
+                        videoSleep(11);
+                    }
+                    // videoSleepTime <= 0时不需要sleep
+                }
+                videoPtsPre = videoPts;
+            } else {
+                videoSleep(10);
             }
-            videoPtsPre = videoPts;
 
             ////////////////////////////////////////////////////////
 
@@ -1832,11 +1855,13 @@ namespace alexander_audio_video {
         int64_t audioDuration = audioAVFormatContext->duration / AV_TIME_BASE;
         LOGD("initPlayer() videoDuration: %ld\n", (long) videoDuration);
         LOGD("initPlayer() audioDuration: %ld\n", (long) audioDuration);
-        if (videoAVFormatContext->duration != AV_NOPTS_VALUE) {
+        if (videoAVFormatContext->duration > 0
+            && videoAVFormatContext->duration != AV_NOPTS_VALUE) {
             // 得到的是秒数
             videoDuration = (videoAVFormatContext->duration + 5000) / AV_TIME_BASE;
         }
-        if (audioAVFormatContext->duration != AV_NOPTS_VALUE) {
+        if (audioAVFormatContext->duration > 0
+            && audioAVFormatContext->duration != AV_NOPTS_VALUE) {
             // 得到的是秒数
             audioDuration = (audioAVFormatContext->duration + 5000) / AV_TIME_BASE;
         }
@@ -1856,6 +1881,12 @@ namespace alexander_audio_video {
             // 单位: 秒
             LOGD("initPlayer() media seconds: %d\n", (int) audioDuration);
             LOGD("initPlayer() media          %02d:%02d:%02d\n", hours, mins, seconds);
+        } else if (videoDuration < 0 && audioDuration > 0) {
+            videoDuration = audioDuration;
+        } else if (videoDuration > 0 && audioDuration < 0) {
+            audioDuration = videoDuration;
+        } else if (videoDuration < 0 && audioDuration < 0) {
+
         }
         audioWrapper->father->duration =
         videoWrapper->father->duration = audioDuration;
@@ -1867,26 +1898,44 @@ namespace alexander_audio_video {
 
     void setJniParameters(JNIEnv *env, const char *filePath, jobject surfaceJavaObject) {
         LOGI("setJniParameters() start");
-//        const char *src = "/storage/emulated/0/Movies/权力的游戏第三季05.mp4";
-//        const char *src = "http://192.168.0.112:8080/tomcat_video/game_of_thrones/game_of_thrones_season_1/01.mp4";
-//        const char *videoSrc = "/storage/1532-48AD/Videos/download/38289647/2/16/video.m4s";
-//        const char *audioSrc = "/storage/1532-48AD/Videos/download/38289647/2/16/audio.m4s";
-//        av_strlcpy(inVideoFilePath, videoSrc, sizeof(inVideoFilePath));
-//        av_strlcpy(inAudioFilePath, audioSrc, sizeof(inAudioFilePath));
-
         // /storage/1532-48AD/Videos/download/38289647/2/16/audio.m4s
         // /storage/1532-48AD/Videos/download/38289647/2/16/video.m4s
 
+        isH264AAC = false;
         memset(inVideoFilePath, '\0', sizeof(inVideoFilePath));
         memset(inAudioFilePath, '\0', sizeof(inAudioFilePath));
-        std::string videoPath = std::string(filePath);
-        std::string audioPath = std::string(filePath);
-        videoPath += "/video.m4s";
-        audioPath += "/audio.m4s";
+
+        std::string path = std::string(filePath);
+        int index1 = path.rfind('/');
+        int index2 = path.rfind('.');
+        std::string savePath = path.substr(0, index1 + 1);
+
+        //std::string videoPath = std::string();
+        //std::string audioPath = std::string();
+        std::string videoPath;
+        std::string audioPath;
+        if (strstr(filePath, ".m4s")) {
+            videoPath.append(savePath);
+            videoPath.append("video.m4s");
+            audioPath.append(savePath);
+            audioPath.append("audio.m4s");
+        } else if (strstr(filePath, ".h264")
+                   || strstr(filePath, ".aac")) {
+            std::string fileName = path.substr(index1 + 1, index2 - index1 - 1);
+            videoPath.append(savePath);
+            videoPath.append(fileName);
+            videoPath.append(".h264");
+            audioPath.append(savePath);
+            audioPath.append(fileName);
+            audioPath.append(".aac");
+            isH264AAC = true;
+        } else {
+            return;
+        }
         av_strlcpy(inVideoFilePath, videoPath.c_str(), sizeof(inVideoFilePath));
         av_strlcpy(inAudioFilePath, audioPath.c_str(), sizeof(inAudioFilePath));
-        LOGI("setJniParameters() videoFilePath: %s\n", inVideoFilePath);
         LOGI("setJniParameters() audioFilePath: %s\n", inAudioFilePath);
+        LOGI("setJniParameters() videoFilePath: %s\n", inVideoFilePath);
 
         isLocal = false;
         char *result = strstr(inVideoFilePath, "http://");

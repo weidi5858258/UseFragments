@@ -883,23 +883,35 @@ public class MainActivity1 extends BaseActivity
          {@link android.os.Environment#DIRECTORY_NOTIFICATIONS}
 
          访问的还是手机本身的存储卡,不是外置的SD卡
-         getFilesDir            : /data/user/0/com.weidi.usefragments/files
-         getCacheDir            : /data/user/0/com.weidi.usefragments/cache
-         getExternalCacheDir    : /storage/emulated/0/Android/data/com.weidi.usefragments/cache
-         DIRECTORY_MUSIC        : /storage/emulated/0/Android/data/com.weidi
-         .usefragments/files/Music
-         DIRECTORY_MOVIES       : /storage/emulated/0/Android/data/com.weidi
-         .usefragments/files/Movies
-         DIRECTORY_PICTURES     : /storage/emulated/0/Android/data/com.weidi
-         .usefragments/files/Pictures
-         DIRECTORY_PODCASTS     : /storage/emulated/0/Android/data/com.weidi
-         .usefragments/files/Podcasts
-         DIRECTORY_RINGTONES    : /storage/emulated/0/Android/data/com.weidi
-         .usefragments/files/Ringtones
-         DIRECTORY_ALARMS       : /storage/emulated/0/Android/data/com.weidi
-         .usefragments/files/Alarms
-         DIRECTORY_NOTIFICATIONS: /storage/emulated/0/Android/data/com.weidi
-         .usefragments/files/Notifications
+         getFilesDir            :
+         /data/user/0/com.weidi.usefragments/files
+
+         getCacheDir            :
+         /data/user/0/com.weidi.usefragments/cache
+
+         getExternalCacheDir    :
+         /storage/emulated/0/Android/data/com.weidi.usefragments/cache
+
+         DIRECTORY_MUSIC        :
+         /storage/emulated/0/Android/data/com.weidi.usefragments/files/Music
+
+         DIRECTORY_MOVIES       :
+         /storage/emulated/0/Android/data/com.weidi.usefragments/files/Movies
+
+         DIRECTORY_PICTURES     :
+         /storage/emulated/0/Android/data/com.weidi.usefragments/files/Pictures
+
+         DIRECTORY_PODCASTS     :
+         /storage/emulated/0/Android/data/com.weidi.usefragments/files/Podcasts
+
+         DIRECTORY_RINGTONES    :
+         /storage/emulated/0/Android/data/com.weidi.usefragments/files/Ringtones
+
+         DIRECTORY_ALARMS       :
+         /storage/emulated/0/Android/data/com.weidi.usefragments/files/Alarms
+
+         DIRECTORY_NOTIFICATIONS:
+         /storage/emulated/0/Android/data/com.weidi.usefragments/files/Notifications
          */
         MLog.i(TAG, "getFilesDir            : " + getFilesDir().getAbsolutePath());
         MLog.i(TAG, "getCacheDir            : " + getCacheDir().getAbsolutePath());
@@ -956,23 +968,28 @@ public class MainActivity1 extends BaseActivity
         MLog.i(TAG, "canWrite12             : " + file.canWrite());// false
 
         /***
-         Environment.DIRECTORY_MOVIES: /storage/emulated/0/Android/data/com.weidi
-         .usefragments/files/Movies
+         Environment.DIRECTORY_MOVIES:
+         /storage/emulated/0/Android/data/com.weidi.usefragments/files/Movies
          canWrite                    : true
-         Environment.DIRECTORY_MOVIES: /storage/2430-1702/Android/data/com.weidi
-         .usefragments/files/Movies
+
+         Environment.DIRECTORY_MOVIES:
+         /storage/2430-1702/Android/data/com.weidi.usefragments/files/Movies
          canWrite                    : true
-         Environment.MEDIA_MOUNTED   : /storage/emulated/0/Android/data/com.weidi
-         .usefragments/files/mounted
+
+         Environment.MEDIA_MOUNTED   :
+         /storage/emulated/0/Android/data/com.weidi.usefragments/files/mounted
          canWrite                    : true
-         Environment.MEDIA_MOUNTED   : /storage/2430-1702/Android/data/com.weidi
-         .usefragments/files/mounted
+
+         Environment.MEDIA_MOUNTED   :
+         /storage/2430-1702/Android/data/com.weidi.usefragments/files/mounted
          canWrite                    : true
-         Environment.MEDIA_SHARED    : /storage/emulated/0/Android/data/com.weidi
-         .usefragments/files/shared
+
+         Environment.MEDIA_SHARED    :
+         /storage/emulated/0/Android/data/com.weidi.usefragments/files/shared
          canWrite                    : true
-         Environment.MEDIA_SHARED    : /storage/2430-1702/Android/data/com.weidi
-         .usefragments/files/shared
+
+         Environment.MEDIA_SHARED    :
+         /storage/2430-1702/Android/data/com.weidi.usefragments/files/shared
          canWrite                    : true
          */
         File[] files;

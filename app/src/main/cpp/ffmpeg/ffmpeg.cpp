@@ -294,15 +294,46 @@ void onInfo(char *info) {
 
 /////////////////////////////////////////////////////////////////////////
 
+static jint onTransact_download(JNIEnv *env, jobject thiz, jint code, jobjectArray objects) {
+    if (use_mode != USE_MODE_MEDIA) {
+        return -1;
+    }
+
+    jstring element0 = static_cast<jstring>(env->GetObjectArrayElement(objects, 0));
+    jstring element1 = static_cast<jstring>(env->GetObjectArrayElement(objects, 1));
+    jstring element2 = static_cast<jstring>(env->GetObjectArrayElement(objects, 2));
+    const char *flagStr = env->GetStringUTFChars(element0, 0);
+    const char *filePath = env->GetStringUTFChars(element1, 0);
+    const char *fileName = env->GetStringUTFChars(element2, 0);
+    int flag = -1;
+    if (!strcmp(flagStr, "0")) {
+        flag = 0;
+    } else if (!strcmp(flagStr, "1")) {
+        flag = 1;
+    } else if (!strcmp(flagStr, "2")) {
+        flag = 2;
+    } else if (!strcmp(flagStr, "3")) {
+        flag = 3;
+    }
+    LOGI("onTransact() flag: %d path: %s fileName: %s\n", flag, filePath, fileName);
+    alexander_media::download(flag, filePath, fileName);
+    // release
+    env->ReleaseStringUTFChars(element0, flagStr);
+    env->ReleaseStringUTFChars(element1, filePath);
+    env->ReleaseStringUTFChars(element2, fileName);
+    env->DeleteLocalRef(element0);
+    env->DeleteLocalRef(element1);
+    env->DeleteLocalRef(element2);
+
+    return 0;
+}
+
+/////////////////////////////////////////////////////////////////////////
+
 // 避免最常见的 10 大 JNI 编程错误的技巧和工具
 // https://blog.csdn.net/lubeijing2008xu/article/details/37569809
 
-extern "C"
-JNIEXPORT jint JNICALL
-Java_com_weidi_usefragments_business_video_1player_FFMPEG_onTransact(JNIEnv *env, jobject thiz,
-                                                                     jint code,
-                                                                     jobjectArray objects) {
-    //
+/***
     jsize count = env->GetArrayLength(objects);
     for (jsize i = 0; i < count; i++) {
         jobject element = env->GetObjectArrayElement(objects, i);
@@ -310,12 +341,29 @@ Java_com_weidi_usefragments_business_video_1player_FFMPEG_onTransact(JNIEnv *env
             break;
         }
 
-        /* do something with array element */
-
         env->DeleteLocalRef(element);
     }
 
+    jclass integerClass = env->FindClass("java/lang/Integer");
+    jobject element0 = env->GetObjectArrayElement(objects, 0);
+    int flag = -1;
+    if (env->IsInstanceOf(element0, integerClass)) {
+        jint flag_ = (jint) element0;
+        flag = (int) flag_;
+    }
+    env->DeleteLocalRef(integerClass);
+    得到的flag跟java端传过来的值不一样
+ */
+extern "C"
+JNIEXPORT jint JNICALL
+Java_com_weidi_usefragments_business_video_1player_FFMPEG_onTransact(JNIEnv *env, jobject thiz,
+                                                                     jint code,
+                                                                     jobjectArray objects) {
+    //
     switch (code) {
+        case 1100:
+            return onTransact_download(env, thiz, code, objects);
+
         default:
             break;
     }
@@ -480,10 +528,12 @@ Java_com_weidi_usefragments_business_video_1player_FFMPEG_readData(JNIEnv *env, 
             if (COUNTS == 1) {
                 type = TYPE_AUDIO;
                 ++COUNTS;
+                LOGI("readData() TYPE_AUDIO\n");
                 alexander_audio_video::readData(&type);
             } else {
                 type = TYPE_VIDEO;
                 --COUNTS;
+                LOGI("readData() TYPE_VIDEO\n");
                 alexander_audio_video::readData(&type);
             }
             break;

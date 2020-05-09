@@ -1,5 +1,7 @@
 package com.weidi.usefragments.business.video_player;
 
+import android.content.Context;
+import android.content.SharedPreferences;
 import android.media.AudioManager;
 import android.media.AudioTrack;
 import android.os.Build;
@@ -11,6 +13,9 @@ import android.view.Surface;
 import com.weidi.usefragments.media.MediaUtils;
 import com.weidi.usefragments.tool.Callback;
 import com.weidi.usefragments.tool.MLog;
+
+import static com.weidi.usefragments.business.video_player.PlayerWrapper.PLAYBACK_IS_MUTE;
+import static com.weidi.usefragments.service.DownloadFileService.PREFERENCES_NAME;
 
 /***
  Created by root on 19-8-8.
@@ -72,6 +77,10 @@ public class FFMPEG {
     // uint32_t code, const Parcel &data, Parcel *reply, uint32_t flags = 0);
 
     public static final int do_something_code_set_mode = 1000;
+    // 0(开始下载) 1(停止下载) 2(只下载音频) 3(只下载视频)
+    public static final int DO_SOMETHING_CODE_DOWNLOAD = 1100;
+    public static final int DO_SOMETHING_CODE_DOWNLOAD_AUDIO = 1101;
+    public static final int DO_SOMETHING_CODE_DOWNLOAD_VIDEO = 1102;
 
     public native int onTransact(int code, Object[] objects);
 
@@ -140,8 +149,20 @@ public class FFMPEG {
                 AudioManager.STREAM_MUSIC,
                 sampleRateInHz, channelCount, audioFormat,
                 AudioTrack.MODE_STREAM);
-        setVolume(1.0f);
         if (mAudioTrack != null) {
+            if (mContext != null) {
+                SharedPreferences sp =
+                        mContext.getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE);
+                boolean isMute = sp.getBoolean(PLAYBACK_IS_MUTE, false);
+                if (!isMute) {
+                    setVolume(VOLUME_NORMAL);
+                } else {
+                    setVolume(VOLUME_MUTE);
+                }
+            } else {
+                setVolume(VOLUME_NORMAL);
+            }
+
             mAudioTrack.play();
         } else {
             MLog.i(TAG, "createAudioTrack() mAudioTrack is null");
@@ -185,9 +206,14 @@ public class FFMPEG {
     }
 
     private Handler mUiHandler;
+    private Context mContext;
 
     public void setHandler(Handler handler) {
         mUiHandler = handler;
+    }
+
+    public void setContext(Context context) {
+        mContext = context;
     }
 
     // 供jni层调用(底层信息才是通过这个接口反映到java层的)

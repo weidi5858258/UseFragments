@@ -100,6 +100,7 @@ public class PlayerService extends Service {
     public WindowManager mWindowManager;
     public WindowManager.LayoutParams mLayoutParams;
     public View mRootView;
+    private View mTestView;
 
     private void internalCreate() {
         if (mPlayerWrapper == null) {
@@ -198,6 +199,7 @@ public class PlayerService extends Service {
 
     private void internalDestroy() {
         mPlayerWrapper.onDestroy();
+        mWindowManager.removeView(mTestView);
         removeView();
         unregisterHeadsetPlugReceiver();
         EventBusUtils.unregister(this);
@@ -292,8 +294,23 @@ public class PlayerService extends Service {
 
         LayoutInflater inflater =
                 (LayoutInflater) getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-        mRootView = inflater.inflate(R.layout.activity_player, null);
+        mTestView = inflater.inflate(R.layout.transparent_player, null);
+        mLayoutParams = new WindowManager.LayoutParams();
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            mLayoutParams.type = WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY;
+        } else {
+            mLayoutParams.type = WindowManager.LayoutParams.TYPE_PHONE;
+        }
+        mLayoutParams.flags = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE;
+        mLayoutParams.gravity = Gravity.TOP + Gravity.LEFT;
+        mLayoutParams.width = 1;// 3
+        mLayoutParams.height = 1;// 5
+        mLayoutParams.x = 0;
+        mLayoutParams.y = 0;
+        mWindowManager.addView(mTestView, mLayoutParams);
+        mTestView.setBackgroundColor(getResources().getColor(R.color.darkorchid));
 
+        mRootView = inflater.inflate(R.layout.activity_player, null);
         mLayoutParams = new WindowManager.LayoutParams();
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             mLayoutParams.type = WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY;

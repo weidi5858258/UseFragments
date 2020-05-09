@@ -274,6 +274,8 @@ namespace alexander_media {
 
     void stepSubtract(int64_t subtractStep);
 
+    int download(int flag, const char *filePath, const char *fileName);
+
 }
 
 #endif //USEFRAGMENTS_MEDIAPLAYER_H
