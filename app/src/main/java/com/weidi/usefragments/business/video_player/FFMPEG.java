@@ -77,7 +77,8 @@ public class FFMPEG {
     // uint32_t code, const Parcel &data, Parcel *reply, uint32_t flags = 0);
 
     public static final int do_something_code_set_mode = 1000;
-    // 0(开始下载) 1(停止下载) 2(只下载音频) 3(只下载视频)
+    // 0(开始下载,边播放边下) 1(停止下载) 2(只下载音频,暂时不用) 3(只下载视频,暂时不用)
+    // 4(只下载,不播放.不调用seekTo) 5(只提取音视频,不播放.调用seekTo到0)
     public static final int DO_SOMETHING_CODE_DOWNLOAD = 1100;
     public static final int DO_SOMETHING_CODE_DOWNLOAD_AUDIO = 1101;
     public static final int DO_SOMETHING_CODE_DOWNLOAD_VIDEO = 1102;
@@ -295,9 +296,6 @@ public class FFMPEG {
         @Override
         public void onInfo(String info) {
             MLog.i(TAG, "onInfo() info: " + info);
-            /*if (!TextUtils.isEmpty(info)) {
-                MyToast.show(info);
-            }*/
             if (mUiHandler != null) {
                 Message msg = mUiHandler.obtainMessage();
                 msg.what = Callback.MSG_ON_INFO;

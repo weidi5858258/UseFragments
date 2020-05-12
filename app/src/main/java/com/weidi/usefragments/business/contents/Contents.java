@@ -86,17 +86,17 @@ public class Contents {
                 "http://ivi.bupt.edu.cn/hls/cetv1hd.m3u8");
 
         movieMap.put(
+                "林正英系列电影",// ?wsSecret=1502bea72119bc080d7036cea6f99ea3&wsTime=1586820846
+                "https://zb3.qhqsnedu.com/live/chingyinglam/playlist.m3u8");
+        movieMap.put(
+                "周星驰系列电影",// ?wsSecret=833f65604867cbf52b63678cc0985ddd&wsTime=1586840687
+                "https://zb3.qhqsnedu.com/live/zhouxingxinga/playlist.m3u8");
+        movieMap.put(
                 "速度与激情系列电影",// ?wsSecret=0094001ccf9fa3246949234baa6cad44&wsTime=1586820815
                 "https://zb3.qhqsnedu.com/live/suduyujiqingxilie/playlist.m3u8");
         movieMap.put(
                 "斯坦森系列电影",// ?wsSecret=9bd22fc2902c6c500fee03e060765100&wsTime=1586820749
                 "https://zb3.qhqsnedu.com/live/jiesen/playlist.m3u8");
-        movieMap.put(
-                "周星驰系列电影",// ?wsSecret=833f65604867cbf52b63678cc0985ddd&wsTime=1586840687
-                "https://zb3.qhqsnedu.com/live/zhouxingxinga/playlist.m3u8");
-        movieMap.put(
-                "林正英系列电影",// ?wsSecret=1502bea72119bc080d7036cea6f99ea3&wsTime=1586820846
-                "https://zb3.qhqsnedu.com/live/chingyinglam/playlist.m3u8");
         movieMap.put(
                 "",
                 "");
@@ -267,9 +267,6 @@ public class Contents {
         movieMap.put(
                 "中国教育空中课堂",
                 "http://cctvtxyh5ca.liveplay.myqcloud.com/cstv/cetv4_2/index.m3u8");
-        movieMap.put(
-                "东方电影频道",
-                "http://117.156.28.60/PLTV/88888888/224/3221225656/index.m3u8");
         movieMap.put(
                 "",
                 "");
@@ -516,134 +513,6 @@ public class Contents {
                 "https://meiju9.qhqsnedu.com/20190815/skLu2dAS/2000kb/hls/index.m3u8");
 
         movieMap.put(
-                "功夫",
-                "https://meiju9.qhqsnedu.com/20190823/1RSrZA26/2000kb/hls/index.m3u8");
-        movieMap.put(
-                "疯狂的外星人",
-                "https://meiju4.qhqsnedu.com/20190210/0OJRDGal/2000kb/hls/index.m3u8");
-        movieMap.put(
-                "色戒",
-                "http://youku1.dianfubang.com/20191111/fCQchCIc/index.m3u8");
-        movieMap.put(
-                "唐人街探案",
-                "https://meiju5.qhqsnedu.com/20190612/9KF2DkcI/2000kb/hls/index.m3u8");
-        movieMap.put(
-                "唐人街探案2",
-                "https://meiju5.qhqsnedu.com/20190614/NbNQkw2D/2000kb/hls/index.m3u8");
-        movieMap.put(
-                "鬼吹灯之龙岭迷窟",
-                "https://meiju10.qhqsnedu.com/20200406/e1V2k9hd/3000kb/hls/index.m3u8");
-        movieMap.put(
-                "红海行动",
-                "https://meiju5.qhqsnedu.com/20190530/5yUSG8yk/2000kb/hls/index.m3u8");
-        movieMap.put(
-                "鬼吹灯之巫峡棺山",
-                "https://meiju4.qhqsnedu.com/20190621/EC1k7nWN/2000kb/hls/index.m3u8");
-        movieMap.put(
-                "盗墓笔记",
-                "https://meiju10.qhqsnedu.com/20191128/aebT3kPg/2000kb/hls/index.m3u8");
-        movieMap.put(
-                "美人鱼",
-                "https://meiju5.qhqsnedu.com/20190603/HzUd8h9l/2000kb/hls/index.m3u8");
-        movieMap.put(
-                "我不是药神",
-                "https://meiju5.qhqsnedu.com/20190609/EC9Nyh4p/2000kb/hls/index.m3u8");
-        movieMap.put(
-                "",
-                "");
-        movieMap.put(
-                "",
-                "");
-        movieMap.put(
-                "",
-                "");
-        movieMap.put(
-                "",
-                "");
-        movieMap.put(
-                "",
-                "");
-        movieMap.put(
-                "",
-                "");
-        movieMap.put(
-                "",
-                "");
-        movieMap.put(
-                "",
-                "");
-
-        // {csd-1=java.nio.HeapByteBuffer[pos=0 lim=8 cap=8], mime=video/avc, frame-rate=24,
-        // track-id=2, profile=2, width=1280, height=720, max-input-size=151238,
-        // durationUs=6227930041, csd-0=java.nio.HeapByteBuffer[pos=0 lim=41 cap=41],
-        // bitrate-mode=0, level=512}
-        // csd-0: {0, 0, 0, 1, 103, 77, 64, 31, -24, -128, 40, 2, -35, -128, -87, 1, 1, 1, 64, 0,
-        // 0, -6, 64, 0, 46, -32, 56, 24, 0, 21, 92, -64, 1, 83, -38, 76, 48, 15, -116, 24, -119}
-        // csd-1: {0, 0, 0, 1, 104, -21, -20, -78}
-        movieMap.put(
-                "军情五处-利益之争",
-                "http://vip.zuiku8.com/1808/%E5%86%9B%E6%83%85%E4%BA%94%E5%A4%84%EF%BC%9A%E5%88" +
-                        "%A9%E7%9B%8A%E4%B9%8B%E4%BA%89" +
-                        ".BD1280%E9%AB%98%E6%B8%85%E4%B8%AD%E8%8B%B1%E5%8F%8C%E5%AD%97%E7%89%88" +
-                        ".mp4");
-        // {csd-1=java.nio.HeapByteBuffer[pos=0 lim=9 cap=9], mime=video/avc, frame-rate=60,
-        // track-id=1, profile=8, width=1280, height=720, max-input-size=148263,
-        // durationUs=7247083333, csd-0=java.nio.HeapByteBuffer[pos=0 lim=33 cap=33],
-        // bitrate-mode=0, level=1024}
-        // {0, 0, 0, 1, 103, 100, 0, 32, -84, -39, 64, 80, 5, -69, -1, 3, 27, 3, 26, 16, 0, 0, 3,
-        // 0, 16, 0, 0, 7, -128, -15, -125, 25, 96}
-        // {0, 0, 0, 1, 104, -21, -20, -78, 44}
-        // {crop-top=0, crop-right=1279, color-format=19, height=720, color-standard=1,
-        // crop-left=0, color-transfer=3, stride=1280, mime=video/raw, slice-height=720,
-        // width=1280, color-range=2, crop-bottom=719}
-        movieMap.put(
-                "地狱男爵-血皇后崛起",
-                "http://anning.luanniao-zuida.com/1907/%E5%9C%B0%E7%8B%B1%E7%94%B7%E7%88%B5%EF%BC" +
-                        "%9A%E8%A1%80%E7%9A%87%E5%90%8E%E5%B4%9B%E8%B5%B7" +
-                        ".BD1280%E9%AB%98%E6%B8%85%E4%B8%AD%E8%8B%B1%E5%8F%8C%E5%AD%97%E7%89%88" +
-                        ".mp4");
-        movieMap.put(
-                "痞子英雄2-黎明升起",
-                "http://download.xunleizuida.com/1905/%E7%97%9E%E5%AD%90%E8%8B%B1%E9%9B%842%EF%BC" +
-                        "%9A%E9%BB%8E%E6%98%8E%E5%8D%87%E8%B5%B7" +
-                        ".HD1280%E9%AB%98%E6%B8%85%E5%9B%BD%E8%AF%AD%E4%B8%AD%E5%AD%97%E7%89%88" +
-                        ".mp4");
-        movieMap.put(
-                "生死时速",
-                "http://xunlei.jingpin88.com/20171028/6WQ5SFS2/mp4/6WQ5SFS2.mp4");
-        movieMap.put(
-                "三傻大闹宝莱坞",
-                "http://xunleib.zuida360.com/1811/%E4%B8%89%E5%82%BB%E5%A4%A7%E9%97%B9%E5%AE%9D" +
-                        "%E8%8E%B1%E5%9D%9E.BD1280%E9%AB%98%E6%B8%85%E4%B8%AD%E5%AD%97%E7%89%88" +
-                        ".mp4");
-        movieMap.put(
-                "焦点",
-                "http://vip.zuiku8.com/1807/%E7%84%A6%E7%82%B92015" +
-                        ".BD1280%E9%AB%98%E6%B8%85%E4%B8%AD%E8%8B%B1%E5%8F%8C%E5%AD%97%E7%89%88" +
-                        ".mp4");
-        movieMap.put(
-                "中国机长",
-                "http://ok.renzuida.com/1912/ZG%E6%9C%BA%E9%95%BF" +
-                        ".HD1280%E9%AB%98%E6%B8%85%E5%9B%BD%E8%AF%AD%E4%B8%AD%E5%AD%97%E7%89%88" +
-                        ".mp4");
-        movieMap.put(
-                "生死时速2-海上惊情",
-                "http://xunlei.jingpin88.com/20171028/2JJsfDHh/mp4/2JJsfDHh.mp4");
-        movieMap.put(
-                "阿丽塔-战斗天使",
-                "http://xunlei.xiazai-zuida.com/1906/AL%E5%A1%94%EF%BC%9A%E6%88%98%E6%96%97%E5%A4" +
-                        "%A9%E4%BD%BF.BD1280%E9%AB%98%E6%B8%85%E4%B8%AD%E5%AD%97%E7%89%88.mp4");
-        movieMap.put(
-                "海王",
-                "http://xunlei.zuidaxunlei.com/1902/%E6%B5%B7W" +
-                        ".HD1280%E9%AB%98%E6%B8%85%E5%9B%BD%E8%AF%AD%E4%B8%AD%E5%AD%97%E9%9F%A9" +
-                        "%E7%89%88.mp4");
-        movieMap.put(
-                "黑豹",
-                "http://xunleib.zuida360.com/1805/H%E8%B1%B9" +
-                        ".BD1280%E9%AB%98%E6%B8%85%E5%9B%BD%E8%AF%AD%E7%89%B9%E6%95%88%E4%B8%AD" +
-                        "%E8%8B%B1%E5%8F%8C%E5%AD%97%E7%89%88.mp4");
-        movieMap.put(
                 "生化危机1",//?wsSecret=957951f2fa43f8864c24c1c680310d5c&wsTime=1587685750
                 "https://meiju9.qhqsnedu.com/20190819/IChMddL4/2000kb/hls/index.m3u8");
         movieMap.put(
@@ -667,194 +536,36 @@ public class Contents {
         movieMap.put(
                 "生化危机-复仇",//?wsSecret=01cbca167059662807e5780fa8601891&wsTime=1587685966
                 "https://meiju10.qhqsnedu.com/20191013/7tbGVw5Q/2000kb/hls/index.m3u8");
-        movieMap.put(
-                "疾速备战",
-                "http://xunlei.xiazai-zuida.com/1907/J%E9%80%9F%E5%A4%87%E6%88%98" +
-                        ".HD%E9%AB%98%E6%B8%85%E4%B8%AD%E8%8B%B1%E5%8F%8C%E5%AD%97%E7%89%88.mp4");
-        movieMap.put(
-                "黄飞鸿之五-龙城歼霸",
-                "http://anning.luanniao-zuida.com/1907/%E9%BB%84%E9%A3%9E%E9%B8%BF%E4%B9%8B%E4%BA" +
-                        "%94%EF%BC%9A%E9%BE%99%E5%9F%8E%E6%AD%BC%E9%9C%B8" +
-                        ".DVD%E5%9B%BD%E8%AF%AD%E4%B8%AD%E5%AD%97%E7%89%88.mp4");
-        movieMap.put(
-                "宝莱坞机器人2.0-重生归来",
-                "http://xunlei.xiazai-zuida.com/1906/BL%E5%9D%9E%E6%9C%BA%E5%99%A8%E4%BA%BA2" +
-                        ".0%EF%BC%9A%E9%87%8D%E7%94%9F%E5%BD%92%E6%9D%A5" +
-                        ".HD1280%E9%AB%98%E6%B8%85%E4%B8%AD%E8%8B%B1%E5%8F%8C%E5%AD%97%E7%89%88" +
-                        ".mp4");
-        movieMap.put(
-                "少年当自强",
-                "http://okxxxzy.xzokzyzy.com/20190718/27_08326ade/%E5%B0%91%E5%B9%B4%E5%BD%93%E8" +
-                        "%87%AA%E5%BC%BA.mp4");
-        movieMap.put(
-                "极速复仇",
-                "http://xz3-13.okzyxz.com/20190527/1282_5a7f1f18/%E6%9E%81%E9%80%9F%E5%A4%8D%E4" +
-                        "%BB%87.mp4");
-        movieMap.put(
-                "死侍2",
-                "http://xunleib.zuida360.com/1808/%E6%AD%BBshi2" +
-                        ".BD1280%E9%AB%98%E6%B8%85%E4%B8%AD%E8%8B%B1%E5%8F%8C%E5%AD%97%E7%89%88" +
-                        ".mp4");
-        movieMap.put(
-                "谍影重重4",
-                "http://xunlei.jingpin88.com/20171027/ZkYVjDJC/mp4/ZkYVjDJC.mp4");
-        movieMap.put(
-                "生死狙击",
-                "http://xunlei.jingpin88.com/20171026/0L4MjcwA/mp4/0L4MjcwA.mp4");
-        movieMap.put(
-                "再生侠",
-                "http://xunleib.zuida360.com/1805/%E5%86%8D%E7%94%9F%E4%BE%A0" +
-                        ".BD1280%E9%AB%98%E6%B8%85%E4%B8%AD%E8%8B%B1%E5%8F%8C%E5%AD%97%E7%89%88" +
-                        ".mp4");
-        movieMap.put(
-                "追龙2",
-                "http://xunlei.xiazai-zuida.com/1906/Zhuilong2%EF%BC%9A%E8%B4%BC%E7%8E%8B" +
-                        ".HD1280%E9%AB%98%E6%B8%85%E5%9B%BD%E8%AF%AD%E4%B8%AD%E5%AD%97%E7%89%88" +
-                        ".mp4");
-        movieMap.put(
-                "黑衣人-全球追缉",
-                "http://okxxzy.xzokzyzy.com/20190721/23773_0455e097/%E9%BB%91%E8%A1%A3%E4%BA%BA4" +
-                        "%E9%9F%A9%E7%89%88%E4%B8%AD%E5%AD%97.mp4");
-        movieMap.put(
-                "秦明-生死语者",
-                "http://anning.luanniao-zuida.com/1907/%E7%A7%A6%E6%98%8E%C2%B7%E7%94%9F%E6%AD%BB" +
-                        "%E8%AF%AD%E8%80%85.HD1280%E9%AB%98%E6%B8%85%E5%9B%BD%E8%AF%AD%E4%B8%AD" +
-                        "%E5%AD%97%E7%89%88.mp4");
-        movieMap.put(
-                "复仇者联盟4-终局之战",
-                "http://xunlei.zuidaxunlei.com/1907/FCZ%E8%81%94%E7%9B%9F4%EF%BC%9A%E7%BB%88%E5" +
-                        "%B1%80%E4%B9%8B%E6%88%98.BD1280%E9%AB%98%E6%B8%85%E7%89%B9%E6%95%88%E4" +
-                        "%B8%AD%E8%8B%B1%E5%8F%8C%E5%AD%97%E7%89%88.mp4");
-        movieMap.put(
-                "复仇者联盟4-终局之战-爱美剧",
-                "https://meiju9.qhqsnedu.com/20190802/OdFvhiY9/2000kb/hls/index.m3u8");
-        movieMap.put(
-                "忍者刺客",
-                "http://download.xunleizuida.com/1904/%E5%BF%8D%E8%80%85%E5%88%BA%E5%AE%A2" +
-                        ".HD1280%E9%AB%98%E6%B8%85%E4%B8%AD%E8%8B%B1%E5%8F%8C%E5%AD%97%E7%89%88" +
-                        ".mp4");
-        movieMap.put(
-                "怪兽之岛",
-                "http://okxxzy.xzokzyzy.com/20190727/23842_f4bc2950/%E6%80%AA%E5%85%BD%E4%B9%8B" +
-                        "%E5%B2%9B.mp4");
-        movieMap.put(
-                "魔精攻击",
-                "http://anning.luanniao-zuida.com/1907/%E9%AD%94%E7%B2%BE%E6%94%BB%E5%87%BB" +
-                        ".BD1280%E9%AB%98%E6%B8%85%E4%B8%AD%E8%8B%B1%E5%8F%8C%E5%AD%97%E7%89%88" +
-                        ".mp4");
-        movieMap.put(
-                "城市猎人2019",
-                "http://xunlei.zuidaxunlei.com/1907/%E5%9F%8E%E5%B8%82%E7%8C%8E%E4%BA%BA2019" +
-                        ".BD1280%E9%AB%98%E6%B8%85%E4%B8%AD%E5%AD%97%E7%89%88.mp4");
-        movieMap.put(
-                "机器人病毒危机",
-                "http://vip.zuiku8.com/1809/%E6%9C%BA%E5%99%A8%E4%BA%BA%E7%97%85%E6%AF%92%E5%8D" +
-                        "%B1%E6%9C%BA.BD1280%E9%AB%98%E6%B8%85%E4%B8%AD%E8%8B%B1%E5%8F%8C%E5%AD" +
-                        "%97%E7%89%88.mp4");
-        movieMap.put(
-                "哥斯拉2-怪兽之王",
-                "http://okxxzy.xzokzyzy.com/20190726/23836_8f001b98/%E5%93%A5%E6%96%AF%E6%8B%892" +
-                        "%E9%9F%A9%E7%89%88.mp4");
-        movieMap.put(
-                "惊奇队长",
-                "http://anning.luanniao-zuida.com/1907/%E6%83%8A%E5%A5%87%E9%98%9F%E9%95%BF" +
-                        ".BD1280%E9%AB%98%E6%B8%85%E5%9B%BD%E8%AF%AD%E4%B8%AD%E8%8B%B1%E5%8F%8C" +
-                        "%E5%AD%97%E7%89%88.mp4");
-        movieMap.put(
-                "魔童",
-                "http://xunlei.zuidaxunlei.com/1908/%E9%AD%94%E7%AB%A5" +
-                        ".BD1280%E9%AB%98%E6%B8%85%E4%B8%AD%E8%8B%B1%E5%8F%8C%E5%AD%97%E7%89%88" +
-                        ".mp4");
-        movieMap.put(
-                "马里布鲨鱼攻击",
-                "http://xunlei.jingpin88.com/20171115/wuYhRcLi/mp4/wuYhRcLi.mp4");
-        movieMap.put(
-                "零号病人",
-                "http://vip.zuiku8.com/1808/%E9%9B%B6%E5%8F%B7%E7%97%85%E4%BA%BA" +
-                        ".HD1280%E9%AB%98%E6%B8%85%E4%B8%AD%E8%8B%B1%E5%8F%8C%E5%AD%97%E7%89%88" +
-                        ".mp4");
-        movieMap.put(
-                "决战异世界",
-                "http://download.xunleizuida.com/1904/%E5%86%B3%E6%88%98%E5%BC%82%E4%B8%96%E7%95" +
-                        "%8C.HD1280%E9%AB%98%E6%B8%85%E5%9B%BD%E8%AF%AD%E4%B8%AD%E5%AD%97%E7%89" +
-                        "%88.mp4");
-        movieMap.put(
-                "大轰炸",
-                "http://xunleib.zuida360.com/1810/%E5%A4%A7%E8%BD%B0%E7%82%B8" +
-                        ".HD1280%E9%AB%98%E6%B8%85%E4%B8%AD%E8%8B%B1%E5%8F%8C%E5%AD%97%E7%89%88" +
-                        ".mp4");
-        movieMap.put(
-                "特勤精英之逃出生天",
-                "http://download.xunleizuida.com/1904/%E7%89%B9%E5%8B%A4%E7%B2%BE%E8%8B%B1%E4%B9" +
-                        "%8B%E9%80%83%E5%87%BA%E7%94%9F%E5%A4%A9" +
-                        ".HD1280%E9%AB%98%E6%B8%85%E5%9B%BD%E8%AF%AD%E4%B8%AD%E5%AD%97%E7%89%88" +
-                        ".mp4");
-        movieMap.put(
-                "特勤精英之生死救援",
-                "http://download.xunleizuida.com/1904/%E7%89%B9%E5%8B%A4%E7%B2%BE%E8%8B%B1%E4%B9" +
-                        "%8B%E7%94%9F%E6%AD%BB%E6%95%91%E6%8F%B4" +
-                        ".HD1280%E9%AB%98%E6%B8%85%E5%9B%BD%E8%AF%AD%E4%B8%AD%E5%AD%97%E7%89%88" +
-                        ".mp4");
-        movieMap.put(
-                "扫毒2天地对决",
-                "http://xunlei.xiazai-zuida.com/1908/%E6%89%AB%E6%AF%922" +
-                        ".HD1280%E9%AB%98%E6%B8%85%E5%9B%BD%E8%AF%AD%E4%B8%AD%E5%AD%97%E7%89%88" +
-                        ".mp4");
-        movieMap.put(
-                "犬王",
-                "http://xunlei.xiazai-zuida.com/1908/%E7%8A%AC%E7%8E%8B" +
-                        ".HD1280%E9%AB%98%E6%B8%85%E5%9B%BD%E8%AF%AD%E7%89%88.mp4");
-        movieMap.put(
-                "X战警-黑凤凰",
-                "http://okzy.xzokzyzy.com/20190830/14797_2afe866c/X%E6%88%98%E8%AD%A6%EF%BC%9A%E9" +
-                        "%BB%91%E5%87%A4%E5%87%B0.Dark.Phoenix.2019.BD1080P.X264.AAC.English" +
-                        ".CHS-ENG.mp4");
-        movieMap.put(
-                "速度与激情-特别行动",
-                "http://down.phpzuida.com/1909/%E9%80%9FD%E4%B8%8EJ%E6%83%85%EF%BC%9A%E7%89%B9%E5" +
-                        "%88%AB%E8%A1%8C%E5%8A%A8.HD%E9%AB%98%E6%B8%85%E4%B8%AD%E5%AD%97%E9%9F%A9" +
-                        "%E7%89%88.mp4");
-        movieMap.put(
-                "毁灭战士-灭绝",
-                "http://caizi.meizuida.com/1909/%E6%AF%81%E7%81%AD%E6%88%98%E5%A3%AB%EF%BC%9A%E7" +
-                        "%81%AD%E7%BB%9D.HD%E9%AB%98%E6%B8%85%E4%B8%AD%E5%AD%97%E7%89%88.mp4");
-        movieMap.put(
-                "",
-                "");
-        movieMap.put(
-                "",
-                "");
-        movieMap.put(
-                "",
-                "");
-        movieMap.put(
-                "",
-                "");
-        movieMap.put(
-                "",
-                "");
-        movieMap.put(
-                "",
-                "");
 
         movieMap.put(
-                "复仇者联盟",
+                "谍影重重1",
+                "https://meiju5.qhqsnedu.com/20190724/Adzz6M6E/2000kb/hls/index.m3u8");
+        movieMap.put(
+                "谍影重重2",
+                "https://meiju5.qhqsnedu.com/20190724/qPnTOALC/2000kb/hls/index.m3u8");
+        movieMap.put(
+                "谍影重重3",
+                "https://meiju5.qhqsnedu.com/20190724/AduiVYfB/2000kb/hls/index.m3u8");
+        movieMap.put(
+                "谍影重重4",
+                "https://meiju5.qhqsnedu.com/20190725/yFotwNFe/2000kb/hls/index.m3u8");
+        movieMap.put(
+                "谍影重重5",
+                "https://meiju5.qhqsnedu.com/20190722/8Ql7n2NK/2000kb/hls/index.m3u8");
+
+        movieMap.put(
+                "复仇者联盟1",
                 "https://meiju9.qhqsnedu.com/20190817/lpXavsdn/index.m3u8");
+        movieMap.put(
+                "复仇者联盟2-奥创纪元",
+                "https://meiju9.qhqsnedu.com/20190821/amMLdcDd/2000kb/hls/index.m3u8");
         movieMap.put(
                 "复仇者联盟3-无限战争",
                 "https://meiju5.qhqsnedu.com/20190726/vGMJ7RlU/index.m3u8");
         movieMap.put(
-                "新木乃伊",
-                "https://meiju5.qhqsnedu.com/20190706/AWqnfCBq/index.m3u8");
-        movieMap.put(
-                "狙击电话亭",
-                "https://meiju5.qhqsnedu.com/20190611/D1mJAHDB/index.m3u8");
-        movieMap.put(
-                "重生",
-                "https://meiju5.qhqsnedu.com/20190624/ToFlZvvi/index.m3u8");
-        movieMap.put(
-                "幽冥",
-                "https://meiju5.qhqsnedu.com/20190702/sDshh5O4/2000kb/hls/index.m3u8");
+                "复仇者联盟4-终局之战",
+                "https://meiju9.qhqsnedu.com/20190802/OdFvhiY9/2000kb/hls/index.m3u8");
+
         movieMap.put(
                 "敢死队1",
                 "https://meiju5.qhqsnedu.com/20190626/TJOX41iy/2000kb/hls/index.m3u8");
@@ -864,6 +575,7 @@ public class Contents {
         movieMap.put(
                 "敢死队3",
                 "https://meiju5.qhqsnedu.com/20190626/qfJFETs3/2000kb/hls/index.m3u8");
+
         movieMap.put(
                 "突袭1",
                 "https://meiju4.qhqsnedu.com/20190211/fkJJsWpA/2000kb/hls/index.m3u8");
@@ -970,6 +682,140 @@ public class Contents {
                 "变形金刚5-最后的骑士",
                 "https://meiju5.qhqsnedu.com/20190725/vEBcz0bk/2000kb/hls/index.m3u8");
 
+        movieMap.put(
+                "黑客之都第一季-1",
+                "https://meiju.qhqsnedu.com/20181202/zbUvAw69/2000kb/hls/index.m3u8");
+        movieMap.put(
+                "黑客之都第一季-2",
+                "https://meiju.qhqsnedu.com/20181205/vQxY2qT0/2000kb/hls/index.m3u8");
+        movieMap.put(
+                "黑客之都第一季-3",
+                "https://meiju3.qhqsnedu.com/20181206/U2FJjIXU/2000kb/hls/index.m3u8");
+        movieMap.put(
+                "黑客之都第一季-4",
+                "https://meiju3.qhqsnedu.com/20181208/AxS4O3EZ/2000kb/hls/index.m3u8");
+        movieMap.put(
+                "黑客之都第一季-5",
+                "https://meiju3.qhqsnedu.com/20181210/VlZzjeP7/2000kb/hls/index.m3u8");
+        movieMap.put(
+                "黑客之都第一季-6",
+                "https://meiju3.qhqsnedu.com/20181212/164rbESP/2000kb/hls/index.m3u8");
+
+        movieMap.put(
+                "",
+                "");
+        movieMap.put(
+                "",
+                "");
+        movieMap.put(
+                "犯罪都市",
+                "https://meiju5.qhqsnedu.com/20190722/ZGEVtN1j/index.m3u8");
+        movieMap.put(
+                "新世界",
+                "https://meiju5.qhqsnedu.com/20190724/QDlAPLyt/index.m3u8");
+        movieMap.put(
+                "长白山",
+                "https://meiju11.qhqsnedu.com/20200126/kYCXZ4wo/2000kb/hls/index.m3u8");
+        movieMap.put(
+                "孤单特工",
+                "https://meiju8.qhqsnedu.com/20190825/RTScpZEn/2000kb/hls/index.m3u8");
+        movieMap.put(
+                "同窗",
+                "https://meiju8.qhqsnedu.com/20190812/llHXAhEf/index.m3u8");
+        movieMap.put(
+                "恶人传",
+                "https://meiju9.qhqsnedu.com/20190930/UyIqf4dI/index.m3u8");
+        movieMap.put(
+                "生死狙击",
+                "https://meiju5.qhqsnedu.com/20190531/ahuGsEDf/index.m3u8");
+        movieMap.put(
+                "我是谁-没有绝对安全的系统",
+                "https://meiju5.qhqsnedu.com/20190612/Zg1IVNGE/2000kb/hls/index.m3u8");
+        movieMap.put(
+                "新木乃伊",
+                "https://meiju5.qhqsnedu.com/20190706/AWqnfCBq/index.m3u8");
+        movieMap.put(
+                "狙击电话亭",
+                "https://meiju5.qhqsnedu.com/20190611/D1mJAHDB/index.m3u8");
+        movieMap.put(
+                "重生",
+                "https://meiju5.qhqsnedu.com/20190624/ToFlZvvi/index.m3u8");
+        movieMap.put(
+                "幽冥",
+                "https://meiju5.qhqsnedu.com/20190702/sDshh5O4/2000kb/hls/index.m3u8");
+        movieMap.put(
+                "功夫",
+                "https://meiju9.qhqsnedu.com/20190823/1RSrZA26/2000kb/hls/index.m3u8");
+        movieMap.put(
+                "疯狂的外星人",
+                "https://meiju4.qhqsnedu.com/20190210/0OJRDGal/2000kb/hls/index.m3u8");
+        movieMap.put(
+                "唐人街探案",
+                "https://meiju5.qhqsnedu.com/20190612/9KF2DkcI/2000kb/hls/index.m3u8");
+        movieMap.put(
+                "唐人街探案2",
+                "https://meiju5.qhqsnedu.com/20190614/NbNQkw2D/2000kb/hls/index.m3u8");
+        movieMap.put(
+                "鬼吹灯之龙岭迷窟",
+                "https://meiju10.qhqsnedu.com/20200406/e1V2k9hd/3000kb/hls/index.m3u8");
+        movieMap.put(
+                "红海行动",
+                "https://meiju5.qhqsnedu.com/20190530/5yUSG8yk/2000kb/hls/index.m3u8");
+        movieMap.put(
+                "鬼吹灯之巫峡棺山",
+                "https://meiju4.qhqsnedu.com/20190621/EC1k7nWN/2000kb/hls/index.m3u8");
+        movieMap.put(
+                "盗墓笔记",
+                "https://meiju10.qhqsnedu.com/20191128/aebT3kPg/2000kb/hls/index.m3u8");
+        movieMap.put(
+                "美人鱼",
+                "https://meiju5.qhqsnedu.com/20190603/HzUd8h9l/2000kb/hls/index.m3u8");
+        movieMap.put(
+                "我不是药神",
+                "https://meiju5.qhqsnedu.com/20190609/EC9Nyh4p/2000kb/hls/index.m3u8");
+
+        movieMap.put(
+                "",
+                "");
+        movieMap.put(
+                "",
+                "");
+        movieMap.put(
+                "",
+                "");
+        movieMap.put(
+                "",
+                "");
+        movieMap.put(
+                "",
+                "");
+        movieMap.put(
+                "",
+                "");
+        movieMap.put(
+                "",
+                "");
+        movieMap.put(
+                "",
+                "");
+        movieMap.put(
+                "",
+                "");
+        movieMap.put(
+                "",
+                "");
+        movieMap.put(
+                "",
+                "");
+        movieMap.put(
+                "",
+                "");
+        movieMap.put(
+                "",
+                "");
+        movieMap.put(
+                "",
+                "");
         movieMap.put(
                 "神盾局特工第六季01",
                 "http://download.xunleizuida.com/1905/%E7%A5%9E%E7%9B%BE%E5%B1%80%E7%89%B9%E5%B7" +
@@ -1240,6 +1086,21 @@ public class Contents {
                 "",
                 "");
 
+        movieMap.put(
+                "色戒-梁朝伟版",
+                "http://youku1.dianfubang.com/20191111/fCQchCIc/index.m3u8");
+        movieMap.put(
+                "色戒-泰国版",
+                "http://youku1.dianfubang.com/20190330/ueEOGBZ6/index.m3u8");
+        movieMap.put(
+                "堕落色戒/赤裸烈爱",
+                "http://youku1.dianfubang.com/20190417/3Xd8vwMm/2209kb/hls/index.m3u8");
+        movieMap.put(
+                "大开眼戒/大开色戒",
+                "http://youku1.dianfubang.com/20191117/PJh9DNt8/index.m3u8");
+        movieMap.put(
+                "色戒/轮回",
+                "http://youku1.dianfubang.com/20191118/3651ek87/1712kb/hls/index.m3u8");
         movieMap.put(
                 "广告",
                 "https://cdn1.ibizastream.biz:441/free/1/playlist_dvr.m3u8");
@@ -1562,6 +1423,129 @@ public class Contents {
                 "天浴-李小璐禁片",
                 "http://youku1.dianfubang.com/20190827/JzigXERv/index.m3u8");
         movieMap.put(
+                "超玩妹小区",
+                "http://youku1.dianfubang.com/20200427/NenUsKOo/index.m3u8");
+        movieMap.put(
+                "法式强暴",
+                "http://youku1.dianfubang.com/20200427/Yr505wO4/index.m3u8");
+        movieMap.put(
+                "干爹的条件",
+                "http://youku1.dianfubang.com/20190325/MiAOZ4UI/2520kb/hls/index.m3u8");
+        movieMap.put(
+                "成人学院",
+                "http://youku1.dianfubang.com/20200427/AZN1pftM/index.m3u8");
+        movieMap.put(
+                "床上女主人",
+                "http://youku1.dianfubang.com/20200427/LiyFQxnv/index.m3u8");
+        movieMap.put(
+                "大内密探之灵灵性性",
+                "http://youku1.dianfubang.com/20200427/NYDtgnfw/index.m3u8");
+        movieMap.put(
+                "金发性奴",
+                "http://youku1.dianfubang.com/20200427/tMAk4pA6/index.m3u8");
+        movieMap.put(
+                "希望之乳",
+                "http://youku1.dianfubang.com/20190402/oB91rZ3H/index.m3u8");
+        movieMap.put(
+                "情色行为",
+                "http://youku1.dianfubang.com/20190324/Q6qDy76r/index.m3u8");
+        movieMap.put(
+                "对应",
+                "http://youku1.dianfubang.com/20200427/VvapTNgz/index.m3u8");
+        movieMap.put(
+                "花花纹身",
+                "http://youku1.dianfubang.com/20200427/14uSplhD/index.m3u8");
+        movieMap.put(
+                "花花性事",
+                "http://youku1.dianfubang.com/20200427/CQqTEeLA/index.m3u8");
+        movieMap.put(
+                "善良的岳母日本版",
+                "http://youku1.dianfubang.com/20190327/raFxxFIa/2860kb/hls/index.m3u8");
+        movieMap.put(
+                "登山性滋味",
+                "http://youku1.dianfubang.com/20190402/uRVo8e7x/index.m3u8");
+        movieMap.put(
+                "深夜女性秘密按摩店2",
+                "http://youku1.dianfubang.com/20190222/ZJTi6t83/index.m3u8");
+        movieMap.put(
+                "弟弟的女人",
+                "http://youku1.dianfubang.com/20190221/6v4CsXdN/index.m3u8");
+        movieMap.put(
+                "天然恋色-后篇-动画",
+                "http://youku1.dianfubang.com/20190404/P0K1TYtH/index.m3u8");
+        movieMap.put(
+                "三陪保姆",
+                "http://youku1.dianfubang.com/20190331/XldR8SNK/5494kb/hls/index.m3u8");
+        movieMap.put(
+                "邻居的妻子2018",
+                "http://youku1.dianfubang.com/20190227/nc2vQ7Ex/index.m3u8");
+        movieMap.put(
+                "我家有个日本女人",
+                "http://youku1.dianfubang.com/20190319/EACBUeEQ/index.m3u8");
+        movieMap.put(
+                "公公的淫之手",
+                "http://youku1.dianfubang.com/20190401/MXbdQZT9/index.m3u8");
+        movieMap.put(
+                "年轻母亲3/年轻的妈妈3",
+                "http://youku1.dianfubang.com/20190221/NpY7prwa/index.m3u8");
+        movieMap.put(
+                "色女",
+                "http://youku1.dianfubang.com/20200303/DuQ7M5gY/index.m3u8");
+        movieMap.put(
+                "小姨子3",
+                "http://youku1.dianfubang.com/20190602/3pMlGsvv/index.m3u8");
+        movieMap.put(
+                "台湾真枪实弹古装A片-男偷情女出墙",
+                "http://youku1.dianfubang.com/20190319/U11d1GEL/index.m3u8");
+        movieMap.put(
+                "少女潘金莲",
+                "http://youku1.dianfubang.com/20190220/DZlCfJ4w/index.m3u8");
+        movieMap.put(
+                "陪睡女人/美妙的上门服务",
+                "http://youku1.dianfubang.com/20190220/xjGLqi12/index.m3u8");
+        movieMap.put(
+                "舒淇-美少年之恋",
+                "http://youku1.dianfubang.com/20190221/VtXtbkmp/index.m3u8");
+        movieMap.put(
+                "小姨母",
+                "http://youku1.dianfubang.com/20190516/GoewlLvl/2504kb/hls/index.m3u8");
+        movieMap.put(
+                "人工智能的性爱",
+                "http://youku1.dianfubang.com/20190222/6WvzD0Pb/index.m3u8");
+        movieMap.put(
+                "北条麻妃之真实性体验",
+                "http://youku1.dianfubang.com/20190906/TAeNrqYf/index.m3u8");
+        movieMap.put(
+                "绿茶妹2",
+                "http://youku1.dianfubang.com/20190220/dIreSuoI/index.m3u8");
+        movieMap.put(
+                "3分钟合作伙伴",
+                "http://youku1.dianfubang.com/20191213/OqjEEj7d/index.m3u8");
+        movieMap.put(
+                "恋爱不要学派-动画",
+                "http://youku1.dianfubang.com/20190409/ggOkhcFX/index.m3u8");
+        movieMap.put(
+                "做我的奴隶3",
+                "http://youku1.dianfubang.com/20190317/I4KPuVye/index.m3u8");
+        movieMap.put(
+                "未来世纪之亚马逊女战士",
+                "http://youku1.dianfubang.com/20200427/Wlpg9Pzi/index.m3u8");
+        movieMap.put(
+                "满淫电车3-动画",
+                "http://youku1.dianfubang.com/20190412/txjDnWIr/index.m3u8");
+        movieMap.put(
+                "小泽爱丽丝-吸血女王蜂",
+                "http://youku1.dianfubang.com/20190313/8FdHPLiH/2000kb/hls/index.m3u8");
+        movieMap.put(
+                "上门按摩服务",
+                "http://youku1.dianfubang.com/20190328/yQIquNI0/index.m3u8");
+        movieMap.put(
+                "",
+                "");
+        movieMap.put(
+                "",
+                "");
+        movieMap.put(
                 "",
                 "");
         movieMap.put(
@@ -1573,6 +1557,236 @@ public class Contents {
         movieMap.put(
                 "",
                 "");
+        movieMap.put(
+                "",
+                "");
+        movieMap.put(
+                "",
+                "");
+        movieMap.put(
+                "",
+                "");
+        movieMap.put(
+                "",
+                "");
+        movieMap.put(
+                "",
+                "");
+        movieMap.put(
+                "",
+                "");
+
+
+
+
+        // {csd-1=java.nio.HeapByteBuffer[pos=0 lim=8 cap=8], mime=video/avc, frame-rate=24,
+        // track-id=2, profile=2, width=1280, height=720, max-input-size=151238,
+        // durationUs=6227930041, csd-0=java.nio.HeapByteBuffer[pos=0 lim=41 cap=41],
+        // bitrate-mode=0, level=512}
+        // csd-0: {0, 0, 0, 1, 103, 77, 64, 31, -24, -128, 40, 2, -35, -128, -87, 1, 1, 1, 64, 0,
+        // 0, -6, 64, 0, 46, -32, 56, 24, 0, 21, 92, -64, 1, 83, -38, 76, 48, 15, -116, 24, -119}
+        // csd-1: {0, 0, 0, 1, 104, -21, -20, -78}
+        movieMap.put(
+                "军情五处-利益之争",
+                "http://vip.zuiku8.com/1808/%E5%86%9B%E6%83%85%E4%BA%94%E5%A4%84%EF%BC%9A%E5%88" +
+                        "%A9%E7%9B%8A%E4%B9%8B%E4%BA%89" +
+                        ".BD1280%E9%AB%98%E6%B8%85%E4%B8%AD%E8%8B%B1%E5%8F%8C%E5%AD%97%E7%89%88" +
+                        ".mp4");
+        // {csd-1=java.nio.HeapByteBuffer[pos=0 lim=9 cap=9], mime=video/avc, frame-rate=60,
+        // track-id=1, profile=8, width=1280, height=720, max-input-size=148263,
+        // durationUs=7247083333, csd-0=java.nio.HeapByteBuffer[pos=0 lim=33 cap=33],
+        // bitrate-mode=0, level=1024}
+        // {0, 0, 0, 1, 103, 100, 0, 32, -84, -39, 64, 80, 5, -69, -1, 3, 27, 3, 26, 16, 0, 0, 3,
+        // 0, 16, 0, 0, 7, -128, -15, -125, 25, 96}
+        // {0, 0, 0, 1, 104, -21, -20, -78, 44}
+        // {crop-top=0, crop-right=1279, color-format=19, height=720, color-standard=1,
+        // crop-left=0, color-transfer=3, stride=1280, mime=video/raw, slice-height=720,
+        // width=1280, color-range=2, crop-bottom=719}
+        movieMap.put(
+                "地狱男爵-血皇后崛起",
+                "http://anning.luanniao-zuida.com/1907/%E5%9C%B0%E7%8B%B1%E7%94%B7%E7%88%B5%EF%BC" +
+                        "%9A%E8%A1%80%E7%9A%87%E5%90%8E%E5%B4%9B%E8%B5%B7" +
+                        ".BD1280%E9%AB%98%E6%B8%85%E4%B8%AD%E8%8B%B1%E5%8F%8C%E5%AD%97%E7%89%88" +
+                        ".mp4");
+        movieMap.put(
+                "痞子英雄2-黎明升起",
+                "http://download.xunleizuida.com/1905/%E7%97%9E%E5%AD%90%E8%8B%B1%E9%9B%842%EF%BC" +
+                        "%9A%E9%BB%8E%E6%98%8E%E5%8D%87%E8%B5%B7" +
+                        ".HD1280%E9%AB%98%E6%B8%85%E5%9B%BD%E8%AF%AD%E4%B8%AD%E5%AD%97%E7%89%88" +
+                        ".mp4");
+        movieMap.put(
+                "生死时速",
+                "http://xunlei.jingpin88.com/20171028/6WQ5SFS2/mp4/6WQ5SFS2.mp4");
+        movieMap.put(
+                "三傻大闹宝莱坞",
+                "http://xunleib.zuida360.com/1811/%E4%B8%89%E5%82%BB%E5%A4%A7%E9%97%B9%E5%AE%9D" +
+                        "%E8%8E%B1%E5%9D%9E.BD1280%E9%AB%98%E6%B8%85%E4%B8%AD%E5%AD%97%E7%89%88" +
+                        ".mp4");
+        movieMap.put(
+                "焦点",
+                "http://vip.zuiku8.com/1807/%E7%84%A6%E7%82%B92015" +
+                        ".BD1280%E9%AB%98%E6%B8%85%E4%B8%AD%E8%8B%B1%E5%8F%8C%E5%AD%97%E7%89%88" +
+                        ".mp4");
+        movieMap.put(
+                "中国机长",
+                "http://ok.renzuida.com/1912/ZG%E6%9C%BA%E9%95%BF" +
+                        ".HD1280%E9%AB%98%E6%B8%85%E5%9B%BD%E8%AF%AD%E4%B8%AD%E5%AD%97%E7%89%88" +
+                        ".mp4");
+        movieMap.put(
+                "生死时速2-海上惊情",
+                "http://xunlei.jingpin88.com/20171028/2JJsfDHh/mp4/2JJsfDHh.mp4");
+        movieMap.put(
+                "阿丽塔-战斗天使",
+                "http://xunlei.xiazai-zuida.com/1906/AL%E5%A1%94%EF%BC%9A%E6%88%98%E6%96%97%E5%A4" +
+                        "%A9%E4%BD%BF.BD1280%E9%AB%98%E6%B8%85%E4%B8%AD%E5%AD%97%E7%89%88.mp4");
+        movieMap.put(
+                "海王",
+                "http://xunlei.zuidaxunlei.com/1902/%E6%B5%B7W" +
+                        ".HD1280%E9%AB%98%E6%B8%85%E5%9B%BD%E8%AF%AD%E4%B8%AD%E5%AD%97%E9%9F%A9" +
+                        "%E7%89%88.mp4");
+        movieMap.put(
+                "黑豹",
+                "http://xunleib.zuida360.com/1805/H%E8%B1%B9" +
+                        ".BD1280%E9%AB%98%E6%B8%85%E5%9B%BD%E8%AF%AD%E7%89%B9%E6%95%88%E4%B8%AD" +
+                        "%E8%8B%B1%E5%8F%8C%E5%AD%97%E7%89%88.mp4");
+        movieMap.put(
+                "疾速备战",
+                "http://xunlei.xiazai-zuida.com/1907/J%E9%80%9F%E5%A4%87%E6%88%98" +
+                        ".HD%E9%AB%98%E6%B8%85%E4%B8%AD%E8%8B%B1%E5%8F%8C%E5%AD%97%E7%89%88.mp4");
+        movieMap.put(
+                "黄飞鸿之五-龙城歼霸",
+                "http://anning.luanniao-zuida.com/1907/%E9%BB%84%E9%A3%9E%E9%B8%BF%E4%B9%8B%E4%BA" +
+                        "%94%EF%BC%9A%E9%BE%99%E5%9F%8E%E6%AD%BC%E9%9C%B8" +
+                        ".DVD%E5%9B%BD%E8%AF%AD%E4%B8%AD%E5%AD%97%E7%89%88.mp4");
+        movieMap.put(
+                "宝莱坞机器人2.0-重生归来",
+                "http://xunlei.xiazai-zuida.com/1906/BL%E5%9D%9E%E6%9C%BA%E5%99%A8%E4%BA%BA2" +
+                        ".0%EF%BC%9A%E9%87%8D%E7%94%9F%E5%BD%92%E6%9D%A5" +
+                        ".HD1280%E9%AB%98%E6%B8%85%E4%B8%AD%E8%8B%B1%E5%8F%8C%E5%AD%97%E7%89%88" +
+                        ".mp4");
+        movieMap.put(
+                "少年当自强",
+                "http://okxxxzy.xzokzyzy.com/20190718/27_08326ade/%E5%B0%91%E5%B9%B4%E5%BD%93%E8" +
+                        "%87%AA%E5%BC%BA.mp4");
+        movieMap.put(
+                "极速复仇",
+                "http://xz3-13.okzyxz.com/20190527/1282_5a7f1f18/%E6%9E%81%E9%80%9F%E5%A4%8D%E4" +
+                        "%BB%87.mp4");
+        movieMap.put(
+                "死侍2",
+                "http://xunleib.zuida360.com/1808/%E6%AD%BBshi2" +
+                        ".BD1280%E9%AB%98%E6%B8%85%E4%B8%AD%E8%8B%B1%E5%8F%8C%E5%AD%97%E7%89%88" +
+                        ".mp4");
+
+        movieMap.put(
+                "再生侠",
+                "http://xunleib.zuida360.com/1805/%E5%86%8D%E7%94%9F%E4%BE%A0" +
+                        ".BD1280%E9%AB%98%E6%B8%85%E4%B8%AD%E8%8B%B1%E5%8F%8C%E5%AD%97%E7%89%88" +
+                        ".mp4");
+        movieMap.put(
+                "追龙2",
+                "http://xunlei.xiazai-zuida.com/1906/Zhuilong2%EF%BC%9A%E8%B4%BC%E7%8E%8B" +
+                        ".HD1280%E9%AB%98%E6%B8%85%E5%9B%BD%E8%AF%AD%E4%B8%AD%E5%AD%97%E7%89%88" +
+                        ".mp4");
+        movieMap.put(
+                "黑衣人-全球追缉",
+                "http://okxxzy.xzokzyzy.com/20190721/23773_0455e097/%E9%BB%91%E8%A1%A3%E4%BA%BA4" +
+                        "%E9%9F%A9%E7%89%88%E4%B8%AD%E5%AD%97.mp4");
+        movieMap.put(
+                "秦明-生死语者",
+                "http://anning.luanniao-zuida.com/1907/%E7%A7%A6%E6%98%8E%C2%B7%E7%94%9F%E6%AD%BB" +
+                        "%E8%AF%AD%E8%80%85.HD1280%E9%AB%98%E6%B8%85%E5%9B%BD%E8%AF%AD%E4%B8%AD" +
+                        "%E5%AD%97%E7%89%88.mp4");
+        movieMap.put(
+                "忍者刺客",
+                "http://download.xunleizuida.com/1904/%E5%BF%8D%E8%80%85%E5%88%BA%E5%AE%A2" +
+                        ".HD1280%E9%AB%98%E6%B8%85%E4%B8%AD%E8%8B%B1%E5%8F%8C%E5%AD%97%E7%89%88" +
+                        ".mp4");
+        movieMap.put(
+                "怪兽之岛",
+                "http://okxxzy.xzokzyzy.com/20190727/23842_f4bc2950/%E6%80%AA%E5%85%BD%E4%B9%8B" +
+                        "%E5%B2%9B.mp4");
+        movieMap.put(
+                "魔精攻击",
+                "http://anning.luanniao-zuida.com/1907/%E9%AD%94%E7%B2%BE%E6%94%BB%E5%87%BB" +
+                        ".BD1280%E9%AB%98%E6%B8%85%E4%B8%AD%E8%8B%B1%E5%8F%8C%E5%AD%97%E7%89%88" +
+                        ".mp4");
+        movieMap.put(
+                "城市猎人2019",
+                "http://xunlei.zuidaxunlei.com/1907/%E5%9F%8E%E5%B8%82%E7%8C%8E%E4%BA%BA2019" +
+                        ".BD1280%E9%AB%98%E6%B8%85%E4%B8%AD%E5%AD%97%E7%89%88.mp4");
+        movieMap.put(
+                "机器人病毒危机",
+                "http://vip.zuiku8.com/1809/%E6%9C%BA%E5%99%A8%E4%BA%BA%E7%97%85%E6%AF%92%E5%8D" +
+                        "%B1%E6%9C%BA.BD1280%E9%AB%98%E6%B8%85%E4%B8%AD%E8%8B%B1%E5%8F%8C%E5%AD" +
+                        "%97%E7%89%88.mp4");
+        movieMap.put(
+                "哥斯拉2-怪兽之王",
+                "http://okxxzy.xzokzyzy.com/20190726/23836_8f001b98/%E5%93%A5%E6%96%AF%E6%8B%892" +
+                        "%E9%9F%A9%E7%89%88.mp4");
+        movieMap.put(
+                "惊奇队长",
+                "http://anning.luanniao-zuida.com/1907/%E6%83%8A%E5%A5%87%E9%98%9F%E9%95%BF" +
+                        ".BD1280%E9%AB%98%E6%B8%85%E5%9B%BD%E8%AF%AD%E4%B8%AD%E8%8B%B1%E5%8F%8C" +
+                        "%E5%AD%97%E7%89%88.mp4");
+        movieMap.put(
+                "魔童",
+                "http://xunlei.zuidaxunlei.com/1908/%E9%AD%94%E7%AB%A5" +
+                        ".BD1280%E9%AB%98%E6%B8%85%E4%B8%AD%E8%8B%B1%E5%8F%8C%E5%AD%97%E7%89%88" +
+                        ".mp4");
+        movieMap.put(
+                "马里布鲨鱼攻击",
+                "http://xunlei.jingpin88.com/20171115/wuYhRcLi/mp4/wuYhRcLi.mp4");
+        movieMap.put(
+                "零号病人",
+                "http://vip.zuiku8.com/1808/%E9%9B%B6%E5%8F%B7%E7%97%85%E4%BA%BA" +
+                        ".HD1280%E9%AB%98%E6%B8%85%E4%B8%AD%E8%8B%B1%E5%8F%8C%E5%AD%97%E7%89%88" +
+                        ".mp4");
+        movieMap.put(
+                "决战异世界",
+                "http://download.xunleizuida.com/1904/%E5%86%B3%E6%88%98%E5%BC%82%E4%B8%96%E7%95" +
+                        "%8C.HD1280%E9%AB%98%E6%B8%85%E5%9B%BD%E8%AF%AD%E4%B8%AD%E5%AD%97%E7%89" +
+                        "%88.mp4");
+        movieMap.put(
+                "大轰炸",
+                "http://xunleib.zuida360.com/1810/%E5%A4%A7%E8%BD%B0%E7%82%B8" +
+                        ".HD1280%E9%AB%98%E6%B8%85%E4%B8%AD%E8%8B%B1%E5%8F%8C%E5%AD%97%E7%89%88" +
+                        ".mp4");
+        movieMap.put(
+                "特勤精英之逃出生天",
+                "http://download.xunleizuida.com/1904/%E7%89%B9%E5%8B%A4%E7%B2%BE%E8%8B%B1%E4%B9" +
+                        "%8B%E9%80%83%E5%87%BA%E7%94%9F%E5%A4%A9" +
+                        ".HD1280%E9%AB%98%E6%B8%85%E5%9B%BD%E8%AF%AD%E4%B8%AD%E5%AD%97%E7%89%88" +
+                        ".mp4");
+        movieMap.put(
+                "特勤精英之生死救援",
+                "http://download.xunleizuida.com/1904/%E7%89%B9%E5%8B%A4%E7%B2%BE%E8%8B%B1%E4%B9" +
+                        "%8B%E7%94%9F%E6%AD%BB%E6%95%91%E6%8F%B4" +
+                        ".HD1280%E9%AB%98%E6%B8%85%E5%9B%BD%E8%AF%AD%E4%B8%AD%E5%AD%97%E7%89%88" +
+                        ".mp4");
+        movieMap.put(
+                "扫毒2天地对决",
+                "http://xunlei.xiazai-zuida.com/1908/%E6%89%AB%E6%AF%922" +
+                        ".HD1280%E9%AB%98%E6%B8%85%E5%9B%BD%E8%AF%AD%E4%B8%AD%E5%AD%97%E7%89%88" +
+                        ".mp4");
+        movieMap.put(
+                "犬王",
+                "http://xunlei.xiazai-zuida.com/1908/%E7%8A%AC%E7%8E%8B" +
+                        ".HD1280%E9%AB%98%E6%B8%85%E5%9B%BD%E8%AF%AD%E7%89%88.mp4");
+        movieMap.put(
+                "X战警-黑凤凰",
+                "http://okzy.xzokzyzy.com/20190830/14797_2afe866c/X%E6%88%98%E8%AD%A6%EF%BC%9A%E9" +
+                        "%BB%91%E5%87%A4%E5%87%B0.Dark.Phoenix.2019.BD1080P.X264.AAC.English" +
+                        ".CHS-ENG.mp4");
+        movieMap.put(
+                "速度与激情-特别行动",
+                "http://down.phpzuida.com/1909/%E9%80%9FD%E4%B8%8EJ%E6%83%85%EF%BC%9A%E7%89%B9%E5" +
+                        "%88%AB%E8%A1%8C%E5%8A%A8.HD%E9%AB%98%E6%B8%85%E4%B8%AD%E5%AD%97%E9%9F%A9" +
+                        "%E7%89%88.mp4");
+        movieMap.put(
+                "毁灭战士-灭绝",
+                "http://caizi.meizuida.com/1909/%E6%AF%81%E7%81%AD%E6%88%98%E5%A3%AB%EF%BC%9A%E7" +
+                        "%81%AD%E7%BB%9D.HD%E9%AB%98%E6%B8%85%E4%B8%AD%E5%AD%97%E7%89%88.mp4");
         movieMap.put(
                 "ibizastream",
                 "https://cdn1.ibizastream.biz:441/free/1/playlist_dvr.m3u8");
@@ -1687,9 +1901,6 @@ public class Contents {
         movieMap.put(
                 "三傻大闹宝莱坞-local",
                 PATH + "三傻大闹宝莱坞.mp4");
-        movieMap.put(
-                "index.m3u8",
-                PATH + "index.m3u8.mp4");
         movieMap.put(
                 "videoplayback",
                 PATH + "videoplayback.mp4");

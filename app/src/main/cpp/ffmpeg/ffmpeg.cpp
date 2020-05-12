@@ -314,6 +314,10 @@ static jint onTransact_download(JNIEnv *env, jobject thiz, jint code, jobjectArr
         flag = 2;
     } else if (!strcmp(flagStr, "3")) {
         flag = 3;
+    } else if (!strcmp(flagStr, "4")) {
+        flag = 4;
+    } else if (!strcmp(flagStr, "5")) {
+        flag = 5;
     }
     LOGI("onTransact() flag: %d path: %s fileName: %s\n", flag, filePath, fileName);
     alexander_media::download(flag, filePath, fileName);

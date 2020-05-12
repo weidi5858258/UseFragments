@@ -24,12 +24,8 @@ import android.widget.Toast;
 
 import com.weidi.eventbus.EventBusUtils;
 import com.weidi.recycler_view.VerticalLayoutManager;
-import com.weidi.usefragments.BaseActivity;
 import com.weidi.usefragments.R;
-import com.weidi.usefragments.business.audio_player.JniMusicService;
-import com.weidi.usefragments.business.video_player.FFMPEG;
 import com.weidi.usefragments.business.video_player.JniPlayerActivity;
-import com.weidi.usefragments.business.video_player.PlayerActivity;
 import com.weidi.usefragments.business.video_player.PlayerService;
 import com.weidi.usefragments.fragment.base.BaseFragment;
 import com.weidi.usefragments.inject.InjectOnClick;
@@ -532,7 +528,7 @@ public class ContentsFragment extends BaseFragment {
         EventBusUtils.unregister(this);
     }
 
-    @InjectOnClick({R.id.playback_btn, R.id.download_btn,
+    @InjectOnClick({R.id.playback_btn, R.id.download_tv,
             R.id.jump_to_gallery_btn, R.id.jump_to_file_manager_btn, R.id.jump_btn})
     private void onClick(View v) {
         switch (v.getId()) {
@@ -575,7 +571,7 @@ public class ContentsFragment extends BaseFragment {
                 getAttachedActivity().startActivity(intent);
                 ((BaseActivity) getAttachedActivity()).enterActivity();*/
                 break;
-            case R.id.download_btn:
+            case R.id.download_tv:
                 videoPlaybackPath = mAddressET.getText().toString();
                 if (TextUtils.isEmpty(videoPlaybackPath)) {
                     return;

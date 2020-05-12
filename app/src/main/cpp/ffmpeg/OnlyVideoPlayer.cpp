@@ -547,28 +547,32 @@ namespace alexander_only_video {
 
             //videoSleep(videoSleepTime);
 
-            endTime = clock();
-            int temp1 = (videoPts - videoPtsPre) * 1000000;
-            if (temp1 > (endTime - startTime)) {
-                int temp2 = temp1 - (endTime - startTime);
-                int temp3 = (1.000000 / frameRate) * 1000000;
+            if (videoPts > 0) {
+                endTime = clock();
+                int temp1 = (videoPts - videoPtsPre) * 1000000;
+                if (temp1 > (endTime - startTime)) {
+                    int temp2 = temp1 - (endTime - startTime);
+                    int temp3 = (1.000000 / frameRate) * 1000000;
 
-                int sleepTime = 0;
-                if (temp3 > temp2) {
-                    sleepTime = (temp3 - temp2) / 1000;
-                } else {
-                    sleepTime = (temp2 - temp3) / 1000;
-                }
-                if (sleepTime > 0) {
-                    if (sleepTime >= 12 && sleepTime <= 20) {
-                        videoSleep(sleepTime);
-                        //LOGW("handleVideoDataImpl() sleepTime: %d\n", sleepTime);
+                    int sleepTime = 0;
+                    if (temp3 > temp2) {
+                        sleepTime = (temp3 - temp2) / 1000;
                     } else {
-                        videoSleep(11);
+                        sleepTime = (temp2 - temp3) / 1000;
+                    }
+                    if (sleepTime > 0) {
+                        if (sleepTime >= 12 && sleepTime <= 20) {
+                            videoSleep(sleepTime);
+                            //LOGW("handleVideoDataImpl() sleepTime: %d\n", sleepTime);
+                        } else {
+                            videoSleep(11);
+                        }
                     }
                 }
+                videoPtsPre = videoPts;
+            } else {
+                videoSleep(11);
             }
-            videoPtsPre = videoPts;
 
             // 6.unlock绘制
             ANativeWindow_unlockAndPost(pANativeWindow);

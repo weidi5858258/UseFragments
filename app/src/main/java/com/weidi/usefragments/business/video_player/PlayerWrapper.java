@@ -39,7 +39,6 @@ import com.weidi.eventbus.EventBusUtils;
 import com.weidi.threadpool.ThreadPool;
 import com.weidi.usefragments.R;
 import com.weidi.usefragments.business.contents.Contents;
-import com.weidi.usefragments.business.media.AudioFragment;
 import com.weidi.usefragments.test_view.BubblePopupWindow;
 import com.weidi.usefragments.tool.Callback;
 import com.weidi.usefragments.tool.MLog;
@@ -108,13 +107,15 @@ public class PlayerWrapper {
     private ImageButton mPlayIB;
     private ImageButton mPauseIB;
     private ImageButton mNextIB;
-    private ImageButton mPreviousIB2;
+    private ImageButton mExitIB;
     // 声音
     private ImageButton mVolumeNormal;
     private ImageButton mVolumeMute;
     // 下载
-    private ImageButton mDownloadIB;//download_btn
+    private TextView mDownloadTV;
     private boolean mIsDownloading = false;
+    // 1(停止下载) 2(下载音视频) 3(只下载,不播放)
+    private int mDownloadClickCounts = 0;
 
     // 跟气泡相关
     private LayoutInflater mLayoutInflater;
@@ -195,12 +196,12 @@ public class PlayerWrapper {
             mPauseIB = mRootView.findViewById(R.id.button_pause);
             mNextIB = mRootView.findViewById(R.id.button_next);
 
-            mPreviousIB2 = mRootView.findViewById(R.id.button_exit);
-            mDownloadIB = mRootView.findViewById(R.id.download_btn);
+            mExitIB = mRootView.findViewById(R.id.button_exit);
+            mDownloadTV = mRootView.findViewById(R.id.download_tv);
             mVolumeNormal = mRootView.findViewById(R.id.volume_normal);
             mVolumeMute = mRootView.findViewById(R.id.volume_mute);
 
-            mPreviousIB2.setVisibility(View.VISIBLE);
+            mExitIB.setVisibility(View.VISIBLE);
 
             if (mSP == null) {
                 mSP = mContext.getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE);
@@ -219,8 +220,8 @@ public class PlayerWrapper {
             mPlayIB.setOnClickListener(mOnClickListener);
             mPauseIB.setOnClickListener(mOnClickListener);
             mNextIB.setOnClickListener(mOnClickListener);
-            mPreviousIB2.setOnClickListener(mOnClickListener);
-            mDownloadIB.setOnClickListener(mOnClickListener);
+            mExitIB.setOnClickListener(mOnClickListener);
+            mDownloadTV.setOnClickListener(mOnClickListener);
             mVolumeNormal.setOnClickListener(mOnClickListener);
             mVolumeMute.setOnClickListener(mOnClickListener);
         }
@@ -396,6 +397,7 @@ public class PlayerWrapper {
                 mDurationTimeTV.setText("00:00:00");
                 mProgressBar.setProgress(0);
                 if (mService != null) {
+                    mDownloadTV.setText("1");
                     boolean isMute = mSP.getBoolean(PLAYBACK_IS_MUTE, false);
                     if (!isMute) {
                         mVolumeNormal.setVisibility(View.VISIBLE);
@@ -407,8 +409,9 @@ public class PlayerWrapper {
                 }
                 String title;
                 if (mIsLocal) {
-                    title = mPath.substring(
-                            mPath.lastIndexOf("/") + 1, mPath.lastIndexOf("."));
+                    /*title = mPath.substring(
+                            mPath.lastIndexOf("/") + 1, mPath.lastIndexOf("."));*/
+                    title = mPath.substring(mPath.lastIndexOf("/") + 1);
                 } else {
                     title = Contents.getTitle(mPath);
                 }
@@ -420,12 +423,13 @@ public class PlayerWrapper {
                 if (!mIsLocal) {
                     mLoadingView.setVisibility(View.VISIBLE);
                 }
-                if (TextUtils.isEmpty(mType)
+                mControllerPanelLayout.setVisibility(View.VISIBLE);
+                /*if (TextUtils.isEmpty(mType)
                         || mType.startsWith("video/")) {
                     mControllerPanelLayout.setVisibility(View.INVISIBLE);
                 } else if (mType.startsWith("audio/")) {
                     mControllerPanelLayout.setVisibility(View.VISIBLE);
-                }
+                }*/
                 break;
             case Callback.MSG_ON_CHANGE_WINDOW:
                 // 视频宽高
@@ -523,6 +527,12 @@ public class PlayerWrapper {
                 }
                 break;
             case Callback.MSG_ON_INFO:
+                if (msg.obj != null) {
+                    String info = (String) msg.obj;
+                    if (!TextUtils.isEmpty(info)) {
+                        MyToast.show(info);
+                    }
+                }
                 break;
             case Callback.MSG_ON_ERROR:
                 mHasError = false;
@@ -689,37 +699,103 @@ public class PlayerWrapper {
 
         switch (msg.what) {
             case MSG_DOWNLOAD:
-                if (!mIsDownloading) {
-                    mIsDownloading = true;
-                    mDownloadIB.setImageResource(R.drawable.download2);
-                    String path =
-                            "/storage/1532-48AD/Android/data/com.weidi.usefragments/files/Movies/";
-                    StringBuilder sb = new StringBuilder();
-                    String title;
-                    if (mIsLocal) {
-                        title = mPath.substring(
-                                mPath.lastIndexOf("/") + 1, mPath.lastIndexOf("."));
-                    } else {
-                        title = Contents.getTitle(mPath);
-                    }
-                    if (TextUtils.isEmpty(title)) {
-                        sb.append("media-");
-                    } else {
-                        sb.append(title);
-                        sb.append("-");
-                    }
-                    sb.append(mSimpleDateFormat.format(new Date()));
-                    // 保存路径 文件名
-                    mFFMPEGPlayer.onTransact(
-                            FFMPEG.DO_SOMETHING_CODE_DOWNLOAD,
-                            new Object[]{"0", path, sb.toString()});
-                } else {
-                    mIsDownloading = false;
-                    mDownloadIB.setImageResource(R.drawable.download1);
-                    mFFMPEGPlayer.onTransact(
-                            FFMPEG.DO_SOMETHING_CODE_DOWNLOAD,
-                            new Object[]{"1", "", ""});
+                if (mDownloadClickCounts > 4) {
+                    mDownloadClickCounts = 4;
                 }
+                MLog.d(TAG, "threadHandleMessage() mDownloadClickCounts: " +
+                        mDownloadClickCounts);
+
+                // 点击次数
+                switch (mDownloadClickCounts) {
+                    case 1:
+                        if (!mIsDownloading) {
+                            break;
+                        }
+                        mIsDownloading = false;
+                        mUiHandler.post(new Runnable() {
+                            @Override
+                            public void run() {
+                                // 这个操作在ThreadHandler中没有发生问题
+                                mDownloadTV.setText("1");
+                            }
+                        });
+                        // 停止下载
+                        mFFMPEGPlayer.onTransact(
+                                FFMPEG.DO_SOMETHING_CODE_DOWNLOAD,
+                                new Object[]{"1", "", ""});
+                        break;
+                    case 2:
+                    case 3:
+                    case 4:
+                        if (mIsDownloading) {
+                            break;
+                        }
+                        mIsDownloading = true;
+                        String path =
+                                "/storage/1532-48AD/Android/data/" +
+                                        "com.weidi.usefragments/files/Movies/";
+                        StringBuilder sb = new StringBuilder();
+                        String title;
+                        if (mIsLocal) {
+                            title = mPath.substring(
+                                    mPath.lastIndexOf("/") + 1, mPath.lastIndexOf("."));
+                        } else {
+                            title = Contents.getTitle(mPath);
+                        }
+                        if (TextUtils.isEmpty(title)) {
+                            sb.append("media-");
+                        } else {
+                            sb.append(title);
+                            sb.append("-");
+                        }
+                        sb.append(mSimpleDateFormat.format(new Date()));
+                        // 保存路径 文件名
+                        if (mDownloadClickCounts == 2) {
+                            mUiHandler.post(new Runnable() {
+                                @Override
+                                public void run() {
+                                    mDownloadTV.setText("2");
+                                }
+                            });
+                            // 开始下载,边播放边下
+                            mFFMPEGPlayer.onTransact(
+                                    FFMPEG.DO_SOMETHING_CODE_DOWNLOAD,
+                                    new Object[]{"0", path, sb.toString()});
+                        } else {
+                            mUiHandler.post(new Runnable() {
+                                @Override
+                                public void run() {
+                                    if (mDownloadClickCounts == 3) {
+                                        mDownloadTV.setText("3");
+                                    } else {
+                                        mDownloadTV.setText("4");
+                                    }
+                                    if (TextUtils.isEmpty(mType)
+                                            || mType.startsWith("video/")) {
+                                        mVideoWidth = 0;
+                                        mVideoHeight = 0;
+                                        handlePortraitScreen();
+                                    }
+                                }
+                            });
+                            if (mDownloadClickCounts == 3) {
+                                // 只下载,不播放.不调用seekTo
+                                mFFMPEGPlayer.onTransact(
+                                        FFMPEG.DO_SOMETHING_CODE_DOWNLOAD,
+                                        new Object[]{"4", path, sb.toString()});
+                            } else {
+                                // 只提取音视频,不播放.调用seekTo到0
+                                mFFMPEGPlayer.onTransact(
+                                        FFMPEG.DO_SOMETHING_CODE_DOWNLOAD,
+                                        new Object[]{"5", path, sb.toString()});
+                            }
+                        }
+                        break;
+                    default:
+                        break;
+                }
+
+                mDownloadClickCounts = 0;
                 break;
             default:
                 break;
@@ -748,7 +824,9 @@ public class PlayerWrapper {
                 String tempPath = "";
                 MLog.d(TAG, "startPlayback()                  mPath: " + mPath);
 
-                if (mPathTimeMap.containsKey(mPath)) {
+                if (mPathTimeMap.containsKey(mPath)
+                        && !mPath.endsWith(".h264")
+                        && !mPath.endsWith(".aac")) {
                     long position = mPathTimeMap.get(mPath);
                     MLog.d(TAG, "startPlayback()               position: " + position);
                     mFFMPEGPlayer.seekTo(position);
@@ -924,6 +1002,7 @@ public class PlayerWrapper {
     public void handlePortraitScreen() {
         MLog.d(TAG, "Callback.MSG_ON_CHANGE_WINDOW handlePortraitScreen");
 
+        // 暂停按钮高度
         int pauseRlHeight = 0;
         if (mService != null) {
             RelativeLayout pause_rl = mRootView.findViewById(R.id.pause_rl);
@@ -1036,6 +1115,15 @@ public class PlayerWrapper {
                     }
                 }
             } else {
+                if (TextUtils.isEmpty(mType)
+                        || mType.startsWith("video/")) {
+                    if (mMediaDuration < 0) {
+                        // 是视频并且只下载不播放的情况下
+                        updateRootViewLayout(mScreenWidth, pauseRlHeight);
+                        return;
+                    }
+                }
+                // 音乐 或者 mMediaDuration > 0
                 updateRootViewLayout(mScreenWidth, mControllerPanelLayoutHeight + 1);
             }
         }
@@ -1270,7 +1358,8 @@ public class PlayerWrapper {
                     mFFMPEGPlayer.setVolume(FFMPEG.VOLUME_NORMAL);
                     mSP.edit().putBoolean(PLAYBACK_IS_MUTE, false).commit();
                     break;
-                case R.id.download_btn:
+                case R.id.download_tv:
+                    mDownloadClickCounts++;
                     mThreadHandler.removeMessages(MSG_DOWNLOAD);
                     mThreadHandler.sendEmptyMessageDelayed(MSG_DOWNLOAD, 500);
                     break;
