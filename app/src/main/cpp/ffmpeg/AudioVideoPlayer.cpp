@@ -147,10 +147,6 @@ namespace alexander_audio_video {
         audioWrapper->father->readLockCondition = PTHREAD_COND_INITIALIZER;
         audioWrapper->father->handleLockMutex = PTHREAD_MUTEX_INITIALIZER;
         audioWrapper->father->handleLockCondition = PTHREAD_COND_INITIALIZER;
-
-        audioWrapper->dstSampleRate = 44100;
-        audioWrapper->dstAVSampleFormat = AV_SAMPLE_FMT_S16;
-        audioWrapper->dstChannelLayout = AV_CH_LAYOUT_STEREO;
     }
 
     void initVideo() {
@@ -199,13 +195,6 @@ namespace alexander_audio_video {
         videoWrapper->father->readLockCondition = PTHREAD_COND_INITIALIZER;
         videoWrapper->father->handleLockMutex = PTHREAD_MUTEX_INITIALIZER;
         videoWrapper->father->handleLockCondition = PTHREAD_COND_INITIALIZER;
-
-        // Android支持的目标像素格式
-        // AV_PIX_FMT_RGB32
-        // AV_PIX_FMT_RGBA
-        videoWrapper->dstAVPixelFormat = AV_PIX_FMT_RGBA;
-        videoWrapper->srcWidth = 0;
-        videoWrapper->srcHeight = 0;
     }
 
     int openAndFindAVFormatContext() {
@@ -435,7 +424,12 @@ namespace alexander_audio_video {
 
     int createSwrContent() {
         LOGI("createSwrContent() start\n");
+        audioWrapper->dstSampleRate = 44100;
+        audioWrapper->dstAVSampleFormat = AV_SAMPLE_FMT_S16;
+        audioWrapper->dstChannelLayout = AV_CH_LAYOUT_STEREO;
+
         // src
+        // srcChannelLayout srcAVSampleFormat srcSampleRate
         audioWrapper->srcSampleRate = audioWrapper->father->avCodecContext->sample_rate;
         audioWrapper->srcNbSamples = audioWrapper->father->avCodecContext->frame_size;
         audioWrapper->srcNbChannels = audioWrapper->father->avCodecContext->channels;
@@ -473,12 +467,15 @@ namespace alexander_audio_video {
 
         audioWrapper->swrContext = swr_alloc();
         swr_alloc_set_opts(audioWrapper->swrContext,
+
                            audioWrapper->dstChannelLayout,  // out_ch_layout
                            audioWrapper->dstAVSampleFormat, // out_sample_fmt
                            audioWrapper->dstSampleRate,     // out_sample_rate
+
                            audioWrapper->srcChannelLayout,  // in_ch_layout
                            audioWrapper->srcAVSampleFormat, // in_sample_fmt
                            audioWrapper->srcSampleRate,     // in_sample_rate
+
                            0,                               // log_offset
                            NULL);                           // log_ctx
         if (audioWrapper->swrContext == NULL) {
@@ -562,6 +559,11 @@ namespace alexander_audio_video {
 
     int createSwsContext() {
         LOGI("createSwsContext() start\n");
+        // Android支持的目标像素格式
+        // AV_PIX_FMT_RGB32
+        // AV_PIX_FMT_RGBA
+        videoWrapper->dstAVPixelFormat = AV_PIX_FMT_RGBA;
+
         videoWrapper->srcWidth = videoWrapper->father->avCodecContext->width;
         videoWrapper->srcHeight = videoWrapper->father->avCodecContext->height;
         videoWrapper->srcAVPixelFormat = videoWrapper->father->avCodecContext->pix_fmt;

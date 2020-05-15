@@ -466,10 +466,6 @@ namespace alexander_media {
         audioWrapper->father->readLockCondition = PTHREAD_COND_INITIALIZER;
         audioWrapper->father->handleLockMutex = PTHREAD_MUTEX_INITIALIZER;
         audioWrapper->father->handleLockCondition = PTHREAD_COND_INITIALIZER;
-
-        audioWrapper->dstSampleRate = 44100;
-        audioWrapper->dstAVSampleFormat = AV_SAMPLE_FMT_S16;
-        audioWrapper->dstChannelLayout = AV_CH_LAYOUT_STEREO;
     }
 
     void initVideo() {
@@ -518,13 +514,6 @@ namespace alexander_media {
         videoWrapper->father->readLockCondition = PTHREAD_COND_INITIALIZER;
         videoWrapper->father->handleLockMutex = PTHREAD_MUTEX_INITIALIZER;
         videoWrapper->father->handleLockCondition = PTHREAD_COND_INITIALIZER;
-
-        // Android支持的目标像素格式
-        // AV_PIX_FMT_RGB32
-        // AV_PIX_FMT_RGBA
-        videoWrapper->dstAVPixelFormat = AV_PIX_FMT_RGBA;
-        videoWrapper->srcWidth = 0;
-        videoWrapper->srcHeight = 0;
     }
 
     int initDownload() {
@@ -989,6 +978,10 @@ namespace alexander_media {
             return 0;
         }
         LOGI("createSwrContent() start\n");
+        audioWrapper->dstSampleRate = 44100;
+        audioWrapper->dstAVSampleFormat = AV_SAMPLE_FMT_S16;
+        audioWrapper->dstChannelLayout = AV_CH_LAYOUT_STEREO;
+
         // src
         audioWrapper->srcSampleRate = audioWrapper->father->avCodecContext->sample_rate;
         audioWrapper->srcNbChannels = audioWrapper->father->avCodecContext->channels;
@@ -1006,31 +999,6 @@ namespace alexander_media {
         audioWrapper->srcChannelLayout = av_get_default_channel_layout(audioWrapper->srcNbChannels);
         LOGD("srcChannelLayout2   : %d\n", audioWrapper->srcChannelLayout);// 3 63 0
         LOGD("---------------------------------\n");
-        /*if (!audioWrapper->srcSampleRate) {
-            audioWrapper->srcSampleRate = 48000;
-        }
-        if (!audioWrapper->srcNbChannels) {
-            audioWrapper->srcNbChannels = 2;
-        }
-        if (!audioWrapper->srcNbSamples) {
-            audioWrapper->srcNbSamples = 1024;
-        }
-        if (!audioWrapper->srcChannelLayout) {
-            audioWrapper->srcChannelLayout = 3;
-        }*/
-
-        /*if (audioWrapper->srcNbChannels == 0 || audioWrapper->srcNbChannels == 6) {
-            audioWrapper->srcNbChannels = 2;
-        }
-        if (audioWrapper->srcAVSampleFormat == -1) {
-            audioWrapper->srcAVSampleFormat = AV_SAMPLE_FMT_FLTP;
-        }
-        if (audioWrapper->srcNbSamples == 0) {
-            audioWrapper->srcNbSamples = 1024;
-        }
-        if (audioWrapper->srcChannelLayout == 0 || audioWrapper->srcChannelLayout == 63) {
-            audioWrapper->srcChannelLayout = 3;
-        }*/
 
         // dst
         // Android中跟音频有关的参数: dstSampleRate dstNbChannels 位宽
@@ -1145,6 +1113,11 @@ namespace alexander_media {
             return 0;
         }
         LOGI("createSwsContext() start\n");
+        // Android支持的目标像素格式
+        // AV_PIX_FMT_RGB32
+        // AV_PIX_FMT_RGBA
+        videoWrapper->dstAVPixelFormat = AV_PIX_FMT_RGBA;
+
         videoWrapper->srcWidth = videoWrapper->father->avCodecContext->width;
         videoWrapper->srcHeight = videoWrapper->father->avCodecContext->height;
         videoWrapper->srcAVPixelFormat = videoWrapper->father->avCodecContext->pix_fmt;
@@ -1221,14 +1194,13 @@ namespace alexander_media {
         videoWrapper->father->outBufferSize = imageGetBufferSize * sizeof(unsigned char);
         videoWrapper->father->outBuffer1 =
                 (unsigned char *) av_malloc(videoWrapper->father->outBufferSize);
-        int imageFillArrays = av_image_fill_arrays(
-                videoWrapper->rgbAVFrame->data,
-                videoWrapper->rgbAVFrame->linesize,
-                videoWrapper->father->outBuffer1,
-                videoWrapper->dstAVPixelFormat,
-                videoWrapper->srcWidth,
-                videoWrapper->srcHeight,
-                1);
+        int imageFillArrays = av_image_fill_arrays(videoWrapper->rgbAVFrame->data,
+                                                   videoWrapper->rgbAVFrame->linesize,
+                                                   videoWrapper->father->outBuffer1,
+                                                   videoWrapper->dstAVPixelFormat,
+                                                   videoWrapper->srcWidth,
+                                                   videoWrapper->srcHeight,
+                                                   1);
         LOGW("imageGetBufferSize1 : %d\n", imageGetBufferSize);
         LOGW("imageGetBufferSize2 : %d\n", videoWrapper->father->outBufferSize);
         LOGW("imageFillArrays     : %d\n", imageFillArrays);

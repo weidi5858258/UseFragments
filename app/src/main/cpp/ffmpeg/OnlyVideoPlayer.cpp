@@ -115,10 +115,6 @@ namespace alexander_only_video {
         videoWrapper = (struct VideoWrapper *) av_mallocz(sizeof(struct VideoWrapper));
         memset(videoWrapper, 0, sizeof(struct VideoWrapper));
         videoWrapper->father = wrapper;
-        // Android支持的目标像素格式
-        // AV_PIX_FMT_RGBA
-        // AV_PIX_FMT_RGB32
-        videoWrapper->dstAVPixelFormat = AV_PIX_FMT_RGBA;
     }
 
     int openAndFindAVFormatContext() {
@@ -240,6 +236,11 @@ namespace alexander_only_video {
     }
 
     int createSwsContext() {
+        // Android支持的目标像素格式
+        // AV_PIX_FMT_RGB32
+        // AV_PIX_FMT_RGBA
+        videoWrapper->dstAVPixelFormat = AV_PIX_FMT_RGBA;
+
         videoWrapper->srcWidth = videoWrapper->father->avCodecContext->width;
         videoWrapper->srcHeight = videoWrapper->father->avCodecContext->height;
         videoWrapper->srcAVPixelFormat = videoWrapper->father->avCodecContext->pix_fmt;
