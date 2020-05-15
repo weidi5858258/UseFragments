@@ -423,13 +423,12 @@ public class PlayerWrapper {
                 if (!mIsLocal) {
                     mLoadingView.setVisibility(View.VISIBLE);
                 }
-                mControllerPanelLayout.setVisibility(View.VISIBLE);
-                /*if (TextUtils.isEmpty(mType)
+                if (TextUtils.isEmpty(mType)
                         || mType.startsWith("video/")) {
                     mControllerPanelLayout.setVisibility(View.INVISIBLE);
                 } else if (mType.startsWith("audio/")) {
                     mControllerPanelLayout.setVisibility(View.VISIBLE);
-                }*/
+                }
                 break;
             case Callback.MSG_ON_CHANGE_WINDOW:
                 // 视频宽高
