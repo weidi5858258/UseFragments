@@ -1225,7 +1225,7 @@ namespace alexander_media {
         LOGW("---------------------------------\n");
 
         if (frameRate <= 23) {
-            TIME_DIFFERENCE = 0.0008;
+            TIME_DIFFERENCE = 0.000600;
         }
         LOGI("createSwsContext()    TIME_DIFFERENCE    : %lf\n", TIME_DIFFERENCE);
 

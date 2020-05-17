@@ -102,6 +102,7 @@ public class PlayerWrapper {
     private SeekBar mProgressBar;
     private TextView mFileNameTV;
     private TextView mProgressTimeTV;
+    private TextView mSeekTimeTV;
     private TextView mDurationTimeTV;
     private ImageButton mPreviousIB;
     private ImageButton mPlayIB;
@@ -118,10 +119,10 @@ public class PlayerWrapper {
     private int mDownloadClickCounts = 0;
 
     // 跟气泡相关
-    private LayoutInflater mLayoutInflater;
+    /*private LayoutInflater mLayoutInflater;
     private View mBubbleView;
     private TextView mShowTimeTV;// 气泡上显示时间
-    private BubblePopupWindow mBubblePopupWindow;
+    private BubblePopupWindow mBubblePopupWindow;*/
 
     private Handler mUiHandler;
     private Handler mThreadHandler;
@@ -139,6 +140,11 @@ public class PlayerWrapper {
     private int mNeedVideoHeight;
     // 控制面板的高度
     private int mControllerPanelLayoutHeight;
+    // 音视频的加载进度
+    private LinearLayout mProgressBarLayout;
+    private ProgressBar mVideoProgressBar;
+    private ProgressBar mAudioProgressBar;
+    private int mProgressBarLayoutHeight;
 
     private Context mContext;
     private JniPlayerActivity mActivity;
@@ -190,6 +196,7 @@ public class PlayerWrapper {
             mProgressBar = mRootView.findViewById(R.id.progress_bar);
             mFileNameTV = mRootView.findViewById(R.id.file_name_tv);
             mProgressTimeTV = mRootView.findViewById(R.id.progress_time_tv);
+            mSeekTimeTV = mRootView.findViewById(R.id.seek_time_tv);
             mDurationTimeTV = mRootView.findViewById(R.id.duration_time_tv);
             mPreviousIB = mRootView.findViewById(R.id.button_prev);
             mPlayIB = mRootView.findViewById(R.id.button_play);
@@ -200,6 +207,10 @@ public class PlayerWrapper {
             mDownloadTV = mRootView.findViewById(R.id.download_tv);
             mVolumeNormal = mRootView.findViewById(R.id.volume_normal);
             mVolumeMute = mRootView.findViewById(R.id.volume_mute);
+
+            mProgressBarLayout = mRootView.findViewById(R.id.progress_bar_layout);
+            mVideoProgressBar = mRootView.findViewById(R.id.video_progress_bar);
+            mAudioProgressBar = mRootView.findViewById(R.id.audio_progress_bar);
 
             mExitIB.setVisibility(View.VISIBLE);
 
@@ -274,12 +285,12 @@ public class PlayerWrapper {
             }
         };
 
-        mLayoutInflater = LayoutInflater.from(mContext);
+        /*mLayoutInflater = LayoutInflater.from(mContext);
         mBubbleView = mLayoutInflater.inflate(R.layout.layout_popup_view, null);
         mShowTimeTV = mBubbleView.findViewById(R.id.content_tv);
         mBubblePopupWindow = new BubblePopupWindow(mContext);
         mBubblePopupWindow.setBubbleView(mBubbleView);
-        mShowTimeTV.setOnClickListener(mOnClickListener);
+        mShowTimeTV.setOnClickListener(mOnClickListener);*/
 
         if (mFFMPEGPlayer == null) {
             mFFMPEGPlayer = FFMPEG.getDefault();
@@ -305,7 +316,8 @@ public class PlayerWrapper {
                     mProgress = tempProgress;
                     String elapsedTime =
                             DateUtils.formatElapsedTime(tempProgress);
-                    mShowTimeTV.setText(elapsedTime);
+                    mSeekTimeTV.setText(elapsedTime);
+                    //mShowTimeTV.setText(elapsedTime);
                     /*mUiHandler.removeMessages(PLAYBACK_PROGRESS_CHANGED);
                     mUiHandler.sendEmptyMessageDelayed(PLAYBACK_PROGRESS_CHANGED, 50);*/
                 }
@@ -322,11 +334,20 @@ public class PlayerWrapper {
                 switch (event.getAction()) {
                     case MotionEvent.ACTION_DOWN:
                         // 滑动SeekBar时进度条不要更新,滑动结束后再更新
+                        /*mShowTimeTV.setText("");
+                        mBubblePopupWindow.show(mProgressBar);*/
+
                         mNeedToSyncProgressBar = false;
-                        mShowTimeTV.setText("");
-                        mBubblePopupWindow.show(mProgressBar);
+                        mSeekTimeTV.setVisibility(View.VISIBLE);
                         break;
                     case MotionEvent.ACTION_UP:
+                        mNeedToSyncProgressBar = true;
+                        mSeekTimeTV.setVisibility(View.GONE);
+                        MLog.d(TAG, "onClick() mProgress: " + mProgress +
+                                " " + DateUtils.formatElapsedTime(mProgress));
+                        if (mProgress >= 0 && mProgress <= mMediaDuration) {
+                            mFFMPEGPlayer.seekTo(mProgress);
+                        }
                         break;
                     case MotionEvent.ACTION_MOVE:
                         break;
@@ -423,12 +444,6 @@ public class PlayerWrapper {
                 if (!mIsLocal) {
                     mLoadingView.setVisibility(View.VISIBLE);
                 }
-                if (TextUtils.isEmpty(mType)
-                        || mType.startsWith("video/")) {
-                    mControllerPanelLayout.setVisibility(View.INVISIBLE);
-                } else if (mType.startsWith("audio/")) {
-                    mControllerPanelLayout.setVisibility(View.VISIBLE);
-                }
                 break;
             case Callback.MSG_ON_CHANGE_WINDOW:
                 // 视频宽高
@@ -439,6 +454,18 @@ public class PlayerWrapper {
                 mMediaDuration = mFFMPEGPlayer.getDuration();
                 String durationTime = DateUtils.formatElapsedTime(mMediaDuration);
                 mDurationTimeTV.setText(durationTime);
+
+                // 是否显示控制面板
+                if (TextUtils.isEmpty(mType)
+                        || mType.startsWith("video/")) {
+                    if (mMediaDuration > 0 && mMediaDuration <= 300) {
+                        mControllerPanelLayout.setVisibility(View.VISIBLE);
+                    } else {
+                        mControllerPanelLayout.setVisibility(View.INVISIBLE);
+                    }
+                } else if (mType.startsWith("audio/")) {
+                    mControllerPanelLayout.setVisibility(View.VISIBLE);
+                }
 
                 if (mIsPhoneDevice) {
                     MLog.i(TAG, "Callback.MSG_ON_CHANGE_WINDOW 手机");
@@ -638,7 +665,6 @@ public class PlayerWrapper {
                 }
 
                 clickCounts = 0;
-                mNeedToSyncProgressBar = true;
                 break;
             case MSG_START_PLAYBACK:
                 ThreadPool.getFixedThreadPool().execute(new Runnable() {
@@ -813,7 +839,6 @@ public class PlayerWrapper {
         // 底层有关参数的设置
         mFFMPEGPlayer.setHandler(mUiHandler);
         mFFMPEGPlayer.setCallback(mFFMPEGPlayer.mCallback);
-        // mFFMPEGPlayer.setSurface(mPath, mSurfaceHolder.getSurface());
 
         // 开启线程初始化ffmpeg
         ThreadPool.getFixedThreadPool().execute(new Runnable() {
@@ -822,14 +847,6 @@ public class PlayerWrapper {
                 mIsSeparatedAudioVideo = false;
                 String tempPath = "";
                 MLog.d(TAG, "startPlayback()                  mPath: " + mPath);
-
-                if (mPathTimeMap.containsKey(mPath)
-                        && !mPath.endsWith(".h264")
-                        && !mPath.endsWith(".aac")) {
-                    long position = mPathTimeMap.get(mPath);
-                    MLog.d(TAG, "startPlayback()               position: " + position);
-                    mFFMPEGPlayer.seekTo(position);
-                }
 
                 if (mPath.endsWith(".m4s")) {
                     tempPath = mPath.substring(0, mPath.lastIndexOf("/"));
@@ -874,10 +891,13 @@ public class PlayerWrapper {
                     } else if (mType.startsWith("audio/")) {
                         mFFMPEGPlayer.setMode(FFMPEG.USE_MODE_ONLY_AUDIO);
                     }
-                    //mFFMPEGPlayer.setSurface(mPath, mSurfaceHolder.getSurface());
+                    if (mPathTimeMap.containsKey(mPath)) {
+                        long position = mPathTimeMap.get(mPath);
+                        MLog.d(TAG, "startPlayback()               position: " + position);
+                        mFFMPEGPlayer.seekTo(position);
+                    }
                 } else {
                     mFFMPEGPlayer.setMode(FFMPEG.USE_MODE_AUDIO_VIDEO);
-                    //mFFMPEGPlayer.setSurface(tempPath, mSurfaceHolder.getSurface());
                 }
                 mFFMPEGPlayer.setSurface(mPath, mSurfaceHolder.getSurface());
 
@@ -1022,7 +1042,6 @@ public class PlayerWrapper {
                 button_next.setVisibility(View.VISIBLE);
             }
         }
-        //mControllerPanelLayout.setVisibility(View.VISIBLE);
 
         // mScreenWidth: 1080 mScreenHeight: 2244
         // 屏幕宽高
@@ -1037,10 +1056,26 @@ public class PlayerWrapper {
         mControllerPanelLayoutHeight = mControllerPanelLayout.getHeight();
         MLog.d(TAG, "Callback.MSG_ON_CHANGE_WINDOW mControllerPanelLayoutHeight: " +
                 mControllerPanelLayoutHeight);
+        mProgressBarLayoutHeight = mProgressBarLayout.getHeight();
+        MLog.d(TAG, "Callback.MSG_ON_CHANGE_WINDOW     mProgressBarLayoutHeight: " +
+                mProgressBarLayoutHeight);
+        if (mIsLocal) {
+            mProgressBarLayout.setVisibility(View.GONE);
+            mProgressBarLayoutHeight = 0;
+        } else {
+            mProgressBarLayout.setVisibility(View.VISIBLE);
+            RelativeLayout.LayoutParams relativeParams =
+                    (RelativeLayout.LayoutParams) mProgressBarLayout.getLayoutParams();
+            relativeParams.setMargins(0, 0, 0, 0);
+            relativeParams.width = mScreenWidth;
+            relativeParams.height = mProgressBarLayoutHeight;
+            mProgressBarLayout.setLayoutParams(relativeParams);
+        }
 
         // 改变SurfaceView高度
         RelativeLayout.LayoutParams relativeParams =
                 (RelativeLayout.LayoutParams) mSurfaceView.getLayoutParams();
+        //relativeParams.setMargins(0, mProgressBarLayoutHeight, 0, 0);
         relativeParams.setMargins(0, 0, 0, 0);
         if (mVideoWidth != 0 && mVideoHeight != 0) {
             mNeedVideoWidth = mScreenWidth;
@@ -1055,21 +1090,6 @@ public class PlayerWrapper {
                     mContext.getResources().getColor(R.color.lightgray));
         }
 
-        /*if (mVideoWidth >= mScreenWidth) {
-            relativeParams.setMargins(0, 0, 0, 0);
-            mNeedVideoWidth = mScreenWidth;
-            mNeedVideoHeight = (mScreenWidth * mVideoHeight) / mVideoWidth;
-            if (mNeedVideoHeight > mScreenHeight) {
-                mNeedVideoHeight = mScreenHeight;
-            }
-        } else {
-            relativeParams.setMargins((mScreenWidth - mVideoWidth) / 2, 0, 0, 0);
-            mNeedVideoWidth = mVideoWidth;
-            mNeedVideoHeight = mVideoHeight;
-            if (mNeedVideoHeight > mScreenHeight) {
-                mNeedVideoHeight = mScreenHeight;
-            }
-        }*/
         relativeParams.width = mNeedVideoWidth;
         relativeParams.height = mNeedVideoHeight;
         MLog.d(TAG, "Callback.MSG_ON_CHANGE_WINDOW mNeedVideoWidth: " +
@@ -1081,20 +1101,21 @@ public class PlayerWrapper {
                 (FrameLayout.LayoutParams) mControllerPanelLayout.getLayoutParams();
         if (mNeedVideoHeight > (int) (mScreenHeight * 2 / 3)) {
             //frameParams.setMargins(0, (int) (mScreenHeight / 2), 0, 0);
-            frameParams.setMargins(0, getStatusBarHeight(), 0, 0);
+            if (mNeedVideoHeight < mScreenHeight) {
+                frameParams.setMargins(
+                        0, mNeedVideoHeight - mControllerPanelLayoutHeight - 10, 0, 0);
+            } else {
+                frameParams.setMargins(
+                        0, getStatusBarHeight(), 0, 0);
+            }
+
             mControllerPanelLayout.setBackgroundColor(
                     mContext.getResources().getColor(android.R.color.transparent));
         } else {
-            frameParams.setMargins(0, mNeedVideoHeight, 0, 0);
+            frameParams.setMargins(
+                    0, mNeedVideoHeight, 0, 0);
             mControllerPanelLayout.setBackgroundColor(
                     mContext.getResources().getColor(R.color.lightgray));
-            /*if (mMediaDuration > 0) {
-                mControllerPanelLayout.setBackgroundColor(
-                        mContext.getResources().getColor(R.color.lightgray));
-            } else {
-                mControllerPanelLayout.setBackgroundColor(
-                        mContext.getResources().getColor(android.R.color.transparent));
-            }*/
         }
         frameParams.width = mScreenWidth;
         frameParams.height = mControllerPanelLayoutHeight;
@@ -1103,13 +1124,17 @@ public class PlayerWrapper {
         if (mService != null) {
             if (mVideoWidth != 0 && mVideoHeight != 0) {
                 if (mNeedVideoHeight > (int) (mScreenHeight * 2 / 3)) {
-                    updateRootViewLayout(mScreenWidth, mNeedVideoHeight);
+                    updateRootViewLayout(
+                            mScreenWidth,
+                            mNeedVideoHeight);
                 } else {
                     if (mMediaDuration < 0) {
-                        updateRootViewLayout(mScreenWidth,
+                        updateRootViewLayout(
+                                mScreenWidth,
                                 mNeedVideoHeight + pauseRlHeight);
                     } else {
-                        updateRootViewLayout(mScreenWidth,
+                        updateRootViewLayout(
+                                mScreenWidth,
                                 mNeedVideoHeight + mControllerPanelLayoutHeight);
                     }
                 }
@@ -1273,7 +1298,6 @@ public class PlayerWrapper {
         public void onClick(View v) {
             switch (v.getId()) {
                 case R.id.button_prev:
-                    mNeedToSyncProgressBar = true;
                     if (mFFMPEGPlayer != null) {
                         if (mMediaDuration > 300) {
                             subtractStep += 30;
@@ -1286,7 +1310,6 @@ public class PlayerWrapper {
                     }
                     break;
                 case R.id.button_play:
-                    mNeedToSyncProgressBar = true;
                     if (mFFMPEGPlayer != null) {
                         if (mFFMPEGPlayer.isRunning()) {
                             if (mFFMPEGPlayer.isPlaying()) {
@@ -1298,7 +1321,6 @@ public class PlayerWrapper {
                     }
                     break;
                 case R.id.button_pause:
-                    mNeedToSyncProgressBar = true;
                     if (mFFMPEGPlayer != null) {
                         if (!mFFMPEGPlayer.isPlaying()) {
                             mPlayIB.setVisibility(View.VISIBLE);
@@ -1308,7 +1330,6 @@ public class PlayerWrapper {
                     }
                     break;
                 case R.id.button_next:
-                    mNeedToSyncProgressBar = true;
                     if (mFFMPEGPlayer != null) {
                         if (mMediaDuration > 300) {
                             addStep += 30;
@@ -1321,14 +1342,10 @@ public class PlayerWrapper {
                     }
                     break;
                 case R.id.surfaceView:
-                    if (!mNeedToSyncProgressBar) {
-                        mNeedToSyncProgressBar = true;
-                        return;
-                    }
                     mIsScreenPress = true;
                     onEvent(KeyEvent.KEYCODE_HEADSETHOOK, null);
                     break;
-                case R.id.content_tv:
+                /*case R.id.content_tv:
                     mNeedToSyncProgressBar = true;
                     mBubblePopupWindow.dismiss();
                     MLog.d(TAG, "onClick() mProgress: " + mProgress +
@@ -1336,22 +1353,19 @@ public class PlayerWrapper {
                     if (mProgress >= 0 && mProgress <= mMediaDuration) {
                         mFFMPEGPlayer.seekTo(mProgress);
                     }
-                    break;
+                    break;*/
                 case R.id.button_exit:
-                    mNeedToSyncProgressBar = true;
                     if (mService != null) {
                         mService.removeView();
                     }
                     break;
                 case R.id.volume_normal:
-                    mNeedToSyncProgressBar = true;
                     mVolumeNormal.setVisibility(View.GONE);
                     mVolumeMute.setVisibility(View.VISIBLE);
                     mFFMPEGPlayer.setVolume(FFMPEG.VOLUME_MUTE);
                     mSP.edit().putBoolean(PLAYBACK_IS_MUTE, true).commit();
                     break;
                 case R.id.volume_mute:
-                    mNeedToSyncProgressBar = true;
                     mVolumeNormal.setVisibility(View.VISIBLE);
                     mVolumeMute.setVisibility(View.GONE);
                     mFFMPEGPlayer.setVolume(FFMPEG.VOLUME_NORMAL);
