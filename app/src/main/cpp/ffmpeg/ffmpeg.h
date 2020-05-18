@@ -24,6 +24,8 @@ void audioSleep(long ms);
 
 void videoSleep(long ms);
 
+int onLoadProgressUpdated(int code, int progress);
+
 void onReady();
 
 void onChangeWindow(int width, int height);

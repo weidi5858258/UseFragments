@@ -4,6 +4,13 @@ package com.weidi.usefragments.tool;
  Created by weidi on 2019/7/13.
  */
 public interface Callback {
+    // 生产者 消费者
+    int MSG_ON_TRANSACT_VIDEO_PRODUCER = 0x1000;
+    int MSG_ON_TRANSACT_VIDEO_CONSUMER = 0x1002;
+    int MSG_ON_TRANSACT_AUDIO_PRODUCER = 0x1003;
+    int MSG_ON_TRANSACT_AUDIO_CONSUMER = 0x1004;
+
+
 
     int MSG_ON_READY = 0x001;
     int MSG_ON_CHANGE_WINDOW = 0x002;
@@ -18,6 +25,8 @@ public interface Callback {
     int ERROR_FFMPEG_INIT = 0x100;
     int ERROR_TIME_OUT = 0x101;
     int ERROR_DATA_EXCEPTION = 0x102;
+
+    int onTransact(int code, JniObject jniObject);
 
     void onReady();
 

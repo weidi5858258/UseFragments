@@ -23,6 +23,7 @@ import android.widget.Button;
 import android.widget.Toast;
 
 import com.weidi.usefragments.R;
+import com.weidi.usefragments.tool.JniObject;
 import com.weidi.usefragments.fragment.FragOperManager;
 import com.weidi.usefragments.fragment.base.BaseFragment;
 import com.weidi.usefragments.inject.InjectOnClick;
@@ -932,6 +933,11 @@ public class AudioFragment extends BaseFragment {
     private int playTime = 0;
 
     private Callback mCallback = new Callback() {
+        @Override
+        public int onTransact(int code, JniObject jniObject) {
+            return 0;
+        }
+
         @Override
         public void onReady() {
             mUiHandler.post(new Runnable() {

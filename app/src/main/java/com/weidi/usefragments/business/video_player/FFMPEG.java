@@ -12,6 +12,7 @@ import android.view.Surface;
 
 import com.weidi.usefragments.media.MediaUtils;
 import com.weidi.usefragments.tool.Callback;
+import com.weidi.usefragments.tool.JniObject;
 import com.weidi.usefragments.tool.MLog;
 
 import static com.weidi.usefragments.business.video_player.PlayerWrapper.PLAYBACK_IS_MUTE;
@@ -219,6 +220,23 @@ public class FFMPEG {
 
     // 供jni层调用(底层信息才是通过这个接口反映到java层的)
     public Callback mCallback = new Callback() {
+        @Override
+        public int onTransact(int code, JniObject jniObject) {
+            //MLog.i(TAG, "onTransact() code: " + code + " " + jniObject.toString());
+            if (jniObject == null) {
+                MLog.e(TAG, "onTransact() jniObject is null");
+                return -1;
+            }
+            if (mUiHandler != null) {
+                Message msg = mUiHandler.obtainMessage();
+                msg.what = code;
+                msg.obj = jniObject;
+                mUiHandler.removeMessages(code);
+                mUiHandler.sendMessage(msg);
+            }
+            return 0;
+        }
+
         @Override
         public void onReady() {
             MLog.i(TAG, "onReady()");

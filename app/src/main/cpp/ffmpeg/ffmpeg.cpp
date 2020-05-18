@@ -31,6 +31,7 @@ jmethodID sleepMethodID = NULL;
 // java层FFMPEG中定义的Callback对象
 jobject callbackJavaObject = NULL;
 struct Callback {
+    jmethodID onTransactMethodID = NULL;
     jmethodID onReadyMethodID = NULL;
     jmethodID onChangeWindowMethodID = NULL;
     jmethodID onPlayedMethodID = NULL;
@@ -164,6 +165,28 @@ void videoSleep(long ms) {
 }
 
 // 回调java端FFMPEG类中的有关方法
+int onLoadProgressUpdated(int code, int progress) {
+    //LOGI("onLoadProgressUpdated() code: %d progress: %d\n", code, progress);
+    JNIEnv *jniEnv;
+    bool isAttached = getEnv(&jniEnv);
+    if (jniEnv != NULL
+        && callbackJavaObject != NULL
+        && callback.onTransactMethodID != NULL) {
+        jclass jniObjectClass = jniEnv->FindClass("com/weidi/usefragments/tool/JniObject");
+        jobject jniObject = jniEnv->AllocObject(jniObjectClass);
+        jfieldID valueIntFieldId = jniEnv->GetFieldID(jniObjectClass, "valueInt", "I");
+        jniEnv->SetIntField(jniObject, valueIntFieldId, progress);
+        jniEnv->CallIntMethod(callbackJavaObject, callback.onTransactMethodID, code, jniObject);
+        // jclass jobject jstring jobjectArray jintArray 等需要释放空间
+        jniEnv->DeleteLocalRef(jniObject);
+        jniEnv->DeleteLocalRef(jniObjectClass);
+    }
+    if (isAttached) {
+        gJavaVm->DetachCurrentThread();
+    }
+    return 0;
+}
+
 void onReady() {
     LOGI("onReady()\n");
     JNIEnv *jniEnv;
@@ -468,6 +491,8 @@ Java_com_weidi_usefragments_business_video_1player_FFMPEG_setCallback(JNIEnv *en
     callbackJavaObject = reinterpret_cast<jobject>(env->NewGlobalRef(callbackObject));
 
     // 第三个参数: 括号中是java端方法的参数签名,括号后面是java端方法的返回值签名(V表示void)
+    callback.onTransactMethodID = env->GetMethodID(
+            CallbackClass, "onTransact", "(ILcom/weidi/usefragments/tool/JniObject;)I");
     callback.onReadyMethodID = env->GetMethodID(
             CallbackClass, "onReady", "()V");
     callback.onChangeWindowMethodID = env->GetMethodID(

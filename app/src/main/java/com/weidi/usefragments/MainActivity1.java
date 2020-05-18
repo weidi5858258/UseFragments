@@ -288,7 +288,7 @@ public class MainActivity1 extends BaseActivity
         // test
         Log.d(TAG, "onCreate() stringFromJNI(): " + stringFromJNI());
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            test();
+            //test();
         }
     }
 

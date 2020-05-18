@@ -33,6 +33,7 @@ import com.weidi.usefragments.test_view.BubblePopupWindow;
 import com.weidi.usefragments.tool.Callback;
 import com.weidi.usefragments.business.contents.Contents;
 import com.weidi.usefragments.tool.DownloadCallback;
+import com.weidi.usefragments.tool.JniObject;
 import com.weidi.usefragments.tool.MLog;
 import com.weidi.usefragments.tool.PermissionsUtils;
 
@@ -429,6 +430,11 @@ public class PlayerActivity extends BaseActivity {
 
     private Callback mCallback = new Callback() {
         private boolean onlyOne = true;
+
+        @Override
+        public int onTransact(int code, JniObject jniObject) {
+            return 0;
+        }
 
         @Override
         public void onReady() {

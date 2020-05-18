@@ -20,7 +20,6 @@ import android.text.TextUtils;
 import android.text.format.DateUtils;
 import android.util.DisplayMetrics;
 import android.view.KeyEvent;
-import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
@@ -39,8 +38,8 @@ import com.weidi.eventbus.EventBusUtils;
 import com.weidi.threadpool.ThreadPool;
 import com.weidi.usefragments.R;
 import com.weidi.usefragments.business.contents.Contents;
-import com.weidi.usefragments.test_view.BubblePopupWindow;
 import com.weidi.usefragments.tool.Callback;
+import com.weidi.usefragments.tool.JniObject;
 import com.weidi.usefragments.tool.MLog;
 import com.weidi.utils.MyToast;
 
@@ -117,12 +116,6 @@ public class PlayerWrapper {
     private boolean mIsDownloading = false;
     // 1(停止下载) 2(下载音视频) 3(只下载,不播放)
     private int mDownloadClickCounts = 0;
-
-    // 跟气泡相关
-    /*private LayoutInflater mLayoutInflater;
-    private View mBubbleView;
-    private TextView mShowTimeTV;// 气泡上显示时间
-    private BubblePopupWindow mBubblePopupWindow;*/
 
     private Handler mUiHandler;
     private Handler mThreadHandler;
@@ -204,6 +197,7 @@ public class PlayerWrapper {
             mNextIB = mRootView.findViewById(R.id.button_next);
 
             mExitIB = mRootView.findViewById(R.id.button_exit);
+            mExitIB.setVisibility(View.VISIBLE);
             mDownloadTV = mRootView.findViewById(R.id.download_tv);
             mVolumeNormal = mRootView.findViewById(R.id.volume_normal);
             mVolumeMute = mRootView.findViewById(R.id.volume_mute);
@@ -212,18 +206,8 @@ public class PlayerWrapper {
             mVideoProgressBar = mRootView.findViewById(R.id.video_progress_bar);
             mAudioProgressBar = mRootView.findViewById(R.id.audio_progress_bar);
 
-            mExitIB.setVisibility(View.VISIBLE);
-
             if (mSP == null) {
                 mSP = mContext.getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE);
-            }
-            boolean isMute = mSP.getBoolean(PLAYBACK_IS_MUTE, false);
-            if (!isMute) {
-                mVolumeNormal.setVisibility(View.VISIBLE);
-                mVolumeMute.setVisibility(View.GONE);
-            } else {
-                mVolumeNormal.setVisibility(View.GONE);
-                mVolumeMute.setVisibility(View.VISIBLE);
             }
 
             mSurfaceView.setOnClickListener(mOnClickListener);
@@ -285,13 +269,6 @@ public class PlayerWrapper {
             }
         };
 
-        /*mLayoutInflater = LayoutInflater.from(mContext);
-        mBubbleView = mLayoutInflater.inflate(R.layout.layout_popup_view, null);
-        mShowTimeTV = mBubbleView.findViewById(R.id.content_tv);
-        mBubblePopupWindow = new BubblePopupWindow(mContext);
-        mBubblePopupWindow.setBubbleView(mBubbleView);
-        mShowTimeTV.setOnClickListener(mOnClickListener);*/
-
         if (mFFMPEGPlayer == null) {
             mFFMPEGPlayer = FFMPEG.getDefault();
         }
@@ -317,9 +294,6 @@ public class PlayerWrapper {
                     String elapsedTime =
                             DateUtils.formatElapsedTime(tempProgress);
                     mSeekTimeTV.setText(elapsedTime);
-                    //mShowTimeTV.setText(elapsedTime);
-                    /*mUiHandler.removeMessages(PLAYBACK_PROGRESS_CHANGED);
-                    mUiHandler.sendEmptyMessageDelayed(PLAYBACK_PROGRESS_CHANGED, 50);*/
                 }
             }
 
@@ -333,10 +307,6 @@ public class PlayerWrapper {
             public boolean onTouch(View v, MotionEvent event) {
                 switch (event.getAction()) {
                     case MotionEvent.ACTION_DOWN:
-                        // 滑动SeekBar时进度条不要更新,滑动结束后再更新
-                        /*mShowTimeTV.setText("");
-                        mBubblePopupWindow.show(mProgressBar);*/
-
                         mNeedToSyncProgressBar = false;
                         mSeekTimeTV.setVisibility(View.VISIBLE);
                         break;
@@ -414,9 +384,25 @@ public class PlayerWrapper {
         }
 
         switch (msg.what) {
+            case Callback.MSG_ON_TRANSACT_VIDEO_PRODUCER:// 生产者
+                mVideoProgressBar.setSecondaryProgress(((JniObject) msg.obj).valueInt);
+                break;
+            case Callback.MSG_ON_TRANSACT_VIDEO_CONSUMER:// 消费者
+                mVideoProgressBar.setProgress(((JniObject) msg.obj).valueInt);
+                break;
+            case Callback.MSG_ON_TRANSACT_AUDIO_PRODUCER:// 生产者
+                mAudioProgressBar.setSecondaryProgress(((JniObject) msg.obj).valueInt);
+                break;
+            case Callback.MSG_ON_TRANSACT_AUDIO_CONSUMER:// 消费者
+                mAudioProgressBar.setProgress(((JniObject) msg.obj).valueInt);
+                break;
             case Callback.MSG_ON_READY:
                 mDurationTimeTV.setText("00:00:00");
                 mProgressBar.setProgress(0);
+                mVideoProgressBar.setProgress(0);
+                mVideoProgressBar.setSecondaryProgress(0);
+                mAudioProgressBar.setProgress(0);
+                mAudioProgressBar.setSecondaryProgress(0);
                 if (mService != null) {
                     mDownloadTV.setText("1");
                     boolean isMute = mSP.getBoolean(PLAYBACK_IS_MUTE, false);
@@ -430,8 +416,6 @@ public class PlayerWrapper {
                 }
                 String title;
                 if (mIsLocal) {
-                    /*title = mPath.substring(
-                            mPath.lastIndexOf("/") + 1, mPath.lastIndexOf("."));*/
                     title = mPath.substring(mPath.lastIndexOf("/") + 1);
                 } else {
                     title = Contents.getTitle(mPath);
@@ -499,19 +483,6 @@ public class PlayerWrapper {
                 mPlayIB.setVisibility(View.VISIBLE);
                 mPauseIB.setVisibility(View.GONE);
                 mLoadingView.setVisibility(View.GONE);
-
-                /*if (mVideoWidth != 0 && mVideoHeight != 0) {
-                    mControllerPanelLayout.setVisibility(View.GONE);
-                } else {
-                    mControllerPanelLayout.setVisibility(View.VISIBLE);
-                }*/
-
-                /*if (mContext.getResources().getConfiguration().orientation
-                        == Configuration.ORIENTATION_LANDSCAPE) {
-                    mControllerPanelLayout.setVisibility(View.GONE);// INVISIBLE
-                } else {
-                    mControllerPanelLayout.setVisibility(View.VISIBLE);// INVISIBLE
-                }*/
                 break;
             case Callback.MSG_ON_PAUSED:
                 mPlayIB.setVisibility(View.GONE);
@@ -519,7 +490,6 @@ public class PlayerWrapper {
                 if (!mIsLocal) {
                     mLoadingView.setVisibility(View.VISIBLE);
                 }
-                //mControllerPanelLayout.setVisibility(View.GONE);
                 break;
             case Callback.MSG_ON_FINISHED:
                 if (mHasError) {
@@ -1345,16 +1315,8 @@ public class PlayerWrapper {
                     mIsScreenPress = true;
                     onEvent(KeyEvent.KEYCODE_HEADSETHOOK, null);
                     break;
-                /*case R.id.content_tv:
-                    mNeedToSyncProgressBar = true;
-                    mBubblePopupWindow.dismiss();
-                    MLog.d(TAG, "onClick() mProgress: " + mProgress +
-                            " " + DateUtils.formatElapsedTime(mProgress));
-                    if (mProgress >= 0 && mProgress <= mMediaDuration) {
-                        mFFMPEGPlayer.seekTo(mProgress);
-                    }
-                    break;*/
                 case R.id.button_exit:
+                    mDownloadClickCounts = 0;
                     if (mService != null) {
                         mService.removeView();
                     }

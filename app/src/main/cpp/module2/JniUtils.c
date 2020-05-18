@@ -375,15 +375,19 @@ JNIEXPORT jobjectArray JNICALL Java_com_weidi_usefragments_tool_JniUtils_getObje
     jfieldID fieldId_name = (*env)->GetFieldID(env, objectClass, "name", "Ljava/lang/String;");
     jfieldID fieldId_age = (*env)->GetFieldID(env, objectClass, "age", "I");
     jobjectArray objectArray = (*env)->NewObjectArray(env, 3, objectClass, 0);
+
     jobject object_3 = (*env)->AllocObject(env, objectClass);
     (*env)->SetObjectField(env, object_3, fieldId_name, (*env)->NewStringUTF(env, "阿宝"));
     (*env)->SetIntField(env, object_3, fieldId_age, 40);
+
     jobject object_4 = (*env)->AllocObject(env, objectClass);
     (*env)->SetObjectField(env, object_4, fieldId_name, (*env)->NewStringUTF(env, "阿大"));
     (*env)->SetIntField(env, object_4, fieldId_age, 35);
+
     jobject object_5 = (*env)->AllocObject(env, objectClass);
     (*env)->SetObjectField(env, object_5, fieldId_name, (*env)->NewStringUTF(env, "阿二"));
     (*env)->SetIntField(env, object_5, fieldId_age, 34);
+
     (*env)->SetObjectArrayElement(env, objectArray, 0, object_3);
     (*env)->SetObjectArrayElement(env, objectArray, 1, object_4);
     (*env)->SetObjectArrayElement(env, objectArray, 2, object_5);

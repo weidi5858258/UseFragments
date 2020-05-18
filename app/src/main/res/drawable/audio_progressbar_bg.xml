@@ -10,10 +10,10 @@
     </item>
     <!--二级进度条的颜色-->
     <item android:id="@android:id/secondaryProgress">
-        <clip>
+        <clip android:gravity="right">
             <shape android:shape="rectangle">
                 <!--<corners android:radius="0dip" />-->
-                <solid android:color="#88F56100" />
+                <solid android:color="@color/blueviolet" />
             </shape>
         </clip>
     </item>
@@ -22,7 +22,7 @@
         <clip>
             <shape android:shape="rectangle">
                 <!--<corners android:radius="0dip" />-->
-                <solid android:color="#F56100" />
+                <solid android:color="@color/chocolate" />
             </shape>
         </clip>
     </item>
