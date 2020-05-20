@@ -74,8 +74,10 @@ public class FFMPEG {
     public static final float VOLUME_NORMAL = 1.0f;
     public static final float VOLUME_MUTE = 0.0f;
 
-    //virtual status_t onTransact(
-    // uint32_t code, const Parcel &data, Parcel *reply, uint32_t flags = 0);
+    public static final JniObject videoProducer = new JniObject();
+    public static final JniObject videoConsumer = new JniObject();
+    public static final JniObject audioProducer = new JniObject();
+    public static final JniObject audioConsumer = new JniObject();
 
     public static final int do_something_code_set_mode = 1000;
     // 0(开始下载,边播放边下) 1(停止下载) 2(只下载音频,暂时不用) 3(只下载视频,暂时不用)
@@ -84,7 +86,7 @@ public class FFMPEG {
     public static final int DO_SOMETHING_CODE_DOWNLOAD_AUDIO = 1101;
     public static final int DO_SOMETHING_CODE_DOWNLOAD_VIDEO = 1102;
 
-    public native int onTransact(int code, Object[] objects);
+    public native int onTransact(int code, JniObject jniObject);
 
     public native void setMode(int mode);
 
@@ -241,8 +243,8 @@ public class FFMPEG {
         public void onReady() {
             MLog.i(TAG, "onReady()");
             if (mUiHandler != null) {
-                mUiHandler.removeMessages(Callback.MSG_ON_READY);
-                mUiHandler.sendEmptyMessage(Callback.MSG_ON_READY);
+                mUiHandler.removeMessages(Callback.MSG_ON_TRANSACT_READY);
+                mUiHandler.sendEmptyMessage(Callback.MSG_ON_TRANSACT_READY);
             }
         }
 
@@ -251,10 +253,10 @@ public class FFMPEG {
             MLog.i(TAG, "onChangeWindow() width: " + width + " height: " + height);
             if (mUiHandler != null) {
                 Message msg = mUiHandler.obtainMessage();
-                msg.what = Callback.MSG_ON_CHANGE_WINDOW;
+                msg.what = Callback.MSG_ON_TRANSACT_CHANGE_WINDOW;
                 msg.arg1 = width;
                 msg.arg2 = height;
-                mUiHandler.removeMessages(Callback.MSG_ON_CHANGE_WINDOW);
+                mUiHandler.removeMessages(Callback.MSG_ON_TRANSACT_CHANGE_WINDOW);
                 mUiHandler.sendMessage(msg);
             }
         }
@@ -263,8 +265,8 @@ public class FFMPEG {
         public void onPlayed() {
             MLog.i(TAG, "onPlayed()");
             if (mUiHandler != null) {
-                mUiHandler.removeMessages(Callback.MSG_ON_PLAYED);
-                mUiHandler.sendEmptyMessage(Callback.MSG_ON_PLAYED);
+                mUiHandler.removeMessages(Callback.MSG_ON_TRANSACT_PLAYED);
+                mUiHandler.sendEmptyMessage(Callback.MSG_ON_TRANSACT_PLAYED);
             }
         }
 
@@ -272,8 +274,8 @@ public class FFMPEG {
         public void onPaused() {
             MLog.i(TAG, "onPaused()");
             if (mUiHandler != null) {
-                mUiHandler.removeMessages(Callback.MSG_ON_PAUSED);
-                mUiHandler.sendEmptyMessage(Callback.MSG_ON_PAUSED);
+                mUiHandler.removeMessages(Callback.MSG_ON_TRANSACT_PAUSED);
+                mUiHandler.sendEmptyMessage(Callback.MSG_ON_TRANSACT_PAUSED);
             }
         }
 
@@ -281,8 +283,8 @@ public class FFMPEG {
         public void onFinished() {
             MLog.i(TAG, "onFinished()");
             if (mUiHandler != null) {
-                mUiHandler.removeMessages(Callback.MSG_ON_FINISHED);
-                mUiHandler.sendEmptyMessage(Callback.MSG_ON_FINISHED);
+                mUiHandler.removeMessages(Callback.MSG_ON_TRANSACT_FINISHED);
+                mUiHandler.sendEmptyMessage(Callback.MSG_ON_TRANSACT_FINISHED);
             }
         }
 
@@ -291,9 +293,9 @@ public class FFMPEG {
             // 视频时长小于0时(如直播节目),不回调
             if (mUiHandler != null) {
                 Message msg = mUiHandler.obtainMessage();
-                msg.what = Callback.MSG_ON_PROGRESS_UPDATED;
+                msg.what = Callback.MSG_ON_TRANSACT_PROGRESS_UPDATED;
                 msg.obj = presentationTime;
-                mUiHandler.removeMessages(Callback.MSG_ON_PROGRESS_UPDATED);
+                mUiHandler.removeMessages(Callback.MSG_ON_TRANSACT_PROGRESS_UPDATED);
                 mUiHandler.sendMessage(msg);
             }
         }
@@ -303,10 +305,10 @@ public class FFMPEG {
             MLog.e(TAG, "FFMPEG onError() error: " + error + " errorInfo: " + errorInfo);
             if (mUiHandler != null) {
                 Message msg = mUiHandler.obtainMessage();
-                msg.what = Callback.MSG_ON_ERROR;
+                msg.what = Callback.MSG_ON_TRANSACT_ERROR;
                 msg.arg1 = error;
                 msg.obj = errorInfo;
-                mUiHandler.removeMessages(Callback.MSG_ON_ERROR);
+                mUiHandler.removeMessages(Callback.MSG_ON_TRANSACT_ERROR);
                 mUiHandler.sendMessage(msg);
             }
         }
@@ -316,9 +318,9 @@ public class FFMPEG {
             MLog.i(TAG, "onInfo() info: " + info);
             if (mUiHandler != null) {
                 Message msg = mUiHandler.obtainMessage();
-                msg.what = Callback.MSG_ON_INFO;
+                msg.what = Callback.MSG_ON_TRANSACT_INFO;
                 msg.obj = info;
-                mUiHandler.removeMessages(Callback.MSG_ON_INFO);
+                mUiHandler.removeMessages(Callback.MSG_ON_TRANSACT_INFO);
                 mUiHandler.sendMessage(msg);
             }
         }

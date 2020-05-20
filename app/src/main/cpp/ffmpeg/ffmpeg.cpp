@@ -16,6 +16,8 @@
  普通的全局变量,不需要是static的全局变量
  (好像)
  只要进程不被kill掉,这些变量的值就会一直被保存着
+
+ // jclass jobject jstring jobjectArray jintArray 等需要释放空间
  */
 
 // 这个值在任何情况下都不要置为"NULL"
@@ -27,6 +29,12 @@ jobject ffmpegJavaObject = NULL;
 jmethodID createAudioTrackMethodID = NULL;
 jmethodID writeMethodID = NULL;
 jmethodID sleepMethodID = NULL;
+
+jclass jniObjectClass = NULL;
+jobject videoProducerObject = NULL;
+jobject videoConsumerObject = NULL;
+jobject audioProducerObject = NULL;
+jobject audioConsumerObject = NULL;
 
 // java层FFMPEG中定义的Callback对象
 jobject callbackJavaObject = NULL;
@@ -172,14 +180,29 @@ int onLoadProgressUpdated(int code, int progress) {
     if (jniEnv != NULL
         && callbackJavaObject != NULL
         && callback.onTransactMethodID != NULL) {
-        jclass jniObjectClass = jniEnv->FindClass("com/weidi/usefragments/tool/JniObject");
-        jobject jniObject = jniEnv->AllocObject(jniObjectClass);
-        jfieldID valueIntFieldId = jniEnv->GetFieldID(jniObjectClass, "valueInt", "I");
-        jniEnv->SetIntField(jniObject, valueIntFieldId, progress);
-        jniEnv->CallIntMethod(callbackJavaObject, callback.onTransactMethodID, code, jniObject);
-        // jclass jobject jstring jobjectArray jintArray 等需要释放空间
-        jniEnv->DeleteLocalRef(jniObject);
-        jniEnv->DeleteLocalRef(jniObjectClass);
+        jobject *jniObject = NULL;
+        switch (code) {
+            case 0x1000:
+                jniObject = &videoProducerObject;
+                break;
+            case 0x1002:
+                jniObject = &videoConsumerObject;
+                break;
+            case 0x1003:
+                jniObject = &audioProducerObject;
+                break;
+            case 0x1004:
+                jniObject = &audioConsumerObject;
+                break;
+            default:
+                break;
+        }
+        if (jniObject) {
+            jfieldID valueIntFieldId = jniEnv->GetFieldID(jniObjectClass, "valueInt", "I");
+            jniEnv->SetIntField(*jniObject, valueIntFieldId, progress);
+            jniEnv->CallIntMethod(
+                    callbackJavaObject, callback.onTransactMethodID, code, *jniObject);
+        }
     }
     if (isAttached) {
         gJavaVm->DetachCurrentThread();
@@ -317,10 +340,13 @@ void onInfo(char *info) {
 
 /////////////////////////////////////////////////////////////////////////
 
-static jint onTransact_download(JNIEnv *env, jobject thiz, jint code, jobjectArray objects) {
+static jint onTransact_download(JNIEnv *env, jobject thiz, jint code, jobject jniObject) {
     if (use_mode != USE_MODE_MEDIA) {
         return -1;
     }
+
+    jfieldID fieldID = env->GetFieldID(jniObjectClass, "valueStringArray", "[Ljava/lang/String;");
+    jobjectArray objects = static_cast<jobjectArray>(env->GetObjectField(jniObject, fieldID));
 
     jstring element0 = static_cast<jstring>(env->GetObjectArrayElement(objects, 0));
     jstring element1 = static_cast<jstring>(env->GetObjectArrayElement(objects, 1));
@@ -343,11 +369,14 @@ static jint onTransact_download(JNIEnv *env, jobject thiz, jint code, jobjectArr
         flag = 5;
     }
     LOGI("onTransact() flag: %d path: %s fileName: %s\n", flag, filePath, fileName);
+
     alexander_media::download(flag, filePath, fileName);
+
     // release
     env->ReleaseStringUTFChars(element0, flagStr);
     env->ReleaseStringUTFChars(element1, filePath);
     env->ReleaseStringUTFChars(element2, fileName);
+    env->DeleteLocalRef(objects);
     env->DeleteLocalRef(element0);
     env->DeleteLocalRef(element1);
     env->DeleteLocalRef(element2);
@@ -385,11 +414,11 @@ extern "C"
 JNIEXPORT jint JNICALL
 Java_com_weidi_usefragments_business_video_1player_FFMPEG_onTransact(JNIEnv *env, jobject thiz,
                                                                      jint code,
-                                                                     jobjectArray objects) {
+                                                                     jobject jniObject) {
     //
     switch (code) {
         case 1100:
-            return onTransact_download(env, thiz, code, objects);
+            return onTransact_download(env, thiz, code, jniObject);
 
         default:
             break;
@@ -427,11 +456,11 @@ Java_com_weidi_usefragments_business_video_1player_FFMPEG_setSurface(JNIEnv *env
     //CHECK(FFMPEGClass != NULL);
 
     // 第三个参数: 括号中是java端方法的参数签名,括号后面是java端方法的返回值签名(V表示void)
-    jmethodID createAudioTrack = env->GetMethodID(
+    createAudioTrackMethodID = env->GetMethodID(
             FFMPEGClass, "createAudioTrack", "(III)V");
-    jmethodID write = env->GetMethodID(
+    writeMethodID = env->GetMethodID(
             FFMPEGClass, "write", "([BII)V");
-    jmethodID sleep = env->GetMethodID(
+    sleepMethodID = env->GetMethodID(
             FFMPEGClass, "sleep", "(J)V");
 
     // 路径
@@ -467,10 +496,59 @@ Java_com_weidi_usefragments_business_video_1player_FFMPEG_setSurface(JNIEnv *env
     // ffmpegJavaObject = ffmpegObject;// error 直接赋值是不OK的
     ffmpegJavaObject = reinterpret_cast<jobject>(env->NewGlobalRef(ffmpegObject));
 
-    createAudioTrackMethodID = createAudioTrack;
-    writeMethodID = write;
-    sleepMethodID = sleep;
+    if (videoProducerObject) {
+        env->DeleteGlobalRef(videoProducerObject);
+        videoProducerObject = NULL;
+    }
+    if (videoConsumerObject) {
+        env->DeleteGlobalRef(videoConsumerObject);
+        videoConsumerObject = NULL;
+    }
+    if (audioProducerObject) {
+        env->DeleteGlobalRef(audioProducerObject);
+        audioProducerObject = NULL;
+    }
+    if (audioConsumerObject) {
+        env->DeleteGlobalRef(audioConsumerObject);
+        audioConsumerObject = NULL;
+    }
+    if (jniObjectClass) {
+        env->DeleteGlobalRef(jniObjectClass);
+        jniObjectClass = NULL;
+    }
+    jclass tempJniObjectClass = env->FindClass("com/weidi/usefragments/tool/JniObject");
+    jniObjectClass = reinterpret_cast<jclass>(env->NewGlobalRef(tempJniObjectClass));
+    env->DeleteLocalRef(tempJniObjectClass);
 
+    jobject jniObject;
+    jfieldID fieldID;
+    //
+    fieldID = env->GetStaticFieldID(FFMPEGClass, "videoProducer",
+                                    "Lcom/weidi/usefragments/tool/JniObject;");
+    jniObject = env->GetStaticObjectField(FFMPEGClass, fieldID);
+    videoProducerObject = reinterpret_cast<jobject>(env->NewGlobalRef(jniObject));
+    env->DeleteLocalRef(jniObject);
+    //
+    fieldID = env->GetStaticFieldID(FFMPEGClass, "videoConsumer",
+                                    "Lcom/weidi/usefragments/tool/JniObject;");
+    jniObject = env->GetStaticObjectField(FFMPEGClass, fieldID);
+    videoConsumerObject = reinterpret_cast<jobject>(env->NewGlobalRef(jniObject));
+    env->DeleteLocalRef(jniObject);
+    //
+    fieldID = env->GetStaticFieldID(FFMPEGClass, "audioProducer",
+                                    "Lcom/weidi/usefragments/tool/JniObject;");
+    jniObject = env->GetStaticObjectField(FFMPEGClass, fieldID);
+    audioProducerObject = reinterpret_cast<jobject>(env->NewGlobalRef(jniObject));
+    env->DeleteLocalRef(jniObject);
+    //
+    fieldID = env->GetStaticFieldID(FFMPEGClass, "audioConsumer",
+                                    "Lcom/weidi/usefragments/tool/JniObject;");
+    jniObject = env->GetStaticObjectField(FFMPEGClass, fieldID);
+    audioConsumerObject = reinterpret_cast<jobject>(env->NewGlobalRef(jniObject));
+    env->DeleteLocalRef(jniObject);
+
+    env->DeleteLocalRef(FFMPEGClass);
+    FFMPEGClass = NULL;
     LOGI("setSurface()       runCount  : %d\n", (++runCount));
 
     return (jint) 0;

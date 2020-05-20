@@ -438,8 +438,8 @@ public class PlayerActivity extends BaseActivity {
 
         @Override
         public void onReady() {
-            mUiHandler.removeMessages(MSG_ON_READY);
-            mUiHandler.sendEmptyMessage(MSG_ON_READY);
+            mUiHandler.removeMessages(MSG_ON_TRANSACT_READY);
+            mUiHandler.sendEmptyMessage(MSG_ON_TRANSACT_READY);
         }
 
         @Override

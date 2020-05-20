@@ -546,8 +546,6 @@ namespace alexander_only_video {
                 memcpy(dst + h * dstStride, src + h * srcStride, srcStride);
             }
 
-            //videoSleep(videoSleepTime);
-
             if (videoPts > 0) {
                 endTime = clock();
                 int temp1 = (videoPts - videoPtsPre) * 1000000;

@@ -349,7 +349,9 @@ namespace alexander_media {
                    && startReadTime > 0
                    && (endReadTime - startReadTime) > MAX_RELATIVE_TIME) {
             if (audioWrapper->father->list1->size() < audioWrapper->father->list1LimitCounts
-                && videoWrapper->father->list1->size() < videoWrapper->father->list1LimitCounts) {
+                && videoWrapper->father->list1->size() < videoWrapper->father->list1LimitCounts
+                && audioWrapper->father->list2->size() < audioWrapper->father->list1LimitCounts
+                && videoWrapper->father->list2->size() < videoWrapper->father->list1LimitCounts) {
                 LOGE("read_thread_interrupt_cb() 读取数据超时\n");
                 isInterrupted = true;
                 onError(0x101, "读取数据超时");
@@ -372,6 +374,7 @@ namespace alexander_media {
         // 注册复用器和编解码器,所有的使用ffmpeg,首先必须调用这个函数
         avformat_network_init();
 
+        // 打印ffmpeg里面的日志
         //av_log_set_callback(log_callback_null);
 
         LOGW("ffmpeg [av_version_info()] version: %s\n", av_version_info());
@@ -1793,15 +1796,22 @@ namespace alexander_media {
                     totleTimeDiff += timeDiff[i];
                 }
                 averageTimeDiff = totleTimeDiff / RUN_COUNTS;
-                LOGI("handleVideoDataImpl() frameRate: %d averageTimeDiff: %lf\n",
-                     frameRate, averageTimeDiff);
-                /*if (frameRate <= 23) {
-                    if (averageTimeDiff > 0.01) {
-                        averageTimeDiff = 0.0008;
+                LOGI("handleVideoDataImpl() frameRate: %d averageTimeDiff: %lf inFilePath: %s\n",
+                     frameRate, averageTimeDiff, inFilePath);
+                if (frameRate >= 24) {
+                    if (averageTimeDiff > 0.300000 && averageTimeDiff <= 0.400000) {
+                        TIME_DIFFERENCE = 0.200000;
+                    } /*else if (averageTimeDiff > 0.400000 && averageTimeDiff <= 0.500000) {
+                        TIME_DIFFERENCE = 0.300000;
+                    } else if (averageTimeDiff > 0.500000 && averageTimeDiff <= 0.700000) {
+                        TIME_DIFFERENCE = 0.400000;
+                    } else if (averageTimeDiff > 0.700000) {
+                        TIME_DIFFERENCE = 0.300000;
+                    }*/ else if (averageTimeDiff > 0.400000) {
+                        TIME_DIFFERENCE = 0.300000;
                     }
-                    TIME_DIFFERENCE = averageTimeDiff;
+                    LOGI("handleVideoDataImpl() TIME_DIFFERENCE: %lf\n", TIME_DIFFERENCE);
                 }
-                LOGI("handleVideoDataImpl() TIME_DIFFERENCE    : %lf\n", TIME_DIFFERENCE);*/
             }
             if (tempTimeDifference < 0) {
                 // 正常情况下videoTimeDifference比audioTimeDifference大一些
@@ -1925,6 +1935,8 @@ namespace alexander_media {
                 }
                 av_usleep(1000);
             }
+            avcodec_flush_buffers(audioWrapper->father->avCodecContext);
+            avcodec_flush_buffers(videoWrapper->father->avCodecContext);
             closeAudio();
             closeVideo();
             closeOther();

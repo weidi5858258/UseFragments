@@ -396,7 +396,7 @@ public class PlayerWrapper {
             case Callback.MSG_ON_TRANSACT_AUDIO_CONSUMER:// 消费者
                 mAudioProgressBar.setProgress(((JniObject) msg.obj).valueInt);
                 break;
-            case Callback.MSG_ON_READY:
+            case Callback.MSG_ON_TRANSACT_READY:
                 mDurationTimeTV.setText("00:00:00");
                 mProgressBar.setProgress(0);
                 mVideoProgressBar.setProgress(0);
@@ -429,7 +429,7 @@ public class PlayerWrapper {
                     mLoadingView.setVisibility(View.VISIBLE);
                 }
                 break;
-            case Callback.MSG_ON_CHANGE_WINDOW:
+            case Callback.MSG_ON_TRANSACT_CHANGE_WINDOW:
                 // 视频宽高
                 mVideoWidth = msg.arg1;
                 mVideoHeight = msg.arg2;
@@ -479,19 +479,19 @@ public class PlayerWrapper {
                     edit.commit();
                 }
                 break;
-            case Callback.MSG_ON_PLAYED:
+            case Callback.MSG_ON_TRANSACT_PLAYED:
                 mPlayIB.setVisibility(View.VISIBLE);
                 mPauseIB.setVisibility(View.GONE);
                 mLoadingView.setVisibility(View.GONE);
                 break;
-            case Callback.MSG_ON_PAUSED:
+            case Callback.MSG_ON_TRANSACT_PAUSED:
                 mPlayIB.setVisibility(View.GONE);
                 mPauseIB.setVisibility(View.VISIBLE);
                 if (!mIsLocal) {
                     mLoadingView.setVisibility(View.VISIBLE);
                 }
                 break;
-            case Callback.MSG_ON_FINISHED:
+            case Callback.MSG_ON_TRANSACT_FINISHED:
                 if (mHasError) {
                     mHasError = false;
                     // 重新开始播放
@@ -522,7 +522,7 @@ public class PlayerWrapper {
                     mSP.edit().putBoolean(PLAYBACK_NORMAL_FINISH, true).commit();
                 }
                 break;
-            case Callback.MSG_ON_INFO:
+            case Callback.MSG_ON_TRANSACT_INFO:
                 if (msg.obj != null) {
                     String info = (String) msg.obj;
                     if (!TextUtils.isEmpty(info)) {
@@ -530,7 +530,7 @@ public class PlayerWrapper {
                     }
                 }
                 break;
-            case Callback.MSG_ON_ERROR:
+            case Callback.MSG_ON_TRANSACT_ERROR:
                 mHasError = false;
                 int error = msg.arg1;
                 String errorInfo = null;
@@ -571,7 +571,7 @@ public class PlayerWrapper {
                         break;
                 }
                 break;
-            case Callback.MSG_ON_PROGRESS_UPDATED:
+            case Callback.MSG_ON_TRANSACT_PROGRESS_UPDATED:
                 if (msg.obj == null) {
                     return;
                 }
@@ -715,9 +715,11 @@ public class PlayerWrapper {
                             }
                         });
                         // 停止下载
+                        JniObject jniObject = new JniObject();
+                        jniObject.valueStringArray = new String[]{"1", "", ""};
                         mFFMPEGPlayer.onTransact(
                                 FFMPEG.DO_SOMETHING_CODE_DOWNLOAD,
-                                new Object[]{"1", "", ""});
+                                jniObject);
                         break;
                     case 2:
                     case 3:
@@ -753,9 +755,11 @@ public class PlayerWrapper {
                                 }
                             });
                             // 开始下载,边播放边下
+                            jniObject = new JniObject();
+                            jniObject.valueStringArray = new String[]{"0", path, sb.toString()};
                             mFFMPEGPlayer.onTransact(
                                     FFMPEG.DO_SOMETHING_CODE_DOWNLOAD,
-                                    new Object[]{"0", path, sb.toString()});
+                                    jniObject);
                         } else {
                             mUiHandler.post(new Runnable() {
                                 @Override
@@ -775,14 +779,18 @@ public class PlayerWrapper {
                             });
                             if (mDownloadClickCounts == 3) {
                                 // 只下载,不播放.不调用seekTo
+                                jniObject = new JniObject();
+                                jniObject.valueStringArray = new String[]{"4", path, sb.toString()};
                                 mFFMPEGPlayer.onTransact(
                                         FFMPEG.DO_SOMETHING_CODE_DOWNLOAD,
-                                        new Object[]{"4", path, sb.toString()});
+                                        jniObject);
                             } else {
                                 // 只提取音视频,不播放.调用seekTo到0
+                                jniObject = new JniObject();
+                                jniObject.valueStringArray = new String[]{"5", path, sb.toString()};
                                 mFFMPEGPlayer.onTransact(
                                         FFMPEG.DO_SOMETHING_CODE_DOWNLOAD,
-                                        new Object[]{"5", path, sb.toString()});
+                                        jniObject);
                             }
                         }
                         break;

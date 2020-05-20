@@ -22,19 +22,12 @@ import android.widget.TextView;
 import com.weidi.eventbus.EventBusUtils;
 import com.weidi.usefragments.R;
 import com.weidi.usefragments.business.audio_player.JniMusicService;
-import com.weidi.usefragments.business.audio_player.MusicService;
 import com.weidi.usefragments.fragment.FragOperManager;
 import com.weidi.usefragments.fragment.base.BaseFragment;
 import com.weidi.usefragments.inject.InjectOnClick;
 import com.weidi.usefragments.inject.InjectView;
-import com.weidi.usefragments.media.MediaUtils;
 import com.weidi.usefragments.tool.Callback;
 import com.weidi.usefragments.tool.MLog;
-
-import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
 
 /***
 
@@ -486,12 +479,12 @@ public class DecodeAudioFragment extends BaseFragment {
         }
 
         switch (msg.what) {
-            case Callback.MSG_ON_READY:
+            case Callback.MSG_ON_TRANSACT_READY:
                 mShowProcessTimeTv.setText("00:00");
                 mShowDurationTimeTv.setText("00:00");
                 mPlayPositionSB.setProgress(0);
                 break;
-            case Callback.MSG_ON_PLAYED:
+            case Callback.MSG_ON_TRANSACT_PLAYED:
                 int duration = (int) mSimpleAudioPlayer.getDuration();
                 String elapsedTime = DateUtils.formatElapsedTime(duration);
                 // 单位是微秒的时候需要这样处理
@@ -503,12 +496,12 @@ public class DecodeAudioFragment extends BaseFragment {
                 mShowInoSB.append("\n");
                 setText(mShowInoSB);
                 break;
-            case Callback.MSG_ON_PAUSED:
+            case Callback.MSG_ON_TRANSACT_PAUSED:
                 break;
-            case Callback.MSG_ON_FINISHED:
+            case Callback.MSG_ON_TRANSACT_FINISHED:
                 mSimpleAudioPlayer.next();
                 break;
-            case Callback.MSG_ON_INFO:
+            case Callback.MSG_ON_TRANSACT_INFO:
                 mShowInoSB.append(msg.obj);
                 mShowInoSB.append("\n");
                 setText(mShowInoSB);
@@ -519,10 +512,10 @@ public class DecodeAudioFragment extends BaseFragment {
                     }
                 });
                 break;
-            case Callback.MSG_ON_ERROR:
+            case Callback.MSG_ON_TRANSACT_ERROR:
                 mSimpleAudioPlayer.next();
                 break;
-            case Callback.MSG_ON_PROGRESS_UPDATED:
+            case Callback.MSG_ON_TRANSACT_PROGRESS_UPDATED:
                 /*int progress =
                         (int) (mPresentationTimeUs * 3840 / mSimpleAudioPlayer.getDurationUs());*/
                 // MLog.d(TAG, "threadHandleMessage() progress: " + progress);
