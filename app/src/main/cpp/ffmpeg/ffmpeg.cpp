@@ -7,6 +7,7 @@
 #include "OnlyVideoPlayer.h"
 #include "OnlyAudioPlayer.h"
 #include "AudioVideoPlayer.h"
+#include "AACH264Player.h"
 
 // 这个是自定义的LOG的标识
 #define LOG "player_alexander"
@@ -120,6 +121,7 @@ void write(unsigned char *pcmData,
 
         // 同步到audioData,并释放cache,与GetByteArrayElements对应
         // 如果不调用,audioData里面是空的,播放无声,并且会内存泄漏
+        // 不能放到audioEnv->CallVoidMethod(...)的后面调用
         audioEnv->ReleaseByteArrayElements(audioData, cache, 0);
 
         // AudioTrack->write
@@ -137,10 +139,34 @@ void write(unsigned char *pcmData,
 void close() {
     JNIEnv *env;
     bool isAttached = getEnv(&env);
-    env->DeleteGlobalRef(ffmpegJavaObject);
-    env->DeleteGlobalRef(callbackJavaObject);
-    ffmpegJavaObject = NULL;
-    callbackJavaObject = NULL;
+    if (ffmpegJavaObject) {
+        env->DeleteGlobalRef(ffmpegJavaObject);
+        ffmpegJavaObject = NULL;
+    }
+    if (callbackJavaObject) {
+        env->DeleteGlobalRef(callbackJavaObject);
+        callbackJavaObject = NULL;
+    }
+    if (videoProducerObject) {
+        env->DeleteGlobalRef(videoProducerObject);
+        videoProducerObject = NULL;
+    }
+    if (videoConsumerObject) {
+        env->DeleteGlobalRef(videoConsumerObject);
+        videoConsumerObject = NULL;
+    }
+    if (audioProducerObject) {
+        env->DeleteGlobalRef(audioProducerObject);
+        audioProducerObject = NULL;
+    }
+    if (audioConsumerObject) {
+        env->DeleteGlobalRef(audioConsumerObject);
+        audioConsumerObject = NULL;
+    }
+    if (jniObjectClass) {
+        env->DeleteGlobalRef(jniObjectClass);
+        jniObjectClass = NULL;
+    }
     if (isAttached) {
         gJavaVm->DetachCurrentThread();
     }
@@ -182,16 +208,16 @@ int onLoadProgressUpdated(int code, int progress) {
         && callback.onTransactMethodID != NULL) {
         jobject *jniObject = NULL;
         switch (code) {
-            case 0x1000:
+            case MSG_ON_TRANSACT_VIDEO_PRODUCER:
                 jniObject = &videoProducerObject;
                 break;
-            case 0x1002:
+            case MSG_ON_TRANSACT_VIDEO_CONSUMER:
                 jniObject = &videoConsumerObject;
                 break;
-            case 0x1003:
+            case MSG_ON_TRANSACT_AUDIO_PRODUCER:
                 jniObject = &audioProducerObject;
                 break;
-            case 0x1004:
+            case MSG_ON_TRANSACT_AUDIO_CONSUMER:
                 jniObject = &audioConsumerObject;
                 break;
             default:
@@ -434,7 +460,8 @@ Java_com_weidi_usefragments_business_video_1player_FFMPEG_setMode(JNIEnv *env, j
     if (use_mode != USE_MODE_MEDIA
         && use_mode != USE_MODE_ONLY_VIDEO
         && use_mode != USE_MODE_ONLY_AUDIO
-        && use_mode != USE_MODE_AUDIO_VIDEO) {
+        && use_mode != USE_MODE_AUDIO_VIDEO
+        && use_mode != USE_MODE_AAC_H264) {
         use_mode = USE_MODE_MEDIA;
     }
 }
@@ -480,6 +507,10 @@ Java_com_weidi_usefragments_business_video_1player_FFMPEG_setSurface(JNIEnv *env
         }
         case USE_MODE_AUDIO_VIDEO: {
             alexander_audio_video::setJniParameters(env, filePath, surfaceObject);
+            break;
+        }
+        case USE_MODE_AAC_H264: {
+            alexander_aac_h264::setJniParameters(env, filePath, surfaceObject);
             break;
         }
         default:
@@ -608,6 +639,9 @@ Java_com_weidi_usefragments_business_video_1player_FFMPEG_initPlayer(JNIEnv *env
         case USE_MODE_AUDIO_VIDEO: {
             return (jint) alexander_audio_video::initPlayer();
         }
+        case USE_MODE_AAC_H264: {
+            return (jint) alexander_aac_h264::initPlayer();
+        }
         default:
             break;
     }
@@ -645,6 +679,20 @@ Java_com_weidi_usefragments_business_video_1player_FFMPEG_readData(JNIEnv *env, 
             }
             break;
         }
+        case USE_MODE_AAC_H264: {
+            if (COUNTS == 1) {
+                type = TYPE_AUDIO;
+                ++COUNTS;
+                LOGI("readData() TYPE_AUDIO\n");
+                alexander_aac_h264::readData(&type);
+            } else {
+                type = TYPE_VIDEO;
+                --COUNTS;
+                LOGI("readData() TYPE_VIDEO\n");
+                alexander_aac_h264::readData(&type);
+            }
+            break;
+        }
         default:
             break;
     }
@@ -671,6 +719,10 @@ Java_com_weidi_usefragments_business_video_1player_FFMPEG_audioHandleData(JNIEnv
         }
         case USE_MODE_AUDIO_VIDEO: {
             alexander_audio_video::handleData(&type);
+            break;
+        }
+        case USE_MODE_AAC_H264: {
+            alexander_aac_h264::handleData(&type);
             break;
         }
         default:
@@ -701,6 +753,10 @@ Java_com_weidi_usefragments_business_video_1player_FFMPEG_videoHandleData(JNIEnv
             alexander_audio_video::handleData(&type);
             break;
         }
+        case USE_MODE_AAC_H264: {
+            alexander_aac_h264::handleData(&type);
+            break;
+        }
         default:
             break;
     }
@@ -725,6 +781,10 @@ Java_com_weidi_usefragments_business_video_1player_FFMPEG_play(JNIEnv *env, jobj
         }
         case USE_MODE_AUDIO_VIDEO: {
             alexander_audio_video::play();
+            break;
+        }
+        case USE_MODE_AAC_H264: {
+            alexander_aac_h264::play();
             break;
         }
         default:
@@ -753,6 +813,10 @@ Java_com_weidi_usefragments_business_video_1player_FFMPEG_pause(JNIEnv *env, job
             alexander_audio_video::pause();
             break;
         }
+        case USE_MODE_AAC_H264: {
+            alexander_aac_h264::pause();
+            break;
+        }
         default:
             break;
     }
@@ -777,6 +841,10 @@ Java_com_weidi_usefragments_business_video_1player_FFMPEG_stop(JNIEnv *env, jobj
         }
         case USE_MODE_AUDIO_VIDEO: {
             alexander_audio_video::stop();
+            break;
+        }
+        case USE_MODE_AAC_H264: {
+            alexander_aac_h264::stop();
             break;
         }
         default:
@@ -806,6 +874,10 @@ Java_com_weidi_usefragments_business_video_1player_FFMPEG_release(JNIEnv *env,
             alexander_audio_video::release();
             break;
         }
+        case USE_MODE_AAC_H264: {
+            alexander_aac_h264::release();
+            break;
+        }
         default:
             break;
     }
@@ -829,6 +901,9 @@ Java_com_weidi_usefragments_business_video_1player_FFMPEG_isRunning(JNIEnv *env,
         case USE_MODE_AUDIO_VIDEO: {
             return (jboolean) alexander_audio_video::isRunning();
         }
+        case USE_MODE_AAC_H264: {
+            return (jboolean) alexander_aac_h264::isRunning();
+        }
         default:
             break;
     }
@@ -850,6 +925,9 @@ Java_com_weidi_usefragments_business_video_1player_FFMPEG_isPlaying(JNIEnv *env,
         }
         case USE_MODE_AUDIO_VIDEO: {
             return (jboolean) alexander_audio_video::isPlaying();
+        }
+        case USE_MODE_AAC_H264: {
+            return (jboolean) alexander_aac_h264::isPlaying();
         }
         default:
             break;
@@ -873,6 +951,9 @@ Java_com_weidi_usefragments_business_video_1player_FFMPEG_isPausedForUser(JNIEnv
         case USE_MODE_AUDIO_VIDEO: {
             return (jboolean) alexander_audio_video::isPausedForUser();
         }
+        case USE_MODE_AAC_H264: {
+            return (jboolean) alexander_aac_h264::isPausedForUser();
+        }
         default:
             break;
     }
@@ -895,6 +976,9 @@ Java_com_weidi_usefragments_business_video_1player_FFMPEG_seekTo(JNIEnv *env, jo
         case USE_MODE_AUDIO_VIDEO: {
             return (jint) alexander_audio_video::seekTo((int64_t) timestamp);
         }
+        case USE_MODE_AAC_H264: {
+            return (jint) alexander_aac_h264::seekTo((int64_t) timestamp);
+        }
         default:
             break;
     }
@@ -916,6 +1000,9 @@ Java_com_weidi_usefragments_business_video_1player_FFMPEG_getDuration(JNIEnv *en
         }
         case USE_MODE_AUDIO_VIDEO: {
             return (jlong) alexander_audio_video::getDuration();
+        }
+        case USE_MODE_AAC_H264: {
+            return (jlong) alexander_aac_h264::getDuration();
         }
         default:
             break;
@@ -943,6 +1030,10 @@ Java_com_weidi_usefragments_business_video_1player_FFMPEG_stepAdd(JNIEnv *env, j
             alexander_audio_video::stepAdd((int64_t) addStep);
             break;
         }
+        case USE_MODE_AAC_H264: {
+            alexander_aac_h264::stepAdd((int64_t) addStep);
+            break;
+        }
         default:
             break;
     }
@@ -968,6 +1059,10 @@ Java_com_weidi_usefragments_business_video_1player_FFMPEG_stepSubtract(JNIEnv *e
         }
         case USE_MODE_AUDIO_VIDEO: {
             alexander_audio_video::stepSubtract((int64_t) subtractStep);
+            break;
+        }
+        case USE_MODE_AAC_H264: {
+            alexander_aac_h264::stepSubtract((int64_t) subtractStep);
             break;
         }
         default:

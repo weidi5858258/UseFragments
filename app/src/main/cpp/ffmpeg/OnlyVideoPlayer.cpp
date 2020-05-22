@@ -9,7 +9,9 @@
 extern AVFormatContext *avFormatContext;
 extern struct VideoWrapper *videoWrapper;
 extern bool isLocal;
+extern bool isH264;
 extern bool isReading;
+extern double fileLength;
 // seek时间
 extern int64_t timeStamp;
 extern ANativeWindow *pANativeWindow;
@@ -17,12 +19,17 @@ extern ANativeWindow *pANativeWindow;
 namespace alexander_only_video {
 
     static char inFilePath[2048];
-    static double videoPts = 0;
-    static double videoPtsPre = 0;
-    static long curProgress = 0;
-    static long preProgress = 0;
+    static double videoPts = 0.0;
+    static double videoPtsPre = 0.0;
+    static long long curProgress = 0;
+    static long long preProgress = 0;
     // 视频播放时每帧之间的暂停时间,单位为ms
     static int videoSleepTime = 11;
+    static long long pktCounts = 0;
+    static int64_t curTime = 0, preTime = 0;
+
+    static int seek_flags;
+    static float seek_interval = 0.0;
 
     // 绘制时的缓冲区
     static ANativeWindow_Buffer mANativeWindow_Buffer;
@@ -372,15 +379,29 @@ namespace alexander_only_video {
             }
             videoWrapper->father->list2->clear();
         }
-        av_seek_frame(
-                avFormatContext,
-                -1,
-                timeStamp * AV_TIME_BASE,
-                AVSEEK_FLAG_BACKWARD | AVSEEK_FLAG_FRAME);
+
+        if (isH264) {
+            int64_t seek_rel = seek_interval * 180000.0;
+            int64_t seek_target = timeStamp;
+            int64_t seek_min = seek_rel > 0 ? seek_target - seek_rel + 2 : INT64_MIN;
+            int64_t seek_max = seek_rel < 0 ? seek_target - seek_rel - 2 : INT64_MAX;
+            LOGI("seekToImpl() seek_min: %lld\n", (long long) seek_min);
+            LOGI("seekToImpl()      pos: %lld\n", (long long) seek_target);
+            LOGI("seekToImpl() seek_max: %lld\n", (long long) seek_max);
+            avformat_seek_file(avFormatContext, -1, seek_min, seek_target, seek_max, seek_flags);
+        } else {
+            av_seek_frame(
+                    avFormatContext,
+                    -1,
+                    timeStamp * AV_TIME_BASE,
+                    AVSEEK_FLAG_BACKWARD | AVSEEK_FLAG_FRAME);
+        }
+
         // 清空解码器的缓存
         avcodec_flush_buffers(videoWrapper->father->avCodecContext);
         timeStamp = -1;
         preProgress = 0;
+        preTime = 0;
         videoWrapper->father->isPausedForSeek = false;
         LOGI("seekToImpl() av_seek_frame end\n");
     }
@@ -389,7 +410,15 @@ namespace alexander_only_video {
         av_packet_ref(copyAVPacket, srcAVPacket);
         av_packet_unref(srcAVPacket);
 
+        //LOGW("readDataImpl()     size: %d\n",copyAVPacket->size);// 10810(ok)
+        //LOGW("readDataImpl() duration: %ld\n",(long)copyAVPacket->duration);// 48000
+        // 27382318
+        // 27371508 27360605 27349322 27337010 27320776 27307323
+        //LOGW("readDataImpl()      pos: %ld\n",(long)copyAVPacket->pos);// 27371508(ok)
+        //LOGW("readDataImpl()      dts: %ld\n",(long)copyAVPacket->dts);// 0
+        //LOGW("readDataImpl()      pts: %ld\n",(long)copyAVPacket->pts);// 0
         pthread_mutex_lock(&wrapper->readLockMutex);
+        pktCounts++;
         // 存数据
         wrapper->list2->push_back(*copyAVPacket);
         size_t list2Size = wrapper->list2->size();
@@ -429,9 +458,20 @@ namespace alexander_only_video {
         LOGW("%s\n", "readData() start");
         preProgress = 0;
         isReading = true;
+        pktCounts = 0;
+        seek_flags &= ~AVSEEK_FLAG_BYTE;
+        seek_flags |= AVSEEK_FLAG_BYTE;
+        seek_interval = 10;
 
         AVPacket *srcAVPacket = av_packet_alloc();
         AVPacket *copyAVPacket = av_packet_alloc();
+
+        // seekTo
+        if (timeStamp > 0) {
+            LOGI("readData() timeStamp: %lld\n", (long long) timeStamp);
+            videoWrapper->father->needToSeek = true;
+            videoWrapper->father->isPausedForSeek = true;
+        }
 
         int readFrame = 0;
         /***
@@ -468,6 +508,10 @@ namespace alexander_only_video {
                 LOGF("readData() readFrame  : %d\n", readFrame);
                 LOGF("readData() 文件已经读完了\n");
                 LOGF("readData() video list2: %d\n", videoWrapper->father->list2->size());
+                if (isH264) {
+                    LOGF("readData() pktCounts  : %lld\n", pktCounts);
+                }
+                // 10000个kpt大约为111355502(111.35MB)
 
                 // 读到文件末尾了
                 videoWrapper->father->isReading = false;
@@ -515,12 +559,23 @@ namespace alexander_only_video {
             onPlayed();
         }
 
-        videoPts = decodedAVFrame->pts * av_q2d(stream->time_base);
-        // 显示时间进度
-        curProgress = (long) videoPts;
-        if (curProgress > preProgress) {
-            preProgress = curProgress;
-            onProgressUpdated(curProgress);
+        if (isH264) {
+            curProgress = (long long) decodedAVFrame->pkt_pos;
+            curTime = av_gettime_relative();
+            if (curTime - preTime >= 1000000) {// 1秒大概传送353618个字节
+                // 1135286 1488904 1841467 2204207
+                // LOGW("handleVideoData() curProgress: %lld\n", curProgress);
+                preTime = curTime;
+                onProgressUpdated(curProgress);
+            }
+        } else {
+            videoPts = decodedAVFrame->pts * av_q2d(stream->time_base);
+            // 显示时间进度
+            curProgress = (long long) videoPts;
+            if (curProgress > preProgress) {
+                preProgress = curProgress;
+                onProgressUpdated(curProgress);
+            }
         }
 
         if (videoWrapper->father->isHandling) {
@@ -546,7 +601,9 @@ namespace alexander_only_video {
                 memcpy(dst + h * dstStride, src + h * srcStride, srcStride);
             }
 
-            if (videoPts > 0) {
+            if (isH264) {
+                videoSleep(11);
+            } else {
                 endTime = clock();
                 int temp1 = (videoPts - videoPtsPre) * 1000000;
                 if (temp1 > (endTime - startTime)) {
@@ -569,8 +626,6 @@ namespace alexander_only_video {
                     }
                 }
                 videoPtsPre = videoPts;
-            } else {
-                videoSleep(11);
             }
 
             // 6.unlock绘制
@@ -755,7 +810,9 @@ namespace alexander_only_video {
                 continue;
             }
 
-            startTime = clock();
+            if (!isH264) {
+                startTime = clock();
+            }
 
             // 解码过程
             ret = avcodec_send_packet(wrapper->avCodecContext, copyAVPacket);
@@ -788,7 +845,9 @@ namespace alexander_only_video {
             switch (ret) {
                 // 输出是不可用的,必须发送新的输入
                 case AVERROR(EAGAIN):
-                    LOGE("handleData() video avcodec_receive_frame ret: %d\n", ret);
+                    if (!isH264) {
+                        LOGE("handleData() video avcodec_receive_frame ret: %d\n", ret);
+                    }
                     break;
                 case AVERROR(EINVAL):
                     // codec打不开,或者是一个encoder
@@ -1076,37 +1135,62 @@ namespace alexander_only_video {
 
     int seekTo(int64_t timestamp) {
         LOGI("==================================================================\n");
-        LOGI("seekTo() timestamp: %ld\n", timestamp);
+        LOGI("seekTo() timestamp: %lld\n", (long long) timestamp);
         //LOGI("seekTo() timestamp: %" PRIu64 "\n", timestamp);
 
-        if (timestamp < 0
+        if ((long long) timestamp > 0
+            && videoWrapper == NULL) {
+            timeStamp = timestamp;
+            return 0;
+        }
+
+        if (((long long) timestamp) < 0
             || videoWrapper == NULL
             || videoWrapper->father == NULL
-            || !isRunning()
+            || videoWrapper->father->isPausedForSeek
             || getDuration() < 0
-            || ((long) timestamp) > getDuration()) {
+            || ((long long) timestamp) > getDuration()) {
             return -1;
         }
 
         LOGW("seekTo() signal() to Read and Handle\n");
+
         timeStamp = timestamp;
         videoWrapper->father->isPausedForSeek = true;
         videoWrapper->father->needToSeek = false;
         notifyToHandle(videoWrapper->father);
         notifyToRead(videoWrapper->father);
 
+        /*double pos, incr;
+        pos = 11000000;
+        incr = seek_interval ? -seek_interval : -10.0;// 快退
+        incr = seek_interval ? seek_interval : 10.0;// 快进
+        incr *= 180000.0;
+        pos += incr;
+        int64_t seek_rel = incr;
+        int64_t seek_target = pos;
+        int64_t seek_min = seek_rel > 0 ? seek_target - seek_rel + 2 : INT64_MIN;
+        int64_t seek_max = seek_rel < 0 ? seek_target - seek_rel - 2 : INT64_MAX;
+        LOGW("readData() seek_min: %ld\n", (long) seek_min);
+        LOGW("readData()      pos: %ld\n", (long) seek_target);
+        LOGW("readData() seek_max: %ld\n", (long) seek_max);
+        avformat_seek_file(avFormatContext, -1, seek_min, seek_target, seek_max, seek_flags);*/
+
         return 0;
     }
 
     // 返回值单位是秒
     int64_t getDuration() {
-        int64_t videoDuration = -1;
-        if (videoWrapper != NULL
-            && videoWrapper->father != NULL) {
-            videoDuration = videoWrapper->father->duration;
+        if (isH264) {
+            return fileLength;
+        } else {
+            int64_t videoDuration = -1;
+            if (videoWrapper != NULL
+                && videoWrapper->father != NULL) {
+                videoDuration = videoWrapper->father->duration;
+            }
+            return videoDuration;
         }
-
-        return videoDuration;
     }
 
     void stepAdd(int64_t addStep) {
@@ -1117,7 +1201,7 @@ namespace alexander_only_video {
         LOGF("stepAdd()      videoSleepTime: %d\n", videoSleepTime);*/
 
         if (getDuration() > 0) {
-            seekTo(curProgress + addStep);
+            seekTo((int64_t) curProgress + addStep);
         }
     }
 
@@ -1129,7 +1213,7 @@ namespace alexander_only_video {
         LOGF("stepSubtract() videoSleepTime: %d\n", videoSleepTime);*/
 
         if (getDuration() > 0) {
-            seekTo(curProgress - subtractStep);
+            seekTo((int64_t) curProgress - subtractStep);
         }
     }
 

@@ -3,11 +3,17 @@
 //
 
 #include <string>
-#include "AudioVideoPlayer.h"
+#include "AACH264Player.h"
 
 #define LOG "player_alexander"
 
-namespace alexander_audio_video {
+/***
+ 本文件只针对于videoDuration < 0,audioDuration > 0
+ 且
+ video的pts为0
+ 的情况
+ */
+namespace alexander_aac_h264 {
 
     static char inVideoFilePath[2048];
     static char inAudioFilePath[2048];
@@ -16,25 +22,29 @@ namespace alexander_audio_video {
     static struct VideoWrapper *videoWrapper = NULL;
     static struct AudioWrapper *audioWrapper = NULL;
     static bool isLocal = false;
-    static bool isH264AAC = false;
     static bool isVideoReading = false;
     static bool isAudioReading = false;
     static bool isAudioHandling = false;
     static bool runOneTime = true;
     // seek时间
     static int64_t timeStamp = -1;
-    static long curProgress = 0;
-    static long preProgress = 0;
+    static long long curProgress = 0;
+    static long long preProgress = 0;
     // 视频播放时每帧之间的暂停时间,单位为ms
     static int videoSleepTime = 11;
+    static long long mediaDuration = -1;
+    static double videoFileLength = 0.0;
+    static double audioFileLength = 0.0;
 
-    static double TIME_DIFFERENCE = 1.000000;// 0.180000
+    static double POS_DIFFERENCE = 1.000000;// 0.180000
     // 当前音频时间戳
-    static double audioPts = 0;
+    static double audioPts = 0.0;
     // 当前视频时间戳
-    static double videoPts = 0;
+    static double videoPts = 0.0;
     // 上一个时间戳
-    static double videoPtsPre = 0;
+    static double videoPtsPre = 0.0;
+    static double audioPos = 0.0;
+    static double videoPos = 0.0;
 
     static ANativeWindow *pANativeWindow = NULL;
     // 绘制时的缓冲区
@@ -42,7 +52,7 @@ namespace alexander_audio_video {
 
 #define RUN_COUNTS 88
     int runCounts = 0;
-    double averageTimeDiff = 0;
+    double averagePosDiff = 0;
     double timeDiff[RUN_COUNTS];
 
     static int frameRate = 0;
@@ -97,7 +107,7 @@ namespace alexander_audio_video {
         videoPtsPre = 0;
         runOneTime = true;
         runCounts = 0;
-        averageTimeDiff = 0.0;
+        averagePosDiff = 0.0;
         memset(timeDiff, '0', sizeof(timeDiff));
     }
 
@@ -652,7 +662,7 @@ namespace alexander_audio_video {
         /*if (isH264AAC) {
             POS_DIFFERENCE = 0.0008;
         }*/
-        LOGI("createSwsContext()    POS_DIFFERENCE    : %lf\n", TIME_DIFFERENCE);
+        LOGI("createSwsContext()    POS_DIFFERENCE    : %lf\n", POS_DIFFERENCE);
 
         LOGI("createSwsContext() end\n");
         return 0;
@@ -977,6 +987,7 @@ namespace alexander_audio_video {
             audioWrapper->father->isStarted = true;
             while (!videoWrapper->father->isStarted) {
                 if (audioWrapper->father->isPausedForSeek
+                    || !videoWrapper->father->isHandling
                     || !audioWrapper->father->isHandling) {
                     return 0;
                 }
@@ -993,8 +1004,11 @@ namespace alexander_audio_video {
 
             ////////////////////////////////////////////////////////////////////
 
+            audioPos = decodedAVFrame->pkt_pos * av_q2d(stream->time_base);
+
+            // 时间进度
             audioPts = decodedAVFrame->pts * av_q2d(stream->time_base);
-            curProgress = (long) audioPts;// 秒
+            curProgress = (long long) audioPts;// 秒
             if (curProgress > preProgress) {
                 preProgress = curProgress;
                 onProgressUpdated(curProgress);
@@ -1024,6 +1038,7 @@ namespace alexander_audio_video {
         videoWrapper->father->isStarted = true;
         while (!audioWrapper->father->isStarted) {
             if (videoWrapper->father->isPausedForSeek
+                || !audioWrapper->father->isHandling
                 || !videoWrapper->father->isHandling) {
                 return 0;
             }
@@ -1037,59 +1052,59 @@ namespace alexander_audio_video {
          音频需要正常播放才是好的体验
          */
         videoPts = decodedAVFrame->pts * av_q2d(stream->time_base);
+
+        videoPos = decodedAVFrame->pkt_pos * av_q2d(stream->time_base);
         /*if (videoPts < 0) {
             videoPts = audioPts + POS_DIFFERENCE;
         }*/
-        //LOGW("handleVideoDataImpl() audioPts: %lf\n", audioPts);
-        //LOGW("handleVideoDataImpl() videoPts: %lf\n", videoPts);
-        if (videoPts > 0 && audioPts > 0) {
-            double tempTimeDifference = videoPts - audioPts;
-            if (runCounts < RUN_COUNTS) {
-                if (tempTimeDifference > 0) {
-                    timeDiff[runCounts++] = tempTimeDifference;
-                    //LOGI("handleVideoDataImpl() video - audio      : %lf\n", tempTimeDifference);
-                }
-            } else if (runCounts == RUN_COUNTS) {
-                runCounts++;
-                double totleTimeDiff = 0;
-                for (int i = 0; i < RUN_COUNTS; i++) {
-                    if (videoWrapper->father->isPausedForSeek
-                        || !audioWrapper->father->isHandling
-                        || !videoWrapper->father->isHandling) {
-                        LOGI("handleVideoDataImpl() RUN_COUNTS return\n");
-                        return 0;
-                    }
-                    totleTimeDiff += timeDiff[i];
-                }
-                averageTimeDiff = totleTimeDiff / RUN_COUNTS;
-                LOGI("handleVideoDataImpl() averageTimeDiff    : %lf\n", averageTimeDiff);
+        LOGW("handleVideoDataImpl() audioPos: %lf\n", audioPos);
+        LOGW("handleVideoDataImpl() videoPos: %lf\n", videoPos);
+        double tempPosDifference = videoPos - audioPos;
+        if (runCounts < RUN_COUNTS) {
+            if (tempPosDifference > 0) {
+                timeDiff[runCounts++] = tempPosDifference;
+                //LOGI("handleVideoDataImpl() video - audio      : %lf\n", tempPosDifference);
             }
-            if (tempTimeDifference < 0) {
-                // 正常情况下videoTimeDifference比audioTimeDifference大一些
-                // 如果发现小了,说明视频播放慢了,应丢弃这些帧
-                // break后videoTimeDifference增长的速度会加快
-                // videoPts = audioPts + averageTimeDiff;
-                return 0;
-            }
-
-            if (tempTimeDifference > 2.000000) {
-                // 不好的现象.为什么会出现这种情况还不知道?
-                //LOGE("handleVideoDataImpl() audioTimeDifference: %lf\n", audioPts);
-                //LOGE("handleVideoDataImpl() videoTimeDifference: %lf\n", videoPts);
-                //LOGE("handleVideoDataImpl() video - audio      : %lf\n", tempTimeDifference);
-                videoPts = audioPts + averageTimeDiff;
-                //LOGE("handleVideoDataImpl() videoTimeDifference: %lf\n", videoPts);
-            }
-            // 如果videoTimeDifference比audioTimeDifference大出了一定的范围
-            // 那么说明视频播放快了,应等待音频
-            while (videoPts - audioPts > TIME_DIFFERENCE) {
+        } else if (runCounts == RUN_COUNTS) {
+            runCounts++;
+            double totleTimeDiff = 0;
+            for (int i = 0; i < RUN_COUNTS; i++) {
                 if (videoWrapper->father->isPausedForSeek
                     || !audioWrapper->father->isHandling
                     || !videoWrapper->father->isHandling) {
+                    LOGI("handleVideoDataImpl() RUN_COUNTS return\n");
                     return 0;
                 }
-                av_usleep(1000);
+                totleTimeDiff += timeDiff[i];
             }
+            averagePosDiff = totleTimeDiff / RUN_COUNTS;
+            LOGI("handleVideoDataImpl()  averagePosDiff    : %lf\n", averagePosDiff);
+        }
+        if (tempPosDifference < 0) {
+            // 正常情况下videoTimeDifference比audioTimeDifference大一些
+            // 如果发现小了,说明视频播放慢了,应丢弃这些帧
+            // break后videoTimeDifference增长的速度会加快
+            // videoPts = audioPts + averageTimeDiff;
+            return 0;
+        }
+
+        /*if (tempPosDifference > 2.000000) {
+            // 不好的现象.为什么会出现这种情况还不知道?
+            //LOGE("handleVideoDataImpl() audioTimeDifference: %lf\n", audioPts);
+            //LOGE("handleVideoDataImpl() videoTimeDifference: %lf\n", videoPts);
+            //LOGE("handleVideoDataImpl() video - audio      : %lf\n", tempTimeDifference);
+            videoPts = audioPts + averagePosDiff;
+            //LOGE("handleVideoDataImpl() videoTimeDifference: %lf\n", videoPts);
+        }*/
+        // 如果videoTimeDifference比audioTimeDifference大出了一定的范围
+        // 那么说明视频播放快了,应等待音频
+        while (videoPos - audioPos > POS_DIFFERENCE) {
+            if (videoWrapper->father->isPausedForSeek
+                || !audioWrapper->father->isHandling
+                || !videoWrapper->father->isHandling) {
+                return 0;
+            }
+            av_usleep(1000);
         }
 
         // 渲染画面
@@ -1853,10 +1868,50 @@ namespace alexander_audio_video {
             return -1;
         }
 
+        videoFileLength = 0.0;
+        audioFileLength = 0.0;
+        if (isLocal) {
+            FILE *fp = nullptr, *fq = nullptr;
+            fp = fopen(inVideoFilePath, "rb");
+            fq = fp;
+            // 存储文件指针位置
+            fpos_t post_head;
+            fpos_t post_end;
+            // 定位在文件开头
+            fseek(fp, 0, SEEK_SET);
+            // 获取指针地址
+            fgetpos(fq, &post_head);
+            // 定位在文件尾部
+            fseek(fq, 0, SEEK_END);
+            // 获取指针地址
+            fgetpos(fq, &post_end);
+            fclose(fp);
+            fp = nullptr;
+            fq = nullptr;
+            // 计算文件大小
+            videoFileLength = post_end - post_head;
+
+            fp = fopen(inAudioFilePath, "rb");
+            fq = fp;
+            fseek(fp, 0, SEEK_SET);
+            fgetpos(fq, &post_head);
+            fseek(fq, 0, SEEK_END);
+            fgetpos(fq, &post_end);
+            fclose(fp);
+            fp = nullptr;
+            fq = nullptr;
+            // 计算文件大小
+            audioFileLength = post_end - post_head;
+            LOGI("initPlayer() videoFileLength: %.0lf\n", videoFileLength);
+            LOGI("initPlayer() audioFileLength: %.0lf\n", audioFileLength);
+        }
+
+        mediaDuration = -1;
+        int64_t tempDuration;
         int64_t videoDuration = videoAVFormatContext->duration / AV_TIME_BASE;
         int64_t audioDuration = audioAVFormatContext->duration / AV_TIME_BASE;
-        LOGD("initPlayer() videoDuration: %ld\n", (long) videoDuration);
-        LOGD("initPlayer() audioDuration: %ld\n", (long) audioDuration);
+        LOGD("initPlayer()   videoDuration: %lld\n", (long long) videoDuration);
+        LOGD("initPlayer()   audioDuration: %lld\n", (long long) audioDuration);
         if (videoAVFormatContext->duration > 0
             && videoAVFormatContext->duration != AV_NOPTS_VALUE) {
             // 得到的是秒数
@@ -1867,31 +1922,42 @@ namespace alexander_audio_video {
             // 得到的是秒数
             audioDuration = (audioAVFormatContext->duration + 5000) / AV_TIME_BASE;
         }
-        if (videoDuration > 0 && audioDuration > 0) {
+        if (videoDuration < 0 && audioDuration > 0) {
+            tempDuration = audioDuration;
+        } else if (videoDuration > 0 && audioDuration > 0) {
             if (videoDuration > audioDuration) {
-                videoDuration = audioDuration;
+                tempDuration = audioDuration;
             } else {
-                audioDuration = videoDuration;
+                tempDuration = videoDuration;
             }
-            int hours, mins, seconds;
-            seconds = audioDuration;
+        } else if (videoDuration > 0 && audioDuration < 0) {
+            tempDuration = videoDuration;
+        } else if (videoDuration < 0 && audioDuration < 0) {
+            tempDuration = -1;
+        }
+        mediaDuration = (long long) tempDuration;
+        if (mediaDuration > 0) {
+            long long hours, mins, seconds;
+            seconds = mediaDuration;
             mins = seconds / 60;
             seconds %= 60;
             hours = mins / 60;
             mins %= 60;
             // 00:54:16
             // 单位: 秒
-            LOGD("initPlayer() media seconds: %d\n", (int) audioDuration);
-            LOGD("initPlayer() media          %02d:%02d:%02d\n", hours, mins, seconds);
-        } else if (videoDuration < 0 && audioDuration > 0) {
-            videoDuration = audioDuration;
-        } else if (videoDuration > 0 && audioDuration < 0) {
-            audioDuration = videoDuration;
-        } else if (videoDuration < 0 && audioDuration < 0) {
-
+            LOGD("initPlayer()   media seconds: %lld\n", mediaDuration);
+            LOGD("initPlayer()   media          %02lld:%02lld:%02lld\n", hours, mins, seconds);
         }
-        audioWrapper->father->duration =
-        videoWrapper->father->duration = audioDuration;
+
+        if (videoFileLength > 0 && audioFileLength > 0) {
+            POS_DIFFERENCE = videoFileLength / mediaDuration - audioFileLength / mediaDuration;
+            LOGD("initPlayer()  POS_DIFFERENCE: %lf\n", POS_DIFFERENCE);
+        } else {
+            LOGE("initPlayer() audio or video 文件大小有问题\n");
+        }
+
+        //audioWrapper->father->duration =
+        //videoWrapper->father->duration = duration;
         onChangeWindow(videoWrapper->srcWidth, videoWrapper->srcHeight);
 
         LOGW("%s\n", "initPlayer() end");
@@ -1900,10 +1966,8 @@ namespace alexander_audio_video {
 
     void setJniParameters(JNIEnv *env, const char *filePath, jobject surfaceJavaObject) {
         LOGI("setJniParameters() start");
-        // /storage/1532-48AD/Videos/download/38289647/2/16/audio.m4s
-        // /storage/1532-48AD/Videos/download/38289647/2/16/video.m4s
+        // /storage/1532-48AD/Videos/Movies/超出你想象的深海世界.h264
 
-        isH264AAC = false;
         memset(inVideoFilePath, '\0', sizeof(inVideoFilePath));
         memset(inAudioFilePath, '\0', sizeof(inAudioFilePath));
 
@@ -1916,13 +1980,8 @@ namespace alexander_audio_video {
         //std::string audioPath = std::string();
         std::string videoPath;
         std::string audioPath;
-        if (strstr(filePath, ".m4s")) {
-            videoPath.append(savePath);
-            videoPath.append("video.m4s");
-            audioPath.append(savePath);
-            audioPath.append("audio.m4s");
-        } else if (strstr(filePath, ".h264")
-                   || strstr(filePath, ".aac")) {
+        if (strstr(filePath, ".h264")
+            || strstr(filePath, ".aac")) {
             std::string fileName = path.substr(index1 + 1, index2 - index1 - 1);
             videoPath.append(savePath);
             videoPath.append(fileName);
@@ -1930,7 +1989,6 @@ namespace alexander_audio_video {
             audioPath.append(savePath);
             audioPath.append(fileName);
             audioPath.append(".aac");
-            isH264AAC = true;
         } else {
             return;
         }
@@ -2145,13 +2203,7 @@ namespace alexander_audio_video {
 
     // 返回值单位是秒
     long getDuration() {
-        int64_t duration = -1;
-        if (audioWrapper != NULL
-            && audioWrapper->father != NULL) {
-            duration = audioWrapper->father->duration;
-        }
-
-        return duration;
+        return mediaDuration;
     }
 
     void stepAdd(int64_t addStep) {

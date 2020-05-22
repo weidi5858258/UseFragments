@@ -32,6 +32,7 @@ public class FFMPEG {
     public static final int USE_MODE_ONLY_VIDEO = 2;
     public static final int USE_MODE_ONLY_AUDIO = 3;
     public static final int USE_MODE_AUDIO_VIDEO = 4;
+    public static final int USE_MODE_AAC_H264 = 5;
 
     static {
         try {

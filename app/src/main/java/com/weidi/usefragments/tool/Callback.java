@@ -5,7 +5,7 @@ package com.weidi.usefragments.tool;
  */
 public interface Callback {
     // 生产者 消费者
-    int MSG_ON_TRANSACT_VIDEO_PRODUCER = 0x1000;
+    int MSG_ON_TRANSACT_VIDEO_PRODUCER = 0x1001;
     int MSG_ON_TRANSACT_VIDEO_CONSUMER = 0x1002;
     int MSG_ON_TRANSACT_AUDIO_PRODUCER = 0x1003;
     int MSG_ON_TRANSACT_AUDIO_CONSUMER = 0x1004;

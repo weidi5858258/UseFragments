@@ -89,6 +89,7 @@ public class PlayerWrapper {
     private boolean mIsSeparatedAudioVideo = false;
     private long mMediaDuration;
     private boolean mIsLocal = true;
+    private boolean mIsH264 = false;
     private SimpleDateFormat mSimpleDateFormat = new SimpleDateFormat("yyyyMMddHHmmss");
 
     private WindowManager mWindowManager;
@@ -228,13 +229,18 @@ public class PlayerWrapper {
         }
         mPath = path;
         mIsLocal = true;
+        mIsH264 = false;
         if (!TextUtils.isEmpty(mPath)) {
             String newPath = mPath.toLowerCase();
             if (newPath.startsWith("http://") || newPath.startsWith("https://")) {
                 mIsLocal = false;
             }
+            if (newPath.endsWith(".h264")) {
+                mIsH264 = true;
+            }
         }
         MLog.i(TAG, "setDataSource() mIsLocal: " + mIsLocal);
+        MLog.i(TAG, "setDataSource()  mIsH264: " + mIsH264);
     }
 
     public void setType(String type) {
@@ -291,9 +297,13 @@ public class PlayerWrapper {
                     long tempProgress =
                             (long) ((progress / 3840.00) * mMediaDuration);
                     mProgress = tempProgress;
-                    String elapsedTime =
-                            DateUtils.formatElapsedTime(tempProgress);
-                    mSeekTimeTV.setText(elapsedTime);
+                    if (!mIsH264) {
+                        String elapsedTime =
+                                DateUtils.formatElapsedTime(tempProgress);
+                        mSeekTimeTV.setText(elapsedTime);
+                    } else {
+                        mSeekTimeTV.setText(String.valueOf(tempProgress));
+                    }
                 }
             }
 
@@ -313,8 +323,12 @@ public class PlayerWrapper {
                     case MotionEvent.ACTION_UP:
                         mNeedToSyncProgressBar = true;
                         mSeekTimeTV.setVisibility(View.GONE);
-                        MLog.d(TAG, "onClick() mProgress: " + mProgress +
-                                " " + DateUtils.formatElapsedTime(mProgress));
+                        if (!mIsH264) {
+                            MLog.d(TAG, "MotionEvent.ACTION_UP mProgress: " + mProgress +
+                                    " " + DateUtils.formatElapsedTime(mProgress));
+                        } else {
+                            MLog.d(TAG, "MotionEvent.ACTION_UP mProgress: " + mProgress);
+                        }
                         if (mProgress >= 0 && mProgress <= mMediaDuration) {
                             mFFMPEGPlayer.seekTo(mProgress);
                         }
@@ -397,12 +411,14 @@ public class PlayerWrapper {
                 mAudioProgressBar.setProgress(((JniObject) msg.obj).valueInt);
                 break;
             case Callback.MSG_ON_TRANSACT_READY:
-                mDurationTimeTV.setText("00:00:00");
+                mProgressTimeTV.setText("");
+                mDurationTimeTV.setText("");
                 mProgressBar.setProgress(0);
                 mVideoProgressBar.setProgress(0);
                 mVideoProgressBar.setSecondaryProgress(0);
                 mAudioProgressBar.setProgress(0);
                 mAudioProgressBar.setSecondaryProgress(0);
+                mProgressBarLayout.setVisibility(View.GONE);
                 if (mService != null) {
                     mDownloadTV.setText("1");
                     boolean isMute = mSP.getBoolean(PLAYBACK_IS_MUTE, false);
@@ -436,17 +452,22 @@ public class PlayerWrapper {
                 MLog.d(TAG, "Callback.MSG_ON_CHANGE_WINDOW videoWidth: " +
                         mVideoWidth + " videoHeight: " + mVideoHeight);
                 mMediaDuration = mFFMPEGPlayer.getDuration();
-                String durationTime = DateUtils.formatElapsedTime(mMediaDuration);
-                mDurationTimeTV.setText(durationTime);
+                if (!mIsH264) {
+                    String durationTime = DateUtils.formatElapsedTime(mMediaDuration);
+                    mDurationTimeTV.setText(durationTime);
+                } else {
+                    mDurationTimeTV.setText(String.valueOf(mMediaDuration));
+                }
 
                 // 是否显示控制面板
                 if (TextUtils.isEmpty(mType)
                         || mType.startsWith("video/")) {
-                    if (mMediaDuration > 0 && mMediaDuration <= 300) {
+                    if ((mMediaDuration > 0 && mMediaDuration <= 300) || mIsH264) {
                         mControllerPanelLayout.setVisibility(View.VISIBLE);
                     } else {
                         mControllerPanelLayout.setVisibility(View.INVISIBLE);
                     }
+                    mProgressBarLayout.setVisibility(View.VISIBLE);
                 } else if (mType.startsWith("audio/")) {
                     mControllerPanelLayout.setVisibility(View.VISIBLE);
                 }
@@ -577,8 +598,12 @@ public class PlayerWrapper {
                 }
 
                 mPresentationTime = (Long) msg.obj;// 秒
-                String curElapsedTime = DateUtils.formatElapsedTime(mPresentationTime);
-                mProgressTimeTV.setText(curElapsedTime);
+                if (!mIsH264) {
+                    String curElapsedTime = DateUtils.formatElapsedTime(mPresentationTime);
+                    mProgressTimeTV.setText(curElapsedTime);
+                } else {
+                    mProgressTimeTV.setText(String.valueOf(mPresentationTime));
+                }
 
                 if (mNeedToSyncProgressBar && mMediaDuration > 0) {
                     int currentPosition = (int) (mPresentationTime);
@@ -590,6 +615,9 @@ public class PlayerWrapper {
                 if (mMediaDuration > 0) {
                     if (mPresentationTime < mMediaDuration) {
                         mPathTimeMap.put(mPath, mPresentationTime);
+                        if (mIsH264 && (mMediaDuration - mPresentationTime <= 1000000)) {
+                            mPathTimeMap.remove(mPath);
+                        }
                     } else {
                         mPathTimeMap.remove(mPath);
                     }
@@ -875,7 +903,11 @@ public class PlayerWrapper {
                         mFFMPEGPlayer.seekTo(position);
                     }
                 } else {
-                    mFFMPEGPlayer.setMode(FFMPEG.USE_MODE_AUDIO_VIDEO);
+                    if (mPath.endsWith(".m4s")) {
+                        mFFMPEGPlayer.setMode(FFMPEG.USE_MODE_AUDIO_VIDEO);
+                    } else {
+                        mFFMPEGPlayer.setMode(FFMPEG.USE_MODE_AAC_H264);
+                    }
                 }
                 mFFMPEGPlayer.setSurface(mPath, mSurfaceHolder.getSurface());
 
@@ -1008,7 +1040,7 @@ public class PlayerWrapper {
             RelativeLayout show_time_rl = mRootView.findViewById(R.id.show_time_rl);
             ImageButton button_prev = mRootView.findViewById(R.id.button_prev);
             ImageButton button_next = mRootView.findViewById(R.id.button_next);
-            if (mMediaDuration <= 0) {
+            if (mMediaDuration <= 0 && !mIsH264) {
                 progress_bar.setVisibility(View.GONE);
                 show_time_rl.setVisibility(View.GONE);
                 button_prev.setVisibility(View.INVISIBLE);
@@ -1037,11 +1069,7 @@ public class PlayerWrapper {
         mProgressBarLayoutHeight = mProgressBarLayout.getHeight();
         MLog.d(TAG, "Callback.MSG_ON_CHANGE_WINDOW     mProgressBarLayoutHeight: " +
                 mProgressBarLayoutHeight);
-        if (mIsLocal) {
-            mProgressBarLayout.setVisibility(View.GONE);
-            mProgressBarLayoutHeight = 0;
-        } else {
-            mProgressBarLayout.setVisibility(View.VISIBLE);
+        if (mProgressBarLayoutHeight > 0) {
             RelativeLayout.LayoutParams relativeParams =
                     (RelativeLayout.LayoutParams) mProgressBarLayout.getLayoutParams();
             relativeParams.setMargins(0, 0, 0, 0);
@@ -1277,10 +1305,18 @@ public class PlayerWrapper {
             switch (v.getId()) {
                 case R.id.button_prev:
                     if (mFFMPEGPlayer != null) {
-                        if (mMediaDuration > 300) {
-                            subtractStep += 30;
+                        if (!mIsH264) {
+                            if (mMediaDuration > 300) {
+                                subtractStep += 30;
+                            } else {
+                                subtractStep += 10;
+                            }
                         } else {
-                            subtractStep += 10;
+                            if (mMediaDuration > 52428800) {// 50MB
+                                subtractStep += 1048576;// 1MB
+                            } else {
+                                subtractStep += 524288;// 514KB
+                            }
                         }
                         MLog.d(TAG, "onClick() subtractStep: " + subtractStep);
                         mUiHandler.removeMessages(MSG_SEEK_TO_SUBTRACT);
@@ -1309,10 +1345,18 @@ public class PlayerWrapper {
                     break;
                 case R.id.button_next:
                     if (mFFMPEGPlayer != null) {
-                        if (mMediaDuration > 300) {
-                            addStep += 30;
+                        if (!mIsH264) {
+                            if (mMediaDuration > 300) {
+                                addStep += 30;
+                            } else {
+                                addStep += 10;
+                            }
                         } else {
-                            addStep += 10;
+                            if (mMediaDuration > 52428800) {// 50MB
+                                addStep += 1048576;// 1MB
+                            } else {
+                                addStep += 524288;// 514KB
+                            }
                         }
                         MLog.d(TAG, "onClick() addStep: " + addStep);
                         mUiHandler.removeMessages(MSG_SEEK_TO_ADD);
