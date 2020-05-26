@@ -2869,16 +2869,16 @@ namespace alexander_media {
             fseek(fq, 0, SEEK_END);
             // 获取指针地址
             fgetpos(fq, &post_end);
-            fclose(fp);
-            fp = nullptr;
-            fq = nullptr;
             // 计算文件大小
             fileLength = post_end - post_head;
             LOGI("initPlayer()    fileLength: %.0lf\n", fileLength);
+            fclose(fp);
+            fp = nullptr;
+            fq = nullptr;
         }
 
         mediaDuration = (long long) (avFormatContext->duration / AV_TIME_BASE);
-        LOGI("initPlayer() mediaDuration: %ld\n", mediaDuration);
+        LOGI("initPlayer() mediaDuration: %lld\n", mediaDuration);
         if (avFormatContext->duration != AV_NOPTS_VALUE) {
             // 得到的是秒数
             mediaDuration = (long long) ((avFormatContext->duration + 5000) / AV_TIME_BASE);
@@ -2891,7 +2891,7 @@ namespace alexander_media {
             // 00:54:16
             // 单位: 秒
             LOGI("initPlayer() media seconds: %lld\n", mediaDuration);
-            LOGI("initPlayer() media          %02d:%02d:%02d\n", hours, mins, seconds);
+            LOGI("initPlayer() media          %02lld:%02lld:%02lld\n", hours, mins, seconds);
         }
         switch (use_mode) {
             case USE_MODE_MEDIA: {

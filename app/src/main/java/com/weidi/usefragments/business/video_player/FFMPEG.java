@@ -7,8 +7,8 @@ import android.media.AudioTrack;
 import android.os.Build;
 import android.os.Handler;
 import android.os.Message;
+import android.os.Parcel;
 import android.os.SystemClock;
-import android.view.Surface;
 
 import com.weidi.usefragments.media.MediaUtils;
 import com.weidi.usefragments.tool.Callback;
@@ -27,12 +27,6 @@ public class FFMPEG {
     private static final String TAG =
             "player_alexander";
     //FFMPEG.class.getSimpleName();
-
-    public static final int USE_MODE_MEDIA = 1;
-    public static final int USE_MODE_ONLY_VIDEO = 2;
-    public static final int USE_MODE_ONLY_AUDIO = 3;
-    public static final int USE_MODE_AUDIO_VIDEO = 4;
-    public static final int USE_MODE_AAC_H264 = 5;
 
     static {
         try {
@@ -80,62 +74,69 @@ public class FFMPEG {
     public static final JniObject audioProducer = new JniObject();
     public static final JniObject audioConsumer = new JniObject();
 
-    public static final int do_something_code_set_mode = 1000;
+    public static final int USE_MODE_MEDIA = 1;
+    public static final int USE_MODE_ONLY_VIDEO = 2;
+    public static final int USE_MODE_ONLY_AUDIO = 3;
+    public static final int USE_MODE_AUDIO_VIDEO = 4;
+    public static final int USE_MODE_AAC_H264 = 5;
+
     // 0(开始下载,边播放边下) 1(停止下载) 2(只下载音频,暂时不用) 3(只下载视频,暂时不用)
     // 4(只下载,不播放.不调用seekTo) 5(只提取音视频,不播放.调用seekTo到0)
-    public static final int DO_SOMETHING_CODE_DOWNLOAD = 1100;
-    public static final int DO_SOMETHING_CODE_DOWNLOAD_AUDIO = 1101;
-    public static final int DO_SOMETHING_CODE_DOWNLOAD_VIDEO = 1102;
-
-    public native int onTransact(int code, JniObject jniObject);
-
-    public native void setMode(int mode);
-
-    // 首先调用
-    public native int setSurface(String filePath, Surface surface);
-
-    public native int setCallback(Callback callback);
-
-    // 子线程
-    public native int initPlayer();
-
-    // 子线程
-    public native int readData();
-
-    // 子线程
-    public native int audioHandleData();
-
-    // 子线程
-    public native int videoHandleData();
-
-    public native int play();
-
-    public native int pause();
-
-    public native int stop();
-
-    public native int release();
-
-    public native boolean isRunning();
-
-    public native boolean isPlaying();
-
-    public native boolean isPausedForUser();
-
-    // 快进
-    public native void stepAdd(long addStep);
-
-    // 快退
-    public native void stepSubtract(long subtractStep);
-
+    public static final int DO_SOMETHING_CODE_init = 1099;
+    public static final int DO_SOMETHING_CODE_setMode = 1100;
+    public static final int DO_SOMETHING_CODE_setCallback = 1101;
+    public static final int DO_SOMETHING_CODE_setSurface = 1102;
+    public static final int DO_SOMETHING_CODE_initPlayer = 1103;
+    public static final int DO_SOMETHING_CODE_readData = 1104;
+    public static final int DO_SOMETHING_CODE_audioHandleData = 1105;
+    public static final int DO_SOMETHING_CODE_videoHandleData = 1106;
+    public static final int DO_SOMETHING_CODE_play = 1107;
+    public static final int DO_SOMETHING_CODE_pause = 1108;
+    public static final int DO_SOMETHING_CODE_stop = 1109;
+    public static final int DO_SOMETHING_CODE_release = 1110;
+    public static final int DO_SOMETHING_CODE_isRunning = 1111;
+    public static final int DO_SOMETHING_CODE_isPlaying = 1112;
+    public static final int DO_SOMETHING_CODE_isPausedForUser = 1113;
+    public static final int DO_SOMETHING_CODE_stepAdd = 1114;
+    public static final int DO_SOMETHING_CODE_stepSubtract = 1115;
     // 单位: 秒
-    public native int seekTo(long timestamp);
-
+    public static final int DO_SOMETHING_CODE_seekTo = 1116;
     // 单位: 秒
-    public native long getDuration();
+    public static final int DO_SOMETHING_CODE_getDuration = 1117;
+    public static final int DO_SOMETHING_CODE_download = 1118;
+    public static final int DO_SOMETHING_CODE_closeJni = 1119;
+
+    //status_t onTransact(uint32_t code, const Parcel& data, Parcel* reply, uint32_t flags = 0)
+    // 从上面调到下面只定义这一个方法
+    public native String onTransact(int code, Parcel data, Parcel reply);
+
+    /*public int onTransact(int code, Parcel data, Parcel reply) {
+        MLog.i(TAG, "onTransact() code: " + code);
+        data.setDataPosition(0);
+        Surface surface = data.readParcelable(Surface.class.getClassLoader());
+        MLog.i(TAG, "onTransact() surface: " + surface);
+        JniObject jniObject = (JniObject) data.readValue(JniObject.class.getClassLoader());
+        MLog.i(TAG, "onTransact() valueInt: " + jniObject.valueInt+
+        " valueString: "+jniObject.valueString);
+        return 0;
+    }*/
+
+    /***
+     Parcel data;
+     // 写字符串数组
+     data.writeStringArray(new String[]{"1","2","3","4"});
+     // 读字符串数组(不要使用readStringArray(String[] val))
+     String[] strs = data.createStringArray();
+     */
+
+    /*JniObject jniObject = new JniObject();
+    jniObject.valueStringArray = new String[]{"1", "", ""};
+    mFFMPEGPlayer.onTransact(FFMPEG.DO_SOMETHING_CODE_DOWNLOAD, jniObject);*/
+    // 备用方案
+    // public native int onTransact2(int code, JniObject jniObject);
 
     public void releaseAll() {
-        release();
+        onTransact(DO_SOMETHING_CODE_release, null, null);
         MediaUtils.releaseAudioTrack(mAudioTrack);
     }
 
@@ -223,6 +224,11 @@ public class FFMPEG {
 
     // 供jni层调用(底层信息才是通过这个接口反映到java层的)
     public Callback mCallback = new Callback() {
+        @Override
+        public int onTransact(int code, Parcel data, Parcel reply) {
+            return 0;
+        }
+
         @Override
         public int onTransact(int code, JniObject jniObject) {
             //MLog.i(TAG, "onTransact() code: " + code + " " + jniObject.toString());

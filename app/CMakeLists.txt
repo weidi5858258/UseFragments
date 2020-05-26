@@ -4,6 +4,7 @@
 # 3.各个子目录的路径
 
 cmake_minimum_required(VERSION 3.4.1)
+#add_definitions(-std=c++11)
 
 # set(CMAKE_CXX_FLAGS "-Wno-error=format-security -Wno-error=pointer-sign"
 

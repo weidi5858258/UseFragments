@@ -14,6 +14,30 @@ enum {
 };
 
 enum {
+    DO_SOMETHING_CODE_init = 1099,
+    DO_SOMETHING_CODE_setMode = 1100,
+    DO_SOMETHING_CODE_setCallback = 1101,
+    DO_SOMETHING_CODE_setSurface = 1102,
+    DO_SOMETHING_CODE_initPlayer = 1103,
+    DO_SOMETHING_CODE_readData = 1104,
+    DO_SOMETHING_CODE_audioHandleData = 1105,
+    DO_SOMETHING_CODE_videoHandleData = 1106,
+    DO_SOMETHING_CODE_play = 1107,
+    DO_SOMETHING_CODE_pause = 1108,
+    DO_SOMETHING_CODE_stop = 1109,
+    DO_SOMETHING_CODE_release = 1110,
+    DO_SOMETHING_CODE_isRunning = 1111,
+    DO_SOMETHING_CODE_isPlaying = 1112,
+    DO_SOMETHING_CODE_isPausedForUser = 1113,
+    DO_SOMETHING_CODE_stepAdd = 1114,
+    DO_SOMETHING_CODE_stepSubtract = 1115,
+    DO_SOMETHING_CODE_seekTo = 1116,
+    DO_SOMETHING_CODE_getDuration = 1117,
+    DO_SOMETHING_CODE_download = 1118,
+    DO_SOMETHING_CODE_closeJni = 1119
+};
+
+enum {
     MSG_ON_TRANSACT_VIDEO_PRODUCER = 0x1001,
     MSG_ON_TRANSACT_VIDEO_CONSUMER = 0x1002,
     MSG_ON_TRANSACT_AUDIO_PRODUCER = 0x1003,

@@ -179,7 +179,7 @@ public class JniPlayerActivity2 extends BaseActivity {
 
                     // Test
                     FFMPEG ffmpeg = null;//new FFMPEG();
-                    ffmpeg.setSurface("/storage/2430-1702/BaiduNetdisk/video/05.mp4", mSurface);
+                    //ffmpeg.setSurface("/storage/2430-1702/BaiduNetdisk/video/05.mp4", mSurface);
 
                     /*int videoResult = ffmpeg.initVideo();
                     int audioResult = ffmpeg.initAudio();

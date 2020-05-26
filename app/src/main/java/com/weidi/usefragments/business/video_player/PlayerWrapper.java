@@ -14,6 +14,7 @@ import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Looper;
 import android.os.Message;
+import android.os.Parcel;
 import android.os.PowerManager;
 import android.os.SystemClock;
 import android.text.TextUtils;
@@ -47,6 +48,8 @@ import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
+
+import static com.weidi.usefragments.business.video_player.FFMPEG.*;
 
 import static com.weidi.usefragments.service.DownloadFileService.PREFERENCES_NAME;
 
@@ -146,6 +149,9 @@ public class PlayerWrapper {
 
     private boolean mIsPhoneDevice;
     private boolean mIsPortraitScreen;
+
+    private Parcel data = Parcel.obtain();
+    private Parcel reply = Parcel.obtain();
 
     // 必须首先被调用
     public void setActivity(Activity activity, Service service) {
@@ -330,7 +336,12 @@ public class PlayerWrapper {
                             MLog.d(TAG, "MotionEvent.ACTION_UP mProgress: " + mProgress);
                         }
                         if (mProgress >= 0 && mProgress <= mMediaDuration) {
-                            mFFMPEGPlayer.seekTo(mProgress);
+                            data = Parcel.obtain();
+                            reply = Parcel.obtain();
+                            data.writeLong(mProgress);
+                            mFFMPEGPlayer.onTransact(DO_SOMETHING_CODE_seekTo, data, reply);
+                            data.recycle();
+                            reply.recycle();
                         }
                         break;
                     case MotionEvent.ACTION_MOVE:
@@ -451,7 +462,9 @@ public class PlayerWrapper {
                 mVideoHeight = msg.arg2;
                 MLog.d(TAG, "Callback.MSG_ON_CHANGE_WINDOW videoWidth: " +
                         mVideoWidth + " videoHeight: " + mVideoHeight);
-                mMediaDuration = mFFMPEGPlayer.getDuration();
+                mMediaDuration = Long.parseLong(
+                        mFFMPEGPlayer.onTransact(
+                                DO_SOMETHING_CODE_getDuration, null, null));
                 if (!mIsH264) {
                     String durationTime = DateUtils.formatElapsedTime(mMediaDuration);
                     mDurationTimeTV.setText(durationTime);
@@ -668,13 +681,13 @@ public class PlayerWrapper {
                 ThreadPool.getFixedThreadPool().execute(new Runnable() {
                     @Override
                     public void run() {
-                        mFFMPEGPlayer.audioHandleData();
+                        sendEmptyMessage(DO_SOMETHING_CODE_audioHandleData);
                     }
                 });
                 ThreadPool.getFixedThreadPool().execute(new Runnable() {
                     @Override
                     public void run() {
-                        mFFMPEGPlayer.videoHandleData();
+                        sendEmptyMessage(DO_SOMETHING_CODE_videoHandleData);
                     }
                 });
 
@@ -683,27 +696,37 @@ public class PlayerWrapper {
                         @Override
                         public void run() {
                             SystemClock.sleep(500);
-                            mFFMPEGPlayer.readData();
+                            sendEmptyMessage(DO_SOMETHING_CODE_readData);
                         }
                     });
                     ThreadPool.getFixedThreadPool().execute(new Runnable() {
                         @Override
                         public void run() {
                             SystemClock.sleep(1000);
-                            mFFMPEGPlayer.readData();
+                            sendEmptyMessage(DO_SOMETHING_CODE_readData);
                         }
                     });
                 }
                 break;
             case MSG_SEEK_TO_ADD:
                 if (mFFMPEGPlayer != null) {
-                    mFFMPEGPlayer.stepAdd(addStep);
+                    data = Parcel.obtain();
+                    reply = Parcel.obtain();
+                    data.writeLong(addStep);
+                    mFFMPEGPlayer.onTransact(DO_SOMETHING_CODE_stepAdd, data, reply);
+                    data.recycle();
+                    reply.recycle();
                 }
                 addStep = 0;
                 break;
             case MSG_SEEK_TO_SUBTRACT:
                 if (mFFMPEGPlayer != null) {
-                    mFFMPEGPlayer.stepSubtract(subtractStep);
+                    data = Parcel.obtain();
+                    reply = Parcel.obtain();
+                    data.writeLong(subtractStep);
+                    mFFMPEGPlayer.onTransact(DO_SOMETHING_CODE_stepSubtract, data, reply);
+                    data.recycle();
+                    reply.recycle();
                 }
                 subtractStep = 0;
                 break;
@@ -743,11 +766,12 @@ public class PlayerWrapper {
                             }
                         });
                         // 停止下载
-                        JniObject jniObject = new JniObject();
-                        jniObject.valueStringArray = new String[]{"1", "", ""};
+                        Parcel data = Parcel.obtain();
+                        data.writeInt(1);
+                        data.writeStringArray(new String[]{"", ""});
                         mFFMPEGPlayer.onTransact(
-                                FFMPEG.DO_SOMETHING_CODE_DOWNLOAD,
-                                jniObject);
+                                DO_SOMETHING_CODE_download,
+                                data, Parcel.obtain());
                         break;
                     case 2:
                     case 3:
@@ -783,11 +807,12 @@ public class PlayerWrapper {
                                 }
                             });
                             // 开始下载,边播放边下
-                            jniObject = new JniObject();
-                            jniObject.valueStringArray = new String[]{"0", path, sb.toString()};
+                            data = Parcel.obtain();
+                            data.writeInt(0);
+                            data.writeStringArray(new String[]{path, sb.toString()});
                             mFFMPEGPlayer.onTransact(
-                                    FFMPEG.DO_SOMETHING_CODE_DOWNLOAD,
-                                    jniObject);
+                                    DO_SOMETHING_CODE_download,
+                                    data, Parcel.obtain());
                         } else {
                             mUiHandler.post(new Runnable() {
                                 @Override
@@ -807,18 +832,20 @@ public class PlayerWrapper {
                             });
                             if (mDownloadClickCounts == 3) {
                                 // 只下载,不播放.不调用seekTo
-                                jniObject = new JniObject();
-                                jniObject.valueStringArray = new String[]{"4", path, sb.toString()};
+                                data = Parcel.obtain();
+                                data.writeInt(4);
+                                data.writeStringArray(new String[]{path, sb.toString()});
                                 mFFMPEGPlayer.onTransact(
-                                        FFMPEG.DO_SOMETHING_CODE_DOWNLOAD,
-                                        jniObject);
+                                        DO_SOMETHING_CODE_download,
+                                        data, Parcel.obtain());
                             } else {
                                 // 只提取音视频,不播放.调用seekTo到0
-                                jniObject = new JniObject();
-                                jniObject.valueStringArray = new String[]{"5", path, sb.toString()};
+                                data = Parcel.obtain();
+                                data.writeInt(5);
+                                data.writeStringArray(new String[]{path, sb.toString()});
                                 mFFMPEGPlayer.onTransact(
-                                        FFMPEG.DO_SOMETHING_CODE_DOWNLOAD,
-                                        jniObject);
+                                        DO_SOMETHING_CODE_download,
+                                        data, Parcel.obtain());
                             }
                         }
                         break;
@@ -844,12 +871,14 @@ public class PlayerWrapper {
         mSurfaceHolder.setFormat(PixelFormat.RGBA_8888);
         // 底层有关参数的设置
         mFFMPEGPlayer.setHandler(mUiHandler);
-        mFFMPEGPlayer.setCallback(mFFMPEGPlayer.mCallback);
+        //mFFMPEGPlayer.setCallback(mFFMPEGPlayer.mCallback);
 
         // 开启线程初始化ffmpeg
         ThreadPool.getFixedThreadPool().execute(new Runnable() {
             @Override
             public void run() {
+                sendEmptyMessage(DO_SOMETHING_CODE_init);
+
                 mIsSeparatedAudioVideo = false;
                 String tempPath = "";
                 MLog.d(TAG, "startPlayback()                  mPath: " + mPath);
@@ -891,27 +920,51 @@ public class PlayerWrapper {
 
                 MLog.d(TAG, "startPlayback() mIsSeparatedAudioVideo: " + mIsSeparatedAudioVideo);
                 if (!mIsSeparatedAudioVideo) {
+                    data = Parcel.obtain();
+                    reply = Parcel.obtain();
                     if (TextUtils.isEmpty(mType)
                             || mType.startsWith("video/")) {
-                        mFFMPEGPlayer.setMode(FFMPEG.USE_MODE_MEDIA);
+                        data.writeInt(USE_MODE_MEDIA);
                     } else if (mType.startsWith("audio/")) {
-                        mFFMPEGPlayer.setMode(FFMPEG.USE_MODE_ONLY_AUDIO);
+                        data.writeInt(USE_MODE_ONLY_AUDIO);
                     }
+                    mFFMPEGPlayer.onTransact(DO_SOMETHING_CODE_setMode, data, reply);
+                    data.recycle();
+                    reply.recycle();
+
                     if (mPathTimeMap.containsKey(mPath)) {
                         long position = mPathTimeMap.get(mPath);
                         MLog.d(TAG, "startPlayback()               position: " + position);
-                        mFFMPEGPlayer.seekTo(position);
+                        data = Parcel.obtain();
+                        reply = Parcel.obtain();
+                        data.writeLong(position);
+                        mFFMPEGPlayer.onTransact(DO_SOMETHING_CODE_seekTo, data, reply);
+                        data.recycle();
+                        reply.recycle();
                     }
                 } else {
+                    data = Parcel.obtain();
+                    reply = Parcel.obtain();
                     if (mPath.endsWith(".m4s")) {
-                        mFFMPEGPlayer.setMode(FFMPEG.USE_MODE_AUDIO_VIDEO);
+                        data.writeInt(USE_MODE_AUDIO_VIDEO);
                     } else {
-                        mFFMPEGPlayer.setMode(FFMPEG.USE_MODE_AAC_H264);
+                        data.writeInt(USE_MODE_AAC_H264);
                     }
+                    mFFMPEGPlayer.onTransact(DO_SOMETHING_CODE_setMode, data, reply);
+                    data.recycle();
+                    reply.recycle();
                 }
-                mFFMPEGPlayer.setSurface(mPath, mSurfaceHolder.getSurface());
 
-                if (mFFMPEGPlayer.initPlayer() != 0) {
+                Parcel data = Parcel.obtain();
+                Parcel reply = Parcel.obtain();
+                data.writeString(mPath);
+                data.writeParcelable(mSurfaceHolder.getSurface(), 0);
+                mFFMPEGPlayer.onTransact(DO_SOMETHING_CODE_setSurface, data, reply);
+                data.recycle();
+                reply.recycle();
+
+                if (Integer.parseInt(mFFMPEGPlayer.onTransact(
+                        DO_SOMETHING_CODE_initPlayer, null, null)) != 0) {
                     // 不在这里做事了.遇到error会从底层回调到java端的
                     //MyToast.show("音视频初始化失败");
                     //mUiHandler.removeMessages(Callback.MSG_ON_ERROR);
@@ -927,7 +980,7 @@ public class PlayerWrapper {
                 mUiHandler.sendEmptyMessage(MSG_START_PLAYBACK);
                 if (!mIsSeparatedAudioVideo) {
                     SystemClock.sleep(500);
-                    mFFMPEGPlayer.readData();
+                    sendEmptyMessage(DO_SOMETHING_CODE_readData);
                 }
             }
         });
@@ -1325,21 +1378,24 @@ public class PlayerWrapper {
                     break;
                 case R.id.button_play:
                     if (mFFMPEGPlayer != null) {
-                        if (mFFMPEGPlayer.isRunning()) {
-                            if (mFFMPEGPlayer.isPlaying()) {
+                        if (Boolean.parseBoolean(mFFMPEGPlayer.onTransact(
+                                DO_SOMETHING_CODE_isRunning, null, null))) {
+                            if (Boolean.parseBoolean(mFFMPEGPlayer.onTransact(
+                                    DO_SOMETHING_CODE_isPlaying, null, null))) {
                                 mPlayIB.setVisibility(View.GONE);
                                 mPauseIB.setVisibility(View.VISIBLE);
-                                mFFMPEGPlayer.pause();
+                                sendEmptyMessage(DO_SOMETHING_CODE_pause);
                             }
                         }
                     }
                     break;
                 case R.id.button_pause:
                     if (mFFMPEGPlayer != null) {
-                        if (!mFFMPEGPlayer.isPlaying()) {
+                        if (!Boolean.parseBoolean(mFFMPEGPlayer.onTransact(
+                                DO_SOMETHING_CODE_isPlaying, null, null))) {
                             mPlayIB.setVisibility(View.VISIBLE);
                             mPauseIB.setVisibility(View.GONE);
-                            mFFMPEGPlayer.play();
+                            sendEmptyMessage(DO_SOMETHING_CODE_play);
                         }
                     }
                     break;
@@ -1376,13 +1432,13 @@ public class PlayerWrapper {
                 case R.id.volume_normal:
                     mVolumeNormal.setVisibility(View.GONE);
                     mVolumeMute.setVisibility(View.VISIBLE);
-                    mFFMPEGPlayer.setVolume(FFMPEG.VOLUME_MUTE);
+                    mFFMPEGPlayer.setVolume(VOLUME_MUTE);
                     mSP.edit().putBoolean(PLAYBACK_IS_MUTE, true).commit();
                     break;
                 case R.id.volume_mute:
                     mVolumeNormal.setVisibility(View.VISIBLE);
                     mVolumeMute.setVisibility(View.GONE);
-                    mFFMPEGPlayer.setVolume(FFMPEG.VOLUME_NORMAL);
+                    mFFMPEGPlayer.setVolume(VOLUME_NORMAL);
                     mSP.edit().putBoolean(PLAYBACK_IS_MUTE, false).commit();
                     break;
                 case R.id.download_tv:
@@ -1409,15 +1465,17 @@ public class PlayerWrapper {
     private void clickTwo() {
         // 播放与暂停
         if (mFFMPEGPlayer != null) {
-            if (mFFMPEGPlayer.isRunning()) {
-                if (mFFMPEGPlayer.isPlaying()) {
+            if (Boolean.parseBoolean(mFFMPEGPlayer.onTransact(
+                    DO_SOMETHING_CODE_isRunning, null, null))) {
+                if (Boolean.parseBoolean(mFFMPEGPlayer.onTransact(
+                        DO_SOMETHING_CODE_isPlaying, null, null))) {
                     mPlayIB.setVisibility(View.GONE);
                     mPauseIB.setVisibility(View.VISIBLE);
-                    mFFMPEGPlayer.pause();
+                    sendEmptyMessage(DO_SOMETHING_CODE_pause);
                 } else {
                     mPlayIB.setVisibility(View.VISIBLE);
                     mPauseIB.setVisibility(View.GONE);
-                    mFFMPEGPlayer.play();
+                    sendEmptyMessage(DO_SOMETHING_CODE_play);
                 }
             }
         }
@@ -1501,13 +1559,21 @@ public class PlayerWrapper {
         return isPhoneDevice;
     }
 
+    private void sendEmptyMessage(int code) {
+        if (mFFMPEGPlayer != null) {
+            mFFMPEGPlayer.onTransact(code, null, null);
+        }
+    }
+
     public void pausePlayerWithTelephonyCall() {
         if (mFFMPEGPlayer != null) {
-            if (mFFMPEGPlayer.isRunning()) {
-                if (mFFMPEGPlayer.isPlaying()) {
+            if (Boolean.parseBoolean(mFFMPEGPlayer.onTransact(
+                    DO_SOMETHING_CODE_isRunning, null, null))) {
+                if (Boolean.parseBoolean(mFFMPEGPlayer.onTransact(
+                        DO_SOMETHING_CODE_isPlaying, null, null))) {
                     mPlayIB.setVisibility(View.GONE);
                     mPauseIB.setVisibility(View.VISIBLE);
-                    mFFMPEGPlayer.pause();
+                    sendEmptyMessage(DO_SOMETHING_CODE_pause);
                 }
             }
         }

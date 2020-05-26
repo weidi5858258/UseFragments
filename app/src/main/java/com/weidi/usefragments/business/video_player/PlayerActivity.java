@@ -8,6 +8,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
+import android.os.Parcel;
 import android.os.PowerManager;
 import android.text.format.DateUtils;
 import android.util.Log;
@@ -430,6 +431,11 @@ public class PlayerActivity extends BaseActivity {
 
     private Callback mCallback = new Callback() {
         private boolean onlyOne = true;
+
+        @Override
+        public int onTransact(int code, Parcel data, Parcel reply) {
+            return 0;
+        }
 
         @Override
         public int onTransact(int code, JniObject jniObject) {

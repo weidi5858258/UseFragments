@@ -97,7 +97,7 @@ public class JniMusicService extends Service {
         EventBusUtils.register(this);
         registerHeadsetPlugReceiver();
 
-        mFFMPEGPlayer.setCallback(mFFMPEGPlayer.mCallback);
+        //mFFMPEGPlayer.setCallback(mFFMPEGPlayer.mCallback);
 
         mThreadHandler.removeMessages(MSG_CREATE_PLAYBACKQUEUE);
         mThreadHandler.sendEmptyMessage(MSG_CREATE_PLAYBACKQUEUE);
@@ -236,11 +236,11 @@ public class JniMusicService extends Service {
         if (progress < 0) {
             return;
         }
-        mFFMPEGPlayer.seekTo(progress);
+        //mFFMPEGPlayer.seekTo(progress);
     }
 
     public long getDuration() {
-        return mFFMPEGPlayer.getDuration();
+        return 0;//mFFMPEGPlayer.getDuration();
     }
 
     public void play() {
@@ -284,11 +284,11 @@ public class JniMusicService extends Service {
     }
 
     public boolean isPlaying() {
-        return mFFMPEGPlayer.isPlaying();
+        return false;//mFFMPEGPlayer.isPlaying();
     }
 
     public boolean isRunning() {
-        return mFFMPEGPlayer.isRunning();
+        return false;//mFFMPEGPlayer.isRunning();
     }
 
     private void threadHandleMessage(Message msg) {
@@ -388,14 +388,14 @@ public class JniMusicService extends Service {
                 break;
             case MSG_THREAD_START_COMMAND:
                 mPath = mSP.getString(PATH, null);
-                if (!mFFMPEGPlayer.isRunning()) {
+                /*if (!mFFMPEGPlayer.isRunning()) {
                     if (!TextUtils.isEmpty(mPath)) {
-                        /*mThreadHandler.removeMessages(MSG_PREPARE);
-                        mThreadHandler.sendEmptyMessage(MSG_PREPARE);*/
+                        *//*mThreadHandler.removeMessages(MSG_PREPARE);
+                        mThreadHandler.sendEmptyMessage(MSG_PREPARE);*//*
                     } else {
                         mPath = mPlaybackQueue.next();
                     }
-                }
+                }*/
                 break;
             default:
                 break;
@@ -413,7 +413,7 @@ public class JniMusicService extends Service {
                 new Thread(new Runnable() {
                     @Override
                     public void run() {
-                        mFFMPEGPlayer.readData();
+                        //mFFMPEGPlayer.readData();
                     }
                 }).start();
                 break;
@@ -422,7 +422,7 @@ public class JniMusicService extends Service {
                 new Thread(new Runnable() {
                     @Override
                     public void run() {
-                        mFFMPEGPlayer.audioHandleData();
+                        //mFFMPEGPlayer.audioHandleData();
                     }
                 }).start();
                 break;
@@ -440,34 +440,34 @@ public class JniMusicService extends Service {
 
         mSP.edit().putString(PATH, mPath).apply();
         MLog.i(TAG, "internalPrepare() start");
-        mFFMPEGPlayer.setMode(FFMPEG.USE_MODE_ONLY_AUDIO);
+        /*mFFMPEGPlayer.setMode(FFMPEG.USE_MODE_ONLY_AUDIO);
         mFFMPEGPlayer.setSurface(mPath, null);
         if (mFFMPEGPlayer.initPlayer() < 0) {
             MLog.e(TAG, "internalPrepare() end error");
             return false;
-        }
+        }*/
         MLog.i(TAG, "internalPrepare() end");
 
         return true;
     }
 
     private void internalPlay() {
-        if (mFFMPEGPlayer.isRunning()
+        /*if (mFFMPEGPlayer.isRunning()
                 && !mFFMPEGPlayer.isPlaying()) {
             mFFMPEGPlayer.play();
-        }
+        }*/
     }
 
     private void internalPause() {
-        if (mFFMPEGPlayer.isRunning()
+        /*if (mFFMPEGPlayer.isRunning()
                 && mFFMPEGPlayer.isPlaying()) {
             mFFMPEGPlayer.pause();
-        }
+        }*/
     }
 
     private void internalStop() {
         MLog.d(TAG, "internalStop() start");
-        mFFMPEGPlayer.stop();
+        //mFFMPEGPlayer.stop();
         MLog.d(TAG, "internalStop() end");
     }
 

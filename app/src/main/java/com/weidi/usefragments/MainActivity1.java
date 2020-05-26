@@ -14,6 +14,7 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
+import android.os.Parcel;
 import android.os.PowerManager;
 import android.provider.Settings;
 import android.support.annotation.RequiresApi;
@@ -40,6 +41,7 @@ import com.weidi.usefragments.business.media.ThrowingScreenFragment;
 import com.weidi.usefragments.business.media.VideoLiveBroadcastingFragment;
 import com.weidi.usefragments.business.medical_record.MedicalRecordFragment;
 import com.weidi.usefragments.business.test_horizontal_card.HorizontalCardFragment;
+import com.weidi.usefragments.business.video_player.FFMPEG;
 import com.weidi.usefragments.business.video_player.PlayerService;
 import com.weidi.usefragments.fragment.FragOperManager;
 import com.weidi.usefragments.fragment.base.BaseFragment;
@@ -289,6 +291,7 @@ public class MainActivity1 extends BaseActivity
         Log.d(TAG, "onCreate() stringFromJNI(): " + stringFromJNI());
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             //test();
+            //test2();
         }
     }
 
@@ -1017,6 +1020,18 @@ public class MainActivity1 extends BaseActivity
             intent.setData(Uri.parse("package:tv.danmaku.bili"));
             startActivity(intent);
         }*/
+    }
+
+    private void test2() {
+        Parcel data = Parcel.obtain();
+        Parcel reply = Parcel.obtain();
+        data.writeInt(100);
+        data.writeByte((byte) 10);
+        data.writeFloat(10.1f);
+        data.writeDouble(10.5);
+        data.writeLong(99999);
+        data.writeString("55555");
+        FFMPEG.getDefault().onTransact(-1000, data, reply);
     }
 
 }
