@@ -1023,7 +1023,7 @@ public class MainActivity1 extends BaseActivity
     }
 
     private void test2() {
-        Parcel data = Parcel.obtain();
+        /*Parcel data = Parcel.obtain();
         Parcel reply = Parcel.obtain();
         data.writeInt(100);
         data.writeByte((byte) 10);
@@ -1031,7 +1031,7 @@ public class MainActivity1 extends BaseActivity
         data.writeDouble(10.5);
         data.writeLong(99999);
         data.writeString("55555");
-        FFMPEG.getDefault().onTransact(-1000, data, reply);
+        FFMPEG.getDefault().onTransact(-1000, data, reply);*/
     }
 
 }

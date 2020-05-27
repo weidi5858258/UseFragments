@@ -47,6 +47,24 @@
     每个方法里至少有两个参数,即:
     JNIEnv *env和jobject ffmpegObject
     其中jobject ffmpegObject代表java层定义setSurface方法的类对象.
+
+    jobject data;
+    jclass class_jclass = env->FindClass("java/lang/Class");
+    jmethodID forName_jmethodID = env->GetStaticMethodID(
+            class_jclass, "forName", "(Ljava/lang/String;)Ljava/lang/Class;");
+    jstring surface_jstring = env->NewStringUTF("android.view.Surface");
+    jobject class_jobject = env->CallStaticObjectMethod(
+            class_jclass, forName_jmethodID, surface_jstring);
+    jmethodID getClassLoader_jmethodID = env->GetMethodID(
+            class_jclass, "getClassLoader", "()Ljava/lang/ClassLoader;");
+    // ClassLoader classLoader = Surface.class.getClassLoader()
+    jobject classLoader_jobject = env->CallObjectMethod(
+            class_jobject, getClassLoader_jmethodID);
+    // 从data中读出Surface对象
+    jmethodID readParcelable_jmethodID = env->GetMethodID(
+            parcel_jclass, "readParcelable", "(Ljava/lang/ClassLoader;)Landroid/os/Parcelable;");
+    jobject surfaceObject = env->CallObjectMethod(
+            data, readParcelable_jmethodID, classLoader_jobject);
  */
 
 // 这个值在任何情况下都不要置为"NULL"
@@ -59,26 +77,19 @@ jmethodID createAudioTrackMethodID = nullptr;
 jmethodID writeMethodID = nullptr;
 jmethodID sleepMethodID = nullptr;
 
-jclass parcel_jclass = nullptr;
-jmethodID recycle_jmethodID = nullptr;
-jmethodID setDataPosition_jmethodID = nullptr;
-jmethodID createStringArray_jmethodID = nullptr;
-// write
-jmethodID writeByte_jmethodID = nullptr;
-jmethodID writeInt_jmethodID = nullptr;
-jmethodID writeLong_jmethodID = nullptr;
-jmethodID writeFloat_jmethodID = nullptr;
-jmethodID writeDouble_jmethodID = nullptr;
-jmethodID writeString_jmethodID = nullptr;
-// read
-jmethodID readByte_jmethodID = nullptr;
-jmethodID readInt_jmethodID = nullptr;
-jmethodID readLong_jmethodID = nullptr;
-jmethodID readFloat_jmethodID = nullptr;
-jmethodID readDouble_jmethodID = nullptr;
-jmethodID readString_jmethodID = nullptr;
+jclass jniObject_jclass = nullptr;
+jfieldID valueObject_jfieldID = nullptr;
+jfieldID valueString_jfieldID = nullptr;
+jfieldID valueInt_jfieldID = nullptr;
+jfieldID valueLong_jfieldID = nullptr;
+jfieldID valueByte_jfieldID = nullptr;
+jfieldID valueBoolean_jfieldID = nullptr;
+jfieldID valueFloat_jfieldID = nullptr;
+jfieldID valueDouble_jfieldID = nullptr;
+jfieldID valueChar_jfieldID = nullptr;
+jfieldID valueShort_jfieldID = nullptr;
+jfieldID valueStringArray_jfieldID = nullptr;
 
-jclass jniObjectClass = nullptr;
 jobject videoProducerObject = nullptr;
 jobject videoConsumerObject = nullptr;
 jobject audioProducerObject = nullptr;
@@ -210,13 +221,9 @@ void closeJni() {
         env->DeleteGlobalRef(audioConsumerObject);
         audioConsumerObject = nullptr;
     }
-    if (jniObjectClass) {
-        env->DeleteGlobalRef(jniObjectClass);
-        jniObjectClass = nullptr;
-    }
-    if (parcel_jclass) {
-        env->DeleteGlobalRef(parcel_jclass);
-        parcel_jclass = nullptr;
+    if (jniObject_jclass) {
+        env->DeleteGlobalRef(jniObject_jclass);
+        jniObject_jclass = nullptr;
     }
     if (isAttached) {
         gJavaVm->DetachCurrentThread();
@@ -275,8 +282,7 @@ int onLoadProgressUpdated(int code, int progress) {
                 break;
         }
         if (jniObject) {
-            jfieldID valueIntFieldId = jniEnv->GetFieldID(jniObjectClass, "valueInt", "I");
-            jniEnv->SetIntField(*jniObject, valueIntFieldId, progress);
+            jniEnv->SetIntField(*jniObject, valueInt_jfieldID, progress);
             jniEnv->CallIntMethod(
                     callback_jobject, callback.onTransactMethodID, code, *jniObject);
         }
@@ -465,7 +471,7 @@ static int type;
 static int COUNTS = 1;
 
 static jint onTransact_init(JNIEnv *env, jobject ffmpegObject,
-                            jint code, jobject data, jobject reply) {
+                            jint code, jobject jniObject) {
     if (ffmpegJavaObject != nullptr) {
         env->DeleteGlobalRef(ffmpegJavaObject);
         ffmpegJavaObject = nullptr;
@@ -474,55 +480,6 @@ static jint onTransact_init(JNIEnv *env, jobject ffmpegObject,
     // 在java层的native方法不是static的,因此需要用到java层的对象
     // ffmpegJavaObject = ffmpegObject;// error 直接赋值是不OK的
     ffmpegJavaObject = reinterpret_cast<jobject>(env->NewGlobalRef(ffmpegObject));
-
-    // parcel_jclass
-    if (parcel_jclass) {
-        env->DeleteGlobalRef(parcel_jclass);
-        parcel_jclass = nullptr;
-    }
-    jclass temp_parcel_jclass = env->FindClass("android/os/Parcel");
-    parcel_jclass = reinterpret_cast<jclass>(env->NewGlobalRef(temp_parcel_jclass));
-    env->DeleteLocalRef(temp_parcel_jclass);
-
-    // recycle
-    recycle_jmethodID = env->GetMethodID(
-            parcel_jclass, "recycle", "()V");
-
-    // setDataPosition
-    setDataPosition_jmethodID = env->GetMethodID(
-            parcel_jclass, "setDataPosition", "(I)V");
-
-    // createStringArray
-    createStringArray_jmethodID = env->GetMethodID(
-            parcel_jclass, "createStringArray", "()[Ljava/lang/String;");
-
-    // write
-    writeByte_jmethodID = env->GetMethodID(
-            parcel_jclass, "writeByte", "(B)V");
-    writeInt_jmethodID = env->GetMethodID(
-            parcel_jclass, "writeInt", "(I)V");
-    writeLong_jmethodID = env->GetMethodID(
-            parcel_jclass, "writeLong", "(J)V");
-    writeFloat_jmethodID = env->GetMethodID(
-            parcel_jclass, "writeFloat", "(F)V");
-    writeDouble_jmethodID = env->GetMethodID(
-            parcel_jclass, "writeDouble", "(D)V");
-    writeString_jmethodID = env->GetMethodID(
-            parcel_jclass, "writeString", "(Ljava/lang/String;)V");
-
-    // read
-    readByte_jmethodID = env->GetMethodID(
-            parcel_jclass, "readByte", "()B");
-    readInt_jmethodID = env->GetMethodID(
-            parcel_jclass, "readInt", "()I");
-    readLong_jmethodID = env->GetMethodID(
-            parcel_jclass, "readLong", "()J");
-    readFloat_jmethodID = env->GetMethodID(
-            parcel_jclass, "readFloat", "()F");
-    readDouble_jmethodID = env->GetMethodID(
-            parcel_jclass, "readDouble", "()D");
-    readString_jmethodID = env->GetMethodID(
-            parcel_jclass, "readString", "()Ljava/lang/String;");
 
     jclass FFMPEGClass = env->GetObjectClass(ffmpegObject);
     //jclass FFMPEGClass = env->FindClass("com/weidi/usefragments/business/video_player/FFMPEG");
@@ -551,40 +508,53 @@ static jint onTransact_init(JNIEnv *env, jobject ffmpegObject,
         env->DeleteGlobalRef(audioConsumerObject);
         audioConsumerObject = nullptr;
     }
-    if (jniObjectClass) {
-        env->DeleteGlobalRef(jniObjectClass);
-        jniObjectClass = nullptr;
+    if (jniObject_jclass) {
+        env->DeleteGlobalRef(jniObject_jclass);
+        jniObject_jclass = nullptr;
     }
     jclass tempJniObjectClass = env->FindClass("com/weidi/usefragments/tool/JniObject");
-    jniObjectClass = reinterpret_cast<jclass>(env->NewGlobalRef(tempJniObjectClass));
+    jniObject_jclass = reinterpret_cast<jclass>(env->NewGlobalRef(tempJniObjectClass));
     env->DeleteLocalRef(tempJniObjectClass);
 
-    jobject jniObject;
+    valueString_jfieldID = env->GetFieldID(jniObject_jclass, "valueString", "Ljava/lang/String;");
+    valueInt_jfieldID = env->GetFieldID(jniObject_jclass, "valueInt", "I");
+    valueLong_jfieldID = env->GetFieldID(jniObject_jclass, "valueLong", "J");
+    valueByte_jfieldID = env->GetFieldID(jniObject_jclass, "valueByte", "B");
+    valueBoolean_jfieldID = env->GetFieldID(jniObject_jclass, "valueBoolean", "Z");
+    valueFloat_jfieldID = env->GetFieldID(jniObject_jclass, "valueFloat", "F");
+    valueDouble_jfieldID = env->GetFieldID(jniObject_jclass, "valueDouble", "D");
+    valueChar_jfieldID = env->GetFieldID(jniObject_jclass, "valueChar", "C");
+    valueShort_jfieldID = env->GetFieldID(jniObject_jclass, "valueShort", "S");
+    valueObject_jfieldID = env->GetFieldID(jniObject_jclass, "valueObject", "Ljava/lang/Object;");
+    valueStringArray_jfieldID = env->GetFieldID(
+            jniObject_jclass, "valueStringArray", "[Ljava/lang/String;");
+
+    jobject jni_object;
     jfieldID fieldID;
     //
     fieldID = env->GetStaticFieldID(FFMPEGClass, "videoProducer",
                                     "Lcom/weidi/usefragments/tool/JniObject;");
-    jniObject = env->GetStaticObjectField(FFMPEGClass, fieldID);
-    videoProducerObject = reinterpret_cast<jobject>(env->NewGlobalRef(jniObject));
-    env->DeleteLocalRef(jniObject);
+    jni_object = env->GetStaticObjectField(FFMPEGClass, fieldID);
+    videoProducerObject = reinterpret_cast<jobject>(env->NewGlobalRef(jni_object));
+    env->DeleteLocalRef(jni_object);
     //
     fieldID = env->GetStaticFieldID(FFMPEGClass, "videoConsumer",
                                     "Lcom/weidi/usefragments/tool/JniObject;");
-    jniObject = env->GetStaticObjectField(FFMPEGClass, fieldID);
-    videoConsumerObject = reinterpret_cast<jobject>(env->NewGlobalRef(jniObject));
-    env->DeleteLocalRef(jniObject);
+    jni_object = env->GetStaticObjectField(FFMPEGClass, fieldID);
+    videoConsumerObject = reinterpret_cast<jobject>(env->NewGlobalRef(jni_object));
+    env->DeleteLocalRef(jni_object);
     //
     fieldID = env->GetStaticFieldID(FFMPEGClass, "audioProducer",
                                     "Lcom/weidi/usefragments/tool/JniObject;");
-    jniObject = env->GetStaticObjectField(FFMPEGClass, fieldID);
-    audioProducerObject = reinterpret_cast<jobject>(env->NewGlobalRef(jniObject));
-    env->DeleteLocalRef(jniObject);
+    jni_object = env->GetStaticObjectField(FFMPEGClass, fieldID);
+    audioProducerObject = reinterpret_cast<jobject>(env->NewGlobalRef(jni_object));
+    env->DeleteLocalRef(jni_object);
     //
     fieldID = env->GetStaticFieldID(FFMPEGClass, "audioConsumer",
                                     "Lcom/weidi/usefragments/tool/JniObject;");
-    jniObject = env->GetStaticObjectField(FFMPEGClass, fieldID);
-    audioConsumerObject = reinterpret_cast<jobject>(env->NewGlobalRef(jniObject));
-    env->DeleteLocalRef(jniObject);
+    jni_object = env->GetStaticObjectField(FFMPEGClass, fieldID);
+    audioConsumerObject = reinterpret_cast<jobject>(env->NewGlobalRef(jni_object));
+    env->DeleteLocalRef(jni_object);
     // 得到FFMPEG类中的mCallback属性
     jfieldID mCallback_jfieldID = env->GetFieldID(
             FFMPEGClass, "mCallback", "Lcom/weidi/usefragments/tool/Callback;");
@@ -627,9 +597,8 @@ static jint onTransact_init(JNIEnv *env, jobject ffmpegObject,
 }
 
 static jint onTransact_setMode(JNIEnv *env, jobject thiz,
-                               jint code, jobject data, jobject reply) {
-    env->CallVoidMethod(data, setDataPosition_jmethodID, 0);
-    jint mode = env->CallIntMethod(data, readInt_jmethodID);
+                               jint code, jobject jniObject) {
+    jint mode = env->GetIntField(jniObject, valueInt_jfieldID);
 
     use_mode = (int) mode;
     LOGI("setMode() use_mode: %d\n", use_mode);
@@ -644,48 +613,11 @@ static jint onTransact_setMode(JNIEnv *env, jobject thiz,
     return (jint) 0;
 }
 
-static jint onTransact_setCallback(JNIEnv *env, jobject thiz,
-                                   jint code, jobject data, jobject reply) {
-
-}
-
 static jint onTransact_setSurface(JNIEnv *env, jobject ffmpegObject,
-                                  jint code, jobject data, jobject reply) {
-    env->CallVoidMethod(data, setDataPosition_jmethodID, 0);
+                                  jint code, jobject jniObject) {
 
-    LOGI("setSurface() 1\n");
-    jstring path = static_cast<jstring>(env->CallObjectMethod(data, readString_jmethodID));
-    LOGI("setSurface() 2\n");
-
-    jclass class_jclass = env->FindClass("java/lang/Class");
-    LOGI("setSurface() 3\n");
-    jmethodID forName_jmethodID = env->GetStaticMethodID(
-            class_jclass, "forName", "(Ljava/lang/String;)Ljava/lang/Class;");
-    LOGI("setSurface() 4\n");
-    jstring surface_jstring = env->NewStringUTF("android.view.Surface");
-    LOGI("setSurface() 5\n");
-    jobject class_jobject = env->CallStaticObjectMethod(
-            class_jclass, forName_jmethodID, surface_jstring);
-    LOGI("setSurface() 6\n");
-    jmethodID getClassLoader_jmethodID = env->GetMethodID(
-            class_jclass, "getClassLoader", "()Ljava/lang/ClassLoader;");
-    LOGI("setSurface() 7\n");
-    // ClassLoader classLoader = Surface.class.getClassLoader()
-    jobject classLoader_jobject = env->CallObjectMethod(
-            class_jobject, getClassLoader_jmethodID);
-    LOGI("setSurface() 8\n");
-    // 从data中读出Surface对象
-    jmethodID readParcelable_jmethodID = env->GetMethodID(
-            parcel_jclass, "readParcelable", "(Ljava/lang/ClassLoader;)Landroid/os/Parcelable;");
-    LOGI("setSurface() 9\n");
-    jobject surfaceObject = env->CallObjectMethod(
-            data, readParcelable_jmethodID, classLoader_jobject);
-    LOGI("setSurface() 10\n");
-    //
-    env->DeleteLocalRef(classLoader_jobject);
-    env->DeleteLocalRef(class_jobject);
-    env->DeleteLocalRef(surface_jstring);
-    env->DeleteLocalRef(class_jclass);
+    jstring path = static_cast<jstring>(env->GetObjectField(jniObject, valueString_jfieldID));
+    jobject surfaceObject = env->GetObjectField(jniObject, valueObject_jfieldID);
 
     // 路径
     const char *filePath = env->GetStringUTFChars(path, 0);
@@ -722,7 +654,7 @@ static jint onTransact_setSurface(JNIEnv *env, jobject ffmpegObject,
 }
 
 static jint onTransact_initPlayer(JNIEnv *env, jobject thiz,
-                                  jint code, jobject data, jobject reply) {
+                                  jint code, jobject jniObject) {
     switch (use_mode) {
         case USE_MODE_MEDIA: {
             return (jint) alexander_media::initPlayer();
@@ -747,7 +679,7 @@ static jint onTransact_initPlayer(JNIEnv *env, jobject thiz,
 }
 
 static jint onTransact_readData(JNIEnv *env, jobject thiz,
-                                jint code, jobject data, jobject reply) {
+                                jint code, jobject jniObject) {
     switch (use_mode) {
         case USE_MODE_MEDIA: {
             alexander_media::readData(NULL);
@@ -797,7 +729,7 @@ static jint onTransact_readData(JNIEnv *env, jobject thiz,
 }
 
 static jint onTransact_audioHandleData(JNIEnv *env, jobject thiz,
-                                       jint code, jobject data, jobject reply) {
+                                       jint code, jobject jniObject) {
     int type = TYPE_AUDIO;
     switch (use_mode) {
         case USE_MODE_MEDIA: {
@@ -828,7 +760,7 @@ static jint onTransact_audioHandleData(JNIEnv *env, jobject thiz,
 }
 
 static jint onTransact_videoHandleData(JNIEnv *env, jobject thiz,
-                                       jint code, jobject data, jobject reply) {
+                                       jint code, jobject jniObject) {
     int type = TYPE_VIDEO;
     switch (use_mode) {
         case USE_MODE_MEDIA: {
@@ -859,7 +791,7 @@ static jint onTransact_videoHandleData(JNIEnv *env, jobject thiz,
 }
 
 static jint onTransact_play(JNIEnv *env, jobject thiz,
-                            jint code, jobject data, jobject reply) {
+                            jint code, jobject jniObject) {
     switch (use_mode) {
         case USE_MODE_MEDIA: {
             alexander_media::play();
@@ -889,7 +821,7 @@ static jint onTransact_play(JNIEnv *env, jobject thiz,
 }
 
 static jint onTransact_pause(JNIEnv *env, jobject thiz,
-                             jint code, jobject data, jobject reply) {
+                             jint code, jobject jniObject) {
     switch (use_mode) {
         case USE_MODE_MEDIA: {
             alexander_media::pause();
@@ -919,7 +851,7 @@ static jint onTransact_pause(JNIEnv *env, jobject thiz,
 }
 
 static jint onTransact_stop(JNIEnv *env, jobject thiz,
-                            jint code, jobject data, jobject reply) {
+                            jint code, jobject jniObject) {
     switch (use_mode) {
         case USE_MODE_MEDIA: {
             alexander_media::stop();
@@ -949,7 +881,7 @@ static jint onTransact_stop(JNIEnv *env, jobject thiz,
 }
 
 static jint onTransact_release(JNIEnv *env, jobject thiz,
-                               jint code, jobject data, jobject reply) {
+                               jint code, jobject jniObject) {
     switch (use_mode) {
         case USE_MODE_MEDIA: {
             alexander_media::release();
@@ -979,7 +911,7 @@ static jint onTransact_release(JNIEnv *env, jobject thiz,
 }
 
 static jboolean onTransact_isRunning(JNIEnv *env, jobject thiz,
-                                     jint code, jobject data, jobject reply) {
+                                     jint code, jobject jniObject) {
     switch (use_mode) {
         case USE_MODE_MEDIA: {
             return (jboolean) alexander_media::isRunning();
@@ -1004,7 +936,7 @@ static jboolean onTransact_isRunning(JNIEnv *env, jobject thiz,
 }
 
 static jboolean onTransact_isPlaying(JNIEnv *env, jobject thiz,
-                                     jint code, jobject data, jobject reply) {
+                                     jint code, jobject jniObject) {
     switch (use_mode) {
         case USE_MODE_MEDIA: {
             return (jboolean) alexander_media::isPlaying();
@@ -1029,7 +961,7 @@ static jboolean onTransact_isPlaying(JNIEnv *env, jobject thiz,
 }
 
 static jint onTransact_isPausedForUser(JNIEnv *env, jobject thiz,
-                                       jint code, jobject data, jobject reply) {
+                                       jint code, jobject jniObject) {
     switch (use_mode) {
         case USE_MODE_MEDIA: {
             return (jboolean) alexander_media::isPausedForUser();
@@ -1054,10 +986,8 @@ static jint onTransact_isPausedForUser(JNIEnv *env, jobject thiz,
 }
 
 static jint onTransact_stepAdd(JNIEnv *env, jobject thiz,
-                               jint code, jobject data, jobject reply) {
-    jlong addStep = -1;
-    env->CallVoidMethod(data, setDataPosition_jmethodID, 0);
-    addStep = env->CallLongMethod(data, readLong_jmethodID);
+                               jint code, jobject jniObject) {
+    jlong addStep = env->GetLongField(jniObject, valueLong_jfieldID);
 
     switch (use_mode) {
         case USE_MODE_MEDIA: {
@@ -1088,10 +1018,8 @@ static jint onTransact_stepAdd(JNIEnv *env, jobject thiz,
 }
 
 static jint onTransact_stepSubtract(JNIEnv *env, jobject thiz,
-                                    jint code, jobject data, jobject reply) {
-    jlong subtractStep = -1;
-    env->CallVoidMethod(data, setDataPosition_jmethodID, 0);
-    subtractStep = env->CallLongMethod(data, readLong_jmethodID);
+                                    jint code, jobject jniObject) {
+    jlong subtractStep = env->GetLongField(jniObject, valueLong_jfieldID);
 
     switch (use_mode) {
         case USE_MODE_MEDIA: {
@@ -1122,10 +1050,8 @@ static jint onTransact_stepSubtract(JNIEnv *env, jobject thiz,
 }
 
 static jint onTransact_seekTo(JNIEnv *env, jobject thiz,
-                              jint code, jobject data, jobject reply) {
-    jlong timestamp = -1;
-    env->CallVoidMethod(data, setDataPosition_jmethodID, 0);
-    timestamp = env->CallLongMethod(data, readLong_jmethodID);
+                              jint code, jobject jniObject) {
+    jlong timestamp = env->GetLongField(jniObject, valueLong_jfieldID);
 
     switch (use_mode) {
         case USE_MODE_MEDIA: {
@@ -1151,7 +1077,7 @@ static jint onTransact_seekTo(JNIEnv *env, jobject thiz,
 }
 
 static jlong onTransact_getDuration(JNIEnv *env, jobject thiz,
-                                    jint code, jobject data, jobject reply) {
+                                    jint code, jobject jniObject) {
     switch (use_mode) {
         case USE_MODE_MEDIA: {
             return (jlong) alexander_media::getDuration();
@@ -1176,16 +1102,13 @@ static jlong onTransact_getDuration(JNIEnv *env, jobject thiz,
 }
 
 static jint onTransact_download(JNIEnv *env, jobject thiz,
-                                jint code, jobject data, jobject reply) {
+                                jint code, jobject jniObject) {
     if (use_mode != USE_MODE_MEDIA) {
         return (jint) -1;
     }
 
-    // 关键点:必须先调用一下data.setDataPosition(0);
-    env->CallVoidMethod(data, setDataPosition_jmethodID, 0);
-
-    jint flag = env->CallIntMethod(data, readInt_jmethodID);
-    jobject object = env->CallObjectMethod(data, createStringArray_jmethodID);
+    jint flag = env->GetIntField(jniObject, valueInt_jfieldID);
+    jobject object = env->GetObjectField(jniObject, valueStringArray_jfieldID);
     if (object != nullptr) {
         jobjectArray objects = reinterpret_cast<jobjectArray>(object);
         //jsize length = env->GetArrayLength(objects);
@@ -1209,7 +1132,7 @@ static jint onTransact_download(JNIEnv *env, jobject thiz,
 }
 
 static jint onTransact_closeJni(JNIEnv *env, jobject thiz,
-                                jint code, jobject data, jobject reply) {
+                                jint code, jobject jniObject) {
     closeJni();
 }
 
@@ -1219,89 +1142,85 @@ extern "C"
 JNIEXPORT jstring JNICALL
 Java_com_weidi_usefragments_business_video_1player_FFMPEG_onTransact(JNIEnv *env, jobject thiz,
                                                                      jint code,
-                                                                     jobject data,
-                                                                     jobject reply) {
+                                                                     jobject jniObject) {
     // TODO: implement onTransact()
+    LOGI("onTransact() code: %d\n", code);
     switch (code) {
         case DO_SOMETHING_CODE_init:
             return env->NewStringUTF(
-                    std::to_string(onTransact_init(env, thiz, code, data, reply)).c_str());
+                    std::to_string(onTransact_init(env, thiz, code, jniObject)).c_str());
 
         case DO_SOMETHING_CODE_setMode:
             return env->NewStringUTF(
-                    std::to_string(onTransact_setMode(env, thiz, code, data, reply)).c_str());
-
-        case DO_SOMETHING_CODE_setCallback:
-            return env->NewStringUTF(
-                    std::to_string(onTransact_setCallback(env, thiz, code, data, reply)).c_str());
+                    std::to_string(onTransact_setMode(env, thiz, code, jniObject)).c_str());
 
         case DO_SOMETHING_CODE_setSurface:
             return env->NewStringUTF(
-                    std::to_string(onTransact_setSurface(env, thiz, code, data, reply)).c_str());
+                    std::to_string(onTransact_setSurface(env, thiz, code, jniObject)).c_str());
 
         case DO_SOMETHING_CODE_initPlayer:
             return env->NewStringUTF(
-                    std::to_string(onTransact_initPlayer(env, thiz, code, data, reply)).c_str());
+                    std::to_string(onTransact_initPlayer(env, thiz, code, jniObject)).c_str());
 
         case DO_SOMETHING_CODE_readData:
-            onTransact_readData(env, thiz, code, data, reply);
+            onTransact_readData(env, thiz, code, jniObject);
             return env->NewStringUTF("0");
 
         case DO_SOMETHING_CODE_audioHandleData:
-            onTransact_audioHandleData(env, thiz, code, data, reply);
+            onTransact_audioHandleData(env, thiz, code, jniObject);
             return env->NewStringUTF("0");
 
         case DO_SOMETHING_CODE_videoHandleData:
-            onTransact_videoHandleData(env, thiz, code, data, reply);
+            onTransact_videoHandleData(env, thiz, code, jniObject);
             return env->NewStringUTF("0");
 
         case DO_SOMETHING_CODE_play:
             return env->NewStringUTF(
-                    std::to_string(onTransact_play(env, thiz, code, data, reply)).c_str());
+                    std::to_string(onTransact_play(env, thiz, code, jniObject)).c_str());
 
         case DO_SOMETHING_CODE_pause:
             return env->NewStringUTF(
-                    std::to_string(onTransact_pause(env, thiz, code, data, reply)).c_str());
+                    std::to_string(onTransact_pause(env, thiz, code, jniObject)).c_str());
 
         case DO_SOMETHING_CODE_stop:
             return env->NewStringUTF(
-                    std::to_string(onTransact_stop(env, thiz, code, data, reply)).c_str());
+                    std::to_string(onTransact_stop(env, thiz, code, jniObject)).c_str());
 
         case DO_SOMETHING_CODE_release:
             return env->NewStringUTF(
-                    std::to_string(onTransact_release(env, thiz, code, data, reply)).c_str());
+                    std::to_string(onTransact_release(env, thiz, code, jniObject)).c_str());
 
         case DO_SOMETHING_CODE_isRunning:
-            return (onTransact_isRunning(env, thiz, code, data, reply)
+            return (onTransact_isRunning(env, thiz, code, jniObject)
                     ? env->NewStringUTF("true") : env->NewStringUTF("false"));
 
         case DO_SOMETHING_CODE_isPlaying:
-            return (onTransact_isPlaying(env, thiz, code, data, reply)
+            return (onTransact_isPlaying(env, thiz, code, jniObject)
                     ? env->NewStringUTF("true") : env->NewStringUTF("false"));
 
         case DO_SOMETHING_CODE_isPausedForUser:
-            return (onTransact_isPausedForUser(env, thiz, code, data, reply)
+            return (onTransact_isPausedForUser(env, thiz, code, jniObject)
                     ? env->NewStringUTF("true") : env->NewStringUTF("false"));
 
         case DO_SOMETHING_CODE_stepAdd:
             return env->NewStringUTF(
-                    std::to_string(onTransact_stepAdd(env, thiz, code, data, reply)).c_str());
+                    std::to_string(onTransact_stepAdd(env, thiz, code, jniObject)).c_str());
 
         case DO_SOMETHING_CODE_stepSubtract:
             return env->NewStringUTF(
-                    std::to_string(onTransact_stepSubtract(env, thiz, code, data, reply)).c_str());
+                    std::to_string(onTransact_stepSubtract(env, thiz, code, jniObject)).c_str());
 
         case DO_SOMETHING_CODE_seekTo:
             return env->NewStringUTF(
-                    std::to_string(onTransact_seekTo(env, thiz, code, data, reply)).c_str());
+                    std::to_string(onTransact_seekTo(env, thiz, code, jniObject)).c_str());
 
         case DO_SOMETHING_CODE_getDuration:
             return env->NewStringUTF(
-                    std::to_string(onTransact_getDuration(env, thiz, code, data, reply)).c_str());
+                    std::to_string(onTransact_getDuration(env, thiz, code, jniObject)).c_str());
 
         case DO_SOMETHING_CODE_download:
             return env->NewStringUTF(
-                    std::to_string(onTransact_download(env, thiz, code, data, reply)).c_str());
+                    std::to_string(onTransact_download(env, thiz, code, jniObject)).c_str());
 
         case DO_SOMETHING_CODE_closeJni:
 
@@ -1313,12 +1232,3 @@ Java_com_weidi_usefragments_business_video_1player_FFMPEG_onTransact(JNIEnv *env
     return env->NewStringUTF("-1");
 }
 
-/*
-extern "C"
-JNIEXPORT jint JNICALL
-Java_com_weidi_usefragments_business_video_1player_FFMPEG_onTransact2(JNIEnv *env, jobject thiz,
-                                                                      jint code,
-                                                                      jobject jniObject) {
-    // TODO: implement onTransact()
-
-}*/

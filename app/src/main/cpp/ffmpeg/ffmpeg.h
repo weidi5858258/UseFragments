@@ -16,7 +16,7 @@ enum {
 enum {
     DO_SOMETHING_CODE_init = 1099,
     DO_SOMETHING_CODE_setMode = 1100,
-    DO_SOMETHING_CODE_setCallback = 1101,
+    //DO_SOMETHING_CODE_setCallback = 1101,
     DO_SOMETHING_CODE_setSurface = 1102,
     DO_SOMETHING_CODE_initPlayer = 1103,
     DO_SOMETHING_CODE_readData = 1104,

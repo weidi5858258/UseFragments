@@ -341,7 +341,7 @@ public class PlayerService extends Service {
             return;
         }
         mPlayerWrapper.setDataSource(mCurPath);
-        MLog.i(TAG, "addView() mIsAddedView: " + mIsAddedView);
+        MLog.i(TAG, "addView()   mIsAddedView: " + mIsAddedView);
         if (!mIsAddedView) {
             mPlayerWrapper.onResume();
             mWindowManager.addView(mRootView, mLayoutParams);

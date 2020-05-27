@@ -9,6 +9,7 @@ import android.os.Handler;
 import android.os.Message;
 import android.os.Parcel;
 import android.os.SystemClock;
+import android.view.Surface;
 
 import com.weidi.usefragments.media.MediaUtils;
 import com.weidi.usefragments.tool.Callback;
@@ -27,6 +28,11 @@ public class FFMPEG {
     private static final String TAG =
             "player_alexander";
     //FFMPEG.class.getSimpleName();
+
+    // status_t onTransact(uint32_t code, const Parcel& data, Parcel* reply, uint32_t flags = 0)
+    // public native String onTransact(int code, Parcel data, Parcel reply);
+    // 从上面调到下面只定义这一个方法
+    public native String onTransact(int code, JniObject jniObject);
 
     static {
         try {
@@ -69,10 +75,10 @@ public class FFMPEG {
     public static final float VOLUME_NORMAL = 1.0f;
     public static final float VOLUME_MUTE = 0.0f;
 
-    public static final JniObject videoProducer = new JniObject();
-    public static final JniObject videoConsumer = new JniObject();
-    public static final JniObject audioProducer = new JniObject();
-    public static final JniObject audioConsumer = new JniObject();
+    public static final JniObject videoProducer = JniObject.obtain();
+    public static final JniObject videoConsumer = JniObject.obtain();
+    public static final JniObject audioProducer = JniObject.obtain();
+    public static final JniObject audioConsumer = JniObject.obtain();
 
     public static final int USE_MODE_MEDIA = 1;
     public static final int USE_MODE_ONLY_VIDEO = 2;
@@ -84,7 +90,7 @@ public class FFMPEG {
     // 4(只下载,不播放.不调用seekTo) 5(只提取音视频,不播放.调用seekTo到0)
     public static final int DO_SOMETHING_CODE_init = 1099;
     public static final int DO_SOMETHING_CODE_setMode = 1100;
-    public static final int DO_SOMETHING_CODE_setCallback = 1101;
+    //public static final int DO_SOMETHING_CODE_setCallback = 1101;
     public static final int DO_SOMETHING_CODE_setSurface = 1102;
     public static final int DO_SOMETHING_CODE_initPlayer = 1103;
     public static final int DO_SOMETHING_CODE_readData = 1104;
@@ -106,37 +112,8 @@ public class FFMPEG {
     public static final int DO_SOMETHING_CODE_download = 1118;
     public static final int DO_SOMETHING_CODE_closeJni = 1119;
 
-    //status_t onTransact(uint32_t code, const Parcel& data, Parcel* reply, uint32_t flags = 0)
-    // 从上面调到下面只定义这一个方法
-    public native String onTransact(int code, Parcel data, Parcel reply);
-
-    /*public int onTransact(int code, Parcel data, Parcel reply) {
-        MLog.i(TAG, "onTransact() code: " + code);
-        data.setDataPosition(0);
-        Surface surface = data.readParcelable(Surface.class.getClassLoader());
-        MLog.i(TAG, "onTransact() surface: " + surface);
-        JniObject jniObject = (JniObject) data.readValue(JniObject.class.getClassLoader());
-        MLog.i(TAG, "onTransact() valueInt: " + jniObject.valueInt+
-        " valueString: "+jniObject.valueString);
-        return 0;
-    }*/
-
-    /***
-     Parcel data;
-     // 写字符串数组
-     data.writeStringArray(new String[]{"1","2","3","4"});
-     // 读字符串数组(不要使用readStringArray(String[] val))
-     String[] strs = data.createStringArray();
-     */
-
-    /*JniObject jniObject = new JniObject();
-    jniObject.valueStringArray = new String[]{"1", "", ""};
-    mFFMPEGPlayer.onTransact(FFMPEG.DO_SOMETHING_CODE_DOWNLOAD, jniObject);*/
-    // 备用方案
-    // public native int onTransact2(int code, JniObject jniObject);
-
     public void releaseAll() {
-        onTransact(DO_SOMETHING_CODE_release, null, null);
+        onTransact(DO_SOMETHING_CODE_release, null);
         MediaUtils.releaseAudioTrack(mAudioTrack);
     }
 
@@ -232,10 +209,6 @@ public class FFMPEG {
         @Override
         public int onTransact(int code, JniObject jniObject) {
             //MLog.i(TAG, "onTransact() code: " + code + " " + jniObject.toString());
-            if (jniObject == null) {
-                MLog.e(TAG, "onTransact() jniObject is null");
-                return -1;
-            }
             if (mUiHandler != null) {
                 Message msg = mUiHandler.obtainMessage();
                 msg.what = code;

@@ -8,7 +8,7 @@
     android:layout_height="wrap_content"
     android:background="@android:color/transparent"
     android:orientation="vertical"
-    android:visibility="invisible">
+    android:visibility="visible">
 
     <!--<TextView
         android:id="@+id/file_name_tv2"
