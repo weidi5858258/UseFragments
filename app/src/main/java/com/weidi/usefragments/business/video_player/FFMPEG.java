@@ -2,6 +2,7 @@ package com.weidi.usefragments.business.video_player;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.media.AudioFormat;
 import android.media.AudioManager;
 import android.media.AudioTrack;
 import android.os.Build;
@@ -121,6 +122,7 @@ public class FFMPEG {
     private void createAudioTrack(int sampleRateInHz,
                                   int channelCount,
                                   int audioFormat) {
+        // sampleRateInHz: 44100 channelCount: 2 audioFormat: 2
         MLog.i(TAG, "createAudioTrack()" +
                 " sampleRateInHz: " + sampleRateInHz +
                 " channelCount: " + channelCount +
@@ -128,10 +130,15 @@ public class FFMPEG {
 
         MediaUtils.releaseAudioTrack(mAudioTrack);
         MLog.i(TAG, "createAudioTrack() start");
+
+        // AudioTrack: releaseBuffer() track 0xe55f0a00
+        // disabled due to previous underrun,
+
         mAudioTrack = MediaUtils.createAudioTrack(
                 AudioManager.STREAM_MUSIC,
                 sampleRateInHz, channelCount, audioFormat,
                 AudioTrack.MODE_STREAM);
+
         if (mAudioTrack != null) {
             if (mContext != null) {
                 SharedPreferences sp =

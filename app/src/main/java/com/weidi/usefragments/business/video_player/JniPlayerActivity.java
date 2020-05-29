@@ -301,9 +301,16 @@ public class JniPlayerActivity extends BaseActivity {
                     mPath = actualimagecursor.getString(actual_image_column_index);
                 }
                 MLog.d(TAG, "internalCreate() mPath1: " + mPath);
-                if (mPath.contains("/root")) {
-                    mPath = mPath.substring(5);
+                if (mPath.startsWith("/root/")) {
+                    //mPath = mPath.substring(5);
+                    mPath = mPath.replace("/root/", "/storage/");
+                } else if (mPath.startsWith("/document/")) {
+                    mPath = mPath.replace("/document/", "/storage/");
+                    mPath = mPath.replace(":", "/");
                 }
+                // /document/37C8-3904:myfiles/video/[2K]Clarity_Demo_2016.mp4
+                // /storage/37C8-3904/myfiles/video/
+
                 MLog.d(TAG, "internalCreate() mPath2: " + mPath);
                 if (TextUtils.isEmpty(mPath)) {
                     finish();
