@@ -153,8 +153,11 @@ struct Wrapper {
     bool needToSeek = false;
     bool allowDecode = false;
 
-    int64_t startHandleTime;
-    int64_t endHandleTime;
+    // 播放异常处理
+    // int64_t startHandleTime = av_gettime_relative();
+    // int64_t endHandleTime;
+    // 1秒
+    // endHandleTime - startHandleTime >= 1000000;
 
     // 单位: 秒
     int64_t duration = 0;

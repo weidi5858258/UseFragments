@@ -281,7 +281,7 @@ namespace alexander_media {
      FFmpeg日志输出到adb logcat
      https://blog.csdn.net/matrix_laboratory/article/details/57080891
      */
-    static void log_callback_null(void *ptr, int level, const char *fmt, va_list vl) {
+    static void log_callback(void *ptr, int level, const char *fmt, va_list vl) {
         static int print_prefix = 1;
         static int count;
         static char prev[1024];
@@ -298,6 +298,10 @@ namespace alexander_media {
         } else {
             LOGI("%s", line);
         }
+    }
+
+    static void log_callback_null(void *ptr, int level, const char *fmt, va_list vl) {
+
     }
 
     void notifyToRead() {
@@ -377,7 +381,7 @@ namespace alexander_media {
         avformat_network_init();
 
         // 打印ffmpeg里面的日志
-        //av_log_set_callback(log_callback_null);
+        av_log_set_callback(log_callback);
 
         LOGW("ffmpeg [av_version_info()] version: %s\n", av_version_info());
 
@@ -748,6 +752,8 @@ namespace alexander_media {
             int64_t endTime = av_gettime_relative();
             LOGI("openAndFindAVFormatContext() avformat_open_input: %ld\n",
                  (long) ((endTime - startTime) / 1000));
+
+            av_log_set_callback(log_callback_null);
         } else {
             if (avformat_open_input(&avFormatContext,
                                     inFilePath,
@@ -2050,11 +2056,7 @@ namespace alexander_media {
         }
 
         int ret = 0;
-        bool maybeHasException = false;
-        // test
-        //long count = 0;
         for (;;) {
-            //count++;
             if (!wrapper->isHandling) {
                 // for (;;) end
                 break;
@@ -2140,13 +2142,6 @@ namespace alexander_media {
                 break;
             }
 
-            if (!isLocal) {
-                if (wrapper->list1->size() >= wrapper->list1LimitCounts) {
-                    wrapper->startHandleTime = av_gettime_relative();
-                    maybeHasException = true;
-                }
-            }
-
             // region 从队列中取出一个AVPacket
 
             wrapper->allowDecode = false;
@@ -2183,41 +2178,6 @@ namespace alexander_media {
             } else {
                 if (list1Size % 10 == 0) {
                     onLoadProgressUpdated(MSG_ON_TRANSACT_VIDEO_CONSUMER, list1Size);
-                }
-            }
-
-            // endregion
-
-            // region 播放异常处理
-
-            if (!isLocal) {
-                if (maybeHasException && wrapper->list1->size() == 0) {
-                    wrapper->endHandleTime = av_gettime_relative();
-                    /*if (count >= 500) {
-                        wrapper->endHandleTime = wrapper->startHandleTime;
-                    }*/
-                    if (wrapper->type == TYPE_AUDIO) {
-                        LOGE("handleData()  audio handleTime: %ld\n",
-                             (long) (wrapper->endHandleTime - wrapper->startHandleTime));
-                    } else {
-                        LOGE("handleData()  video handleTime: %ld\n",
-                             (long) (wrapper->endHandleTime - wrapper->startHandleTime));
-                    }
-                    /***
-                     830377 243952 227061 251820 243842
-                     */
-                    // 如果不是本地视频,从一千个左右的数据到0个数据的时间不超过30秒,那么就有问题了.
-                    if ((wrapper->endHandleTime - wrapper->startHandleTime) < 251820) {
-                        LOGE("handleData() maybeHasException\n");
-                        // 258(见鬼了,"0x101"这个值正常,"0x102"这个值不正常)
-                        // 0x101 = 257 0x102 = 258
-                        // onError(0x101, "播放时发生异常");
-                        // onError(0x102, "播放时发生异常");
-
-                        // stop();
-                    } else {
-                        maybeHasException = false;
-                    }
                 }
             }
 
@@ -2582,11 +2542,13 @@ namespace alexander_media {
 
         if (wrapper->type == TYPE_AUDIO) {
             if (preAudioAVFrame != NULL) {
+                av_frame_unref(preAudioAVFrame);
                 av_frame_free(&preAudioAVFrame);
                 preAudioAVFrame = NULL;
             }
         } else {
             if (preVideoAVFrame != NULL) {
+                av_frame_unref(preVideoAVFrame);
                 av_frame_free(&preVideoAVFrame);
                 preVideoAVFrame = NULL;
             }
