@@ -2470,64 +2470,58 @@ namespace alexander_media {
                     break;
             }// switch (ret) end
 
-            if (!wrapper->isHandling) {
-                // for (;;) end
-                break;
-            }
+            if (!ret) {
+                ret = avcodec_receive_frame(wrapper->avCodecContext, decodedAVFrame);
+                switch (ret) {
+                    // 输出是不可用的,必须发送新的输入
+                    case AVERROR(EAGAIN):
+                        if (wrapper->type == TYPE_AUDIO) {
+                            LOGE("handleData() audio avcodec_receive_frame ret: %d\n", ret);
+                        } else {
+                            LOGE("handleData() video avcodec_receive_frame ret: %d\n", ret);// -11
+                        }
+                        break;
+                    case AVERROR(EINVAL):
+                        // codec打不开,或者是一个encoder
+                    case AVERROR_EOF:
+                        // 已经完全刷新,不会再有输出帧了
+                        if (wrapper->type == TYPE_AUDIO) {
+                            LOGE("audio 从解码器接收解码帧时出错 %d", ret);
+                        } else {
+                            LOGE("video 从解码器接收解码帧时出错 %d", ret);
+                        }
+                        //wrapper->isHandling = false;
+                        break;
+                    case 0: {
+                        // 解码成功,返回一个输出帧
+                        if (wrapper->type == TYPE_AUDIO) {
+                            av_frame_unref(preAudioAVFrame);
+                            av_frame_ref(preAudioAVFrame, decodedAVFrame);
+                        } else {
+                            /*LOGW("handleData() video                   "
+                                 "flags: %d, pts: %lld, pkt_pos: %lld, pkt_duration: %lld, pkt_size: %d\n",
+                                 decodedAVFrame->flags,
+                                 (long long) decodedAVFrame->pts,
+                                 (long long) decodedAVFrame->pkt_pos,
+                                 (long long) decodedAVFrame->pkt_duration,
+                                 decodedAVFrame->pkt_size);*/
+                            // 下面两个的作用一样,不能用av_frame_copy(...)这个方法,不起作用
+                            av_frame_unref(preVideoAVFrame);
+                            av_frame_ref(preVideoAVFrame, decodedAVFrame);
+                            //preVideoAVFrame = av_frame_clone(decodedAVFrame);
+                        }
+                        break;
+                    }
+                    default:
+                        if (wrapper->type == TYPE_AUDIO) {
+                            LOGE("audio 接收解码帧时出现异常 %d", ret);
+                        } else {
+                            LOGE("video 接收解码帧时出现异常 %d", ret);
+                        }
+                        break;
+                }// switch (ret) end
+            }// ret == 0
 
-            if (ret != 0) {
-                continue;
-            }
-
-            ret = avcodec_receive_frame(wrapper->avCodecContext, decodedAVFrame);
-            switch (ret) {
-                // 输出是不可用的,必须发送新的输入
-                case AVERROR(EAGAIN):
-                    if (wrapper->type == TYPE_AUDIO) {
-                        LOGE("handleData() audio avcodec_receive_frame ret: %d\n", ret);
-                    } else {
-                        LOGE("handleData() video avcodec_receive_frame ret: %d\n", ret);// -11
-                    }
-                    break;
-                case AVERROR(EINVAL):
-                    // codec打不开,或者是一个encoder
-                case AVERROR_EOF:
-                    // 已经完全刷新,不会再有输出帧了
-                    if (wrapper->type == TYPE_AUDIO) {
-                        LOGE("audio 从解码器接收解码帧时出错 %d", ret);
-                    } else {
-                        LOGE("video 从解码器接收解码帧时出错 %d", ret);
-                    }
-                    //wrapper->isHandling = false;
-                    break;
-                case 0: {
-                    // 解码成功,返回一个输出帧
-                    if (wrapper->type == TYPE_AUDIO) {
-                        av_frame_unref(preAudioAVFrame);
-                        av_frame_ref(preAudioAVFrame, decodedAVFrame);
-                    } else {
-                        /*LOGW("handleData() video                   "
-                             "flags: %d, pts: %lld, pkt_pos: %lld, pkt_duration: %lld, pkt_size: %d\n",
-                             decodedAVFrame->flags,
-                             (long long) decodedAVFrame->pts,
-                             (long long) decodedAVFrame->pkt_pos,
-                             (long long) decodedAVFrame->pkt_duration,
-                             decodedAVFrame->pkt_size);*/
-                        // 下面两个的作用一样,不能用av_frame_copy(...)这个方法,不起作用
-                        av_frame_unref(preVideoAVFrame);
-                        av_frame_ref(preVideoAVFrame, decodedAVFrame);
-                        //preVideoAVFrame = av_frame_clone(decodedAVFrame);
-                    }
-                    break;
-                }
-                default:
-                    if (wrapper->type == TYPE_AUDIO) {
-                        LOGE("audio 接收解码帧时出现异常 %d", ret);
-                    } else {
-                        LOGE("video 接收解码帧时出现异常 %d", ret);
-                    }
-                    break;
-            }// switch (ret) end
 
             if (!wrapper->isHandling) {
                 // for (;;) end
@@ -2536,20 +2530,14 @@ namespace alexander_media {
 
             if (ret != 0) {
                 av_frame_unref(decodedAVFrame);
-                if (wrapper->type == TYPE_AUDIO) {
-                    if (preAudioAVFrame->pkt_size > 0) {
-                        av_frame_ref(decodedAVFrame, preAudioAVFrame);
-                        LOGD("handleData() audio av_frame_clone\n");
-                    } else {
-                        continue;
-                    }
+                if (wrapper->type == TYPE_AUDIO && preAudioAVFrame->pkt_size > 0) {
+                    av_frame_ref(decodedAVFrame, preAudioAVFrame);
+                    LOGD("handleData() audio av_frame_ref\n");
+                } else if (wrapper->type == TYPE_VIDEO && preVideoAVFrame->pkt_size > 0) {
+                    av_frame_ref(decodedAVFrame, preVideoAVFrame);
+                    LOGW("handleData() video av_frame_ref\n");
                 } else {
-                    if (preVideoAVFrame->pkt_size > 0) {
-                        av_frame_ref(decodedAVFrame, preVideoAVFrame);
-                        LOGW("handleData() video av_frame_clone\n");
-                    } else {
-                        continue;
-                    }
+                    continue;
                 }
             }
 
