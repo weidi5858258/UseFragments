@@ -443,10 +443,11 @@ namespace alexander_media {
         audioWrapper->father->type = TYPE_AUDIO;
         if (isLocal) {
             audioWrapper->father->list1LimitCounts = MAX_AVPACKET_COUNT_AUDIO_LOCAL;
+            audioWrapper->father->list2LimitCounts = MAX_AVPACKET_COUNT_AUDIO_LOCAL;
         } else {
             audioWrapper->father->list1LimitCounts = MAX_AVPACKET_COUNT_AUDIO_HTTP;
+            audioWrapper->father->list2LimitCounts = MAX_AVPACKET_COUNT;
         }
-        audioWrapper->father->list2LimitCounts = MAX_AVPACKET_COUNT;
         LOGD("initAudio() list1LimitCounts: %d\n", audioWrapper->father->list1LimitCounts);
         LOGD("initAudio() list2LimitCounts: %d\n", audioWrapper->father->list2LimitCounts);
         audioWrapper->father->streamIndex = -1;
@@ -491,10 +492,11 @@ namespace alexander_media {
         videoWrapper->father->type = TYPE_VIDEO;
         if (isLocal) {
             videoWrapper->father->list1LimitCounts = MAX_AVPACKET_COUNT_VIDEO_LOCAL;
+            videoWrapper->father->list2LimitCounts = MAX_AVPACKET_COUNT_VIDEO_LOCAL;
         } else {
             videoWrapper->father->list1LimitCounts = MAX_AVPACKET_COUNT_VIDEO_HTTP;
+            videoWrapper->father->list2LimitCounts = MAX_AVPACKET_COUNT;
         }
-        videoWrapper->father->list2LimitCounts = MAX_AVPACKET_COUNT;
         LOGW("initVideo() list1LimitCounts: %d\n", videoWrapper->father->list1LimitCounts);
         LOGW("initVideo() list2LimitCounts: %d\n", videoWrapper->father->list2LimitCounts);
         videoWrapper->father->streamIndex = -1;
@@ -1479,18 +1481,24 @@ namespace alexander_media {
             }
         } else if (wrapper->type == TYPE_VIDEO
                    && list2Size >= wrapper->list2LimitCounts) {
-            LOGI("readDataImpl() audio list1: %d\n", audioWrapper->father->list1->size());
-            LOGI("readDataImpl() video list1: %d\n", videoWrapper->father->list1->size());
-            LOGI("readDataImpl() audio list2: %d\n", audioWrapper->father->list2->size());
-            LOGI("readDataImpl() video list2: %d\n", videoWrapper->father->list2->size());
+            if (!isLocal) {
+                LOGI("readDataImpl() audio list1: %d\n", audioWrapper->father->list1->size());
+                LOGI("readDataImpl() video list1: %d\n", videoWrapper->father->list1->size());
+                LOGI("readDataImpl() audio list2: %d\n", audioWrapper->father->list2->size());
+                LOGI("readDataImpl() video list2: %d\n", videoWrapper->father->list2->size());
+            }
             if (audioWrapper->father->list2->size() > audioWrapper->father->list1LimitCounts) {
                 onLoadProgressUpdated(
                         MSG_ON_TRANSACT_AUDIO_PRODUCER, audioWrapper->father->list2->size());
                 onLoadProgressUpdated(
                         MSG_ON_TRANSACT_VIDEO_PRODUCER, videoWrapper->father->list2->size());
-                LOGD("readDataImpl() notifyToReadWait start\n");
+                if (!isLocal) {
+                    LOGD("readDataImpl() notifyToReadWait start\n");
+                }
                 notifyToReadWait(videoWrapper->father);
-                LOGD("readDataImpl() notifyToReadWait end\n");
+                if (!isLocal) {
+                    LOGD("readDataImpl() notifyToReadWait end\n");
+                }
             }
         }
         return 0;
@@ -2027,11 +2035,18 @@ namespace alexander_media {
         AVPacket *srcAVPacket = av_packet_alloc();
         AVPacket *copyAVPacket = av_packet_alloc();
         // decodedAVFrame为解码后的数据
+        // flags: 0, pts: 118803601, pkt_pos: 376, pkt_duration: 0, pkt_size: 104689
+        // flags: 0, pts: 119228401, pkt_pos: 871192, pkt_duration: 3600, pkt_size: 7599
         AVFrame *decodedAVFrame = NULL;
+        // flags: 0, pts: -9223372036854775808, pkt_pos: -1, pkt_duration: 0, pkt_size: -1
+        AVFrame *preAudioAVFrame = NULL;
+        AVFrame *preVideoAVFrame = NULL;
         if (wrapper->type == TYPE_AUDIO) {
             decodedAVFrame = audioWrapper->decodedAVFrame;
+            preAudioAVFrame = av_frame_alloc();
         } else {
             decodedAVFrame = videoWrapper->decodedAVFrame;
+            preVideoAVFrame = av_frame_alloc();
         }
 
         int ret = 0;
@@ -2143,6 +2158,21 @@ namespace alexander_media {
                 wrapper->list1->pop_front();
                 wrapper->handleFramesCount++;
                 wrapper->allowDecode = true;
+
+                // test
+                /*if (wrapper->type == TYPE_AUDIO) {
+                } else {
+                    // flags: 0, pts: 4443433650, dts: 4443427440, duration: 3103, size: 8378
+                    // flags: 1, pts: 4443436710, dts: 4443430500, duration: 3103, size: 23613
+                    // flags: 0, pts: 4443442920, dts: 4443433650, duration: 3103, size: 6137
+                    LOGW("handleData() video                   "
+                         "flags: %d, pts: %lld, dts: %lld, duration: %lld, size: %d\n",
+                         copyAVPacket->flags,
+                         (long long) copyAVPacket->pts,
+                         (long long) copyAVPacket->dts,
+                         (long long) copyAVPacket->duration,
+                         copyAVPacket->size);
+                }*/
             }
 
             size_t list1Size = wrapper->list1->size();
@@ -2150,16 +2180,10 @@ namespace alexander_media {
                 if (list1Size % 10 == 0) {
                     onLoadProgressUpdated(MSG_ON_TRANSACT_AUDIO_CONSUMER, list1Size);
                 }
-                /*if (list1Size % 1000 == 0) {
-                    LOGD("handleData()   audio list1Size: %d\n", list1Size);
-                }*/
             } else {
                 if (list1Size % 10 == 0) {
                     onLoadProgressUpdated(MSG_ON_TRANSACT_VIDEO_CONSUMER, list1Size);
                 }
-                /*if (list1Size % 1000 == 0) {
-                    LOGW("handleData()   video list1Size: %d\n", list1Size);
-                }*/
             }
 
             // endregion
@@ -2185,11 +2209,12 @@ namespace alexander_media {
                     // 如果不是本地视频,从一千个左右的数据到0个数据的时间不超过30秒,那么就有问题了.
                     if ((wrapper->endHandleTime - wrapper->startHandleTime) < 251820) {
                         LOGE("handleData() maybeHasException\n");
-                        // 257
-                        onError(0x101, "播放时发生异常");
                         // 258(见鬼了,"0x101"这个值正常,"0x102"这个值不正常)
-                        //onError(0x102, "播放时发生异常");
-                        stop();
+                        // 0x101 = 257 0x102 = 258
+                        // onError(0x101, "播放时发生异常");
+                        // onError(0x102, "播放时发生异常");
+
+                        // stop();
                     } else {
                         maybeHasException = false;
                     }
@@ -2440,7 +2465,7 @@ namespace alexander_media {
                         // audio 发送数据包时出现异常 -50531338
                         LOGE("audio 发送数据包时出现异常 %d", ret);// -1094995529
                     } else {
-                        LOGE("video 发送数据包时出现异常 %d", ret);
+                        LOGE("video 发送数据包时出现异常 %d", ret);// -1094995529
                     }
                     break;
             }// switch (ret) end
@@ -2461,7 +2486,7 @@ namespace alexander_media {
                     if (wrapper->type == TYPE_AUDIO) {
                         LOGE("handleData() audio avcodec_receive_frame ret: %d\n", ret);
                     } else {
-                        LOGE("handleData() video avcodec_receive_frame ret: %d\n", ret);
+                        LOGE("handleData() video avcodec_receive_frame ret: %d\n", ret);// -11
                     }
                     break;
                 case AVERROR(EINVAL):
@@ -2477,6 +2502,22 @@ namespace alexander_media {
                     break;
                 case 0: {
                     // 解码成功,返回一个输出帧
+                    if (wrapper->type == TYPE_AUDIO) {
+                        av_frame_unref(preAudioAVFrame);
+                        av_frame_ref(preAudioAVFrame, decodedAVFrame);
+                    } else {
+                        /*LOGW("handleData() video                   "
+                             "flags: %d, pts: %lld, pkt_pos: %lld, pkt_duration: %lld, pkt_size: %d\n",
+                             decodedAVFrame->flags,
+                             (long long) decodedAVFrame->pts,
+                             (long long) decodedAVFrame->pkt_pos,
+                             (long long) decodedAVFrame->pkt_duration,
+                             decodedAVFrame->pkt_size);*/
+                        // 下面两个的作用一样,不能用av_frame_copy(...)这个方法,不起作用
+                        av_frame_unref(preVideoAVFrame);
+                        av_frame_ref(preVideoAVFrame, decodedAVFrame);
+                        //preVideoAVFrame = av_frame_clone(decodedAVFrame);
+                    }
                     break;
                 }
                 default:
@@ -2494,7 +2535,22 @@ namespace alexander_media {
             }
 
             if (ret != 0) {
-                continue;
+                av_frame_unref(decodedAVFrame);
+                if (wrapper->type == TYPE_AUDIO) {
+                    if (preAudioAVFrame->pkt_size > 0) {
+                        av_frame_ref(decodedAVFrame, preAudioAVFrame);
+                        LOGD("handleData() audio av_frame_clone\n");
+                    } else {
+                        continue;
+                    }
+                } else {
+                    if (preVideoAVFrame->pkt_size > 0) {
+                        av_frame_ref(decodedAVFrame, preVideoAVFrame);
+                        LOGW("handleData() video av_frame_clone\n");
+                    } else {
+                        continue;
+                    }
+                }
             }
 
             // endregion
@@ -2507,6 +2563,7 @@ namespace alexander_media {
             } else {
                 handleVideoDataImpl(stream, decodedAVFrame);
             }
+            av_frame_unref(decodedAVFrame);
 
             ///////////////////////////////////////////////////////////////////
 
@@ -2529,9 +2586,22 @@ namespace alexander_media {
             // av_packet_free(&srcAVPacket);
             srcAVPacket = NULL;
         }
+
         if (copyAVPacket != NULL) {
             av_packet_free(&copyAVPacket);
             copyAVPacket = NULL;
+        }
+
+        if (wrapper->type == TYPE_AUDIO) {
+            if (preAudioAVFrame != NULL) {
+                av_frame_free(&preAudioAVFrame);
+                preAudioAVFrame = NULL;
+            }
+        } else {
+            if (preVideoAVFrame != NULL) {
+                av_frame_free(&preVideoAVFrame);
+                preVideoAVFrame = NULL;
+            }
         }
 
         handleDataClose(wrapper);

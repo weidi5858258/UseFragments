@@ -417,104 +417,10 @@ public class PlayerWrapper {
                 mAudioProgressBar.setProgress(((JniObject) msg.obj).valueInt);
                 break;
             case Callback.MSG_ON_TRANSACT_READY:
-                mProgressTimeTV.setText("");
-                mDurationTimeTV.setText("");
-                mProgressBar.setProgress(0);
-                mVideoProgressBar.setProgress(0);
-                mVideoProgressBar.setSecondaryProgress(0);
-                mAudioProgressBar.setProgress(0);
-                mAudioProgressBar.setSecondaryProgress(0);
-                mProgressBarLayout.setVisibility(View.GONE);
-                if (mService != null) {
-                    mDownloadTV.setText("1");
-                    boolean isMute = mSP.getBoolean(PLAYBACK_IS_MUTE, false);
-                    if (!isMute) {
-                        mVolumeNormal.setVisibility(View.VISIBLE);
-                        mVolumeMute.setVisibility(View.GONE);
-                    } else {
-                        mVolumeNormal.setVisibility(View.GONE);
-                        mVolumeMute.setVisibility(View.VISIBLE);
-                    }
-                }
-                String title;
-                if (mIsLocal) {
-                    title = mPath.substring(mPath.lastIndexOf("/") + 1);
-                } else {
-                    title = Contents.getTitle(mPath);
-                }
-                if (!TextUtils.isEmpty(title)) {
-                    mFileNameTV.setText(title);
-                } else {
-                    mFileNameTV.setText("");
-                }
-                if (!mIsLocal) {
-                    mLoadingView.setVisibility(View.VISIBLE);
-                }
+                onReady();
                 break;
             case Callback.MSG_ON_TRANSACT_CHANGE_WINDOW:
-                // 视频宽高
-                mVideoWidth = msg.arg1;
-                mVideoHeight = msg.arg2;
-                MLog.d(TAG, "Callback.MSG_ON_CHANGE_WINDOW     videoWidth: " +
-                        mVideoWidth + " videoHeight: " + mVideoHeight);
-                mMediaDuration = Long.parseLong(
-                        mFFMPEGPlayer.onTransact(
-                                DO_SOMETHING_CODE_getDuration, null));
-                MLog.d(TAG, "Callback.MSG_ON_CHANGE_WINDOW mMediaDuration: " +
-                        mMediaDuration);
-                if (!mIsH264) {
-                    String durationTime = DateUtils.formatElapsedTime(mMediaDuration);
-                    mDurationTimeTV.setText(durationTime);
-                } else {
-                    mDurationTimeTV.setText(String.valueOf(mMediaDuration));
-                }
-
-                // 是否显示控制面板
-                if (TextUtils.isEmpty(mType)
-                        || mType.startsWith("video/")) {
-                    if ((mMediaDuration > 0 && mMediaDuration <= 300) || mIsH264) {
-                        mControllerPanelLayout.setVisibility(View.VISIBLE);
-                    } else {
-                        mControllerPanelLayout.setVisibility(View.INVISIBLE);
-                    }
-                    mProgressBarLayout.setVisibility(View.VISIBLE);
-                } else if (mType.startsWith("audio/")) {
-                    mControllerPanelLayout.setVisibility(View.VISIBLE);
-                }
-
-                if (mIsPhoneDevice) {
-                    MLog.i(TAG, "Callback.MSG_ON_CHANGE_WINDOW 手机");
-                    if (mContext.getResources().getConfiguration().orientation
-                            == Configuration.ORIENTATION_LANDSCAPE) {
-                        // 横屏
-                        if (!IS_HIKEY970) {
-                            if (JniPlayerActivity.isAliveJniPlayerActivity) {
-                                handleLandscapeScreen(0);
-                            } else {
-                                handleLandscapeScreen(1);
-                            }
-                        } else {
-                            handlePortraitScreenWithHikey970();
-                        }
-                    } else {
-                        // 竖屏
-                        handlePortraitScreen();
-                    }
-                } else {
-                    MLog.i(TAG, "Callback.MSG_ON_CHANGE_WINDOW 电视机");
-                    handlePortraitScreenWithTV();
-                }
-
-                if (TextUtils.isEmpty(mType)
-                        || mType.startsWith("video/")) {
-                    SharedPreferences.Editor edit = mSP.edit();
-                    // 保存播放地址
-                    edit.putString(PLAYBACK_ADDRESS, mPath);
-                    // 开始播放设置为false,表示初始化状态
-                    edit.putBoolean(PLAYBACK_NORMAL_FINISH, false);
-                    edit.putString(PLAYBACK_MEDIA_TYPE, mType);
-                    edit.commit();
-                }
+                onChangeWindow(msg);
                 break;
             case Callback.MSG_ON_TRANSACT_PLAYED:
                 mPlayIB.setVisibility(View.VISIBLE);
@@ -856,8 +762,6 @@ public class PlayerWrapper {
 
     public void startPlayback() {
         MLog.d(TAG, "startPlayback()");
-        mVolumeNormal.setVisibility(View.VISIBLE);
-        mVolumeMute.setVisibility(View.GONE);
         if (mSurfaceHolder == null) {
             mSurfaceHolder = mSurfaceView.getHolder();
         }
@@ -1470,6 +1374,115 @@ public class PlayerWrapper {
         }
     }
 
+    private void onReady() {
+        mProgressTimeTV.setText("");
+        mDurationTimeTV.setText("");
+        mProgressBar.setProgress(0);
+        mVideoProgressBar.setProgress(0);
+        mVideoProgressBar.setSecondaryProgress(0);
+        mAudioProgressBar.setProgress(0);
+        mAudioProgressBar.setSecondaryProgress(0);
+        mProgressBarLayout.setVisibility(View.GONE);
+        if (mService != null) {
+            mDownloadTV.setText("");
+            // R.color.lightgray
+            mDownloadTV.setBackgroundColor(
+                    mContext.getResources().getColor(android.R.color.transparent));
+            boolean isMute = mSP.getBoolean(PLAYBACK_IS_MUTE, false);
+            if (!isMute) {
+                mVolumeNormal.setVisibility(View.VISIBLE);
+                mVolumeMute.setVisibility(View.GONE);
+            } else {
+                mVolumeNormal.setVisibility(View.GONE);
+                mVolumeMute.setVisibility(View.VISIBLE);
+            }
+        }
+        String title;
+        if (mIsLocal) {
+            title = mPath.substring(mPath.lastIndexOf("/") + 1);
+        } else {
+            mLoadingView.setVisibility(View.VISIBLE);
+            title = Contents.getTitle(mPath);
+        }
+        if (!TextUtils.isEmpty(title)) {
+            mFileNameTV.setText(title);
+        } else {
+            mFileNameTV.setText("");
+        }
+        if (TextUtils.isEmpty(mType)
+                || mType.startsWith("video/")) {
+            mControllerPanelLayout.setVisibility(View.INVISIBLE);
+        }
+    }
+
+    private void onChangeWindow(Message msg) {
+        // 视频宽高
+        mVideoWidth = msg.arg1;
+        mVideoHeight = msg.arg2;
+        MLog.d(TAG, "Callback.MSG_ON_CHANGE_WINDOW     videoWidth: " +
+                mVideoWidth + " videoHeight: " + mVideoHeight);
+        mMediaDuration = Long.parseLong(
+                mFFMPEGPlayer.onTransact(
+                        DO_SOMETHING_CODE_getDuration, null));
+        MLog.d(TAG, "Callback.MSG_ON_CHANGE_WINDOW mMediaDuration: " +
+                mMediaDuration);
+        if (!mIsH264) {
+            String durationTime = DateUtils.formatElapsedTime(mMediaDuration);
+            mDurationTimeTV.setText(durationTime);
+        } else {
+            mDurationTimeTV.setText(String.valueOf(mMediaDuration));
+        }
+
+        // 是否显示控制面板
+        if (TextUtils.isEmpty(mType)
+                || mType.startsWith("video/")) {
+            if ((mMediaDuration > 0 && mMediaDuration <= 300) || mIsH264) {
+                mControllerPanelLayout.setVisibility(View.VISIBLE);
+            } else {
+                //mControllerPanelLayout.setVisibility(View.INVISIBLE);
+            }
+            if (!mIsLocal) {
+                mProgressBarLayout.setVisibility(View.VISIBLE);
+            }
+        } else if (mType.startsWith("audio/")) {
+            mControllerPanelLayout.setVisibility(View.VISIBLE);
+        }
+
+        if (mIsPhoneDevice) {
+            MLog.i(TAG, "Callback.MSG_ON_CHANGE_WINDOW 手机");
+            if (mContext.getResources().getConfiguration().orientation
+                    == Configuration.ORIENTATION_LANDSCAPE) {
+                // 横屏
+                if (!IS_HIKEY970) {
+                    if (JniPlayerActivity.isAliveJniPlayerActivity) {
+                        handleLandscapeScreen(0);
+                    } else {
+                        handleLandscapeScreen(1);
+                    }
+                } else {
+                    handlePortraitScreenWithHikey970();
+                }
+            } else {
+                // 竖屏
+                handlePortraitScreen();
+            }
+        } else {
+            MLog.i(TAG, "Callback.MSG_ON_CHANGE_WINDOW 电视机");
+            handlePortraitScreenWithTV();
+        }
+
+        if (TextUtils.isEmpty(mType)
+                || mType.startsWith("video/")) {
+            SharedPreferences.Editor edit = mSP.edit();
+            // 保存播放地址
+            edit.putString(PLAYBACK_ADDRESS, mPath);
+            // 开始播放设置为false,表示初始化状态
+            edit.putBoolean(PLAYBACK_NORMAL_FINISH, false);
+            edit.putString(PLAYBACK_MEDIA_TYPE, mType);
+            edit.commit();
+        }
+    }
+
     private void updateRootViewLayout(int width, int height) {
         if (mService != null && mService.mIsAddedView) {
             mLayoutParams.width = width;
@@ -1601,6 +1614,12 @@ public class PlayerWrapper {
                     mSP.edit().putBoolean(PLAYBACK_IS_MUTE, false).commit();
                     break;
                 case R.id.download_tv:
+                    if (TextUtils.isEmpty(mDownloadTV.getText())) {
+                        mDownloadTV.setText("1");
+                        mDownloadTV.setBackgroundColor(
+                                mContext.getResources().getColor(R.color.burlywood));
+                        return;
+                    }
                     mDownloadClickCounts++;
                     mThreadHandler.removeMessages(MSG_DOWNLOAD);
                     mThreadHandler.sendEmptyMessageDelayed(MSG_DOWNLOAD, 500);

@@ -76,10 +76,14 @@ public class FFMPEG {
     public static final float VOLUME_NORMAL = 1.0f;
     public static final float VOLUME_MUTE = 0.0f;
 
+    // 更新视频流下载量
     public static final JniObject videoProducer = JniObject.obtain();
+    // 更新视频流消耗量
     public static final JniObject videoConsumer = JniObject.obtain();
     public static final JniObject audioProducer = JniObject.obtain();
     public static final JniObject audioConsumer = JniObject.obtain();
+    // 更新进度
+    public static final JniObject processUpdate = JniObject.obtain();
 
     public static final int USE_MODE_MEDIA = 1;
     public static final int USE_MODE_ONLY_VIDEO = 2;

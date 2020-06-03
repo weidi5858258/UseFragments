@@ -288,6 +288,8 @@ public class JniPlayerActivity extends BaseActivity {
              */
             Uri uri = intent.getData();
             if (uri != null) {
+                // content://com.huawei.hidisk.fileprovider/root/storage/1532-48AD/Android/data/
+                // tv.danmaku.bili/download/92647556/1/64/video.m4s
                 MLog.d(TAG, "internalCreate()    uri: " + uri.toString());
                 mPath = uri.getPath();
                 if (!mPath.substring(mPath.lastIndexOf("/")).contains(".")) {
@@ -302,13 +304,14 @@ public class JniPlayerActivity extends BaseActivity {
                 }
                 MLog.d(TAG, "internalCreate() mPath1: " + mPath);
                 if (mPath.startsWith("/root/")) {
-                    //mPath = mPath.substring(5);
-                    mPath = mPath.replace("/root/", "/storage/");
+                    // /root/storage/1532-48AD/Android/data/
+                    // tv.danmaku.bili/download/92647556/1/64/video.m4s
+                    mPath = mPath.substring(5);
                 } else if (mPath.startsWith("/document/")) {
+                    // /document/37C8-3904:myfiles/video/[2K]Clarity_Demo_2016.mp4
                     mPath = mPath.replace("/document/", "/storage/");
                     mPath = mPath.replace(":", "/");
                 }
-                // /document/37C8-3904:myfiles/video/[2K]Clarity_Demo_2016.mp4
                 // /storage/37C8-3904/myfiles/video/
 
                 MLog.d(TAG, "internalCreate() mPath2: " + mPath);
