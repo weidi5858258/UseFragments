@@ -2,7 +2,6 @@ package com.weidi.usefragments.business.contents;
 
 import android.content.Context;
 import android.support.v7.widget.RecyclerView;
-import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -10,9 +9,10 @@ import android.widget.Button;
 import android.widget.TextView;
 
 import com.weidi.usefragments.R;
+import com.weidi.usefragments.business.video_player.PlayerWrapper;
 
 import java.util.ArrayList;
-import java.util.List;
+import java.util.Map;
 
 /***
  Created by root on 19-4-15.
@@ -20,7 +20,7 @@ import java.util.List;
 
 public class ContentsAdapter extends RecyclerView.Adapter {
 
-    private ArrayList<String> mContents = new ArrayList<String>();
+    private ArrayList<String> mKeys = new ArrayList<String>();
     private Context mContext;
     private LayoutInflater mLayoutInflater;
 
@@ -42,14 +42,15 @@ public class ContentsAdapter extends RecyclerView.Adapter {
     public void onBindViewHolder(
             RecyclerView.ViewHolder holder, int position) {
         TitleViewHolder titleViewHolder = (TitleViewHolder) holder;
-        String name = mContents.get(position);
-        titleViewHolder.title.setText(name);
-        titleViewHolder.name = name;
+        String key = mKeys.get(position);
+        String value = PlayerWrapper.mContentsMap.get(key);
+        titleViewHolder.title.setText(value);
+        titleViewHolder.key = key;
     }
 
     @Override
     public int getItemCount() {
-        return mContents.size();
+        return PlayerWrapper.mContentsMap.size();
     }
 
     @Override
@@ -57,22 +58,19 @@ public class ContentsAdapter extends RecyclerView.Adapter {
         return 0;
     }
 
-    public void setData(List<String> list) {
-        if (list == null) {
+    // map的key已经是唯一了
+    public void setData(Map<String, String> map) {
+        if (map == null) {
             return;
         }
-        mContents.clear();
-        for (String name : list) {
-            if (TextUtils.isEmpty(name)) {
-                continue;
-            }
-
-            mContents.add(name);
+        mKeys.clear();
+        for (Map.Entry<String, String> tempMap : map.entrySet()) {
+            mKeys.add(tempMap.getKey());
         }
     }
 
     public interface OnItemClickListener {
-        void onItemClick(String name, int position, int viewId);
+        void onItemClick(String key, int position, int viewId);
     }
 
     private OnItemClickListener mOnItemClickListener;
@@ -93,7 +91,8 @@ public class ContentsAdapter extends RecyclerView.Adapter {
 
         private TextView title;
         private Button downloadBtn;
-        private String name;
+        // 保存了PlayerWrapper.mContentsMap的key
+        private String key;
 
         public TitleViewHolder(View itemView) {
             super(itemView);
@@ -105,13 +104,15 @@ public class ContentsAdapter extends RecyclerView.Adapter {
 
         private void onClick(View view) {
             if (mOnItemClickListener != null) {
-                int position = mContents.indexOf(name);
+                int position = mKeys.indexOf(key);
                 switch (view.getId()) {
                     case R.id.item_root_layout:
-                        mOnItemClickListener.onItemClick(name, position, R.id.item_root_layout);
+                        mOnItemClickListener.onItemClick(
+                                key, position, R.id.item_root_layout);
                         break;
                     case R.id.item_download_btn:
-                        mOnItemClickListener.onItemClick(name, position, R.id.item_download_btn);
+                        mOnItemClickListener.onItemClick(
+                                key, position, R.id.item_download_btn);
                         mDownloadBtn = downloadBtn;
                         break;
                     default:

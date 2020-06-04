@@ -231,4 +231,55 @@ public class JniObject {
                 ", index=" + index +
                 '}';
     }
+
+    /***
+     public static void main(String[] args) {
+     final String TAG = "@@@@@@@@@@";
+     File file = new File("/root/mydev/workspace_github/myfiles/android/contents.txt");
+     BufferedReader reader = null;
+     try {
+     reader = new BufferedReader(new FileReader(file));
+     String aLineContent = null;
+     System.out.println("----------------------------------");
+     String title = null;
+     int length = 0;
+     StringBuilder sb = new StringBuilder();
+     while ((aLineContent = reader.readLine()) != null) {
+     if (aLineContent == null || aLineContent.length() == 0) {
+     continue;
+     }
+
+     if (aLineContent.startsWith("//")
+     || aLineContent.startsWith("/*")
+     || aLineContent.startsWith("*?")) {
+     System.out.println(aLineContent);
+     } else if (!aLineContent.contains(TAG)) {
+     title = aLineContent;
+     } else if (aLineContent.contains(TAG)) {
+     length = aLineContent.split(TAG).length;
+     if (length > 1) {
+     System.out.println(aLineContent);
+     } else {
+     sb.delete(0, sb.length());
+     sb.append(aLineContent.split(TAG)[0]);
+     sb.append(TAG);
+     sb.append(title);
+     System.out.println(sb.toString());
+     }
+     }
+     }
+     System.out.println("----------------------------------");
+     } catch (IOException e) {
+     e.printStackTrace();
+     } finally {
+     if (reader != null) {
+     try {
+     reader.close();
+     } catch (IOException e1) {
+     }
+     }
+     }
+     }
+     */
+
 }

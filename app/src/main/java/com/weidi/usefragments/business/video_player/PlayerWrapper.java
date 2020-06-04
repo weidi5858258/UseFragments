@@ -47,6 +47,7 @@ import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 
 import static com.weidi.usefragments.business.video_player.FFMPEG.*;
 
@@ -150,6 +151,9 @@ public class PlayerWrapper {
 
     private boolean mIsPhoneDevice;
     private boolean mIsPortraitScreen;
+
+    // 第一个存储视频地址,第二个存储标题
+    public static final LinkedHashMap<String, String> mContentsMap = new LinkedHashMap();
 
     // 必须首先被调用
     public void setActivity(Activity activity, Service service) {
@@ -690,7 +694,7 @@ public class PlayerWrapper {
                             title = mPath.substring(
                                     mPath.lastIndexOf("/") + 1, mPath.lastIndexOf("."));
                         } else {
-                            title = Contents.getTitle(mPath);
+                            title = mContentsMap.get(mPath);
                         }
                         if (TextUtils.isEmpty(title)) {
                             sb.append("media-");
@@ -1402,7 +1406,8 @@ public class PlayerWrapper {
             title = mPath.substring(mPath.lastIndexOf("/") + 1);
         } else {
             mLoadingView.setVisibility(View.VISIBLE);
-            title = Contents.getTitle(mPath);
+            //title = Contents.getTitle(mPath);
+            title = mContentsMap.get(mPath);
         }
         if (!TextUtils.isEmpty(title)) {
             mFileNameTV.setText(title);

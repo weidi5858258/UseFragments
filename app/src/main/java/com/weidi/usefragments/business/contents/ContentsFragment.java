@@ -8,6 +8,7 @@ import android.content.res.Configuration;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
@@ -24,9 +25,11 @@ import android.widget.Toast;
 
 import com.weidi.eventbus.EventBusUtils;
 import com.weidi.recycler_view.VerticalLayoutManager;
+import com.weidi.threadpool.ThreadPool;
 import com.weidi.usefragments.R;
 import com.weidi.usefragments.business.video_player.JniPlayerActivity;
 import com.weidi.usefragments.business.video_player.PlayerService;
+import com.weidi.usefragments.business.video_player.PlayerWrapper;
 import com.weidi.usefragments.fragment.base.BaseFragment;
 import com.weidi.usefragments.inject.InjectOnClick;
 import com.weidi.usefragments.inject.InjectView;
@@ -35,8 +38,12 @@ import com.weidi.usefragments.tool.DownloadCallback;
 import com.weidi.usefragments.tool.MLog;
 import com.weidi.utils.MD5Util;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -341,6 +348,8 @@ public class ContentsFragment extends BaseFragment {
     private long contentLength = -1;
     private ContentsAdapter mAdapter;
     private SharedPreferences mPreferences;
+    // 第一个存储视频地址,第二个存储标题
+    //private LinkedHashMap<String, String> mContentsMap = new LinkedHashMap();
 
     /***
      代码执行的内容跟onStart(),onResume()一样,
@@ -398,31 +407,99 @@ public class ContentsFragment extends BaseFragment {
     }
 
     private void initView(View view, Bundle savedInstanceState) {
-        List<String> list = new ArrayList<>();
-        for (Map.Entry<String, String> map : Contents.movieMap.entrySet()) {
-            String name = map.getKey();
-            if (TextUtils.isEmpty(name)) {
-                continue;
-            }
-            list.add(name);
-        }
+        ThreadPool.getFixedThreadPool().execute(new Runnable() {
+            @Override
+            public void run() {
+                PlayerWrapper.mContentsMap.clear();
+                File[] files = getContext().getExternalFilesDirs(Environment.MEDIA_SHARED);
+                File file = null;
+                for (File f : files) {
+                    MLog.i(TAG, "Environment.MEDIA_SHARED    : " + f.getAbsolutePath());
+                    file = f;
+                }
+                if (file != null) {
+                    StringBuilder sb = new StringBuilder();
+                    sb.append(file.getAbsolutePath());
+                    sb.append("/");
+                    sb.append("contents.txt");
+                    file = new File(sb.toString());
+                    if (file.exists()) {
+                        readContents(file, PlayerWrapper.mContentsMap);
+                        mUiHandler.removeMessages(MSG_ON_INIT_ADAPTER);
+                        mUiHandler.sendEmptyMessage(MSG_ON_INIT_ADAPTER);
+                        return;
+                    }
+                }
 
+                for (Map.Entry<String, String> tempMap : Contents.movieMap.entrySet()) {
+                    if (!PlayerWrapper.mContentsMap.containsKey(tempMap.getValue())) {
+                        PlayerWrapper.mContentsMap.put(tempMap.getValue(), tempMap.getKey());
+                    }
+                }
+                mUiHandler.removeMessages(MSG_ON_INIT_ADAPTER);
+                mUiHandler.sendEmptyMessage(MSG_ON_INIT_ADAPTER);
+            }
+        });
+
+        // 文件下载完的才显示其文件名
+        /*boolean videoIsFinished = mPreferences.getBoolean(
+                DownloadFileService.VIDEO_IS_FINISHED, false);
+        String videoName = mPreferences.getString(DownloadFileService.VIDEO_NAME, "");
+        if (!TextUtils.isEmpty(videoName) && videoIsFinished) {
+            mAddressET.setText(videoName);
+        }*/
+    }
+
+    private void readContents(File file, LinkedHashMap<String, String> map) {
+        final String TAG = "@@@@@@@@@@";
+        BufferedReader reader = null;
+        try {
+            reader = new BufferedReader(new FileReader(file));
+            String aLineContent = null;
+            //一次读一行，读入null时文件结束
+            while ((aLineContent = reader.readLine()) != null) {
+                if (aLineContent == null || aLineContent.length() == 0) {
+                    continue;
+                }
+
+                if (aLineContent.contains(TAG) && !aLineContent.startsWith("#")) {
+                    String[] contents = aLineContent.split(TAG);
+                    if (contents.length > 1) {
+                        if (!map.containsKey(contents[0])) {
+                            map.put(contents[0], contents[1]);
+                        }
+                    }
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            if (reader != null) {
+                try {
+                    reader.close();
+                } catch (IOException e1) {
+                }
+            }
+        }
+    }
+
+    private void initAdapter(Map<String, String> map) {
         mAdapter = new ContentsAdapter(getContext());
-        mAdapter.setData(list);
+        mAdapter.setData(map);
         mAdapter.setOnItemClickListener(
                 new ContentsAdapter.OnItemClickListener() {
                     @Override
-                    public void onItemClick(String name, int position, int viewId) {
-                        MLog.d(TAG, "onItemClick(): " + name);
+                    public void onItemClick(String key, int position, int viewId) {
+                        MLog.d(TAG, "onItemClick(): " + key);
 
-                        String videoPlaybackPath = Contents.movieMap.get(name);
+                        String videoPlaybackPath = key;
                         if (TextUtils.isEmpty(videoPlaybackPath)) {
                             Toast.makeText(
                                     getContext(), "播放地址为null", Toast.LENGTH_SHORT).show();
                             return;
                         }
 
-                        Contents.setTitle(name);
+                        Contents.setTitle(PlayerWrapper.mContentsMap.get(key));
 
                         Uri uri = Uri.parse(videoPlaybackPath);
                         String lastPath = uri.getLastPathSegment();
@@ -510,14 +587,6 @@ public class ContentsFragment extends BaseFragment {
         mRecyclerView.setLayoutManager(linearLayoutManager);*/
         mRecyclerView.setLayoutManager(new VerticalLayoutManager());
         mRecyclerView.setAdapter(mAdapter);
-
-        // 文件下载完的才显示其文件名
-        /*boolean videoIsFinished = mPreferences.getBoolean(
-                DownloadFileService.VIDEO_IS_FINISHED, false);
-        String videoName = mPreferences.getString(DownloadFileService.VIDEO_NAME, "");
-        if (!TextUtils.isEmpty(videoName) && videoIsFinished) {
-            mAddressET.setText(videoName);
-        }*/
     }
 
     private void handleBeforeOfConfigurationChangedEvent() {
@@ -616,6 +685,7 @@ public class ContentsFragment extends BaseFragment {
     private final int REQUEST_CODE_SELECT_VIDEO = 112;
 
     private static final int MSG_ON_PROGRESS_UPDATED = 1;
+    private static final int MSG_ON_INIT_ADAPTER = 2;
 
     private void uiHandleMessage(Message msg) {
         if (msg == null) {
@@ -625,6 +695,9 @@ public class ContentsFragment extends BaseFragment {
         switch (msg.what) {
             case MSG_ON_PROGRESS_UPDATED:
                 mAdapter.setProgress(mProgress + "%");
+                break;
+            case MSG_ON_INIT_ADAPTER:
+                initAdapter(PlayerWrapper.mContentsMap);
                 break;
             default:
                 break;

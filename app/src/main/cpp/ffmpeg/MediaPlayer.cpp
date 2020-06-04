@@ -283,15 +283,13 @@ namespace alexander_media {
      */
     static void log_callback(void *ptr, int level, const char *fmt, va_list vl) {
         static int print_prefix = 1;
-        static int count;
         static char prev[1024];
         char line[1024];
-        static int is_atty;
 
         av_log_format_line(ptr, level, fmt, vl, line, sizeof(line), &print_prefix);
 
         strcpy(prev, line);
-        //sanitize((uint8_t *)line);
+        // sanitize((uint8_t *)line);
 
         if (level <= AV_LOG_WARNING) {
             LOGE("%s", line);
@@ -784,16 +782,19 @@ namespace alexander_media {
             if (avCodecParameters != NULL) {
                 AVMediaType mediaType = avCodecParameters->codec_type;
                 switch (mediaType) {
+                    case AVMEDIA_TYPE_VIDEO: {
+                        videoWrapper->father->streamIndex = i;
+                        videoWrapper->father->avCodecParameters = avCodecParameters;
+                        LOGW("videoStreamIndex: %d\n", videoWrapper->father->streamIndex);
+                        break;
+                    }
                     case AVMEDIA_TYPE_AUDIO: {
                         audioWrapper->father->streamIndex = i;
                         audioWrapper->father->avCodecParameters = avCodecParameters;
                         LOGD("audioStreamIndex: %d\n", audioWrapper->father->streamIndex);
                         break;
                     }
-                    case AVMEDIA_TYPE_VIDEO: {
-                        videoWrapper->father->streamIndex = i;
-                        videoWrapper->father->avCodecParameters = avCodecParameters;
-                        LOGW("videoStreamIndex: %d\n", videoWrapper->father->streamIndex);
+                    case AVMEDIA_TYPE_SUBTITLE: {
                         break;
                     }
                     default:
@@ -1743,7 +1744,8 @@ namespace alexander_media {
             }
             preAudioPts = audioPts;
             //LOGD("handleVideoDataImpl() audioPts: %lf\n", audioPts);
-            endVideoLockedTime = av_gettime_relative();
+
+            // endVideoLockedTime = av_gettime_relative();
             /*if (!isLocal
                 && mediaDuration < 0
                 && startVideoLockedTime > 0
@@ -1879,7 +1881,8 @@ namespace alexander_media {
 
         // 渲染画面
         if (videoWrapper->father->isHandling) {
-            startVideoLockedTime = av_gettime_relative();
+            // startVideoLockedTime = av_gettime_relative();
+
             // 3.lock锁定下一个即将要绘制的Surface
             //LOGW("handleVideoDataImpl() ANativeWindow_lock 1\n");
             ANativeWindow_lock(pANativeWindow, &mANativeWindow_Buffer, NULL);
@@ -2132,7 +2135,8 @@ namespace alexander_media {
                         LOGE("handleData() wait() Cache video end   被动暂停\n");
                     }
                 }
-                startVideoLockedTime = av_gettime_relative();
+
+                // startVideoLockedTime = av_gettime_relative();
             }// 暂停装置 end
 
             // endregion
@@ -2591,6 +2595,7 @@ namespace alexander_media {
             audioWrapper->swrContext = NULL;
         }
         if (audioWrapper->decodedAVFrame != NULL) {
+            av_frame_unref(audioWrapper->decodedAVFrame);
             av_frame_free(&audioWrapper->decodedAVFrame);
             audioWrapper->decodedAVFrame = NULL;
         }
@@ -2675,6 +2680,7 @@ namespace alexander_media {
             videoWrapper->swsContext = NULL;
         }
         if (videoWrapper->decodedAVFrame != NULL) {
+            av_frame_unref(videoWrapper->decodedAVFrame);
             av_frame_free(&videoWrapper->decodedAVFrame);
             videoWrapper->decodedAVFrame = NULL;
         }
