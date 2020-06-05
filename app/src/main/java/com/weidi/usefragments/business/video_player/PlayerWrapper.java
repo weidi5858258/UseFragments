@@ -10,6 +10,7 @@ import android.content.pm.ActivityInfo;
 import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.graphics.PixelFormat;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Looper;
@@ -43,14 +44,38 @@ import com.weidi.usefragments.tool.JniObject;
 import com.weidi.usefragments.tool.MLog;
 import com.weidi.utils.MyToast;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.Map;
 
-import static com.weidi.usefragments.business.video_player.FFMPEG.*;
-
+import static com.weidi.usefragments.business.video_player.FFMPEG.DO_SOMETHING_CODE_audioHandleData;
+import static com.weidi.usefragments.business.video_player.FFMPEG.DO_SOMETHING_CODE_download;
+import static com.weidi.usefragments.business.video_player.FFMPEG.DO_SOMETHING_CODE_getDuration;
+import static com.weidi.usefragments.business.video_player.FFMPEG.DO_SOMETHING_CODE_init;
+import static com.weidi.usefragments.business.video_player.FFMPEG.DO_SOMETHING_CODE_initPlayer;
+import static com.weidi.usefragments.business.video_player.FFMPEG.DO_SOMETHING_CODE_isPlaying;
+import static com.weidi.usefragments.business.video_player.FFMPEG.DO_SOMETHING_CODE_isRunning;
+import static com.weidi.usefragments.business.video_player.FFMPEG.DO_SOMETHING_CODE_pause;
+import static com.weidi.usefragments.business.video_player.FFMPEG.DO_SOMETHING_CODE_play;
+import static com.weidi.usefragments.business.video_player.FFMPEG.DO_SOMETHING_CODE_readData;
+import static com.weidi.usefragments.business.video_player.FFMPEG.DO_SOMETHING_CODE_seekTo;
+import static com.weidi.usefragments.business.video_player.FFMPEG.DO_SOMETHING_CODE_setMode;
+import static com.weidi.usefragments.business.video_player.FFMPEG.DO_SOMETHING_CODE_setSurface;
+import static com.weidi.usefragments.business.video_player.FFMPEG.DO_SOMETHING_CODE_stepAdd;
+import static com.weidi.usefragments.business.video_player.FFMPEG.DO_SOMETHING_CODE_stepSubtract;
+import static com.weidi.usefragments.business.video_player.FFMPEG.DO_SOMETHING_CODE_videoHandleData;
+import static com.weidi.usefragments.business.video_player.FFMPEG.USE_MODE_AAC_H264;
+import static com.weidi.usefragments.business.video_player.FFMPEG.USE_MODE_AUDIO_VIDEO;
+import static com.weidi.usefragments.business.video_player.FFMPEG.USE_MODE_MEDIA;
+import static com.weidi.usefragments.business.video_player.FFMPEG.USE_MODE_ONLY_AUDIO;
+import static com.weidi.usefragments.business.video_player.FFMPEG.VOLUME_MUTE;
+import static com.weidi.usefragments.business.video_player.FFMPEG.VOLUME_NORMAL;
 import static com.weidi.usefragments.service.DownloadFileService.PREFERENCES_NAME;
 
 public class PlayerWrapper {
@@ -65,6 +90,7 @@ public class PlayerWrapper {
     private static final int MSG_SEEK_TO_ADD = 12;
     private static final int MSG_SEEK_TO_SUBTRACT = 13;
     private static final int MSG_DOWNLOAD = 14;
+    private static final int MSG_LOAD_CONTENTS = 15;
 
     public static final String PLAYBACK_ADDRESS = "playback_address";
     public static final String PLAYBACK_POSITION = "playback_position";
@@ -282,6 +308,9 @@ public class PlayerWrapper {
                 PlayerWrapper.this.threadHandleMessage(msg);
             }
         };
+
+        mThreadHandler.removeMessages(MSG_LOAD_CONTENTS);
+        mThreadHandler.sendEmptyMessage(MSG_LOAD_CONTENTS);
 
         if (mFFMPEGPlayer == null) {
             mFFMPEGPlayer = FFMPEG.getDefault();
@@ -758,6 +787,9 @@ public class PlayerWrapper {
                 }
 
                 mDownloadClickCounts = 0;
+                break;
+            case MSG_LOAD_CONTENTS:
+                loadContents();
                 break;
             default:
                 break;
@@ -1756,15 +1788,61 @@ public class PlayerWrapper {
         }
     }
 
-    public void pausePlayerWithTelephonyCall() {
-        if (mFFMPEGPlayer != null) {
-            if (Boolean.parseBoolean(mFFMPEGPlayer.onTransact(
-                    DO_SOMETHING_CODE_isRunning, null))) {
-                if (Boolean.parseBoolean(mFFMPEGPlayer.onTransact(
-                        DO_SOMETHING_CODE_isPlaying, null))) {
-                    mPlayIB.setVisibility(View.GONE);
-                    mPauseIB.setVisibility(View.VISIBLE);
-                    sendEmptyMessage(DO_SOMETHING_CODE_pause);
+    private void loadContents() {
+        mContentsMap.clear();
+        File[] files = mContext.getExternalFilesDirs(Environment.MEDIA_SHARED);
+        File file = null;
+        for (File f : files) {
+            MLog.i(TAG, "Environment.MEDIA_SHARED    : " + f.getAbsolutePath());
+            file = f;
+        }
+        if (file != null) {
+            StringBuilder sb = new StringBuilder();
+            sb.append(file.getAbsolutePath());
+            sb.append("/");
+            sb.append("contents.txt");
+            file = new File(sb.toString());
+            if (file.exists()) {
+                readContents(file);
+                return;
+            }
+        }
+
+        for (Map.Entry<String, String> tempMap : Contents.movieMap.entrySet()) {
+            if (!mContentsMap.containsKey(tempMap.getValue())) {
+                mContentsMap.put(tempMap.getValue(), tempMap.getKey());
+            }
+        }
+    }
+
+    private void readContents(File file) {
+        final String TAG = "@@@@@@@@@@";
+        BufferedReader reader = null;
+        try {
+            reader = new BufferedReader(new FileReader(file));
+            String aLineContent = null;
+            //一次读一行，读入null时文件结束
+            while ((aLineContent = reader.readLine()) != null) {
+                if (aLineContent == null || aLineContent.length() == 0) {
+                    continue;
+                }
+
+                if (aLineContent.contains(TAG) && !aLineContent.startsWith("#")) {
+                    String[] contents = aLineContent.split(TAG);
+                    if (contents.length > 1) {
+                        if (!mContentsMap.containsKey(contents[0])) {
+                            mContentsMap.put(contents[0], contents[1]);
+                        }
+                    }
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            if (reader != null) {
+                try {
+                    reader.close();
+                } catch (IOException e1) {
                 }
             }
         }
@@ -1787,6 +1865,20 @@ public class PlayerWrapper {
                 break;
         }
         return result;
+    }
+
+    public void pausePlayerWithTelephonyCall() {
+        if (mFFMPEGPlayer != null) {
+            if (Boolean.parseBoolean(mFFMPEGPlayer.onTransact(
+                    DO_SOMETHING_CODE_isRunning, null))) {
+                if (Boolean.parseBoolean(mFFMPEGPlayer.onTransact(
+                        DO_SOMETHING_CODE_isPlaying, null))) {
+                    mPlayIB.setVisibility(View.GONE);
+                    mPauseIB.setVisibility(View.VISIBLE);
+                    sendEmptyMessage(DO_SOMETHING_CODE_pause);
+                }
+            }
+        }
     }
 
     private class PlayerOnTouchListener implements View.OnTouchListener {

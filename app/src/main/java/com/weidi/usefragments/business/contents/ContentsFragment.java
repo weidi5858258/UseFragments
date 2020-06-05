@@ -8,7 +8,6 @@ import android.content.res.Configuration;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
-import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
@@ -25,7 +24,6 @@ import android.widget.Toast;
 
 import com.weidi.eventbus.EventBusUtils;
 import com.weidi.recycler_view.VerticalLayoutManager;
-import com.weidi.threadpool.ThreadPool;
 import com.weidi.usefragments.R;
 import com.weidi.usefragments.business.video_player.JniPlayerActivity;
 import com.weidi.usefragments.business.video_player.PlayerService;
@@ -37,15 +35,9 @@ import com.weidi.usefragments.service.DownloadFileService;
 import com.weidi.usefragments.tool.DownloadCallback;
 import com.weidi.usefragments.tool.MLog;
 import com.weidi.utils.MD5Util;
+import com.weidi.utils.MyToast;
 
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
 
 /***
 
@@ -407,39 +399,22 @@ public class ContentsFragment extends BaseFragment {
     }
 
     private void initView(View view, Bundle savedInstanceState) {
-        ThreadPool.getFixedThreadPool().execute(new Runnable() {
-            @Override
-            public void run() {
-                PlayerWrapper.mContentsMap.clear();
-                File[] files = getContext().getExternalFilesDirs(Environment.MEDIA_SHARED);
-                File file = null;
-                for (File f : files) {
-                    MLog.i(TAG, "Environment.MEDIA_SHARED    : " + f.getAbsolutePath());
-                    file = f;
-                }
-                if (file != null) {
-                    StringBuilder sb = new StringBuilder();
-                    sb.append(file.getAbsolutePath());
-                    sb.append("/");
-                    sb.append("contents.txt");
-                    file = new File(sb.toString());
-                    if (file.exists()) {
-                        readContents(file, PlayerWrapper.mContentsMap);
-                        mUiHandler.removeMessages(MSG_ON_INIT_ADAPTER);
-                        mUiHandler.sendEmptyMessage(MSG_ON_INIT_ADAPTER);
-                        return;
+        /*LinearLayoutManager linearLayoutManager =
+                new LinearLayoutManager(getContext()) {
+                    @Override
+                    public void onLayoutCompleted(RecyclerView.State state) {
+                        super.onLayoutCompleted(state);
                     }
-                }
-
-                for (Map.Entry<String, String> tempMap : Contents.movieMap.entrySet()) {
-                    if (!PlayerWrapper.mContentsMap.containsKey(tempMap.getValue())) {
-                        PlayerWrapper.mContentsMap.put(tempMap.getValue(), tempMap.getKey());
-                    }
-                }
-                mUiHandler.removeMessages(MSG_ON_INIT_ADAPTER);
-                mUiHandler.sendEmptyMessage(MSG_ON_INIT_ADAPTER);
-            }
-        });
+                };
+        mRecyclerView.setLayoutManager(linearLayoutManager);*/
+        if (!PlayerWrapper.mContentsMap.isEmpty()) {
+            initAdapter();
+            mAdapter.setData(PlayerWrapper.mContentsMap);
+            mRecyclerView.setLayoutManager(new VerticalLayoutManager());
+            mRecyclerView.setAdapter(mAdapter);
+        } else {
+            MyToast.show("没有数据可用!!!");
+        }
 
         // 文件下载完的才显示其文件名
         /*boolean videoIsFinished = mPreferences.getBoolean(
@@ -450,42 +425,8 @@ public class ContentsFragment extends BaseFragment {
         }*/
     }
 
-    private void readContents(File file, LinkedHashMap<String, String> map) {
-        final String TAG = "@@@@@@@@@@";
-        BufferedReader reader = null;
-        try {
-            reader = new BufferedReader(new FileReader(file));
-            String aLineContent = null;
-            //一次读一行，读入null时文件结束
-            while ((aLineContent = reader.readLine()) != null) {
-                if (aLineContent == null || aLineContent.length() == 0) {
-                    continue;
-                }
-
-                if (aLineContent.contains(TAG) && !aLineContent.startsWith("#")) {
-                    String[] contents = aLineContent.split(TAG);
-                    if (contents.length > 1) {
-                        if (!map.containsKey(contents[0])) {
-                            map.put(contents[0], contents[1]);
-                        }
-                    }
-                }
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        } finally {
-            if (reader != null) {
-                try {
-                    reader.close();
-                } catch (IOException e1) {
-                }
-            }
-        }
-    }
-
-    private void initAdapter(Map<String, String> map) {
+    private void initAdapter() {
         mAdapter = new ContentsAdapter(getContext());
-        mAdapter.setData(map);
         mAdapter.setOnItemClickListener(
                 new ContentsAdapter.OnItemClickListener() {
                     @Override
@@ -577,16 +518,6 @@ public class ContentsFragment extends BaseFragment {
                         }
                     }
                 });
-        /*LinearLayoutManager linearLayoutManager =
-                new LinearLayoutManager(getContext()) {
-                    @Override
-                    public void onLayoutCompleted(RecyclerView.State state) {
-                        super.onLayoutCompleted(state);
-                    }
-                };
-        mRecyclerView.setLayoutManager(linearLayoutManager);*/
-        mRecyclerView.setLayoutManager(new VerticalLayoutManager());
-        mRecyclerView.setAdapter(mAdapter);
     }
 
     private void handleBeforeOfConfigurationChangedEvent() {
@@ -697,7 +628,11 @@ public class ContentsFragment extends BaseFragment {
                 mAdapter.setProgress(mProgress + "%");
                 break;
             case MSG_ON_INIT_ADAPTER:
-                initAdapter(PlayerWrapper.mContentsMap);
+                if (mRecyclerView != null) {
+                    mAdapter.setData(PlayerWrapper.mContentsMap);
+                    mRecyclerView.setLayoutManager(new VerticalLayoutManager());
+                    mRecyclerView.setAdapter(mAdapter);
+                }
                 break;
             default:
                 break;

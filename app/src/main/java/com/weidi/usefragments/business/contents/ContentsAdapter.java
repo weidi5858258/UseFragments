@@ -41,6 +41,9 @@ public class ContentsAdapter extends RecyclerView.Adapter {
     @Override
     public void onBindViewHolder(
             RecyclerView.ViewHolder holder, int position) {
+        if (mKeys.isEmpty()) {
+            return;
+        }
         TitleViewHolder titleViewHolder = (TitleViewHolder) holder;
         String key = mKeys.get(position);
         String value = PlayerWrapper.mContentsMap.get(key);
@@ -60,12 +63,17 @@ public class ContentsAdapter extends RecyclerView.Adapter {
 
     // map的key已经是唯一了
     public void setData(Map<String, String> map) {
-        if (map == null) {
+        if (map == null || map.isEmpty()) {
             return;
         }
-        mKeys.clear();
-        for (Map.Entry<String, String> tempMap : map.entrySet()) {
-            mKeys.add(tempMap.getKey());
+
+        synchronized (ContentsAdapter.this) {
+            mKeys.clear();
+            for (Map.Entry<String, String> tempMap : map.entrySet()) {
+                mKeys.add(tempMap.getKey());
+            }
+
+            notifyDataSetChanged();
         }
     }
 
