@@ -82,7 +82,7 @@ public class PlayerWrapper {
 
     private static final String TAG = "player_alexander";
 
-    public static final boolean IS_HIKEY970 = true;
+    public static final boolean IS_HIKEY970 = false;
 
     public static final int PLAYBACK_PROGRESS_UPDATED = 200;
     private static final int MSG_ON_PROGRESS_UPDATED = 10;
@@ -990,8 +990,13 @@ public class PlayerWrapper {
         mControllerPanelLayout.setBackgroundColor(
                 mContext.getResources().getColor(android.R.color.transparent));
 
-        // 改变SurfaceView高度
         RelativeLayout.LayoutParams relativeParams =
+                (RelativeLayout.LayoutParams) mProgressBarLayout.getLayoutParams();
+        relativeParams.width = mScreenWidth;
+        mProgressBarLayout.setLayoutParams(relativeParams);
+
+        // 改变SurfaceView高度
+        relativeParams =
                 (RelativeLayout.LayoutParams) mSurfaceView.getLayoutParams();
         relativeParams.setMargins(0, 0, 0, 0);
         relativeParams.width = mScreenWidth;
