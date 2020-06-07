@@ -378,8 +378,10 @@ namespace alexander_media {
         // 注册复用器和编解码器,所有的使用ffmpeg,首先必须调用这个函数
         avformat_network_init();
 
-        // 打印ffmpeg里面的日志
-        av_log_set_callback(log_callback);
+        if (!isLocal) {
+            // 打印ffmpeg里面的日志
+            av_log_set_callback(log_callback);
+        }
 
         LOGW("ffmpeg [av_version_info()] version: %s\n", av_version_info());
 
