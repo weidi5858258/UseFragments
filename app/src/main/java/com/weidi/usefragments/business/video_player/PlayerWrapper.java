@@ -1265,10 +1265,12 @@ public class PlayerWrapper {
         // mScreenWidth: 1080 mScreenHeight: 2244
         // 屏幕宽高
         DisplayMetrics displayMetrics = new DisplayMetrics();
+
+        
         mWindowManager.getDefaultDisplay().getRealMetrics(displayMetrics);
         mScreenWidth = displayMetrics.widthPixels;
         mScreenHeight = displayMetrics.heightPixels;
-        MLog.d(TAG, "Callback.MSG_ON_CHANGE_WINDOW mScreenWidth: " +
+        MLog.d(TAG, "Callback.MSG_ON_CHANGE_WINDOW                 mScreenWidth: " +
                 mScreenWidth + " mScreenHeight: " + mScreenHeight);
 
         mScreenWidth = mScreenWidth / 3;
@@ -1297,7 +1299,7 @@ public class PlayerWrapper {
 
         relativeParams.width = mNeedVideoWidth;
         relativeParams.height = mNeedVideoHeight;
-        MLog.d(TAG, "Callback.MSG_ON_CHANGE_WINDOW mNeedVideoWidth: " +
+        MLog.d(TAG, "Callback.MSG_ON_CHANGE_WINDOW              mNeedVideoWidth: " +
                 mNeedVideoWidth + " mNeedVideoHeight: " + mNeedVideoHeight);
         mSurfaceView.setLayoutParams(relativeParams);
 

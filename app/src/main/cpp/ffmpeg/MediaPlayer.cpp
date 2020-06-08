@@ -380,7 +380,7 @@ namespace alexander_media {
 
         if (!isLocal) {
             // 打印ffmpeg里面的日志
-            av_log_set_callback(log_callback);
+            // av_log_set_callback(log_callback);
         }
 
         LOGW("ffmpeg [av_version_info()] version: %s\n", av_version_info());
@@ -753,7 +753,7 @@ namespace alexander_media {
             LOGI("openAndFindAVFormatContext() avformat_open_input: %ld\n",
                  (long) ((endTime - startTime) / 1000));
 
-            av_log_set_callback(log_callback_null);
+            // av_log_set_callback(log_callback_null);
         } else {
             if (avformat_open_input(&avFormatContext,
                                     inFilePath,
