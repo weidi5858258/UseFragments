@@ -978,23 +978,7 @@ public class PlayerWrapper {
                 mContext.getResources().getColor(android.R.color.transparent));
 
         // 暂停按钮高度
-        if (mService != null) {
-            SeekBar progress_bar = mRootView.findViewById(R.id.progress_bar);
-            RelativeLayout show_time_rl = mRootView.findViewById(R.id.show_time_rl);
-            ImageButton button_prev = mRootView.findViewById(R.id.button_prev);
-            ImageButton button_next = mRootView.findViewById(R.id.button_next);
-            if (mMediaDuration <= 0 && !mIsH264) {
-                progress_bar.setVisibility(View.GONE);
-                show_time_rl.setVisibility(View.GONE);
-                button_prev.setVisibility(View.INVISIBLE);
-                button_next.setVisibility(View.INVISIBLE);
-            } else {
-                progress_bar.setVisibility(View.VISIBLE);
-                show_time_rl.setVisibility(View.VISIBLE);
-                button_prev.setVisibility(View.VISIBLE);
-                button_next.setVisibility(View.VISIBLE);
-            }
-        }
+        getPauseRlHeight();
 
         if (statusBarHeight != 0) {
             statusBarHeight = getStatusBarHeight();
@@ -1073,7 +1057,6 @@ public class PlayerWrapper {
         // 改变ControllerPanelLayout高度
         FrameLayout.LayoutParams frameParams =
                 (FrameLayout.LayoutParams) mControllerPanelLayout.getLayoutParams();
-        //frameParams.setMargins(0, (mScreenHeight - mControllerPanelLayoutHeight - 150), 0, 0);
         if ((mScreenWidth / 3) < mNeedVideoWidth) {
             frameParams.setMargins((mScreenWidth - mNeedVideoWidth) / 2, 120, 0, 0);
             frameParams.width = mNeedVideoWidth;
@@ -1103,26 +1086,7 @@ public class PlayerWrapper {
                 mContext.getResources().getColor(android.R.color.transparent));
 
         // 暂停按钮高度
-        int pauseRlHeight = 0;
-        if (mService != null) {
-            RelativeLayout pause_rl = mRootView.findViewById(R.id.pause_rl);
-            pauseRlHeight = pause_rl.getHeight();
-            SeekBar progress_bar = mRootView.findViewById(R.id.progress_bar);
-            RelativeLayout show_time_rl = mRootView.findViewById(R.id.show_time_rl);
-            ImageButton button_prev = mRootView.findViewById(R.id.button_prev);
-            ImageButton button_next = mRootView.findViewById(R.id.button_next);
-            if (mMediaDuration <= 0 && !mIsH264) {
-                progress_bar.setVisibility(View.GONE);
-                show_time_rl.setVisibility(View.GONE);
-                button_prev.setVisibility(View.INVISIBLE);
-                button_next.setVisibility(View.INVISIBLE);
-            } else {
-                progress_bar.setVisibility(View.VISIBLE);
-                show_time_rl.setVisibility(View.VISIBLE);
-                button_prev.setVisibility(View.VISIBLE);
-                button_next.setVisibility(View.VISIBLE);
-            }
-        }
+        int pauseRlHeight = getPauseRlHeight();
 
         // mScreenWidth: 1080 mScreenHeight: 2244
         // 屏幕宽高
@@ -1154,7 +1118,6 @@ public class PlayerWrapper {
         // 改变SurfaceView高度
         RelativeLayout.LayoutParams relativeParams =
                 (RelativeLayout.LayoutParams) mSurfaceView.getLayoutParams();
-        //relativeParams.setMargins(0, mProgressBarLayoutHeight, 0, 0);
         relativeParams.setMargins(0, 0, 0, 0);
         if (mVideoWidth != 0 && mVideoHeight != 0) {
             mNeedVideoWidth = mScreenWidth;
@@ -1165,21 +1128,18 @@ public class PlayerWrapper {
         } else {
             mNeedVideoWidth = mScreenWidth;
             mNeedVideoHeight = 1;
-            mControllerPanelLayout.setBackgroundColor(
-                    mContext.getResources().getColor(R.color.lightgray));
         }
 
         relativeParams.width = mNeedVideoWidth;
         relativeParams.height = mNeedVideoHeight;
+        mSurfaceView.setLayoutParams(relativeParams);
         MLog.d(TAG, "Callback.MSG_ON_CHANGE_WINDOW              mNeedVideoWidth: " +
                 mNeedVideoWidth + " mNeedVideoHeight: " + mNeedVideoHeight);
-        mSurfaceView.setLayoutParams(relativeParams);
 
         // 改变ControllerPanelLayout高度
         FrameLayout.LayoutParams frameParams =
                 (FrameLayout.LayoutParams) mControllerPanelLayout.getLayoutParams();
         if (mNeedVideoHeight > (int) (mScreenHeight * 2 / 3)) {
-            //frameParams.setMargins(0, (int) (mScreenHeight / 2), 0, 0);
             if (mNeedVideoHeight < mScreenHeight) {
                 frameParams.setMargins(
                         0, mNeedVideoHeight - mControllerPanelLayoutHeight - 10, 0, 0);
@@ -1187,7 +1147,6 @@ public class PlayerWrapper {
                 frameParams.setMargins(
                         0, getStatusBarHeight(), 0, 0);
             }
-
             mControllerPanelLayout.setBackgroundColor(
                     mContext.getResources().getColor(android.R.color.transparent));
         } else {
@@ -1241,32 +1200,11 @@ public class PlayerWrapper {
         mRootView.setBackgroundColor(
                 mContext.getResources().getColor(android.R.color.transparent));
 
-        int pauseRlHeight = 0;
-        if (mService != null) {
-            RelativeLayout pause_rl = mRootView.findViewById(R.id.pause_rl);
-            pauseRlHeight = pause_rl.getHeight();
-            SeekBar progress_bar = mRootView.findViewById(R.id.progress_bar);
-            RelativeLayout show_time_rl = mRootView.findViewById(R.id.show_time_rl);
-            ImageButton button_prev = mRootView.findViewById(R.id.button_prev);
-            ImageButton button_next = mRootView.findViewById(R.id.button_next);
-            if (mMediaDuration <= 0) {
-                progress_bar.setVisibility(View.GONE);
-                show_time_rl.setVisibility(View.GONE);
-                button_prev.setVisibility(View.INVISIBLE);
-                button_next.setVisibility(View.INVISIBLE);
-            } else {
-                progress_bar.setVisibility(View.VISIBLE);
-                show_time_rl.setVisibility(View.VISIBLE);
-                button_prev.setVisibility(View.VISIBLE);
-                button_next.setVisibility(View.VISIBLE);
-            }
-        }
+        int pauseRlHeight = getPauseRlHeight();
 
         // mScreenWidth: 1080 mScreenHeight: 2244
         // 屏幕宽高
         DisplayMetrics displayMetrics = new DisplayMetrics();
-
-        
         mWindowManager.getDefaultDisplay().getRealMetrics(displayMetrics);
         mScreenWidth = displayMetrics.widthPixels;
         mScreenHeight = displayMetrics.heightPixels;
@@ -1293,21 +1231,17 @@ public class PlayerWrapper {
         } else {
             mNeedVideoWidth = mScreenWidth;
             mNeedVideoHeight = 1;
-            mControllerPanelLayout.setBackgroundColor(
-                    mContext.getResources().getColor(R.color.lightgray));
         }
-
         relativeParams.width = mNeedVideoWidth;
         relativeParams.height = mNeedVideoHeight;
+        mSurfaceView.setLayoutParams(relativeParams);
         MLog.d(TAG, "Callback.MSG_ON_CHANGE_WINDOW              mNeedVideoWidth: " +
                 mNeedVideoWidth + " mNeedVideoHeight: " + mNeedVideoHeight);
-        mSurfaceView.setLayoutParams(relativeParams);
 
         // 改变ControllerPanelLayout高度
         FrameLayout.LayoutParams frameParams =
                 (FrameLayout.LayoutParams) mControllerPanelLayout.getLayoutParams();
         if (mNeedVideoHeight > (int) (mScreenHeight * 2 / 3)) {
-            //frameParams.setMargins(0, (int) (mScreenHeight / 2), 0, 0);
             frameParams.setMargins(0, getStatusBarHeight(), 0, 0);
             mControllerPanelLayout.setBackgroundColor(
                     mContext.getResources().getColor(android.R.color.transparent));
@@ -1344,23 +1278,7 @@ public class PlayerWrapper {
     public void handleLandscapeScreenWithHikey970() {
         MLog.d(TAG, "Callback.MSG_ON_CHANGE_WINDOW handleLandscapeScreenWithHikey970");
 
-        if (mService != null) {
-            SeekBar progress_bar = mRootView.findViewById(R.id.progress_bar);
-            RelativeLayout show_time_rl = mRootView.findViewById(R.id.show_time_rl);
-            ImageButton button_prev = mRootView.findViewById(R.id.button_prev);
-            ImageButton button_next = mRootView.findViewById(R.id.button_next);
-            if (mMediaDuration <= 0 && !mIsH264) {
-                progress_bar.setVisibility(View.GONE);
-                show_time_rl.setVisibility(View.GONE);
-                button_prev.setVisibility(View.INVISIBLE);
-                button_next.setVisibility(View.INVISIBLE);
-            } else {
-                progress_bar.setVisibility(View.VISIBLE);
-                show_time_rl.setVisibility(View.VISIBLE);
-                button_prev.setVisibility(View.VISIBLE);
-                button_next.setVisibility(View.VISIBLE);
-            }
-        }
+        getPauseRlHeight();
 
         // 状态样高度
         int statusBarHeight = getStatusBarHeight();
@@ -1411,26 +1329,7 @@ public class PlayerWrapper {
     public void handlePortraitScreenWithHikey970() {
         MLog.d(TAG, "Callback.MSG_ON_CHANGE_WINDOW handlePortraitScreenWithHikey970");
 
-        int pauseRlHeight = 0;
-        if (mService != null) {
-            RelativeLayout pause_rl = mRootView.findViewById(R.id.pause_rl);
-            pauseRlHeight = pause_rl.getHeight();
-            SeekBar progress_bar = mRootView.findViewById(R.id.progress_bar);
-            RelativeLayout show_time_rl = mRootView.findViewById(R.id.show_time_rl);
-            ImageButton button_prev = mRootView.findViewById(R.id.button_prev);
-            ImageButton button_next = mRootView.findViewById(R.id.button_next);
-            if (mMediaDuration <= 0) {
-                progress_bar.setVisibility(View.GONE);
-                show_time_rl.setVisibility(View.GONE);
-                button_prev.setVisibility(View.INVISIBLE);
-                button_next.setVisibility(View.INVISIBLE);
-            } else {
-                progress_bar.setVisibility(View.VISIBLE);
-                show_time_rl.setVisibility(View.VISIBLE);
-                button_prev.setVisibility(View.VISIBLE);
-                button_next.setVisibility(View.VISIBLE);
-            }
-        }
+        int pauseRlHeight = getPauseRlHeight();
 
         // mScreenWidth: 1080 mScreenHeight: 2244
         // 屏幕宽高
@@ -1614,6 +1513,30 @@ public class PlayerWrapper {
             mLayoutParams.y = 0;
             mWindowManager.updateViewLayout(mRootView, mLayoutParams);
         }
+    }
+
+    private int getPauseRlHeight() {
+        int pauseRlHeight = 0;
+        if (mService != null) {
+            RelativeLayout pause_rl = mRootView.findViewById(R.id.pause_rl);
+            pauseRlHeight = pause_rl.getHeight();
+            SeekBar progress_bar = mRootView.findViewById(R.id.progress_bar);
+            RelativeLayout show_time_rl = mRootView.findViewById(R.id.show_time_rl);
+            ImageButton button_prev = mRootView.findViewById(R.id.button_prev);
+            ImageButton button_next = mRootView.findViewById(R.id.button_next);
+            if (mMediaDuration <= 0 && !mIsH264) {
+                progress_bar.setVisibility(View.GONE);
+                show_time_rl.setVisibility(View.GONE);
+                button_prev.setVisibility(View.INVISIBLE);
+                button_next.setVisibility(View.INVISIBLE);
+            } else {
+                progress_bar.setVisibility(View.VISIBLE);
+                show_time_rl.setVisibility(View.VISIBLE);
+                button_prev.setVisibility(View.VISIBLE);
+                button_next.setVisibility(View.VISIBLE);
+            }
+        }
+        return pauseRlHeight;
     }
 
     private SurfaceHolder.Callback mSurfaceCallback = new SurfaceHolder.Callback() {

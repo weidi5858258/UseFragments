@@ -343,13 +343,18 @@ namespace alexander_media {
     }
 
     int read_thread_interrupt_cb(void *opaque) {
+        if (isInterrupted) {
+            return 1;
+        }
         // 必须通过传参方式进行判断,不能用全局变量判断
         AudioWrapper *audioWrapper = (AudioWrapper *) opaque;
         endReadTime = av_gettime_relative();
         if (!audioWrapper->father->isReading) {
             LOGE("read_thread_interrupt_cb() 退出\n");
+            isInterrupted = true;
             return 1;
         } else if ((audioWrapper->father->isPausedForCache || !audioWrapper->father->isStarted)
+                   && isReading
                    && startReadTime > 0
                    && (endReadTime - startReadTime) > MAX_RELATIVE_TIME) {
             if (audioWrapper->father->list1->size() < audioWrapper->father->list1LimitCounts
@@ -1482,11 +1487,15 @@ namespace alexander_media {
             if (wrapper->type == TYPE_AUDIO) {
                 onLoadProgressUpdated(MSG_ON_TRANSACT_AUDIO_PRODUCER, 0);
                 onLoadProgressUpdated(MSG_ON_TRANSACT_AUDIO_CONSUMER, wrapper->list1->size());
-                LOGD("readDataImpl() audio 填满数据了\n");
+                if (!isLocal) {
+                    LOGD("readDataImpl() audio 填满数据了\n");
+                }
             } else {
                 onLoadProgressUpdated(MSG_ON_TRANSACT_VIDEO_PRODUCER, 0);
                 onLoadProgressUpdated(MSG_ON_TRANSACT_VIDEO_CONSUMER, wrapper->list1->size());
-                LOGW("readDataImpl() video 填满数据了\n");
+                if (!isLocal) {
+                    LOGW("readDataImpl() video 填满数据了\n");
+                }
             }
         } else if (wrapper->type == TYPE_VIDEO
                    && list2Size >= wrapper->list2LimitCounts) {
@@ -1599,8 +1608,7 @@ namespace alexander_media {
                 // readData() AVERROR_EOF readFrame: -12 (Cannot allocate memory)
                 // readData() AVERROR_EOF readFrame: -1094995529
                 // readData() AVERROR_EOF readFrame: -1414092869 超时
-                // readData() AVERROR_EOF readFrame: -541478725 文件已经读完了
-                LOGF("readData() AVERROR_EOF: %d\n", AVERROR_EOF);
+                // readData() AVERROR_EOF readFrame: -541478725(AVERROR_EOF) 文件已经读完了
                 LOGF("readData() readFrame  : %d\n", readFrame);
                 LOGF("readData() audio list2: %d\n", audioWrapper->father->list2->size());
                 LOGF("readData() video list2: %d\n", videoWrapper->father->list2->size());
@@ -2208,27 +2216,31 @@ namespace alexander_media {
                                     MSG_ON_TRANSACT_AUDIO_PRODUCER, 0);
                             onLoadProgressUpdated(
                                     MSG_ON_TRANSACT_AUDIO_CONSUMER, wrapper->list1->size());
-                            LOGD("handleData() audio 接下去要处理的数据有 list1: %d\n",
-                                 wrapper->list1->size());
-                            LOGD("handleData() audio                   list2: %d\n",
-                                 wrapper->list2->size());
-                            LOGW("handleData() video 接下去要处理的数据有 list1: %d\n",
-                                 videoWrapper->father->list1->size());
-                            LOGW("handleData() video                   list2: %d\n",
-                                 videoWrapper->father->list2->size());
+                            if (!isLocal) {
+                                LOGD("handleData() audio 接下去要处理的数据有 list1: %d\n",
+                                     wrapper->list1->size());
+                                LOGD("handleData() audio                   list2: %d\n",
+                                     wrapper->list2->size());
+                                LOGW("handleData() video 接下去要处理的数据有 list1: %d\n",
+                                     videoWrapper->father->list1->size());
+                                LOGW("handleData() video                   list2: %d\n",
+                                     videoWrapper->father->list2->size());
+                            }
                         } else {
                             onLoadProgressUpdated(
                                     MSG_ON_TRANSACT_VIDEO_PRODUCER, 0);
                             onLoadProgressUpdated(
                                     MSG_ON_TRANSACT_VIDEO_CONSUMER, wrapper->list1->size());
-                            LOGW("handleData() video 接下去要处理的数据有 list1: %d\n",
-                                 wrapper->list1->size());
-                            LOGW("handleData() video                   list2: %d\n",
-                                 wrapper->list2->size());
-                            LOGD("handleData() audio 接下去要处理的数据有 list1: %d\n",
-                                 audioWrapper->father->list1->size());
-                            LOGD("handleData() audio                   list2: %d\n",
-                                 audioWrapper->father->list2->size());
+                            if (!isLocal) {
+                                LOGW("handleData() video 接下去要处理的数据有 list1: %d\n",
+                                     wrapper->list1->size());
+                                LOGW("handleData() video                   list2: %d\n",
+                                     wrapper->list2->size());
+                                LOGD("handleData() audio 接下去要处理的数据有 list1: %d\n",
+                                     audioWrapper->father->list1->size());
+                                LOGD("handleData() audio                   list2: %d\n",
+                                     audioWrapper->father->list2->size());
+                            }
                         }
                         LOGI("===================================================\n");
                     }
@@ -2294,7 +2306,7 @@ namespace alexander_media {
                 && wrapper->isHandling
                 && !wrapper->isHandleList1Full
                 && wrapper->list1->size() == 0
-                && wrapper->list2->size() == 0) {
+                && wrapper->list2->size() == 0) {// 本地视频一般是走不进去的
 
                 LOGE("---------------------------------------------------\n");
                 if (wrapper->type == TYPE_AUDIO) {
