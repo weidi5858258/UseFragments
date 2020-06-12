@@ -1832,9 +1832,11 @@ public class PlayerWrapper {
             String aLineContent = null;
             //一次读一行，读入null时文件结束
             while ((aLineContent = reader.readLine()) != null) {
-                if (aLineContent == null || aLineContent.length() == 0) {
+                if (aLineContent.length() == 0) {
                     continue;
                 }
+
+                aLineContent = aLineContent.trim();
 
                 if (aLineContent.contains(TAG) && !aLineContent.startsWith("#")) {
                     String[] contents = aLineContent.split(TAG);
