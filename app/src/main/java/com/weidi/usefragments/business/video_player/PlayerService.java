@@ -122,6 +122,7 @@ public class PlayerService extends Service {
     }
 
     /***
+     播放视频
      adb shell am startservice \
      -n com.weidi.usefragments/com.weidi.usefragments.business.video_player.PlayerService \
      -a com.weidi.usefragments.business.video_player.PlayerService \
@@ -129,6 +130,21 @@ public class PlayerService extends Service {
      --es HandlePlayerServicePath "video/" \
      --es HandlePlayerServicePath "http://wttv-lh.akamaihd
      .net:80/i/WTTVBreaking_1@333494/index_3000_av-b.m3u8"
+     停止播放
+     adb shell am startservice \
+     -n com.weidi.usefragments/com.weidi.usefragments.business.video_player.PlayerService \
+     -a com.weidi.usefragments.business.video_player.PlayerService \
+     --ei HandlePlayerService 2
+     停止服务
+     adb shell am startservice \
+     -n com.weidi.usefragments/com.weidi.usefragments.business.video_player.PlayerService \
+     -a com.weidi.usefragments.business.video_player.PlayerService \
+     --ei HandlePlayerService 3
+     重新加载内容
+     adb shell am startservice \
+     -n com.weidi.usefragments/com.weidi.usefragments.business.video_player.PlayerService \
+     -a com.weidi.usefragments.business.video_player.PlayerService \
+     --ei HandlePlayerService 4
      */
 
     public static final String COMMAND_ACTION =
@@ -139,6 +155,7 @@ public class PlayerService extends Service {
     public static final int COMMAND_SHOW_WINDOW = 1;
     public static final int COMMAND_HIDE_WINDOW = 2;
     public static final int COMMAND_STOP_SERVICE = 3;
+    public static final int COMMAND_RESTART_LOAD_CONTENTS = 4;
     public static final int COMMAND_HANDLE_LANDSCAPE_SCREEN = 4;
     public static final int COMMAND_HANDLE_PORTRAIT_SCREEN = 5;
 
@@ -191,6 +208,9 @@ public class PlayerService extends Service {
             case COMMAND_STOP_SERVICE:
                 mUiHandler.removeMessages(COMMAND_STOP_SERVICE);
                 mUiHandler.sendEmptyMessage(COMMAND_STOP_SERVICE);
+                break;
+            case COMMAND_RESTART_LOAD_CONTENTS:
+                mPlayerWrapper.sendMessageForLoadContents();
                 break;
             default:
                 break;

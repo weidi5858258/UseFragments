@@ -310,8 +310,7 @@ public class PlayerWrapper {
             }
         };
 
-        mThreadHandler.removeMessages(MSG_LOAD_CONTENTS);
-        mThreadHandler.sendEmptyMessage(MSG_LOAD_CONTENTS);
+        sendMessageForLoadContents();
 
         if (mFFMPEGPlayer == null) {
             mFFMPEGPlayer = FFMPEG.getDefault();
@@ -1394,6 +1393,11 @@ public class PlayerWrapper {
         }
     }
 
+    public void sendMessageForLoadContents() {
+        mThreadHandler.removeMessages(MSG_LOAD_CONTENTS);
+        mThreadHandler.sendEmptyMessage(MSG_LOAD_CONTENTS);
+    }
+
     private void onReady() {
         mProgressTimeTV.setText("");
         mDurationTimeTV.setText("");
@@ -1798,6 +1802,7 @@ public class PlayerWrapper {
     }
 
     private void loadContents() {
+        MLog.i(TAG, "loadContents() start");
         mContentsMap.clear();
         File[] files = mContext.getExternalFilesDirs(Environment.MEDIA_SHARED);
         File file = null;
@@ -1813,6 +1818,7 @@ public class PlayerWrapper {
             file = new File(sb.toString());
             if (file.exists()) {
                 readContents(file);
+                MLog.i(TAG, "loadContents() end");
                 return;
             }
         }
@@ -1822,6 +1828,7 @@ public class PlayerWrapper {
                 mContentsMap.put(tempMap.getValue(), tempMap.getKey());
             }
         }
+        MLog.i(TAG, "loadContents() end");
     }
 
     private void readContents(File file) {
