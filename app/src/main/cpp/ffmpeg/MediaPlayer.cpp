@@ -1601,10 +1601,20 @@ namespace alexander_media {
 
             // 0 if OK, < 0 on error or end of file
             if (readFrame < 0) {
-                if (readFrame != -12 && readFrame != AVERROR_EOF) {
-                    LOGE("readData() readFrame  : %d\n", readFrame);
+                if (readFrame != -12
+                    && readFrame != AVERROR_EOF) {
+                    if (readFrame != AVERROR_HTTP_FORBIDDEN) {
+                        LOGE("readData() readFrame  : %d\n", readFrame);
+                    }
                     continue;
                 }
+                // 有些直播节目会这样
+                if (mediaDuration < 0 && readFrame == AVERROR_EOF) {
+                    // LOGF("readData() readFrame  : %d\n", readFrame);
+                    videoSleep(10);
+                    continue;
+                }
+                // AVERROR_HTTP_FORBIDDEN -858797304
                 // readData() AVERROR_EOF readFrame: -12 (Cannot allocate memory)
                 // readData() AVERROR_EOF readFrame: -1094995529
                 // readData() AVERROR_EOF readFrame: -1414092869 超时
@@ -1843,7 +1853,7 @@ namespace alexander_media {
                     totleTimeDiff += timeDiff[i];
                 }
                 averageTimeDiff = totleTimeDiff / RUN_COUNTS;
-                LOGI("handleVideoDataImpl() frameRate: %d averageTimeDiff: %lf inFilePath: %s\n",
+                LOGI("handleVideoDataImpl() frameRate: %d averageTimeDiff: %lf inFilePath: \n%s\n",
                      frameRate, averageTimeDiff, inFilePath);
                 if (frameRate >= 24) {
                     if (averageTimeDiff > 0.300000 && averageTimeDiff <= 0.400000) {
@@ -1857,8 +1867,8 @@ namespace alexander_media {
                     }*/ else if (averageTimeDiff > 0.400000) {
                         TIME_DIFFERENCE = 0.300000;
                     }
-                    LOGI("handleVideoDataImpl() TIME_DIFFERENCE: %lf\n", TIME_DIFFERENCE);
                 }
+                LOGI("handleVideoDataImpl() TIME_DIFFERENCE: %lf\n", TIME_DIFFERENCE);
             }
             if (tempTimeDifference < 0) {
                 // 正常情况下videoTimeDifference比audioTimeDifference大一些
@@ -2039,13 +2049,13 @@ namespace alexander_media {
         if (wrapper->type == TYPE_AUDIO) {
             LOGD("handleData() for (;;) audio start\n");
         } else {
-            LOGW("handleData() ANativeWindow_setBuffersGeometry() start\n");
+            // LOGW("handleData() ANativeWindow_setBuffersGeometry() start\n");
             // 2.设置缓冲区的属性（宽、高、像素格式）,像素格式要和SurfaceView的像素格式一直
             ANativeWindow_setBuffersGeometry(pANativeWindow,
                                              videoWrapper->srcWidth,
                                              videoWrapper->srcHeight,
                                              WINDOW_FORMAT_RGBA_8888);
-            LOGW("handleData() ANativeWindow_setBuffersGeometry() end\n");
+            // LOGW("handleData() ANativeWindow_setBuffersGeometry() end\n");
             LOGW("handleData() for (;;) video start\n");
             isVideoHandling = true;
         }
@@ -2210,13 +2220,13 @@ namespace alexander_media {
                         wrapper->isHandleList1Full = true;
                         pthread_mutex_unlock(&wrapper->readLockMutex);
 
-                        LOGI("===================================================\n");
+                        // LOGI("===================================================\n");
                         if (wrapper->type == TYPE_AUDIO) {
                             onLoadProgressUpdated(
                                     MSG_ON_TRANSACT_AUDIO_PRODUCER, 0);
                             onLoadProgressUpdated(
                                     MSG_ON_TRANSACT_AUDIO_CONSUMER, wrapper->list1->size());
-                            if (!isLocal) {
+                            /*if (!isLocal) {
                                 LOGD("handleData() audio 接下去要处理的数据有 list1: %d\n",
                                      wrapper->list1->size());
                                 LOGD("handleData() audio                   list2: %d\n",
@@ -2225,13 +2235,13 @@ namespace alexander_media {
                                      videoWrapper->father->list1->size());
                                 LOGW("handleData() video                   list2: %d\n",
                                      videoWrapper->father->list2->size());
-                            }
+                            }*/
                         } else {
                             onLoadProgressUpdated(
                                     MSG_ON_TRANSACT_VIDEO_PRODUCER, 0);
                             onLoadProgressUpdated(
                                     MSG_ON_TRANSACT_VIDEO_CONSUMER, wrapper->list1->size());
-                            if (!isLocal) {
+                            /*if (!isLocal) {
                                 LOGW("handleData() video 接下去要处理的数据有 list1: %d\n",
                                      wrapper->list1->size());
                                 LOGW("handleData() video                   list2: %d\n",
@@ -2240,9 +2250,9 @@ namespace alexander_media {
                                      audioWrapper->father->list1->size());
                                 LOGD("handleData() audio                   list2: %d\n",
                                      audioWrapper->father->list2->size());
-                            }
+                            }*/
                         }
-                        LOGI("===================================================\n");
+                        // LOGI("===================================================\n");
                     }
                     notifyToRead(videoWrapper->father);
                 }
@@ -2456,7 +2466,7 @@ namespace alexander_media {
                         if (wrapper->type == TYPE_AUDIO) {
                             LOGE("handleData() audio avcodec_receive_frame ret: %d\n", ret);
                         } else {
-                            LOGE("handleData() video avcodec_receive_frame ret: %d\n", ret);// -11
+                            //LOGE("handleData() video avcodec_receive_frame ret: %d\n", ret);// -11
                         }
                         break;
                     case AVERROR(EINVAL):
@@ -2513,7 +2523,8 @@ namespace alexander_media {
                     LOGD("handleData() audio av_frame_ref\n");
                 } else if (wrapper->type == TYPE_VIDEO && preVideoAVFrame->pkt_size > 0) {
                     av_frame_ref(decodedAVFrame, preVideoAVFrame);
-                    LOGW("handleData() video av_frame_ref\n");
+                    //http://101.71.255.229:6610/zjhs/2/10106/index.m3u8?virtualDomain=zjhs.live_hls.zte.com
+                    //LOGW("handleData() video av_frame_ref\n");
                 } else {
                     continue;
                 }

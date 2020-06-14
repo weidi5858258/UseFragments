@@ -38,6 +38,9 @@ import com.weidi.utils.MD5Util;
 import com.weidi.utils.MyToast;
 
 import java.io.File;
+import java.util.Map;
+
+import static com.weidi.usefragments.business.video_player.PlayerWrapper.PLAYBACK_ADDRESS;
 
 /***
 
@@ -407,6 +410,12 @@ public class ContentsFragment extends BaseFragment {
                     }
                 };
         mRecyclerView.setLayoutManager(linearLayoutManager);*/
+
+        String path = mPreferences.getString(PLAYBACK_ADDRESS, null);
+        if (!TextUtils.isEmpty(path) && PlayerWrapper.mContentsMap.containsKey(path)) {
+            mAddressET.setText(PlayerWrapper.mContentsMap.get(path));
+        }
+
         if (!PlayerWrapper.mContentsMap.isEmpty()) {
             initAdapter();
             mAdapter.setData(PlayerWrapper.mContentsMap);
@@ -441,6 +450,7 @@ public class ContentsFragment extends BaseFragment {
                         }
 
                         Contents.setTitle(PlayerWrapper.mContentsMap.get(key));
+                        mAddressET.setText(PlayerWrapper.mContentsMap.get(key));
 
                         Uri uri = Uri.parse(videoPlaybackPath);
                         String lastPath = uri.getLastPathSegment();
@@ -533,10 +543,36 @@ public class ContentsFragment extends BaseFragment {
     private void onClick(View v) {
         switch (v.getId()) {
             case R.id.playback_btn:
-                boolean videoIsFinished = false;/*mPreferences.getBoolean(
+                String videoPlaybackPath = mAddressET.getText().toString().trim();
+                String newPath = videoPlaybackPath.toLowerCase();
+                if (!newPath.startsWith("http://")
+                        && !newPath.startsWith("https://")
+                        && !newPath.startsWith("rtmp://")
+                        && !newPath.startsWith("rtsp://")
+                        && !newPath.startsWith("/storage/")) {
+                    if (PlayerWrapper.mContentsMap.containsValue(videoPlaybackPath)) {
+                        for (Map.Entry<String, String> entry :
+                                PlayerWrapper.mContentsMap.entrySet()) {
+                            if (TextUtils.equals(videoPlaybackPath, entry.getValue())) {
+                                videoPlaybackPath = entry.getKey();
+                                break;
+                            }
+                        }
+                    } else {
+                        return;
+                    }
+                }
+
+                //FFMPEG.getDefault().setMode(FFMPEG.USE_MODE_MEDIA);
+                EventBusUtils.post(
+                        PlayerService.class,
+                        PlayerService.COMMAND_SHOW_WINDOW,
+                        new Object[]{videoPlaybackPath, "video/"});
+
+                //boolean videoIsFinished = false;
+                /*mPreferences.getBoolean(
                         DownloadFileService.VIDEO_IS_FINISHED, false);*/
-                String videoPlaybackPath = mAddressET.getText().toString();
-                if (TextUtils.isEmpty(videoPlaybackPath) && videoIsFinished) {
+                /*if (TextUtils.isEmpty(videoPlaybackPath) && videoIsFinished) {
                     // 如果要播放下载好的视频,那么把地址栏清空
                     boolean isExist = false;
                     File moviesFile = new File(DownloadFileService.PATH);
@@ -557,14 +593,7 @@ public class ContentsFragment extends BaseFragment {
                 } else {
                     Contents.setTitle("");
                     Contents.setPath(videoPlaybackPath);
-                }
-
-                //FFMPEG.getDefault().setMode(FFMPEG.USE_MODE_MEDIA);
-                EventBusUtils.post(
-                        PlayerService.class,
-                        PlayerService.COMMAND_SHOW_WINDOW,
-                        new Object[]{videoPlaybackPath, "video/"});
-
+                }*/
                 /*Intent intent = new Intent();
                 intent.setClass(getContext(), PlayerActivity.class);
                 intent.putExtra(PlayerActivity.CONTENT_PATH, videoPlaybackPath);

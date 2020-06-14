@@ -6,6 +6,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 
 import com.weidi.usefragments.R;
@@ -23,6 +24,7 @@ public class ContentsAdapter extends RecyclerView.Adapter {
     private ArrayList<String> mKeys = new ArrayList<String>();
     private Context mContext;
     private LayoutInflater mLayoutInflater;
+    //private String mPath;
 
     public ContentsAdapter(Context context) {
         mContext = context;
@@ -44,6 +46,7 @@ public class ContentsAdapter extends RecyclerView.Adapter {
         if (mKeys.isEmpty()) {
             return;
         }
+
         TitleViewHolder titleViewHolder = (TitleViewHolder) holder;
         String key = mKeys.get(position);
         String value = PlayerWrapper.mContentsMap.get(key);
@@ -77,6 +80,10 @@ public class ContentsAdapter extends RecyclerView.Adapter {
         }
     }
 
+    /*public void setDataSource(String path) {
+        mPath = path;
+    }*/
+
     public interface OnItemClickListener {
         void onItemClick(String key, int position, int viewId);
     }
@@ -97,6 +104,7 @@ public class ContentsAdapter extends RecyclerView.Adapter {
 
     private class TitleViewHolder extends RecyclerView.ViewHolder {
 
+        private View itemView;
         private TextView title;
         private Button downloadBtn;
         // 保存了PlayerWrapper.mContentsMap的key
@@ -104,6 +112,7 @@ public class ContentsAdapter extends RecyclerView.Adapter {
 
         public TitleViewHolder(View itemView) {
             super(itemView);
+            this.itemView = itemView;
             title = itemView.findViewById(R.id.content_title);
             downloadBtn = itemView.findViewById(R.id.item_download_btn);
             itemView.setOnClickListener(onClickListener);

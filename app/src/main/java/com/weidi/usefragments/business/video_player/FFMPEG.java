@@ -232,7 +232,7 @@ public class FFMPEG {
 
         @Override
         public void onReady() {
-            MLog.i(TAG, "onReady()");
+            MLog.i(TAG, "FFMPEG onReady()");
             if (mUiHandler != null) {
                 mUiHandler.removeMessages(Callback.MSG_ON_TRANSACT_READY);
                 mUiHandler.sendEmptyMessage(Callback.MSG_ON_TRANSACT_READY);
@@ -241,7 +241,7 @@ public class FFMPEG {
 
         @Override
         public void onChangeWindow(int width, int height) {
-            MLog.i(TAG, "onChangeWindow() width: " + width + " height: " + height);
+            MLog.i(TAG, "FFMPEG onChangeWindow() width: " + width + " height: " + height);
             if (mUiHandler != null) {
                 Message msg = mUiHandler.obtainMessage();
                 msg.what = Callback.MSG_ON_TRANSACT_CHANGE_WINDOW;
@@ -254,7 +254,7 @@ public class FFMPEG {
 
         @Override
         public void onPlayed() {
-            MLog.i(TAG, "onPlayed()");
+            MLog.i(TAG, "FFMPEG onPlayed()");
             if (mUiHandler != null) {
                 mUiHandler.removeMessages(Callback.MSG_ON_TRANSACT_PLAYED);
                 mUiHandler.sendEmptyMessage(Callback.MSG_ON_TRANSACT_PLAYED);
@@ -263,7 +263,7 @@ public class FFMPEG {
 
         @Override
         public void onPaused() {
-            MLog.i(TAG, "onPaused()");
+            MLog.i(TAG, "FFMPEG onPaused()");
             if (mUiHandler != null) {
                 mUiHandler.removeMessages(Callback.MSG_ON_TRANSACT_PAUSED);
                 mUiHandler.sendEmptyMessage(Callback.MSG_ON_TRANSACT_PAUSED);
@@ -272,7 +272,7 @@ public class FFMPEG {
 
         @Override
         public void onFinished() {
-            MLog.i(TAG, "onFinished()");
+            MLog.i(TAG, "FFMPEG onFinished()");
             if (mUiHandler != null) {
                 mUiHandler.removeMessages(Callback.MSG_ON_TRANSACT_FINISHED);
                 mUiHandler.sendEmptyMessage(Callback.MSG_ON_TRANSACT_FINISHED);
@@ -306,7 +306,7 @@ public class FFMPEG {
 
         @Override
         public void onInfo(String info) {
-            MLog.i(TAG, "onInfo() info: " + info);
+            MLog.i(TAG, "FFMPEG onInfo() info: " + info);
             if (mUiHandler != null) {
                 Message msg = mUiHandler.obtainMessage();
                 msg.what = Callback.MSG_ON_TRANSACT_INFO;

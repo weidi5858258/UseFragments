@@ -258,21 +258,28 @@ public class PlayerWrapper {
         }
     }
 
+    /*if (newPath.startsWith("http://")
+            || newPath.startsWith("https://")
+            || newPath.startsWith("rtmp://")
+            || newPath.startsWith("rtsp://")
+            || newPath.startsWith("ftp://")) {
+        mIsLocal = false;
+    }*/
     public void setDataSource(String path) {
         if (TextUtils.isEmpty(path)) {
             return;
         }
         mPath = path;
-        mIsLocal = true;
-        mIsH264 = false;
-        if (!TextUtils.isEmpty(mPath)) {
-            String newPath = mPath.toLowerCase();
-            if (newPath.startsWith("http://") || newPath.startsWith("https://")) {
-                mIsLocal = false;
-            }
-            if (newPath.endsWith(".h264")) {
-                mIsH264 = true;
-            }
+        String newPath = mPath.toLowerCase();
+        if (newPath.startsWith("/storage/")) {
+            mIsLocal = true;
+        } else {
+            mIsLocal = false;
+        }
+        if (newPath.endsWith(".h264")) {
+            mIsH264 = true;
+        } else {
+            mIsH264 = false;
         }
         MLog.i(TAG, "setDataSource() mIsLocal: " + mIsLocal);
         MLog.i(TAG, "setDataSource()  mIsH264: " + mIsH264);
@@ -450,17 +457,21 @@ public class PlayerWrapper {
                 mAudioProgressBar.setProgress(((JniObject) msg.obj).valueInt);
                 break;
             case Callback.MSG_ON_TRANSACT_READY:
+                MLog.d(TAG, "Callback.MSG_ON_TRANSACT_READY");
                 onReady();
                 break;
             case Callback.MSG_ON_TRANSACT_CHANGE_WINDOW:
+                MLog.d(TAG, "Callback.MSG_ON_TRANSACT_CHANGE_WINDOW");
                 onChangeWindow(msg);
                 break;
             case Callback.MSG_ON_TRANSACT_PLAYED:
+                MLog.d(TAG, "Callback.MSG_ON_TRANSACT_PLAYED");
                 mPlayIB.setVisibility(View.VISIBLE);
                 mPauseIB.setVisibility(View.GONE);
                 mLoadingView.setVisibility(View.GONE);
                 break;
             case Callback.MSG_ON_TRANSACT_PAUSED:
+                MLog.d(TAG, "Callback.MSG_ON_TRANSACT_PAUSED");
                 mPlayIB.setVisibility(View.GONE);
                 mPauseIB.setVisibility(View.VISIBLE);
                 if (!mIsLocal) {
@@ -468,117 +479,22 @@ public class PlayerWrapper {
                 }
                 break;
             case Callback.MSG_ON_TRANSACT_FINISHED:
-                if (mHasError) {
-                    mHasError = false;
-                    // 重新开始播放
-                    startPlayback();
-                } else {
-                    MyToast.show("Safe Exit");
-                    // 播放结束
-                    if (mService != null) {
-                        if (!mService.needToPlaybackOtherVideo()) {
-                            mService.removeView();
-                            if (mSurfaceHolder != null) {
-                                mSurfaceHolder.removeCallback(mSurfaceCallback);
-                                mSurfaceHolder = null;
-                            }
-                        }
-                    } else if (mActivity != null) {
-                        mActivity.finish();
-                        mActivity.exitActivity();
-                        if (mSurfaceHolder != null) {
-                            mSurfaceHolder.removeCallback(mSurfaceCallback);
-                            mSurfaceHolder = null;
-                        }
-                    }
-                }
-                if (TextUtils.isEmpty(mType)
-                        || mType.startsWith("video/")) {
-                    // 正常结束设置为true
-                    mSP.edit().putBoolean(PLAYBACK_NORMAL_FINISH, true).commit();
-                }
+                MLog.d(TAG, "Callback.MSG_ON_TRANSACT_FINISHED");
+                onFinished();
                 break;
             case Callback.MSG_ON_TRANSACT_INFO:
-                if (msg.obj != null) {
-                    String info = (String) msg.obj;
-                    if (!TextUtils.isEmpty(info)) {
-                        MyToast.show(info);
-                    }
+                MLog.d(TAG, "Callback.MSG_ON_TRANSACT_INFO");
+                if (msg.obj != null && msg.obj instanceof String) {
+                    MyToast.show((String) msg.obj);
                 }
                 break;
             case Callback.MSG_ON_TRANSACT_ERROR:
-                mHasError = false;
-                int error = msg.arg1;
-                String errorInfo = null;
-                if (msg.obj != null) {
-                    errorInfo = (String) msg.obj;
-                }
-                switch (error) {
-                    case Callback.ERROR_TIME_OUT:
-                    case Callback.ERROR_DATA_EXCEPTION:
-                        // 需要重新播放
-                        mHasError = true;
-                        MLog.e(TAG, "PlayerWrapper Callback.MSG_ON_ERROR errorInfo: " + errorInfo);
-                        break;
-                    case Callback.ERROR_FFMPEG_INIT:
-                        MLog.e(TAG,
-                                "PlayerWrapper Callback.ERROR_FFMPEG_INIT errorInfo: " + errorInfo);
-                        MyToast.show("音视频初始化失败");
-                        // 不需要重新播放
-                        if (mService != null) {
-                            MLog.i(TAG,
-                                    "PlayerWrapper Callback.ERROR_FFMPEG_INIT " +
-                                            "mService.removeView()");
-                            mService.removeView();
-                            if (mSurfaceHolder != null) {
-                                mSurfaceHolder.removeCallback(mSurfaceCallback);
-                                mSurfaceHolder = null;
-                            }
-                        } else if (mActivity != null) {
-                            mActivity.finish();
-                            //mActivity.exitActivity();
-                            if (mSurfaceHolder != null) {
-                                mSurfaceHolder.removeCallback(mSurfaceCallback);
-                                mSurfaceHolder = null;
-                            }
-                        }
-                        break;
-                    default:
-                        break;
-                }
+                MLog.d(TAG, "Callback.MSG_ON_TRANSACT_ERROR");
+                // 如果有错误,底层先发送error,然后再finish
+                onError(msg);
                 break;
             case Callback.MSG_ON_TRANSACT_PROGRESS_UPDATED:
-                if (msg.obj == null) {
-                    return;
-                }
-
-                mPresentationTime = (Long) msg.obj;// 秒
-                if (!mIsH264) {
-                    String curElapsedTime = DateUtils.formatElapsedTime(mPresentationTime);
-                    mProgressTimeTV.setText(curElapsedTime);
-                } else {
-                    mProgressTimeTV.setText(String.valueOf(mPresentationTime));
-                }
-
-                if (mNeedToSyncProgressBar && mMediaDuration > 0) {
-                    int currentPosition = (int) (mPresentationTime);
-                    float pos = (float) currentPosition / mMediaDuration;
-                    int target = Math.round(pos * mProgressBar.getMax());
-                    mProgressBar.setProgress(target);
-                }
-
-                if (mMediaDuration > 0) {
-                    if (mPresentationTime < mMediaDuration) {
-                        mPathTimeMap.put(mPath, mPresentationTime);
-                        if (mIsH264 && (mMediaDuration - mPresentationTime <= 1000000)) {
-                            mPathTimeMap.remove(mPath);
-                        }
-                    } else {
-                        mPathTimeMap.remove(mPath);
-                    }
-                    //MLog.d(TAG, "Callback.MSG_ON_PROGRESS_UPDATED "+mPathTimeMap.size());
-                }
-                //mSP.edit().putLong(PLAYBACK_POSITION, mPresentationTime).commit();
+                onUpdated(msg);
                 break;
             case KeyEvent.KEYCODE_HEADSETHOOK:// 单击事件
                 if (clickCounts > NEED_CLICK_COUNTS) {
@@ -1165,7 +1081,7 @@ public class PlayerWrapper {
                             mScreenWidth,
                             mNeedVideoHeight);
                 } else {
-                    if (mMediaDuration < 0) {
+                    if (mMediaDuration <= 0) {
                         updateRootViewLayout(
                                 mScreenWidth,
                                 mNeedVideoHeight + pauseRlHeight);
@@ -1178,7 +1094,7 @@ public class PlayerWrapper {
             } else {
                 if (TextUtils.isEmpty(mType)
                         || mType.startsWith("video/")) {
-                    if (mMediaDuration < 0) {
+                    if (mMediaDuration <= 0) {
                         // 是视频并且只下载不播放的情况下
                         updateRootViewLayout(mScreenWidth, pauseRlHeight);
                         return;
@@ -1258,7 +1174,7 @@ public class PlayerWrapper {
                 if (mNeedVideoHeight > (int) (mScreenHeight * 2 / 3)) {
                     updateRootViewLayout(mScreenWidth, mNeedVideoHeight);
                 } else {
-                    if (mMediaDuration < 0) {
+                    if (mMediaDuration <= 0) {
                         updateRootViewLayout(mScreenWidth,
                                 mNeedVideoHeight + pauseRlHeight);
                     } else {
@@ -1399,6 +1315,9 @@ public class PlayerWrapper {
     }
 
     private void onReady() {
+        if (!mIsLocal) {
+            mLoadingView.setVisibility(View.VISIBLE);
+        }
         mProgressTimeTV.setText("");
         mDurationTimeTV.setText("");
         mProgressBar.setProgress(0);
@@ -1407,6 +1326,8 @@ public class PlayerWrapper {
         mAudioProgressBar.setProgress(0);
         mAudioProgressBar.setSecondaryProgress(0);
         mProgressBarLayout.setVisibility(View.GONE);
+        mPlayIB.setVisibility(View.GONE);
+        mPauseIB.setVisibility(View.VISIBLE);
         if (mService != null) {
             mDownloadTV.setText("");
             // R.color.lightgray
@@ -1425,8 +1346,6 @@ public class PlayerWrapper {
         if (mIsLocal) {
             title = mPath.substring(mPath.lastIndexOf("/") + 1);
         } else {
-            mLoadingView.setVisibility(View.VISIBLE);
-            //title = Contents.getTitle(mPath);
             title = mContentsMap.get(mPath);
         }
         if (!TextUtils.isEmpty(title)) {
@@ -1507,6 +1426,122 @@ public class PlayerWrapper {
             edit.putString(PLAYBACK_MEDIA_TYPE, mType);
             edit.commit();
         }
+    }
+
+    private void onFinished() {
+        if (mHasError) {
+            mHasError = false;
+            MLog.d(TAG, "onFinished() restart playback");
+            // 重新开始播放
+            startPlayback();
+        } else {
+            MyToast.show("Safe Exit");
+            // 播放结束
+            if (mService != null) {
+                if (!mService.needToPlaybackOtherVideo()) {
+                    mService.removeView();
+                    if (mSurfaceHolder != null) {
+                        mSurfaceHolder.removeCallback(mSurfaceCallback);
+                        mSurfaceHolder = null;
+                    }
+                }
+            } else if (mActivity != null) {
+                mActivity.finish();
+                mActivity.exitActivity();
+                if (mSurfaceHolder != null) {
+                    mSurfaceHolder.removeCallback(mSurfaceCallback);
+                    mSurfaceHolder = null;
+                }
+            }
+        }
+        if (TextUtils.isEmpty(mType)
+                || mType.startsWith("video/")) {
+            // 正常结束设置为true
+            mSP.edit().putBoolean(PLAYBACK_NORMAL_FINISH, true).commit();
+        }
+    }
+
+    private void onError(Message msg) {
+        mHasError = false;
+        String errorInfo = null;
+        if (msg.obj != null) {
+            errorInfo = (String) msg.obj;
+        }
+        int error = msg.arg1;
+        switch (error) {
+            case Callback.ERROR_TIME_OUT:
+                //case Callback.ERROR_DATA_EXCEPTION:
+                MLog.e(TAG, "PlayerWrapper Callback.ERROR_TIME_OUT errorInfo: " + errorInfo);
+                // 需要重新播放
+                mHasError = true;
+                break;
+            case Callback.ERROR_FFMPEG_INIT:
+                MLog.e(TAG, "PlayerWrapper Callback.ERROR_FFMPEG_INIT errorInfo: " + errorInfo);
+                if (TextUtils.isEmpty(mType)
+                        || mType.startsWith("video/")) {
+                    String path = mSP.getString(PLAYBACK_ADDRESS, null);
+                    if (TextUtils.equals(path, mPath)) {
+                        startPlayback();
+                        break;
+                    }
+                }
+
+                MyToast.show("音视频初始化失败");
+                // 不需要重新播放
+                if (mService != null) {
+                    /*MLog.i(TAG, "PlayerWrapper Callback.ERROR_FFMPEG_INIT " +
+                            "mService.removeView()");*/
+                    mService.removeView();
+                    if (mSurfaceHolder != null) {
+                        mSurfaceHolder.removeCallback(mSurfaceCallback);
+                        mSurfaceHolder = null;
+                    }
+                } else if (mActivity != null) {
+                    mActivity.finish();
+                    //mActivity.exitActivity();
+                    if (mSurfaceHolder != null) {
+                        mSurfaceHolder.removeCallback(mSurfaceCallback);
+                        mSurfaceHolder = null;
+                    }
+                }
+                break;
+            default:
+                break;
+        }
+    }
+
+    private void onUpdated(Message msg) {
+        if (msg.obj == null) {
+            return;
+        }
+
+        mPresentationTime = (Long) msg.obj;// 秒
+        if (!mIsH264) {
+            String curElapsedTime = DateUtils.formatElapsedTime(mPresentationTime);
+            mProgressTimeTV.setText(curElapsedTime);
+        } else {
+            mProgressTimeTV.setText(String.valueOf(mPresentationTime));
+        }
+
+        if (mNeedToSyncProgressBar && mMediaDuration > 0) {
+            int currentPosition = (int) (mPresentationTime);
+            float pos = (float) currentPosition / mMediaDuration;
+            int target = Math.round(pos * mProgressBar.getMax());
+            mProgressBar.setProgress(target);
+        }
+
+        if (mMediaDuration > 0) {
+            if (mPresentationTime < mMediaDuration) {
+                mPathTimeMap.put(mPath, mPresentationTime);
+                if (mIsH264 && (mMediaDuration - mPresentationTime <= 1000000)) {
+                    mPathTimeMap.remove(mPath);
+                }
+            } else {
+                mPathTimeMap.remove(mPath);
+            }
+            //MLog.d(TAG, "Callback.MSG_ON_PROGRESS_UPDATED "+mPathTimeMap.size());
+        }
+        //mSP.edit().putLong(PLAYBACK_POSITION, mPresentationTime).commit();
     }
 
     private void updateRootViewLayout(int width, int height) {
@@ -1837,6 +1872,13 @@ public class PlayerWrapper {
         try {
             reader = new BufferedReader(new FileReader(file));
             String aLineContent = null;
+            String key = null;
+            String value = null;
+            StringBuilder sb = new StringBuilder();
+            int i = 0;
+            int LENGTH = 50;
+            int spaceLength = 0;
+            int i_length = 0;
             //一次读一行，读入null时文件结束
             while ((aLineContent = reader.readLine()) != null) {
                 if (aLineContent.length() == 0) {
@@ -1846,12 +1888,36 @@ public class PlayerWrapper {
                 aLineContent = aLineContent.trim();
 
                 if (aLineContent.contains(TAG) && !aLineContent.startsWith("#")) {
+                    ++i;
                     String[] contents = aLineContent.split(TAG);
+                    key = contents[0];
+                    value = contents[1];
+                    sb.append(value);
+
+                    if (i < 10) {
+                        i_length = 1;
+                    } else if (i >= 10 && i < 100) {
+                        i_length = 2;
+                    } else if (i >= 100 && i < 1000) {
+                        i_length = 3;
+                    } else if (i >= 1000 && i < 10000) {
+                        i_length = 4;
+                    }
+                    spaceLength = LENGTH - length(value) - i_length;
+                    for (int j = 0; j < spaceLength; j++) {
+                        sb.append("-");
+                    }
+                    sb.append(i);
+
                     if (contents.length > 1) {
-                        if (!mContentsMap.containsKey(contents[0])) {
-                            mContentsMap.put(contents[0], contents[1]);
+                        if (!mContentsMap.containsKey(key)) {
+                            mContentsMap.put(key, sb.toString());
                         }
                     }
+
+                    MLog.i("player_alexander", "readContents() sb.toString(): " +
+                            sb.toString());
+                    sb.delete(0, sb.length());
                 }
             }
         } catch (IOException e) {
@@ -1864,6 +1930,26 @@ public class PlayerWrapper {
                 }
             }
         }
+    }
+
+    private static int length(String s) {
+        if (s == null) {
+            return 0;
+        }
+        char[] c = s.toCharArray();
+        int len = 0;
+        for (int i = 0; i < c.length; i++) {
+            len++;
+            if (!isLetter(c[i])) {
+                len++;
+            }
+        }
+        return len;
+    }
+
+    private static boolean isLetter(char c) {
+        int k = 0x80;
+        return c / k == 0 ? true : false;
     }
 
     private static final int NEED_CLICK_COUNTS = 4;

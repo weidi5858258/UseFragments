@@ -23,7 +23,7 @@ public interface Callback {
 
     int ERROR_FFMPEG_INIT = 0x100;
     int ERROR_TIME_OUT = 0x101;
-    int ERROR_DATA_EXCEPTION = 0x102;
+    //int ERROR_DATA_EXCEPTION = 0x102;
 
     int onTransact(int code, Parcel data, Parcel reply);
 
