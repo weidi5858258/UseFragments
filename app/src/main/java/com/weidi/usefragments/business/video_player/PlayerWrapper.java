@@ -183,7 +183,60 @@ public class PlayerWrapper {
     public static final LinkedHashMap<String, String> mContentsMap = new LinkedHashMap();
 
     // 必须首先被调用
-    public void setActivity(Activity activity, Service service) {
+    public void setService(Service service) {
+        mService = null;
+        if (!(service instanceof PlayerService)) {
+            return;
+        }
+
+        PlayerService playerService = (PlayerService) service;
+        mService = playerService;
+        mContext = playerService.getApplicationContext();
+
+        mWindowManager = playerService.mWindowManager;
+        mLayoutParams = playerService.mLayoutParams;
+        mRootView = playerService.mRootView;
+        mRootView.setOnTouchListener(new PlayerOnTouchListener());
+
+        mSurfaceView = mRootView.findViewById(R.id.surfaceView);
+        mControllerPanelLayout = mRootView.findViewById(R.id.controller_panel_layout);
+        mLoadingView = mRootView.findViewById(R.id.loading_view);
+        mProgressBar = mRootView.findViewById(R.id.progress_bar);
+        mFileNameTV = mRootView.findViewById(R.id.file_name_tv);
+        mProgressTimeTV = mRootView.findViewById(R.id.progress_time_tv);
+        mSeekTimeTV = mRootView.findViewById(R.id.seek_time_tv);
+        mDurationTimeTV = mRootView.findViewById(R.id.duration_time_tv);
+        mPreviousIB = mRootView.findViewById(R.id.button_prev);
+        mPlayIB = mRootView.findViewById(R.id.button_play);
+        mPauseIB = mRootView.findViewById(R.id.button_pause);
+        mNextIB = mRootView.findViewById(R.id.button_next);
+
+        mExitIB = mRootView.findViewById(R.id.button_exit);
+        mExitIB.setVisibility(View.VISIBLE);
+        mDownloadTV = mRootView.findViewById(R.id.download_tv);
+        mVolumeNormal = mRootView.findViewById(R.id.volume_normal);
+        mVolumeMute = mRootView.findViewById(R.id.volume_mute);
+
+        mProgressBarLayout = mRootView.findViewById(R.id.progress_bar_layout);
+        mVideoProgressBar = mRootView.findViewById(R.id.video_progress_bar);
+        mAudioProgressBar = mRootView.findViewById(R.id.audio_progress_bar);
+
+        if (mSP == null) {
+            mSP = mContext.getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE);
+        }
+
+        mSurfaceView.setOnClickListener(mOnClickListener);
+        mPreviousIB.setOnClickListener(mOnClickListener);
+        mPlayIB.setOnClickListener(mOnClickListener);
+        mPauseIB.setOnClickListener(mOnClickListener);
+        mNextIB.setOnClickListener(mOnClickListener);
+        mExitIB.setOnClickListener(mOnClickListener);
+        mDownloadTV.setOnClickListener(mOnClickListener);
+        mVolumeNormal.setOnClickListener(mOnClickListener);
+        mVolumeMute.setOnClickListener(mOnClickListener);
+    }
+
+    public void setService(Activity activity, Service service) {
         mActivity = null;
         mService = null;
         if (activity != null) {
@@ -1872,13 +1925,11 @@ public class PlayerWrapper {
         try {
             reader = new BufferedReader(new FileReader(file));
             String aLineContent = null;
+            String[] contents = null;
             String key = null;
             String value = null;
             StringBuilder sb = new StringBuilder();
             int i = 0;
-            int LENGTH = 50;
-            int spaceLength = 0;
-            int i_length = 0;
             //一次读一行，读入null时文件结束
             while ((aLineContent = reader.readLine()) != null) {
                 if (aLineContent.length() == 0) {
@@ -1889,25 +1940,22 @@ public class PlayerWrapper {
 
                 if (aLineContent.contains(TAG) && !aLineContent.startsWith("#")) {
                     ++i;
-                    String[] contents = aLineContent.split(TAG);
+                    contents = aLineContent.split(TAG);
                     key = contents[0];
                     value = contents[1];
-                    sb.append(value);
 
-                    if (i < 10) {
-                        i_length = 1;
-                    } else if (i >= 10 && i < 100) {
-                        i_length = 2;
-                    } else if (i >= 100 && i < 1000) {
-                        i_length = 3;
-                    } else if (i >= 1000 && i < 10000) {
-                        i_length = 4;
-                    }
-                    spaceLength = LENGTH - length(value) - i_length;
-                    for (int j = 0; j < spaceLength; j++) {
-                        sb.append("-");
-                    }
                     sb.append(i);
+                    if (i < 10) {
+                        sb.append("____");
+                    } else if (i >= 10 && i < 100) {
+                        sb.append("___");
+                    } else if (i >= 100 && i < 1000) {
+                        sb.append("__");
+                    } else if (i >= 1000 && i < 10000) {
+                        sb.append("_");
+                    }
+                    sb.append("_");
+                    sb.append(value);
 
                     if (contents.length > 1) {
                         if (!mContentsMap.containsKey(key)) {
@@ -1915,8 +1963,8 @@ public class PlayerWrapper {
                         }
                     }
 
-                    MLog.i("player_alexander", "readContents() sb.toString(): " +
-                            sb.toString());
+                    /*MLog.i("player_alexander", "readContents() sb.toString(): " +
+                            sb.toString());*/
                     sb.delete(0, sb.length());
                 }
             }

@@ -23,7 +23,6 @@ import android.util.DisplayMetrics;
 import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
-import android.view.MotionEvent;
 import android.view.View;
 import android.view.WindowManager;
 
@@ -345,11 +344,7 @@ public class PlayerService extends Service {
         mLayoutParams.x = 0;
         mLayoutParams.y = 0;
 
-        /*mCurPath = "/storage/1532-48AD/Android/data/" +
-                "com.weidi.usefragments/files/Movies/哪吒之魔童降世.mp4";*/
-        //        mPath = "/storage/1532-48AD/Videos/vodeo/c7f879de3a6baacf2ad81c5a65379718.mp4";
-        //        mPath = "http://ivi.bupt.edu.cn/hls/cctv9hd.m3u8";
-        mPlayerWrapper.setActivity(null, this);
+        mPlayerWrapper.setService(this);
         mPlayerWrapper.setDataSource(mCurPath);
         mPlayerWrapper.onCreate();
     }

@@ -4,19 +4,25 @@ import android.app.Activity;
 import android.content.Intent;
 import android.content.res.Configuration;
 import android.os.Bundle;
+import android.os.Message;
 import android.support.annotation.Nullable;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 
+import com.weidi.handler.HandlerUtils;
 import com.weidi.usefragments.R;
 import com.weidi.usefragments.business.contents.ContentsFragment;
+import com.weidi.usefragments.business.video_player.JniPlayerActivity;
 import com.weidi.usefragments.fragment.FragOperManager;
 import com.weidi.usefragments.fragment.base.BaseFragment;
 import com.weidi.usefragments.inject.InjectView;
 import com.weidi.usefragments.tool.MLog;
+
+import static com.weidi.usefragments.test_fragment.scene2.Constant.MAIN1FRAGMENT_MSG_UI_CLICK_COUNTS;
 
 
 /***
@@ -28,10 +34,14 @@ public class Main1Fragment extends BaseFragment {
             Main1Fragment.class.getSimpleName();
 
     private static final boolean DEBUG = true;
+    @InjectView(R.id.root_layout1)
+    private RelativeLayout mRootLayout;
     @InjectView(R.id.title_tv)
     private TextView mTitleView;
     @InjectView(R.id.jump_btn)
     private Button mJumpBtn;
+
+    private int mClickCounts = 0;
 
     public Main1Fragment() {
         super();
@@ -54,6 +64,41 @@ public class Main1Fragment extends BaseFragment {
         if (DEBUG)
             MLog.d(TAG, "onCreate(): " + this
                     + " savedInstanceState: " + savedInstanceState);
+
+        HandlerUtils.register(Main1Fragment.class, new HandlerUtils.Callback() {
+            @Override
+            public void handleMessage(Message msg, Object[] objArray) {
+                if (msg == null) {
+                    mClickCounts = 0;
+                    return;
+                }
+
+                switch (msg.what) {
+                    case MAIN1FRAGMENT_MSG_UI_CLICK_COUNTS:
+                        if (mClickCounts > 3) {
+                            mClickCounts = 3;
+                        }
+                        switch (mClickCounts) {
+                            case 2:
+                                FragOperManager.getInstance().enter3(new ContentsFragment());
+                                break;
+                            case 3:
+                                // 视频播放后才可以打开这个Activity
+                                Intent intent = new Intent();
+                                intent.putExtra(JniPlayerActivity.COMMAND_NO_FINISH, true);
+                                intent.setClass(getContext(), JniPlayerActivity.class);
+                                getAttachedActivity().startActivity(intent);
+                                break;
+                            default:
+                                break;
+                        }
+                        mClickCounts = 0;
+                        break;
+                    default:
+                        break;
+                }
+            }
+        });
     }
 
     @Override
@@ -75,7 +120,7 @@ public class Main1Fragment extends BaseFragment {
             MLog.d(TAG, "onViewCreated(): " + this
                     + " savedInstanceState: " + savedInstanceState);
 
-        mJumpBtn.setClickable(true);
+        /*mJumpBtn.setClickable(true);
         mJumpBtn.setFocusable(true);
         mJumpBtn.requestFocus();
         mJumpBtn.setOnClickListener(new View.OnClickListener() {
@@ -85,11 +130,24 @@ public class Main1Fragment extends BaseFragment {
                 //FragOperManager.getInstance().enter3(new ThrowingScreenFragment());
                 //FragOperManager.getInstance().enter3(new DecodeVideoFragment());
 
-                /*getAttachedActivity().startActivity(
+                *//*getAttachedActivity().startActivity(
                         new Intent(getContext(), PlayerActivity.class));
-                ((BaseActivity) getAttachedActivity()).enterActivity();*/
+                ((BaseActivity) getAttachedActivity()).enterActivity();*//*
 
                 FragOperManager.getInstance().enter3(new ContentsFragment());
+            }
+        });*/
+
+        mRootLayout.setClickable(true);
+        mRootLayout.setFocusable(true);
+        mRootLayout.requestFocus();
+        mRootLayout.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                mClickCounts++;
+                HandlerUtils.removeMessages(MAIN1FRAGMENT_MSG_UI_CLICK_COUNTS);
+                HandlerUtils.sendEmptyMessageDelayed(Main1Fragment.class,
+                        MAIN1FRAGMENT_MSG_UI_CLICK_COUNTS, 500);
             }
         });
     }
@@ -184,6 +242,8 @@ public class Main1Fragment extends BaseFragment {
         super.onDestroy();
         if (DEBUG)
             MLog.d(TAG, "onDestroy(): " + this);
+
+        HandlerUtils.unregister(Main1Fragment.class);
     }
 
     @Override
