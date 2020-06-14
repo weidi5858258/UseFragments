@@ -80,9 +80,11 @@ public class Main1Fragment extends BaseFragment {
                         }
                         switch (mClickCounts) {
                             case 2:
+                                MLog.d(TAG, "clickTwo()");
                                 FragOperManager.getInstance().enter3(new ContentsFragment());
                                 break;
                             case 3:
+                                MLog.d(TAG, "clickThree()");
                                 // 视频播放后才可以打开这个Activity
                                 Intent intent = new Intent();
                                 intent.putExtra(JniPlayerActivity.COMMAND_NO_FINISH, true);

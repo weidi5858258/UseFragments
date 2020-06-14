@@ -555,19 +555,19 @@ public class PlayerWrapper {
                 }
                 switch (clickCounts) {
                     case 1:
-                        //MLog.d(TAG, "onKeyDown() 1");
+                        MLog.d(TAG, "clickOne()");
                         clickOne();
                         break;
                     case 2:
-                        //MLog.d(TAG, "onKeyDown() 2");
+                        MLog.d(TAG, "clickTwo()");
                         clickTwo();
                         break;
                     case 3:
-                        //MLog.d(TAG, "onKeyDown() 3");
+                        MLog.d(TAG, "clickThree()");
                         clickThree();
                         break;
                     case 4:
-                        //MLog.d(TAG, "onKeyDown() 4");
+                        MLog.d(TAG, "clickFour()");
                         clickFour();
                         break;
                     case 5:
