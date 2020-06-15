@@ -1853,8 +1853,8 @@ namespace alexander_media {
                     totleTimeDiff += timeDiff[i];
                 }
                 averageTimeDiff = totleTimeDiff / RUN_COUNTS;
-                LOGI("handleVideoDataImpl() frameRate: %d averageTimeDiff: %lf inFilePath: \n%s\n",
-                     frameRate, averageTimeDiff, inFilePath);
+                LOGI("handleVideoDataImpl() frameRate: %d averageTimeDiff: %lf\n",
+                     frameRate, averageTimeDiff);
                 if (frameRate >= 24) {
                     if (averageTimeDiff > 0.300000 && averageTimeDiff <= 0.400000) {
                         TIME_DIFFERENCE = 0.200000;

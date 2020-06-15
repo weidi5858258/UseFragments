@@ -6,27 +6,48 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
-import android.widget.RelativeLayout;
 import android.widget.TextView;
 
 import com.weidi.usefragments.R;
-import com.weidi.usefragments.business.video_player.PlayerWrapper;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 /***
  Created by root on 19-4-15.
+
+
+ // test
+ final LinkedHashMap<String, String> mContentsMap = new LinkedHashMap();
+ int i = 0;
+ for (Map.Entry<String, String> tempMap : PlayerWrapper.mContentsMap.entrySet()) {
+ i++;
+ if (i < 11) {
+ continue;
+ }
+ testCounts++;
+ mContentsMap.put(tempMap.getKey(), tempMap.getValue());
+ if (testCounts == 20) {
+ break;
+ }
+ }
+ mAdapter.addData(mContentsMap);
+
+
  */
 
 public class ContentsAdapter extends RecyclerView.Adapter {
 
-    private ArrayList<String> mKeys = new ArrayList<String>();
+    private final LinkedHashMap<String, String> mContentsMap = new LinkedHashMap();
+    private final ArrayList<String> mKeys = new ArrayList<String>();
     private Context mContext;
     private LayoutInflater mLayoutInflater;
     //private String mPath;
 
     public ContentsAdapter(Context context) {
+        mContentsMap.clear();
+        mKeys.clear();
         mContext = context;
         mLayoutInflater = LayoutInflater.from(mContext);
     }
@@ -43,20 +64,20 @@ public class ContentsAdapter extends RecyclerView.Adapter {
     @Override
     public void onBindViewHolder(
             RecyclerView.ViewHolder holder, int position) {
-        if (mKeys.isEmpty()) {
+        if (mContentsMap.isEmpty() || mKeys.isEmpty()) {
             return;
         }
 
         TitleViewHolder titleViewHolder = (TitleViewHolder) holder;
         String key = mKeys.get(position);
-        String value = PlayerWrapper.mContentsMap.get(key);
+        String value = mContentsMap.get(key);
         titleViewHolder.title.setText(value);
         titleViewHolder.key = key;
     }
 
     @Override
     public int getItemCount() {
-        return PlayerWrapper.mContentsMap.size();
+        return mContentsMap.size();
     }
 
     @Override
@@ -72,11 +93,37 @@ public class ContentsAdapter extends RecyclerView.Adapter {
 
         synchronized (ContentsAdapter.this) {
             mKeys.clear();
+            mContentsMap.clear();
             for (Map.Entry<String, String> tempMap : map.entrySet()) {
+                mContentsMap.put(tempMap.getKey(), tempMap.getValue());
                 mKeys.add(tempMap.getKey());
             }
 
             notifyDataSetChanged();
+        }
+    }
+
+    // 外面的数据做好key的唯一性,且key,value都不为null
+    public void addData(Map<String, String> map) {
+        if (map == null || map.isEmpty()) {
+            return;
+        }
+
+        synchronized (ContentsAdapter.this) {
+            for (Map.Entry<String, String> tempMap : map.entrySet()) {
+                mContentsMap.put(tempMap.getKey(), tempMap.getValue());
+                mKeys.add(tempMap.getKey());
+            }
+
+            notifyDataSetChanged();
+
+            //  java.lang.IllegalArgumentException:
+            //  Tmp detached view should be removed from RecyclerView before it can be recycled
+            // 此异常的解决方案就是取消Item的动画执行，从代码8中只要设置mItemAnimator =null就可以了，
+            // RecyclerView也提供的Api：setItemAnimator()
+            // 使用这个有几个Exception
+            /*notifyItemRangeChanged(mKeys.size() - ContentsFragment.ONE_TIME_ADD_COUNT,
+                    ContentsFragment.ONE_TIME_ADD_COUNT);*/
         }
     }
 
@@ -107,7 +154,7 @@ public class ContentsAdapter extends RecyclerView.Adapter {
         private View itemView;
         private TextView title;
         private Button downloadBtn;
-        // 保存了PlayerWrapper.mContentsMap的key
+        // 保存了mContentsMap的key
         private String key;
 
         public TitleViewHolder(View itemView) {

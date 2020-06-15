@@ -1909,6 +1909,7 @@ public class PlayerWrapper {
                 MLog.i(TAG, "loadContents() end");
                 return;
             }
+
         }
 
         for (Map.Entry<String, String> tempMap : Contents.movieMap.entrySet()) {

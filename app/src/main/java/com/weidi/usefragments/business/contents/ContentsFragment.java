@@ -14,6 +14,7 @@ import android.os.Message;
 import android.provider.MediaStore;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.text.TextUtils;
 import android.view.LayoutInflater;
@@ -38,6 +39,7 @@ import com.weidi.utils.MD5Util;
 import com.weidi.utils.MyToast;
 
 import java.io.File;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 import static com.weidi.usefragments.business.video_player.PlayerWrapper.PLAYBACK_ADDRESS;
@@ -341,10 +343,12 @@ public class ContentsFragment extends BaseFragment {
 
     private Handler mUiHandler;
     private long contentLength = -1;
+    private VerticalLayoutManager mLayoutManager;
     private ContentsAdapter mAdapter;
     private SharedPreferences mPreferences;
-    // 第一个存储视频地址,第二个存储标题
-    //private LinkedHashMap<String, String> mContentsMap = new LinkedHashMap();
+    private int mContentsCount = 0;
+    private final LinkedHashMap<String, String> mContentsMap = new LinkedHashMap();
+    public static final int ONE_TIME_ADD_COUNT = 20;
 
     /***
      代码执行的内容跟onStart(),onResume()一样,
@@ -418,9 +422,26 @@ public class ContentsFragment extends BaseFragment {
 
         if (!PlayerWrapper.mContentsMap.isEmpty()) {
             initAdapter();
-            mAdapter.setData(PlayerWrapper.mContentsMap);
-            mRecyclerView.setLayoutManager(new VerticalLayoutManager());
+            mRecyclerView.setLayoutManager(mLayoutManager);
             mRecyclerView.setAdapter(mAdapter);
+            mRecyclerView.addOnScrollListener(mOnScrollListener);
+            MLog.d(TAG, "initView() PlayerWrapper.mContentsMap.size(): " +
+                    PlayerWrapper.mContentsMap.size());
+
+            if (PlayerWrapper.mContentsMap.size() > 500) {
+                // 太多的先加载20个
+                mContentsMap.clear();
+                for (Map.Entry<String, String> tempMap : PlayerWrapper.mContentsMap.entrySet()) {
+                    mContentsCount++;
+                    mContentsMap.put(tempMap.getKey(), tempMap.getValue());
+                    if (mContentsCount == ONE_TIME_ADD_COUNT) {
+                        break;
+                    }
+                }
+                mAdapter.addData(mContentsMap);
+            } else {
+                mAdapter.setData(PlayerWrapper.mContentsMap);
+            }
         } else {
             MyToast.show("没有数据可用!!!");
         }
@@ -435,6 +456,7 @@ public class ContentsFragment extends BaseFragment {
     }
 
     private void initAdapter() {
+        mLayoutManager = new VerticalLayoutManager(getContext());
         mAdapter = new ContentsAdapter(getContext());
         mAdapter.setOnItemClickListener(
                 new ContentsAdapter.OnItemClickListener() {
@@ -537,6 +559,61 @@ public class ContentsFragment extends BaseFragment {
     private void destroy() {
         EventBusUtils.unregister(this);
     }
+
+    private RecyclerView.OnScrollListener mOnScrollListener =
+            new RecyclerView.OnScrollListener() {
+
+                //用来标记是否正在向最后一个滑动
+                boolean isSlidingToLast = false;
+
+                @Override
+                public void onScrollStateChanged(RecyclerView recyclerView, int newState) {
+                    super.onScrollStateChanged(recyclerView, newState);
+                    // 当不滚动时
+                    switch (newState) {
+                        case RecyclerView.SCROLL_STATE_IDLE:
+                            int lastVisibleItem = mLayoutManager.getLastVisiblePosition();
+                            if (isSlidingToLast
+                                    && lastVisibleItem == (mLayoutManager.getItemCount() - 1)) {
+                                MLog.d(TAG, "onScrollStateChanged() SCROLL_STATE_IDLE");
+                                // 加载更多功能的代码
+                                mContentsMap.clear();
+                                int i = 0;
+                                int addCount = 0;
+                                for (Map.Entry<String, String> tempMap :
+                                        PlayerWrapper.mContentsMap.entrySet()) {
+                                    i++;
+                                    if (i <= mContentsCount) {
+                                        continue;
+                                    }
+                                    mContentsCount++;
+                                    addCount++;
+                                    mContentsMap.put(tempMap.getKey(), tempMap.getValue());
+                                    if (addCount == ONE_TIME_ADD_COUNT) {
+                                        break;
+                                    }
+                                }
+                                mAdapter.addData(mContentsMap);
+                            }
+                            break;
+                        default:
+                            break;
+                    }
+                }
+
+                @Override
+                public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
+                    super.onScrolled(recyclerView, dx, dy);
+                    // dx用来判断横向滑动方向,dy用来判断纵向滑动方向
+                    // MLog.d(TAG, "onScrolled() dx: " + dx + " dy: " + dy);
+                    if (dy > 0) {
+                        // 表示手指由下往上滑动(内容往上滚动)
+                        isSlidingToLast = true;
+                    } else {
+                        isSlidingToLast = false;
+                    }
+                }
+            };
 
     @InjectOnClick({R.id.playback_btn, R.id.download_tv,
             R.id.jump_to_gallery_btn, R.id.jump_to_file_manager_btn, R.id.jump_btn})
@@ -645,7 +722,6 @@ public class ContentsFragment extends BaseFragment {
     private final int REQUEST_CODE_SELECT_VIDEO = 112;
 
     private static final int MSG_ON_PROGRESS_UPDATED = 1;
-    private static final int MSG_ON_INIT_ADAPTER = 2;
 
     private void uiHandleMessage(Message msg) {
         if (msg == null) {
@@ -655,13 +731,6 @@ public class ContentsFragment extends BaseFragment {
         switch (msg.what) {
             case MSG_ON_PROGRESS_UPDATED:
                 mAdapter.setProgress(mProgress + "%");
-                break;
-            case MSG_ON_INIT_ADAPTER:
-                if (mRecyclerView != null) {
-                    mAdapter.setData(PlayerWrapper.mContentsMap);
-                    mRecyclerView.setLayoutManager(new VerticalLayoutManager());
-                    mRecyclerView.setAdapter(mAdapter);
-                }
                 break;
             default:
                 break;
