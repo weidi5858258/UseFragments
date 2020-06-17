@@ -6,7 +6,6 @@ import android.app.Service;
 import android.app.UiModeManager;
 import android.content.Context;
 import android.content.SharedPreferences;
-import android.content.pm.ActivityInfo;
 import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.graphics.PixelFormat;
@@ -49,6 +48,7 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -100,8 +100,12 @@ public class PlayerWrapper {
     public static final String PLAYBACK_MEDIA_TYPE = "playback_media_type";
     // true表示静音
     public static final String PLAYBACK_IS_MUTE = "playback_is_mute";
+    // 保存窗口位置
+    public static final String PLAYBACK_WINDOW_POSITION = "playback_window_position";
+    public static final String PLAYBACK_WINDOW_POSITION_TAG = "@@@@@@@@@@";
 
     private HashMap<String, Long> mPathTimeMap = new HashMap<>();
+    private ArrayList<String> mCouldPlaybackPathList = new ArrayList<>();
 
     private SharedPreferences mSP;
     private PowerManager.WakeLock mPowerWakeLock;
@@ -351,6 +355,10 @@ public class PlayerWrapper {
         if (mSP == null) {
             mSP = mContext.getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE);
         }
+
+        mPathTimeMap.clear();
+        mCouldPlaybackPathList.clear();
+        mContentsMap.clear();
 
         mIsPhoneDevice = isPhoneDevice();
 
@@ -1049,9 +1057,19 @@ public class PlayerWrapper {
         MLog.d(TAG, "Callback.MSG_ON_CHANGE_WINDOW handlePortraitScreen");
 
         mIsPortraitScreen = true;
+        handleLandscapeScreenFlag = false;
 
         mRootView.setBackgroundColor(
                 mContext.getResources().getColor(android.R.color.transparent));
+
+        int x = 0;
+        int y = 0;
+        String position = mSP.getString(PLAYBACK_WINDOW_POSITION, null);
+        if (position != null && position.contains(PLAYBACK_WINDOW_POSITION_TAG)) {
+            String[] positions = position.split(PLAYBACK_WINDOW_POSITION_TAG);
+            y = Integer.parseInt(positions[1]);
+        }
+        MLog.d(TAG, "Callback.MSG_ON_CHANGE_WINDOW x: " + x + " y: " + y);
 
         // 暂停按钮高度
         int pauseRlHeight = getPauseRlHeight();
@@ -1132,16 +1150,17 @@ public class PlayerWrapper {
                 if (mNeedVideoHeight > (int) (mScreenHeight * 2 / 3)) {
                     updateRootViewLayout(
                             mScreenWidth,
-                            mNeedVideoHeight);
+                            mNeedVideoHeight, x, y);
                 } else {
                     if (mMediaDuration <= 0) {
+                        // 直播节目
                         updateRootViewLayout(
                                 mScreenWidth,
-                                mNeedVideoHeight + pauseRlHeight);
+                                mNeedVideoHeight + pauseRlHeight, x, y);
                     } else {
                         updateRootViewLayout(
                                 mScreenWidth,
-                                mNeedVideoHeight + mControllerPanelLayoutHeight);
+                                mNeedVideoHeight + mControllerPanelLayoutHeight, x, y);
                     }
                 }
             } else {
@@ -1149,12 +1168,12 @@ public class PlayerWrapper {
                         || mType.startsWith("video/")) {
                     if (mMediaDuration <= 0) {
                         // 是视频并且只下载不播放的情况下
-                        updateRootViewLayout(mScreenWidth, pauseRlHeight);
+                        updateRootViewLayout(mScreenWidth, pauseRlHeight, x, y);
                         return;
                     }
                 }
                 // 音乐 或者 mMediaDuration > 0
-                updateRootViewLayout(mScreenWidth, mControllerPanelLayoutHeight + 1);
+                updateRootViewLayout(mScreenWidth, mControllerPanelLayoutHeight + 1, x, y);
             }
         }
     }
@@ -1167,6 +1186,16 @@ public class PlayerWrapper {
 
         mRootView.setBackgroundColor(
                 mContext.getResources().getColor(android.R.color.transparent));
+
+        int x = 0;
+        int y = 0;
+        String position = mSP.getString(PLAYBACK_WINDOW_POSITION, null);
+        if (position != null && position.contains(PLAYBACK_WINDOW_POSITION_TAG)) {
+            String[] positions = position.split(PLAYBACK_WINDOW_POSITION_TAG);
+            x = Integer.parseInt(positions[0]);
+            y = Integer.parseInt(positions[1]);
+        }
+        MLog.d(TAG, "Callback.MSG_ON_CHANGE_WINDOW x: " + x + " y: " + y);
 
         int pauseRlHeight = getPauseRlHeight();
 
@@ -1225,18 +1254,18 @@ public class PlayerWrapper {
         if (mService != null) {
             if (mVideoWidth != 0 && mVideoHeight != 0) {
                 if (mNeedVideoHeight > (int) (mScreenHeight * 2 / 3)) {
-                    updateRootViewLayout(mScreenWidth, mNeedVideoHeight);
+                    updateRootViewLayout(mScreenWidth, mNeedVideoHeight, x, y);
                 } else {
                     if (mMediaDuration <= 0) {
                         updateRootViewLayout(mScreenWidth,
-                                mNeedVideoHeight + pauseRlHeight);
+                                mNeedVideoHeight + pauseRlHeight, x, y);
                     } else {
                         updateRootViewLayout(mScreenWidth,
-                                mNeedVideoHeight + mControllerPanelLayoutHeight);
+                                mNeedVideoHeight + mControllerPanelLayoutHeight, x, y);
                     }
                 }
             } else {
-                updateRootViewLayout(mScreenWidth, mControllerPanelLayoutHeight + 1);
+                updateRootViewLayout(mScreenWidth, mControllerPanelLayoutHeight + 1, x, y);
             }
         }
     }
@@ -1452,11 +1481,6 @@ public class PlayerWrapper {
                 // 横屏
                 if (!IS_HIKEY970) {
                     handleLandscapeScreen(0);
-                    /*if (JniPlayerActivity.isAliveJniPlayerActivity) {
-                        handleLandscapeScreen(0);
-                    } else {
-                        handleLandscapeScreen(1);
-                    }*/
                 } else {
                     handlePortraitScreenWithHikey970();
                 }
@@ -1471,6 +1495,9 @@ public class PlayerWrapper {
 
         if (TextUtils.isEmpty(mType)
                 || mType.startsWith("video/")) {
+            if (!mCouldPlaybackPathList.contains(mPath)) {
+                mCouldPlaybackPathList.add(mPath);
+            }
             SharedPreferences.Editor edit = mSP.edit();
             // 保存播放地址
             edit.putString(PLAYBACK_ADDRESS, mPath);
@@ -1532,10 +1559,15 @@ public class PlayerWrapper {
                 MLog.e(TAG, "PlayerWrapper Callback.ERROR_FFMPEG_INIT errorInfo: " + errorInfo);
                 if (TextUtils.isEmpty(mType)
                         || mType.startsWith("video/")) {
-                    String path = mSP.getString(PLAYBACK_ADDRESS, null);
-                    if (TextUtils.equals(path, mPath)) {
+                    if (mCouldPlaybackPathList.contains(mPath)) {
                         startPlayback();
                         break;
+                    } else {
+                        String path = mSP.getString(PLAYBACK_ADDRESS, null);
+                        if (TextUtils.equals(path, mPath)) {
+                            startPlayback();
+                            break;
+                        }
                     }
                 }
 
@@ -1598,11 +1630,16 @@ public class PlayerWrapper {
     }
 
     private void updateRootViewLayout(int width, int height) {
+        updateRootViewLayout(width, height, 0, 0);
+    }
+
+    private void updateRootViewLayout(int width, int height, int x, int y) {
         if (mService != null && mService.mIsAddedView) {
+            // mLayoutParams.gravity = Gravity.DISPLAY_CLIP_VERTICAL;
             mLayoutParams.width = width;
             mLayoutParams.height = height;
-            mLayoutParams.x = 0;
-            mLayoutParams.y = 0;
+            mLayoutParams.x = x;
+            mLayoutParams.y = y;
             mWindowManager.updateViewLayout(mRootView, mLayoutParams);
         }
     }
@@ -1811,9 +1848,6 @@ public class PlayerWrapper {
                 if (mContext.getResources().getConfiguration().orientation ==
                         Configuration.ORIENTATION_LANDSCAPE) {
                     MLog.d(TAG, "onKeyDown() 4 横屏");
-                    // 强制横屏
-                    // 执行全屏操作
-                    // 重新计算mScreenWidth和mScreenHeight的值
                     if (JniPlayerActivity.isAliveJniPlayerActivity) {
                         handleLandscapeScreen(0);
                     } else {
@@ -1838,12 +1872,9 @@ public class PlayerWrapper {
                 } else if (mContext.getResources().getConfiguration().orientation ==
                         Configuration.ORIENTATION_PORTRAIT) {
                     MLog.d(TAG, "onKeyDown() 4 竖屏");
-                    // 强制竖屏
-                    // 取消全屏操作
-                    // 重新计算mScreenWidth和mScreenHeight的值
                     handlePortraitScreen();
                 }
-            } else if (mActivity != null) {
+            } /*else if (mActivity != null) {
                 // 如果当前是横屏
                 if (mContext.getResources().getConfiguration().orientation ==
                         Configuration.ORIENTATION_LANDSCAPE) {
@@ -1858,7 +1889,7 @@ public class PlayerWrapper {
                     // 执行全屏操作
                     setFullscreen(mActivity, true);
                 }
-            }
+            }*/
         } else {
             // 电视机
             if (handleLandscapeScreenFlag) {
@@ -2035,8 +2066,12 @@ public class PlayerWrapper {
     }
 
     private class PlayerOnTouchListener implements View.OnTouchListener {
+        private StringBuffer sb = new StringBuffer();
         private int x;
         private int y;
+
+        private int tempX;
+        private int tempY;
 
         @Override
         public boolean onTouch(View view, MotionEvent event) {
@@ -2047,6 +2082,8 @@ public class PlayerWrapper {
                 case MotionEvent.ACTION_DOWN:
                     x = (int) event.getRawX();
                     y = (int) event.getRawY();
+                    tempX = x;
+                    tempY = y;
                     break;
                 case MotionEvent.ACTION_MOVE:
                     int nowX = (int) event.getRawX();
@@ -2058,8 +2095,19 @@ public class PlayerWrapper {
                     mLayoutParams.x = mLayoutParams.x + movedX;
                     mLayoutParams.y = mLayoutParams.y + movedY;
 
+                    tempX = mLayoutParams.x;
+                    tempY = mLayoutParams.y;
+
                     // 更新悬浮窗控件布局
                     mWindowManager.updateViewLayout(view, mLayoutParams);
+                    break;
+                case MotionEvent.ACTION_UP:
+                    sb.delete(0, sb.length());
+                    sb.append(tempX);
+                    sb.append(PLAYBACK_WINDOW_POSITION_TAG);
+                    sb.append(tempY);
+                    mSP.edit().putString(PLAYBACK_WINDOW_POSITION, sb.toString()).commit();
+                    MLog.i(TAG, "Callback.MSG_ON_CHANGE_WINDOW sb.toString(): " + sb.toString());
                     break;
                 default:
                     break;
