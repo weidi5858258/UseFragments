@@ -73,9 +73,11 @@ import static com.weidi.usefragments.business.video_player.FFMPEG.DO_SOMETHING_C
 import static com.weidi.usefragments.business.video_player.FFMPEG.USE_MODE_AAC_H264;
 import static com.weidi.usefragments.business.video_player.FFMPEG.USE_MODE_AUDIO_VIDEO;
 import static com.weidi.usefragments.business.video_player.FFMPEG.USE_MODE_MEDIA;
+import static com.weidi.usefragments.business.video_player.FFMPEG.USE_MODE_MEDIA_4K;
 import static com.weidi.usefragments.business.video_player.FFMPEG.USE_MODE_ONLY_AUDIO;
 import static com.weidi.usefragments.business.video_player.FFMPEG.VOLUME_MUTE;
 import static com.weidi.usefragments.business.video_player.FFMPEG.VOLUME_NORMAL;
+import static com.weidi.usefragments.business.video_player.FFMPEG.DO_SOMETHING_CODE_videoHandleRender;
 import static com.weidi.usefragments.service.DownloadFileService.PREFERENCES_NAME;
 
 public class PlayerWrapper {
@@ -609,6 +611,12 @@ public class PlayerWrapper {
                         sendEmptyMessage(DO_SOMETHING_CODE_videoHandleData);
                     }
                 });
+                ThreadPool.getFixedThreadPool().execute(new Runnable() {
+                    @Override
+                    public void run() {
+                        sendEmptyMessage(DO_SOMETHING_CODE_videoHandleRender);
+                    }
+                });
 
                 if (mIsSeparatedAudioVideo) {
                     ThreadPool.getFixedThreadPool().execute(new Runnable() {
@@ -836,7 +844,7 @@ public class PlayerWrapper {
                     if (TextUtils.isEmpty(mType)
                             || mType.startsWith("video/")) {
                         mFFMPEGPlayer.onTransact(DO_SOMETHING_CODE_setMode,
-                                JniObject.obtain().writeInt(USE_MODE_MEDIA));
+                                JniObject.obtain().writeInt(USE_MODE_MEDIA_4K));// USE_MODE_MEDIA
                     } else if (mType.startsWith("audio/")) {
                         mFFMPEGPlayer.onTransact(DO_SOMETHING_CODE_setMode,
                                 JniObject.obtain().writeInt(USE_MODE_ONLY_AUDIO));

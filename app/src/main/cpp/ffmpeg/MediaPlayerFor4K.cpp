@@ -1,233 +1,49 @@
 //
-// Created by root on 19-8-8.
+// Created by root on 20-06-20.
 //
 
-
-
-
-
-
-
-
-/***
-usleep(1000*40);//等待40毫秒
-av_gettime_relative() 单位:微秒
-
-NV21(yuv420sp)和I420(yuv420p)
-NV21的排列是YYYYYYYY VUVU  -> YUV420SP
-I420的排列是YYYYYYYY UU VV -> YUV420P
-ffmpeg中jpeg编码输入要求是YUVJ420P格式.
-1.YUV420P to YUVJ420P
-2.YUVJ420P to jpeg
-
-在FFMPEG中，图像原始数据包括两种：planar和packed。
-planar就是将几个分量分开存，比如YUV420中，data[0]专门存Y，data[1]专门存U，data[2]专门存V。
-而packed则是打包存，所有数据都存在data[0]中。
-
-大多数图像处理软件在处理时是需要RGB格式的图像.
-默认的视频流是压缩的YUV格式，Android下是YUV420SP.
-Android提供的SurfaceView、GLSurfaceView、TextureView等控件只支持RGB格式的渲染.
-RGB 转换成 YUV
-Y=Y  = (0.257 * R) + (0.504 * G) + (0.098 * B) + 16
-V=Cr =  (0.439 * R) - (0.368 * G) - (0.071 * B) + 128
-U=Cb =  -( 0.148 * R) - (0.291 * G) + (0.439 * B) + 128
-YUV 转换成 RGB
-R = 1.164 (Y - 16)  +  1.596 (V  -  128)
-G = 1.164 (Y - 16)  -  0.813 (V  -  128)  -  0.391 (U  -  128)
-B = 1.164 (Y - 16)  +  2.018 (U  -  128)
-
-R=Y+1.4075*(V-128)
-G=Y-0.3455*(U-128) – 0.7169*(V-128)
-B=Y+1.779*(U-128)
-
-public native int[] decodeYUV420SP(byte[] buf, int width, int height);
-返回的结果是一个ARGB_8888格式的颜色数组.
-mBitmap = Bitmap.createBitmap(data, width, height, Config.ARGB_8888);
-
-保存YUV420P格式的数据，用以下代码：
-fwrite(pFrameYUV->data[0],(pCodecCtx->width)*(pCodecCtx->height),1,output);
-fwrite(pFrameYUV->data[1],(pCodecCtx->width)*(pCodecCtx->height)/4,1,output);
-fwrite(pFrameYUV->data[2],(pCodecCtx->width)*(pCodecCtx->height)/4,1,output);
-保存RGB24格式的数据，用以下代码：
-fwrite(pFrameYUV->data[0],(pCodecCtx->width)*(pCodecCtx->height)*3,1,output);
-保存UYVY格式的数据，用以下代码：
-fwrite(pFrameYUV->data[0],(pCodecCtx->width)*(pCodecCtx->height),2,output);
-
- https://www.cnblogs.com/azraelly/archive/2013/01/01/2841269.html
- 图文详解YUV420数据格式
- https://blog.csdn.net/cgwang_1580/article/details/79595958
- 常用视频像素格式NV12、NV2、I420、YV12、YUYV
-
- int av_image_get_buffer_size(enum AVPixelFormat pix_fmt, int width, int height, int align);
- 函数的作用是通过指定像素格式、图像宽、图像高来计算所需的内存大小
- 重点说明一个参数align:此参数是设定内存对齐的对齐数,也就是按多大的字节进行内存对齐.
- 比如设置为1,表示按1字节对齐,那么得到的结果就是与实际的内存大小一样.
- 再比如设置为4,表示按4字节对齐.也就是内存的起始地址必须是4的整倍数.
-
- int av_image_alloc(
-     uint8_t *pointers[4],
-     int linesizes[4],
-     int w,
-     int h,
-     enum AVPixelFormat pix_fmt,
-     int align);
- pointers[4]：保存图像通道的地址.
- 如果是RGB,则前三个指针分别指向R,G,B的内存地址,第四个指针保留不用.
- linesizes[4]：保存图像每个通道的内存对齐的步长,即一行的对齐内存的宽度,此值大小等于图像宽度.
- w:       要申请内存的图像宽度.
- h:       要申请内存的图像高度.
- pix_fmt: 要申请内存的图像的像素格式.
- align:   用于内存对齐的值.
- 返回值：所申请的内存空间的总大小.如果是负值,表示申请失败.
-
- int av_image_fill_arrays(
-     uint8_t *dst_data[4],
-     int dst_linesize[4],
-     const uint8_t *src,
-     enum AVPixelFormat pix_fmt,
-     int width,
-     int height,
-     int align);
- av_image_fill_arrays()函数自身不具备内存申请的功能,
- 此函数类似于格式化已经申请的内存,即通过av_image_alloc()函数申请的内存空间.
- dst_data[4]:     [out]对申请的内存格式化为三个通道后,分别保存其地址.
- dst_linesize[4]: [out]格式化的内存的步长(即内存对齐后的宽度).
- *src:            [in]av_image_alloc()函数申请的内存地址.
- pix_fmt:         [in]申请 src内存时的像素格式.
- width:           [in]申请src内存时指定的宽度.
- height:          [in]申请scr内存时指定的高度.
- align:           [in]申请src内存时指定的对齐字节数.
-
-int sws_scale(struct SwsContext *c, const uint8_t *const srcSlice[],
-                                          const int srcStride[], int srcSliceY, int srcSliceH,
-                                          uint8_t *const dst[], const int dstStride[]);
-// c参数指定使用包含图像数据格式转换信息的struct SwsContext对象
-// srcSlice参数用于指定的原图像数据缓冲区地址
-// srcStride参数用于指定原数据缓冲区一行数据的大小
-// srcSliceY参数用于指定从原图像的第几行开始转换
-// srcSliceH参数用于指定转换到原图像的第几行.
-// dst参数用于指定存放生成图像数据的缓冲区地址
-// dstStride参数指定存放生成图像的一行数据大小的缓冲区
-
-typedef struct AVFrame {
-    #define AV_NUM_DATA_POINTERS 8
-    // 此指针数组是用于存放数据缓冲区地址，因有可能是平面的数据，所有用了多个指针变量存放不同分量的数据缓冲区
-    uint8_t *data[AV_NUM_DATA_POINTERS];
-    // 存放每个缓冲区的一行数据的字节数
-    int linesize[AV_NUM_DATA_POINTERS];
-    ...
-}AVFrame
-
-yuv422转换成420p:
-1. 创建AVFrame对象
-    AVFrame  *frm422 = av_frame_alloc();
-    AVFrame  *frm420p = av_frame_alloc();
-2. 绑定数据缓冲区
-    av_image_fill_arrays(frm422->data, frm422->linesize, buf_422, AV_PIX_FMT_YUYV422, w, h, 16);
-    av_image_fill_arrays(frm420p->data, frm420p->linesize, buf_420p, AV_PIX_FMT_YUV420P, w, h, 16);
-3. 指定原数据格式，分辨率及目标数据格式，分辨率
-    struct SwsContext *sws = sws_getContext(w, h, AV_PIX_FMT_YUYV422,
-                                            w,h, AV_PIX_FMT_YUV420P,
-                                            SWS_BILINEAR,
-                                            NULL, NULL, NULL);
-4. 转换并调整分辨率
-    int ret = sws_scale(sws, frm422->data, frm422->linesize, 0, h, frm420p->data, frm420p->linesize);
-5. 回收空间
-    av_frame_free(&frm422);
-    av_frame_free(&frm420p);
-    sws_freeContext(sws);
-
-argb转换成yuv420p:
-
-int MyDataCovert::argb32Toyuv420p(uint8_t *buf_argb, uint8_t *buf_420p, int w, int h)
-{
-    AVFrame  *frmArgb = av_frame_alloc();
-    AVFrame  *frm420p = av_frame_alloc();
-
-    //绑定数据缓冲区
-    avpicture_fill((AVPicture *)frmArgb, buf_argb, AV_PIX_FMT_BGRA, w, h);
-    avpicture_fill((AVPicture *)frm420p, buf_420p, AV_PIX_FMT_YUV420P, w, h);
-
-    //指定原数据格式，分辨率及目标数据格式，分辨率
-    struct SwsContext *sws = sws_getContext(w, h, AV_PIX_FMT_BGRA,
-                                            w,h, AV_PIX_FMT_YUV420P,
-                                            SWS_BILINEAR,
-                                            NULL, NULL, NULL);
-
-    //转换
-    int ret = sws_scale(sws, frmArgb->data, frmArgb->linesize, 0, h, frm420p->data, frm420p->linesize);
-    av_frame_free(&frmArgb);
-    av_frame_free(&frm420p);
-    sws_freeContext(sws);
-    return  (ret == h) ? 0 : -1;
-}
-
-// 在jni层或者其他cpp文件中创建线程是不行的
-pthread_t audioReadDataThread, audioHandleDataThread;
-// 创建线程
-pthread_create(&audioReadDataThread, NULL, readData, audioWrapper->father);
-pthread_create(&audioHandleDataThread, NULL, handleAudioData, NULL);
-// 等待线程执行完
-pthread_join(audioReadDataThread, NULL);
-pthread_join(audioHandleDataThread, NULL);
-// 取消线程
-//pthread_cancel(audioReadDataThread);
-//pthread_cancel(audioHandleDataThread);
-
-pthread_t videoReadDataThread, videoHandleDataThread;
-// 创建线程
-pthread_create(&videoReadDataThread, NULL, readData, videoWrapper->father);
-pthread_create(&videoHandleDataThread, NULL, handleVideoData, NULL);
-// 等待线程执行完
-pthread_join(videoReadDataThread, NULL);
-pthread_join(videoHandleDataThread, NULL);
-// 取消线程
-//pthread_cancel(videoReadDataThread);
-//pthread_cancel(videoHandleDataThread);
- */
-
 #include <string>
-#include "MediaPlayer.h"
+#include "MediaPlayerFor4K.h"
 
-#define LOG "player_alexander"
+#define LOG "player_alexander_4k"
 
-char inFilePath[2048];
-AVFormatContext *avFormatContext = NULL;
-struct AudioWrapper *audioWrapper = NULL;
-struct VideoWrapper *videoWrapper = NULL;
-pthread_mutex_t readLockMutex = PTHREAD_MUTEX_INITIALIZER;
-pthread_cond_t readLockCondition = PTHREAD_COND_INITIALIZER;
-bool isLocal = false;
-bool isH264 = false;
-bool isReading = false;
-bool isVideoHandling = false;
-bool isInterrupted = false;
-bool runOneTime = true;
-double fileLength = 0.0;
-// seek时间
-int64_t timeStamp = -1;
-long long curProgress = 0;
-long long preProgress = 0;
-// 视频播放时每帧之间的暂停时间,单位为ms
-int videoSleepTime = 11;
-
-double TIME_DIFFERENCE = 1.000000;// 0.180000
-// 当前音频时间戳
-double audioPts = 0.0;
-double preAudioPts = 0.0;
-// 当前视频时间戳
-double videoPts = 0.0;
-double preVideoPts = 0.0;
-// 上一个时间戳
-double videoPtsPre = 0.0;
-
-ANativeWindow *pANativeWindow = NULL;
-
+extern char inFilePath[2048];
+extern AVFormatContext *avFormatContext;
+extern struct AudioWrapper *audioWrapper;
+extern struct VideoWrapper *videoWrapper;
+extern pthread_mutex_t readLockMutex;
+extern pthread_cond_t readLockCondition;
+extern bool isLocal;
+extern bool isH264;
+extern bool isReading;
+extern bool isVideoHandling;
+extern bool isInterrupted;
+extern bool runOneTime;
+extern int64_t timeStamp;
+extern long long curProgress;
+extern long long preProgress;
+extern int videoSleepTime;
+extern double TIME_DIFFERENCE;
+extern double audioPts;
+extern double preAudioPts;
+extern double videoPts;
+extern double preVideoPts;
+extern double videoPtsPre;
+extern double fileLength;
+extern ANativeWindow *pANativeWindow;
 extern int use_mode;
 
-namespace alexander_media {
+namespace alexander_media_4k {
 
-    // 绘制时的缓冲区
+#define FRAME_QUEUE_SIZE 50
+    typedef struct FrameQueue {
+        int q_int[FRAME_QUEUE_SIZE];
+        AVFrame *q_avframe[FRAME_QUEUE_SIZE];
+        int index1;
+        int index2;
+        int size;
+    } FrameQueue;
+
     static ANativeWindow_Buffer mANativeWindow_Buffer;
 
     static int runCounts = 0;
@@ -235,7 +51,6 @@ namespace alexander_media {
     static double timeDiff[RUN_COUNTS];
 
     static long long mediaDuration = -1;
-    // 读线程超时变量
     static int64_t startReadTime = -1;
     static int64_t endReadTime = -1;
 
@@ -245,6 +60,10 @@ namespace alexander_media {
     static int frameRate = 0;
     static bool isVideoLocked = false;
 
+    FrameQueue *queue = nullptr;
+    static pthread_mutex_t decodeLockMutex = PTHREAD_MUTEX_INITIALIZER;
+    static pthread_cond_t decodeLockCondition = PTHREAD_COND_INITIALIZER;
+
     ///////////////////////////////////////////////////////
 
     // true表示只下载,不播放
@@ -253,19 +72,19 @@ namespace alexander_media {
     static bool isInitSuccess = false;
     // 下载时音视频为一个文件
     static char outFilePath[2048];
-    static AVFormatContext *avFormatContextOutput = NULL;
-    static int64_t *dts_start_from = NULL;
-    static int64_t *pts_start_from = NULL;
+    static AVFormatContext *avFormatContextOutput = nullptr;
+    static int64_t *dts_start_from = nullptr;
+    static int64_t *pts_start_from = nullptr;
     // 下载时音视频分开
     static char videoOutFilePath[2048];// 2048
     static char audioOutFilePath[2048];// 2048
-    static AVFormatContext *avFormatContextVideoOutput = NULL;
-    static AVFormatContext *avFormatContextAudioOutput = NULL;
-    static AVStream *video_out_stream = NULL;
-    static AVStream *audio_out_stream = NULL;
+    static AVFormatContext *avFormatContextVideoOutput = nullptr;
+    static AVFormatContext *avFormatContextAudioOutput = nullptr;
+    static AVStream *video_out_stream = nullptr;
+    static AVStream *audio_out_stream = nullptr;
 
-    static FILE *videoFile = NULL;
-    static FILE *audioFile = NULL;
+    static FILE *videoFile = nullptr;
+    static FILE *audioFile = nullptr;
 
     ///////////////////////////////////////////////////////
 
@@ -300,6 +119,75 @@ namespace alexander_media {
 
     static void log_callback_null(void *ptr, int level, const char *fmt, va_list vl) {
 
+    }
+
+    void add(AVFrame *avFrame) {
+        pthread_mutex_lock(&decodeLockMutex);
+
+        if (queue->index2 < FRAME_QUEUE_SIZE
+            && queue->q_int[queue->index2] == 0) {
+            AVFrame *copyRgbAVFrame = queue->q_avframe[queue->index2];
+            av_frame_unref(copyRgbAVFrame);
+            av_frame_ref(copyRgbAVFrame, avFrame);
+            queue->size++;
+            queue->q_int[queue->index2] = 1;
+            if (queue->index2 == FRAME_QUEUE_SIZE - 1) {
+                queue->index2 = 0;
+            } else {
+                queue->index2++;
+            }
+        }
+
+        pthread_mutex_unlock(&decodeLockMutex);
+    }
+
+    AVFrame *get() {
+        AVFrame *copyRgbAVFrame = nullptr;
+        pthread_mutex_lock(&decodeLockMutex);
+
+        if (queue->index1 < FRAME_QUEUE_SIZE
+            && queue->q_int[queue->index1] == 1) {
+            copyRgbAVFrame = queue->q_avframe[queue->index1];
+            queue->size--;
+            queue->q_int[queue->index1] = 0;
+            if (queue->index1 == FRAME_QUEUE_SIZE - 1) {
+                queue->index1 = 0;
+            } else {
+                queue->index1++;
+            }
+        }
+
+        pthread_mutex_unlock(&decodeLockMutex);
+
+        return copyRgbAVFrame;
+    }
+
+    bool isEmpty() {
+        int size = 0;
+        pthread_mutex_lock(&decodeLockMutex);
+        size = queue->size;
+        pthread_mutex_unlock(&decodeLockMutex);
+        return size == 0;
+    }
+
+    bool isFull() {
+        int size = 0;
+        pthread_mutex_lock(&decodeLockMutex);
+        size = queue->size;
+        pthread_mutex_unlock(&decodeLockMutex);
+        return size == FRAME_QUEUE_SIZE;
+    }
+
+    void notifyToDecode() {
+        pthread_mutex_lock(&decodeLockMutex);
+        pthread_cond_signal(&decodeLockCondition);
+        pthread_mutex_unlock(&decodeLockMutex);
+    }
+
+    void notifyToDecodeWait() {
+        pthread_mutex_lock(&decodeLockMutex);
+        pthread_cond_wait(&decodeLockCondition, &decodeLockMutex);
+        pthread_mutex_unlock(&decodeLockMutex);
     }
 
     void notifyToRead() {
@@ -390,7 +278,7 @@ namespace alexander_media {
 
         LOGW("ffmpeg [av_version_info()] version: %s\n", av_version_info());
 
-        /*AVCodec *codecName = av_codec_next(NULL);
+        /*AVCodec *codecName = av_codec_next(nullptr);
         while (codecName) {
             switch (codecName->type) {
                 case AVMEDIA_TYPE_VIDEO: {
@@ -435,13 +323,13 @@ namespace alexander_media {
     }
 
     void initAudio() {
-        if (audioWrapper != NULL && audioWrapper->father != NULL) {
+        if (audioWrapper != nullptr && audioWrapper->father != nullptr) {
             av_free(audioWrapper->father);
-            audioWrapper->father = NULL;
+            audioWrapper->father = nullptr;
         }
-        if (audioWrapper != NULL) {
+        if (audioWrapper != nullptr) {
             av_free(audioWrapper);
-            audioWrapper = NULL;
+            audioWrapper = nullptr;
         }
         // 这里是先有儿子,再有父亲了.其实应该先构造父亲,再把父亲信息传给儿子.
         audioWrapper = (struct AudioWrapper *) av_mallocz(sizeof(struct AudioWrapper));
@@ -484,13 +372,13 @@ namespace alexander_media {
     }
 
     void initVideo() {
-        if (videoWrapper != NULL && videoWrapper->father != NULL) {
+        if (videoWrapper != nullptr && videoWrapper->father != nullptr) {
             av_free(videoWrapper->father);
-            videoWrapper->father = NULL;
+            videoWrapper->father = nullptr;
         }
-        if (videoWrapper != NULL) {
+        if (videoWrapper != nullptr) {
             av_free(videoWrapper);
-            videoWrapper = NULL;
+            videoWrapper = nullptr;
         }
 
         videoWrapper = (struct VideoWrapper *) av_mallocz(sizeof(struct VideoWrapper));
@@ -523,6 +411,15 @@ namespace alexander_media {
 //        videoWrapper->father->isReadList2Full = false;
         videoWrapper->father->list1 = new std::list<AVPacket>();
         videoWrapper->father->list2 = new std::list<AVPacket>();
+        queue = static_cast<FrameQueue *>(av_mallocz(sizeof(FrameQueue)));
+        memset(queue, 0, sizeof(FrameQueue));
+        memset(queue->q_int, 0, sizeof(queue->q_int));
+        queue->index1 = 0;
+        queue->index2 = 0;
+        queue->size = 0;
+        for (int i = 0; i < FRAME_QUEUE_SIZE; i++) {
+            queue->q_avframe[i] = av_frame_alloc();
+        }
 
         videoWrapper->father->duration = -1;
         videoWrapper->father->timestamp = -1;
@@ -530,21 +427,23 @@ namespace alexander_media {
         videoWrapper->father->readLockCondition = PTHREAD_COND_INITIALIZER;
         videoWrapper->father->handleLockMutex = PTHREAD_MUTEX_INITIALIZER;
         videoWrapper->father->handleLockCondition = PTHREAD_COND_INITIALIZER;
+        decodeLockMutex = PTHREAD_MUTEX_INITIALIZER;
+        decodeLockCondition = PTHREAD_COND_INITIALIZER;
     }
 
     int initDownload() {
-        //avformat_alloc_output_context2(&avFormatContextOutput, NULL, NULL, outFilePath);
+        //avformat_alloc_output_context2(&avFormatContextOutput, nullptr, nullptr, outFilePath);
         //AVOutputFormat *out_fmt = avFormatContextOutput->oformat;
-        AVOutputFormat *out_fmt = av_guess_format(NULL, outFilePath, NULL);
+        AVOutputFormat *out_fmt = av_guess_format(nullptr, outFilePath, nullptr);
         if (!out_fmt) {
-            LOGE("initDownload() out_fmt is NULL.\n");
+            LOGE("initDownload() out_fmt is nullptr.\n");
             return -1;
         }
 
-        if (avFormatContextOutput != NULL) {
+        if (avFormatContextOutput != nullptr) {
             //avformat_close_input(&avFormatContextOutput);
             avformat_free_context(avFormatContextOutput);
-            avFormatContextOutput = NULL;
+            avFormatContextOutput = nullptr;
         }
         avFormatContextOutput = avformat_alloc_context();
         avFormatContextOutput->oformat = out_fmt;
@@ -552,23 +451,23 @@ namespace alexander_media {
         int nb_streams = avFormatContext->nb_streams;
         /*for (int i = 0; i < nb_streams; i++) {
             AVStream *in_stream = avFormatContext->streams[i];
-            AVStream *out_stream = avformat_new_stream(avFormatContextOutput, NULL);
+            AVStream *out_stream = avformat_new_stream(avFormatContextOutput, nullptr);
             if (!out_stream) {
-                LOGE("initDownload() out_stream is NULL.\n");
+                LOGE("initDownload() out_stream is nullptr.\n");
                 return -1;
             }
             avcodec_parameters_copy(out_stream->codecpar, in_stream->codecpar);
             out_stream->codecpar->codec_tag = 0;
         }*/
 
-        audio_out_stream = avformat_new_stream(avFormatContextOutput, NULL);
-        video_out_stream = avformat_new_stream(avFormatContextOutput, NULL);
+        audio_out_stream = avformat_new_stream(avFormatContextOutput, nullptr);
+        video_out_stream = avformat_new_stream(avFormatContextOutput, nullptr);
         if (!audio_out_stream) {
-            LOGE("initDownload() audio_out_stream is NULL.\n");
+            LOGE("initDownload() audio_out_stream is nullptr.\n");
             return -1;
         }
         if (!video_out_stream) {
-            LOGE("initDownload() video_out_stream is NULL.\n");
+            LOGE("initDownload() video_out_stream is nullptr.\n");
             return -1;
         }
         AVCodecParameters *audio_codecpar = audioWrapper->father->avStream->codecpar;
@@ -593,30 +492,30 @@ namespace alexander_media {
         }
 
         // 写头部信息
-        ret = avformat_write_header(avFormatContextOutput, NULL);
+        ret = avformat_write_header(avFormatContextOutput, nullptr);
         if (ret < 0) {
             LOGE("initDownload() avformat_write_header occurs error.\n");
             return -1;
         }
 
         // 根据流数量申请空间，并全部初始化为0
-        if (dts_start_from != NULL) {
+        if (dts_start_from != nullptr) {
             free(dts_start_from);
-            dts_start_from = NULL;
+            dts_start_from = nullptr;
         }
-        if (pts_start_from != NULL) {
+        if (pts_start_from != nullptr) {
             free(pts_start_from);
-            pts_start_from = NULL;
+            pts_start_from = nullptr;
         }
         size_t size = sizeof(int64_t) * nb_streams;
         dts_start_from = (int64_t *) malloc(size);
         pts_start_from = (int64_t *) malloc(size);
         if (!dts_start_from) {
-            LOGE("initDownload() dts_start_from is NULL.\n");
+            LOGE("initDownload() dts_start_from is nullptr.\n");
             return -1;
         }
         if (!pts_start_from) {
-            LOGE("initDownload() pts_start_from is NULL.\n");
+            LOGE("initDownload() pts_start_from is nullptr.\n");
             return -1;
         }
         memset(dts_start_from, 0, size);
@@ -627,39 +526,39 @@ namespace alexander_media {
 
     int initDownload2() {
         int ret = -1;
-        AVOutputFormat *video_out_fmt = av_guess_format(NULL, videoOutFilePath, NULL);
+        AVOutputFormat *video_out_fmt = av_guess_format(nullptr, videoOutFilePath, nullptr);
         if (!video_out_fmt) {
-            LOGE("initDownload() video_out_fmt is NULL.\n");
+            LOGE("initDownload() video_out_fmt is nullptr.\n");
             return -1;
         }
-        AVOutputFormat *audio_out_fmt = av_guess_format(NULL, audioOutFilePath, NULL);
+        AVOutputFormat *audio_out_fmt = av_guess_format(nullptr, audioOutFilePath, nullptr);
         if (!audio_out_fmt) {
-            LOGE("initDownload() audio_out_fmt is NULL.\n");
+            LOGE("initDownload() audio_out_fmt is nullptr.\n");
             return -1;
         }
 
-        if (avFormatContextVideoOutput != NULL) {
+        if (avFormatContextVideoOutput != nullptr) {
             //avformat_close_input(&avFormatContextVideoOutput);
             avformat_free_context(avFormatContextVideoOutput);
-            avFormatContextVideoOutput = NULL;
+            avFormatContextVideoOutput = nullptr;
         }
         avFormatContextVideoOutput = avformat_alloc_context();
         avFormatContextVideoOutput->oformat = video_out_fmt;
-        video_out_stream = avformat_new_stream(avFormatContextVideoOutput, NULL);
+        video_out_stream = avformat_new_stream(avFormatContextVideoOutput, nullptr);
         if (!video_out_stream) {
-            LOGE("initDownload() video_out_stream is NULL.\n");
+            LOGE("initDownload() video_out_stream is nullptr.\n");
             return -1;
         }
-        if (avFormatContextAudioOutput != NULL) {
+        if (avFormatContextAudioOutput != nullptr) {
             //avformat_close_input(&avFormatContextAudioOutput);
             avformat_free_context(avFormatContextAudioOutput);
-            avFormatContextAudioOutput = NULL;
+            avFormatContextAudioOutput = nullptr;
         }
         avFormatContextAudioOutput = avformat_alloc_context();
         avFormatContextAudioOutput->oformat = audio_out_fmt;
-        audio_out_stream = avformat_new_stream(avFormatContextAudioOutput, NULL);
+        audio_out_stream = avformat_new_stream(avFormatContextAudioOutput, nullptr);
         if (!audio_out_stream) {
-            LOGE("initDownload() audio_out_stream is NULL.\n");
+            LOGE("initDownload() audio_out_stream is nullptr.\n");
             return -1;
         }
 
@@ -694,12 +593,12 @@ namespace alexander_media {
         }
 
         // 写头部信息
-        ret = avformat_write_header(avFormatContextVideoOutput, NULL);
+        ret = avformat_write_header(avFormatContextVideoOutput, nullptr);
         if (ret < 0) {
             LOGE("initDownload() video avformat_write_header occurs error.\n");
             return -1;
         }
-        ret = avformat_write_header(avFormatContextAudioOutput, NULL);
+        ret = avformat_write_header(avFormatContextAudioOutput, nullptr);
         if (ret < 0) {
             LOGE("initDownload() audio avformat_write_header occurs error.\n");
             return -1;
@@ -720,20 +619,20 @@ namespace alexander_media {
 
     int openAndFindAVFormatContext() {
         LOGI("openAndFindAVFormatContext() start\n");
-        if (avFormatContext != NULL) {
-            LOGI("openAndFindAVFormatContext() videoAVFormatContext isn't NULL\n");
+        if (avFormatContext != nullptr) {
+            LOGI("openAndFindAVFormatContext() videoAVFormatContext isn't nullptr\n");
             avformat_free_context(avFormatContext);
-            avFormatContext = NULL;
+            avFormatContext = nullptr;
         }
         avFormatContext = avformat_alloc_context();
-        if (avFormatContext == NULL) {
-            LOGE("videoAVFormatContext is NULL.\n");
+        if (avFormatContext == nullptr) {
+            LOGE("videoAVFormatContext is nullptr.\n");
             return -1;
         }
         if (!isLocal) {
             avFormatContext->interrupt_callback.callback = read_thread_interrupt_cb;
             avFormatContext->interrupt_callback.opaque = audioWrapper;
-            /*AVDictionary *options = NULL;
+            /*AVDictionary *options = nullptr;
             av_dict_set(&options, "stimeout", "10000000", 0);*/
             int64_t startTime = av_gettime_relative();
             startReadTime = startTime;
@@ -745,7 +644,7 @@ namespace alexander_media {
              */
             int ret = avformat_open_input(&avFormatContext,
                                           inFilePath,
-                                          NULL, NULL);
+                                          nullptr, nullptr);
             if (ret) {
                 char buf[1024];
                 av_strerror(ret, buf, 1024);
@@ -762,12 +661,12 @@ namespace alexander_media {
         } else {
             if (avformat_open_input(&avFormatContext,
                                     inFilePath,
-                                    NULL, NULL) != 0) {
+                                    nullptr, nullptr) != 0) {
                 LOGE("Couldn't open input stream.\n");
                 return -1;
             }
         }
-        if (avformat_find_stream_info(avFormatContext, NULL) != 0) {
+        if (avformat_find_stream_info(avFormatContext, nullptr) != 0) {
             LOGE("Couldn't find stream information.\n");
             return -1;
         }
@@ -776,7 +675,7 @@ namespace alexander_media {
     }
 
     int findStreamIndex() {
-        if (avFormatContext == NULL) {
+        if (avFormatContext == nullptr) {
             return -1;
         }
         LOGI("findStreamIndex() start\n");
@@ -786,7 +685,7 @@ namespace alexander_media {
         for (int i = 0; i < streams; i++) {
             // 得到AVCodecParameters
             AVCodecParameters *avCodecParameters = avFormatContext->streams[i]->codecpar;
-            if (avCodecParameters != NULL) {
+            if (avCodecParameters != nullptr) {
                 AVMediaType mediaType = avCodecParameters->codec_type;
                 switch (mediaType) {
                     case AVMEDIA_TYPE_VIDEO: {
@@ -813,6 +712,7 @@ namespace alexander_media {
         if (audioWrapper->father->streamIndex != -1
             && videoWrapper->father->streamIndex != -1) {
             use_mode = USE_MODE_MEDIA;
+            use_mode = USE_MODE_MEDIA_4K;
             videoWrapper->father->avStream = avFormatContext->streams[videoWrapper->father->streamIndex];
             audioWrapper->father->avStream = avFormatContext->streams[audioWrapper->father->streamIndex];
             LOGI("findStreamIndex() USE_MODE_MEDIA\n");
@@ -870,12 +770,12 @@ namespace alexander_media {
                 }
             }
             audioWrapper->father->decoderAVCodec = avcodec_find_decoder(codecID);
-            if (audioWrapper->father->decoderAVCodec != NULL) {
+            if (audioWrapper->father->decoderAVCodec != nullptr) {
                 // 获取解码器上下文
                 // 再通过AVCodec得到AVCodecContext
                 audioWrapper->father->avCodecContext = avcodec_alloc_context3(
                         audioWrapper->father->decoderAVCodec);
-                if (audioWrapper->father->avCodecContext != NULL) {
+                if (audioWrapper->father->avCodecContext != nullptr) {
                     // 关联操作
                     if (avcodec_parameters_to_context(
                             audioWrapper->father->avCodecContext,
@@ -885,20 +785,20 @@ namespace alexander_media {
                         // 打开AVCodec
                         if (avcodec_open2(
                                 audioWrapper->father->avCodecContext,
-                                audioWrapper->father->decoderAVCodec, NULL) != 0) {
+                                audioWrapper->father->decoderAVCodec, nullptr) != 0) {
                             LOGE("Could not open audio codec.\n");
                             return -1;
                         }
                     }
                 }
             } else {
-                LOGE("findAndOpenAVCodecForAudio() audioWrapper->father->decoderAVCodec is NULL\n");
+                LOGE("findAndOpenAVCodecForAudio() audioWrapper->father->decoderAVCodec is nullptr\n");
                 audioWrapper->father->avCodecContext =
                         avFormatContext->streams[audioWrapper->father->streamIndex]->codec;
-                if (audioWrapper->father->avCodecContext != NULL) {
+                if (audioWrapper->father->avCodecContext != nullptr) {
                     audioWrapper->father->decoderAVCodec =
                             avcodec_find_decoder(audioWrapper->father->avCodecContext->codec_id);
-                    if (audioWrapper->father->decoderAVCodec != NULL) {
+                    if (audioWrapper->father->decoderAVCodec != nullptr) {
                         // 关联操作
                         if (avcodec_parameters_to_context(
                                 audioWrapper->father->avCodecContext,
@@ -908,7 +808,7 @@ namespace alexander_media {
                             // 打开AVCodec
                             if (avcodec_open2(
                                     audioWrapper->father->avCodecContext,
-                                    audioWrapper->father->decoderAVCodec, NULL) != 0) {
+                                    audioWrapper->father->decoderAVCodec, nullptr) != 0) {
                                 LOGE("Could not open audio codec.\n");
                                 return -1;
                             }
@@ -917,8 +817,8 @@ namespace alexander_media {
                 }
             }
         }
-        if (audioWrapper->father->avCodecContext == NULL) {
-            LOGE("findAndOpenAVCodecForAudio() audioWrapper->father->avCodecContext is NULL\n");
+        if (audioWrapper->father->avCodecContext == nullptr) {
+            LOGE("findAndOpenAVCodecForAudio() audioWrapper->father->avCodecContext is nullptr\n");
             return -1;
         }
 
@@ -933,7 +833,7 @@ namespace alexander_media {
         LOGI("findAndOpenAVCodecForVideo() start\n");
         // video
         if (videoWrapper->father->streamIndex != -1) {
-            videoWrapper->father->decoderAVCodec = NULL;
+            videoWrapper->father->decoderAVCodec = nullptr;
             // avcodec_find_decoder_by_name
             AVCodecID codecID = videoWrapper->father->avCodecParameters->codec_id;
             switch (codecID) {
@@ -970,10 +870,10 @@ namespace alexander_media {
                 videoWrapper->father->decoderAVCodec = avcodec_find_decoder(codecID);
             }*/
             videoWrapper->father->decoderAVCodec = avcodec_find_decoder(codecID);
-            if (videoWrapper->father->decoderAVCodec != NULL) {
+            if (videoWrapper->father->decoderAVCodec != nullptr) {
                 videoWrapper->father->avCodecContext = avcodec_alloc_context3(
                         videoWrapper->father->decoderAVCodec);
-                if (videoWrapper->father->avCodecContext != NULL) {
+                if (videoWrapper->father->avCodecContext != nullptr) {
                     if (avcodec_parameters_to_context(
                             videoWrapper->father->avCodecContext,
                             videoWrapper->father->avCodecParameters) < 0) {
@@ -981,7 +881,7 @@ namespace alexander_media {
                     } else {
                         if (avcodec_open2(
                                 videoWrapper->father->avCodecContext,
-                                videoWrapper->father->decoderAVCodec, NULL) != 0) {
+                                videoWrapper->father->decoderAVCodec, nullptr) != 0) {
                             LOGE("Could not open video codec.\n");
                             return -1;
                         }
@@ -1049,9 +949,9 @@ namespace alexander_media {
                            audioWrapper->srcAVSampleFormat, // in_sample_fmt
                            audioWrapper->srcSampleRate,     // in_sample_rate
                            0,                               // log_offset
-                           NULL);                           // log_ctx
-        if (audioWrapper->swrContext == NULL) {
-            LOGE("%s\n", "createSwrContent() swrContext is NULL");
+                           nullptr);                           // log_ctx
+        if (audioWrapper->swrContext == nullptr) {
+            LOGE("%s\n", "createSwrContent() swrContext is nullptr");
             return -1;
         }
 
@@ -1236,11 +1136,11 @@ namespace alexander_media {
                 videoWrapper->srcWidth, videoWrapper->srcHeight, videoWrapper->dstAVPixelFormat,
                 // SWS_BICUBIC SWS_BILINEAR 原分辨率与目标分辨率不一致时使用哪种算法来调整.
                 SWS_BICUBIC,
-                NULL, NULL,
-                // 指定调整图像缩放的算法,可设为NULL使用默认算法.
-                NULL);
-        if (videoWrapper->swsContext == NULL) {
-            LOGE("%s\n", "videoSwsContext is NULL.");
+                nullptr, nullptr,
+                // 指定调整图像缩放的算法,可设为nullptr使用默认算法.
+                nullptr);
+        if (videoWrapper->swsContext == nullptr) {
+            LOGE("%s\n", "videoSwsContext is nullptr.");
             return -1;
         }
         LOGW("---------------------------------\n");
@@ -1525,11 +1425,11 @@ namespace alexander_media {
     void *readData(void *opaque) {
         LOGI("%s\n", "readData() start");
 
-        if (audioWrapper == NULL
-            || audioWrapper->father == NULL
-            || videoWrapper == NULL
-            || videoWrapper->father == NULL) {
-            return NULL;
+        if (audioWrapper == nullptr
+            || audioWrapper->father == nullptr
+            || videoWrapper == nullptr
+            || videoWrapper->father == nullptr) {
+            return nullptr;
         } else if (!audioWrapper->father->isReading
                    || !audioWrapper->father->isHandling
                    || !videoWrapper->father->isReading
@@ -1539,16 +1439,16 @@ namespace alexander_media {
             closeOther();
             onFinished();
             LOGF("%s\n", "readData() finish");
-            return NULL;
+            return nullptr;
         }
 
         AVPacket *srcAVPacket = av_packet_alloc();
         AVPacket *copyAVPacket = av_packet_alloc();
         av_init_packet(srcAVPacket);
-        srcAVPacket->data = NULL;
+        srcAVPacket->data = nullptr;
         srcAVPacket->size = 0;
         av_init_packet(copyAVPacket);
-        copyAVPacket->data = NULL;
+        copyAVPacket->data = nullptr;
         copyAVPacket->size = 0;
 
         // seekTo
@@ -1703,15 +1603,15 @@ namespace alexander_media {
         }
         pthread_mutex_unlock(&readLockMutex);
 
-        if (srcAVPacket != NULL) {
+        if (srcAVPacket != nullptr) {
             av_packet_unref(srcAVPacket);
-            srcAVPacket = NULL;
+            srcAVPacket = nullptr;
         }
 
         isReading = false;
 
         LOGF("%s\n", "readData() end");
-        return NULL;
+        return nullptr;
     }
 
     int handleAudioDataImpl(AVStream *stream, AVFrame *decodedAVFrame) {
@@ -1791,7 +1691,7 @@ namespace alexander_media {
 
             // 获取给定音频参数所需的缓冲区大小
             int out_buffer_size = av_samples_get_buffer_size(
-                    NULL,
+                    nullptr,
                     // 输出的声道个数
                     audioWrapper->dstNbChannels,
                     // 一个通道中音频采样数量
@@ -1807,108 +1707,137 @@ namespace alexander_media {
         return ret;
     }
 
-    int handleVideoDataImpl(AVStream *stream, AVFrame *decodedAVFrame) {
+    int handleVideoDataImpl(AVStream *stream, AVFrame *decodedAVFrame, AVFrame *copyDecodedAVFrame) {
+        /*sws_scale(videoWrapper->swsContext,
+                  (uint8_t const *const *) decodedAVFrame->data,
+                  decodedAVFrame->linesize,
+                  0,
+                  videoWrapper->srcHeight,
+                  videoWrapper->rgbAVFrame->data,
+                  videoWrapper->rgbAVFrame->linesize);
+
+        av_frame_unref(copyRgbAVFrame);
+        av_frame_ref(copyRgbAVFrame, videoWrapper->rgbAVFrame);
+        copyRgbAVFrame->pts = decodedAVFrame->pts;
+        copyRgbAVFrame->pkt_dts = decodedAVFrame->pkt_dts;
+        copyRgbAVFrame->pkt_pos = decodedAVFrame->pkt_pos;
+        copyRgbAVFrame->pkt_size = decodedAVFrame->pkt_size;
+        copyRgbAVFrame->pkt_duration = decodedAVFrame->pkt_duration;*/
+
+        av_frame_unref(copyDecodedAVFrame);
+        av_frame_ref(copyDecodedAVFrame, decodedAVFrame);
+
+        if (isFull()) {
+            LOGI("handleVideoDataImpl() isFull\n");
+            notifyToDecode();
+            notifyToDecodeWait();
+        }
+
+        add(copyDecodedAVFrame);
+
+        return 0;
+    }
+
+    // 需开启一个独立线程进行处理
+    void handleVideoRender() {
+        LOGI("handleVideoRender() start\n");
+        if (!isFull()) {
+            notifyToDecodeWait();
+        }
+
         videoWrapper->father->isStarted = true;
         while (!audioWrapper->father->isStarted) {
             if (videoWrapper->father->isPausedForSeek
                 || !audioWrapper->father->isHandling
                 || !videoWrapper->father->isHandling) {
                 LOGI("handleVideoDataImpl() videoWrapper->father->isStarted return\n");
-                return 0;
+                return;
             }
             av_usleep(1000);
         }
 
-        /***
-         以音频为基准,同步视频到音频
-         1.视频慢了则加快播放或丢掉部分视频帧
-         2.视频快了则延迟播放,继续渲染上一帧
-         音频需要正常播放才是好的体验
-         */
-        videoPts = decodedAVFrame->pts * av_q2d(stream->time_base);
-        if (mediaDuration < 0 && preVideoPts > 0 && preVideoPts > videoPts) {
-            return 0;
-        }
-        preVideoPts = videoPts;
-        //LOGW("handleVideoDataImpl() videoPts: %lf\n", videoPts);
-        //LOGD("handleVideoDataImpl() audioPts: %lf\n", audioPts);
+        LOGI("handleVideoRender() for (;;) start\n");
+        for (;;) {
+            if (!audioWrapper->father->isHandling
+                || !videoWrapper->father->isHandling) {
+                break;
+            }
 
-        if (videoPts > 0 && audioPts > 0) {
-            double tempTimeDifference = videoPts - audioPts;
-            if (runCounts < RUN_COUNTS) {
-                if (tempTimeDifference > 0) {
-                    timeDiff[runCounts++] = tempTimeDifference;
-                    //LOGI("handleVideoDataImpl() video - audio      : %lf\n", tempTimeDifference);
+            if (isEmpty()) {
+                videoSleep(10000);
+                continue;
+            }
+
+            AVFrame *decodedAVFrame = get();
+            if (decodedAVFrame == nullptr) {
+                continue;
+            }
+
+            AVStream *stream = avFormatContext->streams[videoWrapper->father->streamIndex];
+            videoPts = decodedAVFrame->pts * av_q2d(stream->time_base);
+            if (mediaDuration < 0 && preVideoPts > 0 && preVideoPts > videoPts) {
+                continue;
+            }
+            preVideoPts = videoPts;
+            LOGW("handleVideoDataImpl() videoPts: %lf\n", videoPts);
+            LOGD("handleVideoDataImpl() audioPts: %lf\n", audioPts);
+
+            if (videoPts > 0 && audioPts > 0) {
+                double tempTimeDifference = videoPts - audioPts;
+                if (runCounts < RUN_COUNTS) {
+                    if (tempTimeDifference > 0) {
+                        timeDiff[runCounts++] = tempTimeDifference;
+                    }
+                } else if (runCounts == RUN_COUNTS) {
+                    runCounts++;
+                    double totleTimeDiff = 0;
+                    for (int i = 0; i < RUN_COUNTS; i++) {
+                        if (videoWrapper->father->isPausedForSeek
+                            || !audioWrapper->father->isHandling
+                            || !videoWrapper->father->isHandling) {
+                            LOGI("handleVideoDataImpl() RUN_COUNTS return\n");
+                            return;
+                        }
+                        totleTimeDiff += timeDiff[i];
+                    }
+                    averageTimeDiff = totleTimeDiff / RUN_COUNTS;
+                    LOGI("handleVideoDataImpl() frameRate: %d averageTimeDiff: %lf\n",
+                         frameRate, averageTimeDiff);
+                    if (frameRate >= 24) {
+                        if (averageTimeDiff > 0.300000 && averageTimeDiff <= 0.400000) {
+                            TIME_DIFFERENCE = 0.200000;
+                        } /*else if (averageTimeDiff > 0.400000 && averageTimeDiff <= 0.500000) {
+                            TIME_DIFFERENCE = 0.300000;
+                        } else if (averageTimeDiff > 0.500000 && averageTimeDiff <= 0.700000) {
+                            TIME_DIFFERENCE = 0.400000;
+                        } else if (averageTimeDiff > 0.700000) {
+                            TIME_DIFFERENCE = 0.300000;
+                        }*/ else if (averageTimeDiff > 0.400000) {
+                            TIME_DIFFERENCE = 0.300000;
+                        }
+                    }
+                    LOGI("handleVideoDataImpl() TIME_DIFFERENCE: %lf\n", TIME_DIFFERENCE);
                 }
-            } else if (runCounts == RUN_COUNTS) {
-                runCounts++;
-                double totleTimeDiff = 0;
-                for (int i = 0; i < RUN_COUNTS; i++) {
+                if (tempTimeDifference < 0) {
+                    continue;
+                }
+
+                if (tempTimeDifference > 2.000000) {
+                    videoPts = audioPts + averageTimeDiff;
+                }
+                while (videoPts - audioPts > TIME_DIFFERENCE) {
                     if (videoWrapper->father->isPausedForSeek
                         || !audioWrapper->father->isHandling
                         || !videoWrapper->father->isHandling) {
-                        LOGI("handleVideoDataImpl() RUN_COUNTS return\n");
-                        return 0;
+                        LOGI("handleVideoDataImpl() TIME_DIFFERENCE return\n");
+                        return;
                     }
-                    totleTimeDiff += timeDiff[i];
+                    av_usleep(1000);
                 }
-                averageTimeDiff = totleTimeDiff / RUN_COUNTS;
-                LOGI("handleVideoDataImpl() frameRate: %d averageTimeDiff: %lf\n",
-                     frameRate, averageTimeDiff);
-                if (frameRate >= 24) {
-                    if (averageTimeDiff > 0.300000 && averageTimeDiff <= 0.400000) {
-                        TIME_DIFFERENCE = 0.200000;
-                    } /*else if (averageTimeDiff > 0.400000 && averageTimeDiff <= 0.500000) {
-                        TIME_DIFFERENCE = 0.300000;
-                    } else if (averageTimeDiff > 0.500000 && averageTimeDiff <= 0.700000) {
-                        TIME_DIFFERENCE = 0.400000;
-                    } else if (averageTimeDiff > 0.700000) {
-                        TIME_DIFFERENCE = 0.300000;
-                    }*/ else if (averageTimeDiff > 0.400000) {
-                        TIME_DIFFERENCE = 0.300000;
-                    }
-                }
-                LOGI("handleVideoDataImpl() TIME_DIFFERENCE: %lf\n", TIME_DIFFERENCE);
-            }
-            if (tempTimeDifference < 0) {
-                // 正常情况下videoTimeDifference比audioTimeDifference大一些
-                // 如果发现小了,说明视频播放慢了,应丢弃这些帧
-                // break后videoTimeDifference增长的速度会加快
-                // videoPts = audioPts + averageTimeDiff;
-                return 0;
             }
 
-            if (tempTimeDifference > 2.000000) {
-                // 不好的现象.为什么会出现这种情况还不知道?
-                //LOGE("handleVideoDataImpl() audioTimeDifference: %lf\n", audioPts);
-                //LOGE("handleVideoDataImpl() videoTimeDifference: %lf\n", videoPts);
-                //LOGE("handleVideoDataImpl() video - audio      : %lf\n", tempTimeDifference);
-                videoPts = audioPts + averageTimeDiff;
-                //LOGE("handleVideoDataImpl() videoTimeDifference: %lf\n", videoPts);
-            }
-            // 如果videoTimeDifference比audioTimeDifference大出了一定的范围
-            // 那么说明视频播放快了,应等待音频
-            while (videoPts - audioPts > TIME_DIFFERENCE) {
-                if (videoWrapper->father->isPausedForSeek
-                    || !audioWrapper->father->isHandling
-                    || !videoWrapper->father->isHandling) {
-                    LOGI("handleVideoDataImpl() TIME_DIFFERENCE return\n");
-                    return 0;
-                }
-                av_usleep(1000);
-            }
-        }
+            ANativeWindow_lock(pANativeWindow, &mANativeWindow_Buffer, nullptr);
 
-        // 渲染画面
-        if (videoWrapper->father->isHandling) {
-            // startVideoLockedTime = av_gettime_relative();
-
-            // 3.lock锁定下一个即将要绘制的Surface
-            //LOGW("handleVideoDataImpl() ANativeWindow_lock 1\n");
-            ANativeWindow_lock(pANativeWindow, &mANativeWindow_Buffer, NULL);
-            //LOGW("handleVideoDataImpl() ANativeWindow_lock 2\n");
-
-            // 把decodedAVFrame的数据经过格式转换后保存到rgbAVFrame中
             sws_scale(videoWrapper->swsContext,
                       (uint8_t const *const *) decodedAVFrame->data,
                       decodedAVFrame->linesize,
@@ -1916,52 +1845,36 @@ namespace alexander_media {
                       videoWrapper->srcHeight,
                       videoWrapper->rgbAVFrame->data,
                       videoWrapper->rgbAVFrame->linesize);
-
-            // 这段代码非常关键,还看不懂啥意思
-            // 把rgbAVFrame里面的数据复制到outBuffer中就能渲染画面了
             uint8_t *src = videoWrapper->rgbAVFrame->data[0];
-            // 一行的长度
             int srcStride = videoWrapper->rgbAVFrame->linesize[0];
             uint8_t *dst = (uint8_t *) mANativeWindow_Buffer.bits;
             int dstStride = mANativeWindow_Buffer.stride * 4;
-            // 由于window的stride和帧的stride不同,因此需要逐行复制
             for (int h = 0; h < videoWrapper->srcHeight; h++) {
-                /*if (videoWrapper->father->isPausedForSeek
-                    || !videoWrapper->father->isHandling) {
-                    LOGI("handleVideoDataImpl() memcpy return\n");
-                    ANativeWindow_unlockAndPost(pANativeWindow);
-                    return 0;
-                }*/
                 memcpy(dst + h * dstStride, src + h * srcStride, srcStride);
             }
 
+            LOGI("handleVideoRender() srcStride: %d, dstStride: %d\n", srcStride, dstStride);
             ////////////////////////////////////////////////////////
 
-            // timeDifference = 0.040000
-            // 单位: 毫秒
             int tempSleep = ((int) ((videoPts - videoPtsPre) * 1000)) - 30;
             if (videoSleepTime != tempSleep) {
                 videoSleepTime = tempSleep;
-                //LOGW("handleVideoDataImpl() videoSleepTime     : %d\n", videoSleepTime);
             }
             if (videoSleepTime < 12 && videoSleepTime > 0) {
                 videoSleep(videoSleepTime);
             } else {
                 if (videoSleepTime > 0) {
-                    // 好像是个比较合理的值
                     videoSleep(11);
                 }
-                // videoSleepTime <= 0时不需要sleep
             }
             videoPtsPre = videoPts;
 
             ////////////////////////////////////////////////////////
 
-            // 6.unlock绘制
-            //LOGW("handleVideoDataImpl() ANativeWindow_unlockAndPost 1\n");
             ANativeWindow_unlockAndPost(pANativeWindow);
-            //LOGW("handleVideoDataImpl() ANativeWindow_unlockAndPost 2\n");
-        }
+        }// for (;;) end
+
+        LOGI("handleVideoRender() end\n");
     }
 
     int handleDataClose(Wrapper *wrapper) {
@@ -2015,9 +1928,9 @@ namespace alexander_media {
 
     void *handleData(void *opaque) {
         if (!opaque) {
-            return NULL;
+            return nullptr;
         }
-        Wrapper *wrapper = NULL;
+        Wrapper *wrapper = nullptr;
         int *type = (int *) opaque;
         if (*type == TYPE_AUDIO) {
             wrapper = audioWrapper->father;
@@ -2025,8 +1938,8 @@ namespace alexander_media {
             wrapper = videoWrapper->father;
         }
         if (!wrapper) {
-            LOGE("%s\n", "wrapper is NULL");
-            return NULL;
+            LOGE("%s\n", "wrapper is nullptr");
+            return nullptr;
         }
 
         // 线程等待
@@ -2044,7 +1957,7 @@ namespace alexander_media {
 
         if (!wrapper->isHandling) {
             handleDataClose(wrapper);
-            return NULL;
+            return nullptr;
         }
 
         if (wrapper->type == TYPE_AUDIO) {
@@ -2067,21 +1980,19 @@ namespace alexander_media {
         // decodedAVFrame为解码后的数据
         // flags: 0, pts: 118803601, pkt_pos: 376, pkt_duration: 0, pkt_size: 104689
         // flags: 0, pts: 119228401, pkt_pos: 871192, pkt_duration: 3600, pkt_size: 7599
-        AVFrame *decodedAVFrame = NULL;
+        AVFrame *decodedAVFrame = nullptr;
         // flags: 0, pts: -9223372036854775808, pkt_pos: -1, pkt_duration: 0, pkt_size: -1
-        AVFrame *preAudioAVFrame = NULL;
-        AVFrame *preVideoAVFrame = NULL;
+        AVFrame *preAudioAVFrame = nullptr;
+        AVFrame *preVideoAVFrame = nullptr;
+        AVFrame *copyRgbAVFrame = nullptr;
         if (wrapper->type == TYPE_AUDIO) {
             decodedAVFrame = audioWrapper->decodedAVFrame;
             preAudioAVFrame = av_frame_alloc();
         } else {
             decodedAVFrame = videoWrapper->decodedAVFrame;
             preVideoAVFrame = av_frame_alloc();
+            copyRgbAVFrame = av_frame_alloc();
         }
-
-        // test视频解码花费的时间
-        // int64_t startVideoDecodeTime;
-        // int64_t endVideoDecodeTime;
 
         int ret = 0;
         for (;;) {
@@ -2420,13 +2331,6 @@ namespace alexander_media {
 
             // endregion
 
-            // test
-            /*if (wrapper->type == TYPE_AUDIO) {
-
-            } else {
-                startVideoDecodeTime = av_gettime_relative();
-            }*/
-
             // region 解码过程
 
             if (!wrapper->isHandling) {
@@ -2544,23 +2448,13 @@ namespace alexander_media {
 
             // endregion
 
-            // test
-            /*if (wrapper->type == TYPE_AUDIO) {
-
-            } else {
-                // 10363 22157 9553 23118 24919 30626 25110 8930 单位: 微秒
-                endVideoDecodeTime = av_gettime_relative();
-                LOGW("handleData() video decode AVFrame take time: %lld\n",
-                     (endVideoDecodeTime - startVideoDecodeTime));
-            }*/
-
             ///////////////////////////////////////////////////////////////////
 
             // 播放声音和渲染画面
             if (wrapper->type == TYPE_AUDIO) {
                 handleAudioDataImpl(stream, decodedAVFrame);
             } else {
-                handleVideoDataImpl(stream, decodedAVFrame);
+                handleVideoDataImpl(stream, decodedAVFrame, copyRgbAVFrame);
             }
             av_frame_unref(decodedAVFrame);
 
@@ -2579,77 +2473,82 @@ namespace alexander_media {
             }
         }//for(;;) end
 
-        if (srcAVPacket != NULL) {
+        if (srcAVPacket != nullptr) {
             av_packet_unref(srcAVPacket);
             // app crash 上面的copyAVPacket调用却没事,why
             // av_packet_free(&srcAVPacket);
-            srcAVPacket = NULL;
+            srcAVPacket = nullptr;
         }
 
-        if (copyAVPacket != NULL) {
+        if (copyAVPacket != nullptr) {
             av_packet_free(&copyAVPacket);
-            copyAVPacket = NULL;
+            copyAVPacket = nullptr;
         }
 
         if (wrapper->type == TYPE_AUDIO) {
-            if (preAudioAVFrame != NULL) {
+            if (preAudioAVFrame != nullptr) {
                 av_frame_unref(preAudioAVFrame);
                 av_frame_free(&preAudioAVFrame);
-                preAudioAVFrame = NULL;
+                preAudioAVFrame = nullptr;
             }
         } else {
-            if (preVideoAVFrame != NULL) {
+            if (preVideoAVFrame != nullptr) {
                 av_frame_unref(preVideoAVFrame);
                 av_frame_free(&preVideoAVFrame);
-                preVideoAVFrame = NULL;
+                preVideoAVFrame = nullptr;
+            }
+            if (copyRgbAVFrame != nullptr) {
+                av_frame_unref(copyRgbAVFrame);
+                av_frame_free(&copyRgbAVFrame);
+                copyRgbAVFrame = nullptr;
             }
         }
 
         handleDataClose(wrapper);
 
-        return NULL;
+        return nullptr;
     }
 
     void closeAudio() {
         // audio
-        if (audioWrapper == NULL
-            || audioWrapper->father == NULL) {
+        if (audioWrapper == nullptr
+            || audioWrapper->father == nullptr) {
             return;
         }
         LOGD("%s\n", "closeAudio() start");
-        if (audioWrapper->father->outBuffer1 != NULL) {
+        if (audioWrapper->father->outBuffer1 != nullptr) {
             av_free(audioWrapper->father->outBuffer1);
-            audioWrapper->father->outBuffer1 = NULL;
+            audioWrapper->father->outBuffer1 = nullptr;
         }
-        if (audioWrapper->father->outBuffer2 != NULL) {
+        if (audioWrapper->father->outBuffer2 != nullptr) {
             av_free(audioWrapper->father->outBuffer2);
-            audioWrapper->father->outBuffer2 = NULL;
+            audioWrapper->father->outBuffer2 = nullptr;
         }
-        if (audioWrapper->father->outBuffer3 != NULL) {
+        if (audioWrapper->father->outBuffer3 != nullptr) {
             av_free(audioWrapper->father->outBuffer3);
-            audioWrapper->father->outBuffer3 = NULL;
+            audioWrapper->father->outBuffer3 = nullptr;
         }
-        /*if (audioWrapper->father->srcData[0] != NULL) {
+        /*if (audioWrapper->father->srcData[0] != nullptr) {
             av_freep(&audioWrapper->father->srcData[0]);
-            audioWrapper->father->srcData[0] = NULL;
+            audioWrapper->father->srcData[0] = nullptr;
         }
-        if (audioWrapper->father->dstData[0] != NULL) {
+        if (audioWrapper->father->dstData[0] != nullptr) {
             av_freep(&audioWrapper->father->dstData[0]);
-            audioWrapper->father->dstData[0] = NULL;
+            audioWrapper->father->dstData[0] = nullptr;
         }*/
-        if (audioWrapper->swrContext != NULL) {
+        if (audioWrapper->swrContext != nullptr) {
             swr_free(&audioWrapper->swrContext);
-            audioWrapper->swrContext = NULL;
+            audioWrapper->swrContext = nullptr;
         }
-        if (audioWrapper->decodedAVFrame != NULL) {
+        if (audioWrapper->decodedAVFrame != nullptr) {
             av_frame_unref(audioWrapper->decodedAVFrame);
             av_frame_free(&audioWrapper->decodedAVFrame);
-            audioWrapper->decodedAVFrame = NULL;
+            audioWrapper->decodedAVFrame = nullptr;
         }
-        if (audioWrapper->father->avCodecContext != NULL) {
+        if (audioWrapper->father->avCodecContext != nullptr) {
             avcodec_close(audioWrapper->father->avCodecContext);
             av_free(audioWrapper->father->avCodecContext);
-            audioWrapper->father->avCodecContext = NULL;
+            audioWrapper->father->avCodecContext = nullptr;
         }
         pthread_mutex_destroy(&audioWrapper->father->readLockMutex);
         pthread_cond_destroy(&audioWrapper->father->readLockCondition);
@@ -2678,67 +2577,82 @@ namespace alexander_media {
         }
         delete (audioWrapper->father->list1);
         delete (audioWrapper->father->list2);
-        audioWrapper->father->list1 = NULL;
-        audioWrapper->father->list2 = NULL;
+        audioWrapper->father->list1 = nullptr;
+        audioWrapper->father->list2 = nullptr;
 
         av_free(audioWrapper->father);
-        audioWrapper->father = NULL;
+        audioWrapper->father = nullptr;
         av_free(audioWrapper);
-        audioWrapper = NULL;
+        audioWrapper = nullptr;
         LOGD("%s\n", "closeAudio() end");
     }
 
     void closeVideo() {
-        if (pANativeWindow != NULL) {
+        if (pANativeWindow != nullptr) {
             // 7.释放资源
             ANativeWindow_release(pANativeWindow);
-            pANativeWindow = NULL;
+            pANativeWindow = nullptr;
         }
         pthread_mutex_destroy(&readLockMutex);
         pthread_cond_destroy(&readLockCondition);
+        pthread_mutex_destroy(&decodeLockMutex);
+        pthread_cond_destroy(&decodeLockCondition);
         // video
-        if (videoWrapper == NULL
-            || videoWrapper->father == NULL) {
+        if (videoWrapper == nullptr
+            || videoWrapper->father == nullptr) {
             return;
         }
         LOGW("%s\n", "closeVideo() start");
-        if (videoWrapper->father->outBuffer1 != NULL) {
+        if (videoWrapper->father->outBuffer1 != nullptr) {
             av_free(videoWrapper->father->outBuffer1);
-            videoWrapper->father->outBuffer1 = NULL;
+            videoWrapper->father->outBuffer1 = nullptr;
         }
-        if (videoWrapper->father->outBuffer2 != NULL) {
+        if (videoWrapper->father->outBuffer2 != nullptr) {
             av_free(videoWrapper->father->outBuffer2);
-            videoWrapper->father->outBuffer2 = NULL;
+            videoWrapper->father->outBuffer2 = nullptr;
         }
-        if (videoWrapper->father->outBuffer3 != NULL) {
+        if (videoWrapper->father->outBuffer3 != nullptr) {
             av_free(videoWrapper->father->outBuffer3);
-            videoWrapper->father->outBuffer3 = NULL;
+            videoWrapper->father->outBuffer3 = nullptr;
         }
-        /*if (videoWrapper->father->srcData[0] != NULL) {
+        /*if (videoWrapper->father->srcData[0] != nullptr) {
             av_freep(&videoWrapper->father->srcData[0]);
-            videoWrapper->father->srcData[0] = NULL;
+            videoWrapper->father->srcData[0] = nullptr;
         }
-        if (videoWrapper->father->dstData[0] != NULL) {
+        if (videoWrapper->father->dstData[0] != nullptr) {
             av_freep(&videoWrapper->father->dstData[0]);
-            videoWrapper->father->dstData[0] = NULL;
+            videoWrapper->father->dstData[0] = nullptr;
         }*/
-        if (videoWrapper->swsContext != NULL) {
+        if (videoWrapper->swsContext != nullptr) {
             sws_freeContext(videoWrapper->swsContext);
-            videoWrapper->swsContext = NULL;
+            videoWrapper->swsContext = nullptr;
         }
-        if (videoWrapper->decodedAVFrame != NULL) {
+        if (videoWrapper->decodedAVFrame != nullptr) {
             av_frame_unref(videoWrapper->decodedAVFrame);
             av_frame_free(&videoWrapper->decodedAVFrame);
-            videoWrapper->decodedAVFrame = NULL;
+            videoWrapper->decodedAVFrame = nullptr;
         }
-        if (videoWrapper->rgbAVFrame != NULL) {
+        if (videoWrapper->rgbAVFrame != nullptr) {
+            av_frame_unref(videoWrapper->rgbAVFrame);
             av_frame_free(&videoWrapper->rgbAVFrame);
-            videoWrapper->rgbAVFrame = NULL;
+            videoWrapper->rgbAVFrame = nullptr;
         }
-        if (videoWrapper->father->avCodecContext != NULL) {
+        if (queue != nullptr) {
+            for (int i = 0; i < FRAME_QUEUE_SIZE; i++) {
+                AVFrame *frame = queue->q_avframe[i];
+                if (frame != nullptr) {
+                    av_frame_unref(frame);
+                    av_frame_free(&frame);
+                    frame = nullptr;
+                }
+            }
+            av_free(queue);
+        }
+
+        if (videoWrapper->father->avCodecContext != nullptr) {
             avcodec_close(videoWrapper->father->avCodecContext);
             av_free(videoWrapper->father->avCodecContext);
-            videoWrapper->father->avCodecContext = NULL;
+            videoWrapper->father->avCodecContext = nullptr;
         }
 
         pthread_mutex_destroy(&videoWrapper->father->readLockMutex);
@@ -2768,87 +2682,87 @@ namespace alexander_media {
         }
         delete (videoWrapper->father->list1);
         delete (videoWrapper->father->list2);
-        videoWrapper->father->list1 = NULL;
-        videoWrapper->father->list2 = NULL;
+        videoWrapper->father->list1 = nullptr;
+        videoWrapper->father->list2 = nullptr;
 
         av_free(videoWrapper->father);
-        videoWrapper->father = NULL;
+        videoWrapper->father = nullptr;
         av_free(videoWrapper);
-        videoWrapper = NULL;
+        videoWrapper = nullptr;
 
-        /*if (videoAVFormatContext != NULL) {
+        /*if (videoAVFormatContext != nullptr) {
             avformat_close_input(&videoAVFormatContext);
-            videoAVFormatContext = NULL;
+            videoAVFormatContext = nullptr;
         }*/
 
-        /*if (inFile != NULL) {
+        /*if (inFile != nullptr) {
             fclose(inFile);
-            inFile = NULL;
+            inFile = nullptr;
         }
-        if (outFile != NULL) {
+        if (outFile != nullptr) {
             fclose(outFile);
-            outFile = NULL;
+            outFile = nullptr;
         }*/
         LOGW("%s\n", "closeVideo() end");
     }
 
     void closeDownload() {
         LOGI("%s\n", "closeDownload() start");
-        if (avFormatContextOutput != NULL) {
+        if (avFormatContextOutput != nullptr) {
             // 写尾部信息
             av_write_trailer(avFormatContextOutput);
             avio_close(avFormatContextOutput->pb);
 
             //avformat_close_input(&avFormatContextOutput);
             avformat_free_context(avFormatContextOutput);
-            avFormatContextOutput = NULL;
+            avFormatContextOutput = nullptr;
         }
-        if (avFormatContextVideoOutput != NULL) {
+        if (avFormatContextVideoOutput != nullptr) {
             av_write_trailer(avFormatContextVideoOutput);
             avio_close(avFormatContextVideoOutput->pb);
 
             //avformat_close_input(&avFormatContextVideoOutput);
             avformat_free_context(avFormatContextVideoOutput);
-            avFormatContextVideoOutput = NULL;
+            avFormatContextVideoOutput = nullptr;
         }
-        if (avFormatContextAudioOutput != NULL) {
+        if (avFormatContextAudioOutput != nullptr) {
             av_write_trailer(avFormatContextAudioOutput);
             avio_close(avFormatContextAudioOutput->pb);
 
             //avformat_close_input(&avFormatContextAudioOutput);
             avformat_free_context(avFormatContextAudioOutput);
-            avFormatContextAudioOutput = NULL;
+            avFormatContextAudioOutput = nullptr;
         }
-        if (audio_out_stream != NULL) {
+        if (audio_out_stream != nullptr) {
         }
-        if (video_out_stream != NULL) {
+        if (video_out_stream != nullptr) {
         }
-        if (dts_start_from != NULL) {
+        if (dts_start_from != nullptr) {
             free(dts_start_from);
-            dts_start_from = NULL;
+            dts_start_from = nullptr;
         }
-        if (pts_start_from != NULL) {
+        if (pts_start_from != nullptr) {
             free(pts_start_from);
-            pts_start_from = NULL;
+            pts_start_from = nullptr;
         }
         if (videoFile) {
             fclose(videoFile);
-            videoFile = NULL;
+            videoFile = nullptr;
         }
         if (audioFile) {
             fclose(audioFile);
-            audioFile = NULL;
+            audioFile = nullptr;
         }
         LOGI("%s\n", "closeDownload() end");
     }
 
     void closeOther() {
-        if (avFormatContext != NULL) {
+        if (avFormatContext != nullptr) {
             LOGI("%s\n", "closeOther() start");
             //ffmpeg 4.0版本不能调用
             //avformat_close_input(&avFormatContext);
             avformat_free_context(avFormatContext);
-            avFormatContext = NULL;
+            avFormatContext = nullptr;
             LOGI("%s\n", "closeOther() end");
         }
         closeDownload();
@@ -2973,6 +2887,7 @@ namespace alexander_media {
         }
 
         switch (use_mode) {
+            case USE_MODE_MEDIA_4K:
             case USE_MODE_MEDIA: {
                 audioWrapper->father->duration =
                 videoWrapper->father->duration = mediaDuration;
@@ -3011,13 +2926,13 @@ namespace alexander_media {
 
         isLocal = false;
         char *result = strstr(inFilePath, "http://");
-        if (result == NULL) {
+        if (result == nullptr) {
             result = strstr(inFilePath, "https://");
-            if (result == NULL) {
+            if (result == nullptr) {
                 result = strstr(inFilePath, "rtmp://");
-                if (result == NULL) {
+                if (result == nullptr) {
                     result = strstr(inFilePath, "rtsp://");
-                    if (result == NULL) {
+                    if (result == nullptr) {
                         isLocal = true;
                     }
                 }
@@ -3025,18 +2940,18 @@ namespace alexander_media {
         }
         isH264 = true;
         result = strstr(inFilePath, ".h264");
-        if (result == NULL) {
+        if (result == nullptr) {
             result = strstr(inFilePath, ".H264");
-            if (result == NULL) {
+            if (result == nullptr) {
                 isH264 = false;
             }
         }
         LOGI("setJniParameters() isLocal   : %d", isLocal);
         LOGI("setJniParameters() isH264    : %d", isH264);
 
-        if (pANativeWindow != NULL) {
+        if (pANativeWindow != nullptr) {
             ANativeWindow_release(pANativeWindow);
-            pANativeWindow = NULL;
+            pANativeWindow = nullptr;
         }
         // 1.获取一个关联Surface的NativeWindow窗体
         pANativeWindow = ANativeWindow_fromSurface(env, surfaceJavaObject);
@@ -3046,13 +2961,13 @@ namespace alexander_media {
         if (onlyDownloadNotPlayback) {
             return 0;
         }
-        if (audioWrapper != NULL && audioWrapper->father != NULL) {
+        if (audioWrapper != nullptr && audioWrapper->father != nullptr) {
             audioWrapper->father->isPausedForUser = false;
             if (!audioWrapper->father->isPausedForCache) {
                 notifyToHandle(audioWrapper->father);
             }
         }
-        if (videoWrapper != NULL && videoWrapper->father != NULL) {
+        if (videoWrapper != nullptr && videoWrapper->father != nullptr) {
             videoWrapper->father->isPausedForUser = false;
             if (!videoWrapper->father->isPausedForCache) {
                 notifyToHandle(videoWrapper->father);
@@ -3063,12 +2978,12 @@ namespace alexander_media {
 
     int pause() {
         LOGI("pause() start\n");
-        if (audioWrapper != NULL
-            && audioWrapper->father != NULL) {
+        if (audioWrapper != nullptr
+            && audioWrapper->father != nullptr) {
             audioWrapper->father->isPausedForUser = true;
         }
-        if (videoWrapper != NULL
-            && videoWrapper->father != NULL) {
+        if (videoWrapper != nullptr
+            && videoWrapper->father != nullptr) {
             videoWrapper->father->isPausedForUser = true;
         }
         LOGI("pause() end\n");
@@ -3077,8 +2992,8 @@ namespace alexander_media {
 
     int stop() {
         LOGI("stop() start\n");
-        if (audioWrapper != NULL
-            && audioWrapper->father != NULL) {
+        if (audioWrapper != nullptr
+            && audioWrapper->father != nullptr) {
             LOGI("stop() audio\n");
             // audio
             audioWrapper->father->isStarted = false;
@@ -3092,8 +3007,8 @@ namespace alexander_media {
             notifyToHandle(audioWrapper->father);
         }
 
-        if (videoWrapper != NULL
-            && videoWrapper->father != NULL) {
+        if (videoWrapper != nullptr
+            && videoWrapper->father != nullptr) {
             LOGI("stop() video\n");
             // video
             videoWrapper->father->isStarted = false;
@@ -3121,13 +3036,13 @@ namespace alexander_media {
     bool isRunning() {
         bool audioRunning = false;
         bool videoRunning = false;
-        if (audioWrapper != NULL
-            && audioWrapper->father != NULL) {
+        if (audioWrapper != nullptr
+            && audioWrapper->father != nullptr) {
             audioRunning = audioWrapper->father->isStarted
                            && audioWrapper->father->isHandling;
         }
-        if (videoWrapper != NULL
-            && videoWrapper->father != NULL) {
+        if (videoWrapper != nullptr
+            && videoWrapper->father != nullptr) {
             videoRunning = videoWrapper->father->isStarted
                            && videoWrapper->father->isHandling;
         }
@@ -3138,15 +3053,15 @@ namespace alexander_media {
     bool isPlaying() {
         bool audioPlaying = false;
         bool videoPlaying = false;
-        if (audioWrapper != NULL
-            && audioWrapper->father != NULL) {
+        if (audioWrapper != nullptr
+            && audioWrapper->father != nullptr) {
             audioPlaying = audioWrapper->father->isStarted
                            && audioWrapper->father->isHandling
                            && !audioWrapper->father->isPausedForUser
                            && !audioWrapper->father->isPausedForCache;
         }
-        if (videoWrapper != NULL
-            && videoWrapper->father != NULL) {
+        if (videoWrapper != nullptr
+            && videoWrapper->father != nullptr) {
             videoPlaying = videoWrapper->father->isStarted
                            && videoWrapper->father->isHandling
                            && !videoWrapper->father->isPausedForUser
@@ -3158,15 +3073,15 @@ namespace alexander_media {
     bool isPausedForUser() {
         bool audioPlaying = false;
         bool videoPlaying = false;
-        if (audioWrapper != NULL
-            && audioWrapper->father != NULL) {
+        if (audioWrapper != nullptr
+            && audioWrapper->father != nullptr) {
             audioPlaying = audioWrapper->father->isStarted
                            && audioWrapper->father->isHandling
                            && audioWrapper->father->isPausedForUser
                            && videoWrapper->father->isPausedForCache;
         }
-        if (videoWrapper != NULL
-            && videoWrapper->father != NULL) {
+        if (videoWrapper != nullptr
+            && videoWrapper->father != nullptr) {
             videoPlaying = videoWrapper->father->isStarted
                            && videoWrapper->father->isHandling
                            && videoWrapper->father->isPausedForUser
@@ -3192,18 +3107,18 @@ namespace alexander_media {
         LOGI("seekTo() timeStamp: %lld\n", (long long) timestamp);
 
         if ((long long) timestamp > 0
-            && (audioWrapper == NULL
-                || videoWrapper == NULL)) {
+            && (audioWrapper == nullptr
+                || videoWrapper == nullptr)) {
             timeStamp = timestamp;
             return 0;
         }
 
         if ((long long) timestamp < 0
-            || audioWrapper == NULL
-            || audioWrapper->father == NULL
+            || audioWrapper == nullptr
+            || audioWrapper->father == nullptr
             || audioWrapper->father->isPausedForSeek
-            || videoWrapper == NULL
-            || videoWrapper->father == NULL
+            || videoWrapper == nullptr
+            || videoWrapper->father == nullptr
             || videoWrapper->father->isPausedForSeek
             || mediaDuration < 0
             || ((long long) timestamp) > mediaDuration) {
@@ -3505,8 +3420,8 @@ namespace alexander_media {
 
     int GetH264Stream() {
         int ret;
-        //AVFormatContext *avFormatContext = NULL;
-        //AVFormatContext *avFormatContextVideoOutput=NULL;
+        //AVFormatContext *avFormatContext = nullptr;
+        //AVFormatContext *avFormatContextVideoOutput=nullptr;
 
         uint8_t sps[100];
         uint8_t pps[100];
@@ -3519,11 +3434,11 @@ namespace alexander_media {
 
         //char *InputFileName = "11111.mp4";
 
-        if ((ret = avformat_open_input(&avFormatContext, inFilePath, NULL, NULL)) < 0) {
+        if ((ret = avformat_open_input(&avFormatContext, inFilePath, nullptr, nullptr)) < 0) {
             return ret;
         }
 
-        if ((ret = avformat_find_stream_info(avFormatContext, NULL)) < 0) {
+        if ((ret = avformat_find_stream_info(avFormatContext, nullptr)) < 0) {
             avformat_close_input(&avFormatContext);
             return ret;
         }
@@ -3552,10 +3467,11 @@ namespace alexander_media {
             }
         }
 
-        AVOutputFormat *ofmt = NULL;
+        AVOutputFormat *ofmt = nullptr;
         AVPacket pkt;
 
-        avformat_alloc_output_context2(&avFormatContextVideoOutput, NULL, NULL, videoOutFilePath);
+        avformat_alloc_output_context2(&avFormatContextVideoOutput, nullptr, nullptr,
+                                       videoOutFilePath);
 
         if (!avFormatContextVideoOutput) {
             printf("Could not create output context\n");
@@ -3590,13 +3506,13 @@ namespace alexander_media {
 
             }
         }
-        ret = avformat_write_header(avFormatContextVideoOutput, NULL);
+        ret = avformat_write_header(avFormatContextVideoOutput, nullptr);
 
         int frame_index = 0;
         int flag = 1;
 
         av_init_packet(&pkt);
-        pkt.data = NULL;
+        pkt.data = nullptr;
         pkt.size = 0;
 
         while (1) {
@@ -3649,7 +3565,7 @@ namespace alexander_media {
         }
 
         fclose(fp);
-        fp = NULL;
+        fp = nullptr;
 
         av_write_trailer(avFormatContextVideoOutput);
         return 0;

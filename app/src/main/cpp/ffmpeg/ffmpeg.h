@@ -10,7 +10,8 @@ enum {
     USE_MODE_ONLY_VIDEO = 2,
     USE_MODE_ONLY_AUDIO = 3,
     USE_MODE_AUDIO_VIDEO = 4,
-    USE_MODE_AAC_H264 = 5
+    USE_MODE_AAC_H264 = 5,
+    USE_MODE_MEDIA_4K = 6
 };
 
 enum {
@@ -34,7 +35,8 @@ enum {
     DO_SOMETHING_CODE_seekTo = 1116,
     DO_SOMETHING_CODE_getDuration = 1117,
     DO_SOMETHING_CODE_download = 1118,
-    DO_SOMETHING_CODE_closeJni = 1119
+    DO_SOMETHING_CODE_closeJni = 1119,
+    DO_SOMETHING_CODE_videoHandleRender = 1120,
 };
 
 enum {

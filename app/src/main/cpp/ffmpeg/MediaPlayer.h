@@ -105,6 +105,15 @@ extern "C" {
 
 #define MAX_RELATIVE_TIME 10000000// 10秒
 
+#define RUN_COUNTS 88
+
+#if __ANDROID_API__ >= 21
+//__INTRODUCED_IN(21);
+#endif
+
+#if __ANDROID_API__ >= __ANDROID_API_N__
+#endif
+
 ///////////////////////////////////////////
 
 // 子类都要用到的部分

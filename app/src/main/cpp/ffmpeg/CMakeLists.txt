@@ -29,6 +29,8 @@ add_library(ffmpeg
         OnlyAudioPlayer.cpp
         AudioVideoPlayer.cpp
         AACH264Player.cpp
+        MediaPlayerFor4K.cpp
+
         AudioRecord.cpp
         AudioTrack.cpp
 

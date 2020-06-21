@@ -9,6 +9,7 @@
 #include "OnlyAudioPlayer.h"
 #include "AudioVideoPlayer.h"
 #include "AACH264Player.h"
+#include "MediaPlayerFor4K.h"
 
 // 这个是自定义的LOG的标识
 #define LOG "player_alexander"
@@ -606,7 +607,8 @@ static jint onTransact_setMode(JNIEnv *env, jobject thiz,
         && use_mode != USE_MODE_ONLY_VIDEO
         && use_mode != USE_MODE_ONLY_AUDIO
         && use_mode != USE_MODE_AUDIO_VIDEO
-        && use_mode != USE_MODE_AAC_H264) {
+        && use_mode != USE_MODE_AAC_H264
+        && use_mode != USE_MODE_MEDIA_4K) {
         use_mode = USE_MODE_MEDIA;
     }
 
@@ -642,6 +644,10 @@ static jint onTransact_setSurface(JNIEnv *env, jobject ffmpegObject,
             alexander_aac_h264::setJniParameters(env, filePath, surfaceObject);
             break;
         }
+        case USE_MODE_MEDIA_4K: {
+            alexander_media_4k::setJniParameters(env, filePath, surfaceObject);
+            break;
+        }
         default:
             break;
     }
@@ -670,6 +676,9 @@ static jint onTransact_initPlayer(JNIEnv *env, jobject thiz,
         }
         case USE_MODE_AAC_H264: {
             return (jint) alexander_aac_h264::initPlayer();
+        }
+        case USE_MODE_MEDIA_4K: {
+            return (jint) alexander_media_4k::initPlayer();
         }
         default:
             break;
@@ -721,6 +730,10 @@ static jint onTransact_readData(JNIEnv *env, jobject thiz,
             }
             break;
         }
+        case USE_MODE_MEDIA_4K: {
+            alexander_media_4k::readData(NULL);
+            break;
+        }
         default:
             break;
     }
@@ -750,6 +763,10 @@ static jint onTransact_audioHandleData(JNIEnv *env, jobject thiz,
         }
         case USE_MODE_AAC_H264: {
             alexander_aac_h264::handleData(&type);
+            break;
+        }
+        case USE_MODE_MEDIA_4K: {
+            alexander_media_4k::handleData(&type);
             break;
         }
         default:
@@ -783,10 +800,42 @@ static jint onTransact_videoHandleData(JNIEnv *env, jobject thiz,
             alexander_aac_h264::handleData(&type);
             break;
         }
+        case USE_MODE_MEDIA_4K: {
+            alexander_media_4k::handleData(&type);
+            break;
+        }
         default:
             break;
     }
 
+    return (jint) 0;
+}
+
+static jint onTransact_videoHandleRender(JNIEnv *env, jobject thiz,
+                                         jint code, jobject jniObject) {
+    switch (use_mode) {
+        case USE_MODE_MEDIA: {
+            break;
+        }
+        case USE_MODE_ONLY_VIDEO: {
+            break;
+        }
+        case USE_MODE_ONLY_AUDIO: {
+            break;
+        }
+        case USE_MODE_AUDIO_VIDEO: {
+            break;
+        }
+        case USE_MODE_AAC_H264: {
+            break;
+        }
+        case USE_MODE_MEDIA_4K: {
+            alexander_media_4k::handleVideoRender();
+            break;
+        }
+        default:
+            break;
+    }
     return (jint) 0;
 }
 
@@ -873,6 +922,10 @@ static jint onTransact_stop(JNIEnv *env, jobject thiz,
             alexander_aac_h264::stop();
             break;
         }
+        case USE_MODE_MEDIA_4K: {
+            alexander_media_4k::stop();
+            break;
+        }
         default:
             break;
     }
@@ -901,6 +954,10 @@ static jint onTransact_release(JNIEnv *env, jobject thiz,
         }
         case USE_MODE_AAC_H264: {
             alexander_aac_h264::release();
+            break;
+        }
+        case USE_MODE_MEDIA_4K: {
+            alexander_media_4k::release();
             break;
         }
         default:
@@ -1094,6 +1151,9 @@ static jlong onTransact_getDuration(JNIEnv *env, jobject thiz,
         case USE_MODE_AAC_H264: {
             return (jlong) alexander_aac_h264::getDuration();
         }
+        case USE_MODE_MEDIA_4K: {
+            return (jlong) alexander_media_4k::getDuration();
+        }
         default:
             break;
     }
@@ -1223,7 +1283,11 @@ Java_com_weidi_usefragments_business_video_1player_FFMPEG_onTransact(JNIEnv *env
                     std::to_string(onTransact_download(env, thiz, code, jniObject)).c_str());
 
         case DO_SOMETHING_CODE_closeJni:
+            return env->NewStringUTF("0");
 
+        case DO_SOMETHING_CODE_videoHandleRender:
+            onTransact_videoHandleRender(env, thiz, code, jniObject);
+            return env->NewStringUTF("0");
 
         default:
             break;
