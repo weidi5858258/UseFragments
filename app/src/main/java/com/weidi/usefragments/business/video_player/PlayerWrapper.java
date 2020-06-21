@@ -611,12 +611,12 @@ public class PlayerWrapper {
                         sendEmptyMessage(DO_SOMETHING_CODE_videoHandleData);
                     }
                 });
-                ThreadPool.getFixedThreadPool().execute(new Runnable() {
+                /*ThreadPool.getFixedThreadPool().execute(new Runnable() {
                     @Override
                     public void run() {
                         sendEmptyMessage(DO_SOMETHING_CODE_videoHandleRender);
                     }
-                });
+                });*/
 
                 if (mIsSeparatedAudioVideo) {
                     ThreadPool.getFixedThreadPool().execute(new Runnable() {
@@ -844,7 +844,7 @@ public class PlayerWrapper {
                     if (TextUtils.isEmpty(mType)
                             || mType.startsWith("video/")) {
                         mFFMPEGPlayer.onTransact(DO_SOMETHING_CODE_setMode,
-                                JniObject.obtain().writeInt(USE_MODE_MEDIA_4K));// USE_MODE_MEDIA
+                                JniObject.obtain().writeInt(USE_MODE_MEDIA));
                     } else if (mType.startsWith("audio/")) {
                         mFFMPEGPlayer.onTransact(DO_SOMETHING_CODE_setMode,
                                 JniObject.obtain().writeInt(USE_MODE_ONLY_AUDIO));

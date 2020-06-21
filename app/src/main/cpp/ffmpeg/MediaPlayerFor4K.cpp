@@ -1707,23 +1707,8 @@ namespace alexander_media_4k {
         return ret;
     }
 
-    int handleVideoDataImpl(AVStream *stream, AVFrame *decodedAVFrame, AVFrame *copyDecodedAVFrame) {
-        /*sws_scale(videoWrapper->swsContext,
-                  (uint8_t const *const *) decodedAVFrame->data,
-                  decodedAVFrame->linesize,
-                  0,
-                  videoWrapper->srcHeight,
-                  videoWrapper->rgbAVFrame->data,
-                  videoWrapper->rgbAVFrame->linesize);
-
-        av_frame_unref(copyRgbAVFrame);
-        av_frame_ref(copyRgbAVFrame, videoWrapper->rgbAVFrame);
-        copyRgbAVFrame->pts = decodedAVFrame->pts;
-        copyRgbAVFrame->pkt_dts = decodedAVFrame->pkt_dts;
-        copyRgbAVFrame->pkt_pos = decodedAVFrame->pkt_pos;
-        copyRgbAVFrame->pkt_size = decodedAVFrame->pkt_size;
-        copyRgbAVFrame->pkt_duration = decodedAVFrame->pkt_duration;*/
-
+    int
+    handleVideoDataImpl(AVStream *stream, AVFrame *decodedAVFrame, AVFrame *copyDecodedAVFrame) {
         av_frame_unref(copyDecodedAVFrame);
         av_frame_ref(copyDecodedAVFrame, decodedAVFrame);
 
@@ -1764,8 +1749,12 @@ namespace alexander_media_4k {
             }
 
             if (isEmpty()) {
-                videoSleep(10000);
+                av_usleep(10000);
                 continue;
+            }
+
+            if (!isFull()) {
+                notifyToDecode();
             }
 
             AVFrame *decodedAVFrame = get();
@@ -1818,9 +1807,9 @@ namespace alexander_media_4k {
                     }
                     LOGI("handleVideoDataImpl() TIME_DIFFERENCE: %lf\n", TIME_DIFFERENCE);
                 }
-                if (tempTimeDifference < 0) {
+                /*if (tempTimeDifference < 0) {
                     continue;
-                }
+                }*/
 
                 if (tempTimeDifference > 2.000000) {
                     videoPts = audioPts + averageTimeDiff;
@@ -1853,7 +1842,6 @@ namespace alexander_media_4k {
                 memcpy(dst + h * dstStride, src + h * srcStride, srcStride);
             }
 
-            LOGI("handleVideoRender() srcStride: %d, dstStride: %d\n", srcStride, dstStride);
             ////////////////////////////////////////////////////////
 
             int tempSleep = ((int) ((videoPts - videoPtsPre) * 1000)) - 30;
@@ -1873,6 +1861,7 @@ namespace alexander_media_4k {
 
             ANativeWindow_unlockAndPost(pANativeWindow);
         }// for (;;) end
+        LOGI("handleVideoRender() for (;;) end\n");
 
         LOGI("handleVideoRender() end\n");
     }
@@ -1984,14 +1973,14 @@ namespace alexander_media_4k {
         // flags: 0, pts: -9223372036854775808, pkt_pos: -1, pkt_duration: 0, pkt_size: -1
         AVFrame *preAudioAVFrame = nullptr;
         AVFrame *preVideoAVFrame = nullptr;
-        AVFrame *copyRgbAVFrame = nullptr;
+        AVFrame *copyDecodedAVFrame = nullptr;
         if (wrapper->type == TYPE_AUDIO) {
             decodedAVFrame = audioWrapper->decodedAVFrame;
             preAudioAVFrame = av_frame_alloc();
         } else {
             decodedAVFrame = videoWrapper->decodedAVFrame;
             preVideoAVFrame = av_frame_alloc();
-            copyRgbAVFrame = av_frame_alloc();
+            copyDecodedAVFrame = av_frame_alloc();
         }
 
         int ret = 0;
@@ -2454,7 +2443,7 @@ namespace alexander_media_4k {
             if (wrapper->type == TYPE_AUDIO) {
                 handleAudioDataImpl(stream, decodedAVFrame);
             } else {
-                handleVideoDataImpl(stream, decodedAVFrame, copyRgbAVFrame);
+                handleVideoDataImpl(stream, decodedAVFrame, copyDecodedAVFrame);
             }
             av_frame_unref(decodedAVFrame);
 
@@ -2497,10 +2486,10 @@ namespace alexander_media_4k {
                 av_frame_free(&preVideoAVFrame);
                 preVideoAVFrame = nullptr;
             }
-            if (copyRgbAVFrame != nullptr) {
-                av_frame_unref(copyRgbAVFrame);
-                av_frame_free(&copyRgbAVFrame);
-                copyRgbAVFrame = nullptr;
+            if (copyDecodedAVFrame != nullptr) {
+                av_frame_unref(copyDecodedAVFrame);
+                av_frame_free(&copyDecodedAVFrame);
+                copyDecodedAVFrame = nullptr;
             }
         }
 
