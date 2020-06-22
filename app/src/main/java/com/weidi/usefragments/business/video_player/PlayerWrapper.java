@@ -611,12 +611,12 @@ public class PlayerWrapper {
                         sendEmptyMessage(DO_SOMETHING_CODE_videoHandleData);
                     }
                 });
-                /*ThreadPool.getFixedThreadPool().execute(new Runnable() {
+                ThreadPool.getFixedThreadPool().execute(new Runnable() {
                     @Override
                     public void run() {
                         sendEmptyMessage(DO_SOMETHING_CODE_videoHandleRender);
                     }
-                });*/
+                });
 
                 if (mIsSeparatedAudioVideo) {
                     ThreadPool.getFixedThreadPool().execute(new Runnable() {

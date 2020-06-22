@@ -110,12 +110,18 @@ public class ContentsAdapter extends RecyclerView.Adapter {
         }
 
         synchronized (ContentsAdapter.this) {
+            boolean dataChange = false;
             for (Map.Entry<String, String> tempMap : map.entrySet()) {
-                mContentsMap.put(tempMap.getKey(), tempMap.getValue());
-                mKeys.add(tempMap.getKey());
+                if (!mKeys.contains(tempMap.getKey())) {
+                    dataChange = true;
+                    mContentsMap.put(tempMap.getKey(), tempMap.getValue());
+                    mKeys.add(tempMap.getKey());
+                }
             }
 
-            notifyDataSetChanged();
+            if (dataChange) {
+                notifyDataSetChanged();
+            }
 
             //  java.lang.IllegalArgumentException:
             //  Tmp detached view should be removed from RecyclerView before it can be recycled

@@ -636,6 +636,7 @@ public class ContentsFragment extends BaseFragment {
                             }
                         }
                     } else {
+                        maybeJumpToPosition(videoPlaybackPath);
                         return;
                     }
                 }
@@ -716,6 +717,57 @@ public class ContentsFragment extends BaseFragment {
                 break;
             default:
                 break;
+        }
+    }
+
+    private void maybeJumpToPosition(String jumpToPosition) {
+        MLog.i(TAG, "maybeJumpToPosition() jumpToPosition: " + jumpToPosition);
+        int position = -1;
+        try {
+            position = Integer.parseInt(jumpToPosition);
+        } catch (NumberFormatException e) {
+            return;
+        }
+        MLog.i(TAG, "maybeJumpToPosition()       position: " + position);
+        if (position < 0) {
+            position = 1;
+        } else if (position > PlayerWrapper.mContentsMap.size()) {
+            position = PlayerWrapper.mContentsMap.size();
+        }
+
+        if (position <= mLayoutManager.getItemCount()) {
+            // 跳到position的位置就行了
+            if (!mLayoutManager.getVisiblePositions().contains(position - 1)) {
+                mRecyclerView.smoothScrollToPosition(position - 1);
+            }
+        } else {
+            // 需要加载更多的数据
+            int needToLoadCount = position - mLayoutManager.getItemCount();
+            mContentsMap.clear();
+            int i = 0;
+            int addCount = 0;
+            for (Map.Entry<String, String> tempMap :
+                    PlayerWrapper.mContentsMap.entrySet()) {
+                i++;
+                if (i <= mContentsCount) {
+                    continue;
+                }
+                mContentsCount++;
+                addCount++;
+                mContentsMap.put(tempMap.getKey(), tempMap.getValue());
+                if (addCount == needToLoadCount) {
+                    break;
+                }
+            }
+            mAdapter.addData(mContentsMap);
+
+            int finalPosition = position;
+            mUiHandler.postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    mRecyclerView.smoothScrollToPosition(finalPosition - 1);
+                }
+            }, 500);
         }
     }
 
