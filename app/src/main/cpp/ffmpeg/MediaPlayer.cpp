@@ -187,6 +187,7 @@ pthread_join(videoHandleDataThread, NULL);
  */
 
 #include <string>
+#include <pthread.h>
 #include "MediaPlayer.h"
 
 #define LOG "player_alexander"
@@ -201,6 +202,7 @@ bool isLocal = false;
 bool isH264 = false;
 bool isReading = false;
 bool isVideoHandling = false;
+bool isVideoRendering = false;
 bool isInterrupted = false;
 bool runOneTime = true;
 double fileLength = 0.0;
@@ -2536,7 +2538,7 @@ namespace alexander_media {
                 } else if (wrapper->type == TYPE_VIDEO && preVideoAVFrame->pkt_size > 0) {
                     av_frame_ref(decodedAVFrame, preVideoAVFrame);
                     //http://101.71.255.229:6610/zjhs/2/10106/index.m3u8?virtualDomain=zjhs.live_hls.zte.com
-                    //LOGW("handleData() video av_frame_ref\n");
+                    LOGW("handleData() video av_frame_ref\n");
                 } else {
                     continue;
                 }

@@ -3,6 +3,7 @@
 //
 
 #include <string>
+#include <pthread.h>
 #include "MediaPlayerFor4K.h"
 
 #define LOG "player_alexander_4k"
@@ -17,6 +18,7 @@ extern bool isLocal;
 extern bool isH264;
 extern bool isReading;
 extern bool isVideoHandling;
+extern bool isVideoRendering;
 extern bool isInterrupted;
 extern bool runOneTime;
 extern int64_t timeStamp;
@@ -61,10 +63,6 @@ namespace alexander_media_4k {
     static FrameQueue *queue2 = nullptr;
     static pthread_mutex_t decodeLockMutex = PTHREAD_MUTEX_INITIALIZER;
     static pthread_cond_t decodeLockCondition = PTHREAD_COND_INITIALIZER;
-    static std::list<AVFrame> *list1 = nullptr;
-    static std::list<AVFrame> *list2 = nullptr;
-    static AVFrame *copyDecodedAVFrame1 = nullptr;
-    static AVFrame *copyDecodedAVFrame2 = nullptr;
 
     ///////////////////////////////////////////////////////
 
@@ -422,10 +420,6 @@ namespace alexander_media_4k {
         for (int i = 0; i < FRAME_QUEUE_SIZE; i++) {
             queue2->queue[i] = av_frame_alloc();
         }
-        /*list1 = new std::list<AVFrame>();
-        list2 = new std::list<AVFrame>();
-        copyDecodedAVFrame1 = av_frame_alloc();
-        copyDecodedAVFrame2 = av_frame_alloc();*/
 
         videoWrapper->father->duration = -1;
         videoWrapper->father->timestamp = -1;
@@ -1583,6 +1577,7 @@ namespace alexander_media_4k {
                     }
                     if (!onlyDownloadNotPlayback) {
                         readDataImpl(audioWrapper->father, srcAVPacket, copyAVPacket);
+                        //av_packet_unref(srcAVPacket);
                     }
                 }
             } else if (srcAVPacket->stream_index == videoWrapper->father->streamIndex) {
@@ -1713,41 +1708,12 @@ namespace alexander_media_4k {
         return ret;
     }
 
-    int
-    handleVideoDataImpl(AVStream *stream, AVFrame *decodedAVFrame, AVFrame *copyDecodedAVFrame) {
-        av_frame_unref(copyDecodedAVFrame2);
-        av_frame_ref(copyDecodedAVFrame2, decodedAVFrame);
-
-        pthread_mutex_lock(&decodeLockMutex);
-        list2->push_back(*copyDecodedAVFrame2);
-        size_t list2Size = list2->size();
-        pthread_mutex_unlock(&decodeLockMutex);
-
-        if (list2Size == FRAME_QUEUE_SIZE) {
-            // list2 ---> list1
-            // notify
-            // myself pause
-            /*pthread_mutex_lock(&decodeLockMutex);
-            list1->clear();
-            list1->assign(list2->begin(), list2->end());
-            list2->clear();
-            pthread_mutex_unlock(&decodeLockMutex);*/
-
-            //notifyToDecode();
-            LOGI("handleVideoDataImpl() wait start\n");
-            notifyToDecodeWait();
-            LOGI("handleVideoDataImpl() wait end\n");
-        }
-
-        return 0;
-    }
-
     int handleVideoDataImpl(
             AVStream *stream, AVFrame *decodedAVFrame) {
         if (isQueue2Full()) {
-            //LOGI("handleVideoDataImpl() wait start\n");
+            LOGW("handleVideoDataImpl() wait start\n");
             notifyToDecodeWait();
-            //LOGI("handleVideoDataImpl() wait end\n");
+            LOGW("handleVideoDataImpl() wait end\n");
         }
 
         add(decodedAVFrame);
@@ -1758,24 +1724,11 @@ namespace alexander_media_4k {
     // 需开启一个独立线程进行处理
     void handleVideoRender() {
         LOGI("handleVideoRender() start\n");
-        /*if (list2->size() < FRAME_QUEUE_SIZE) {
-            notifyToDecodeWait();
-        }*/
-
-        videoWrapper->father->isStarted = true;
-        while (!audioWrapper->father->isStarted) {
-            if (videoWrapper->father->isPausedForSeek
-                || !audioWrapper->father->isHandling
-                || !videoWrapper->father->isHandling) {
-                LOGI("handleVideoRender() videoWrapper->father->isStarted return\n");
-                return;
-            }
-            av_usleep(1000);
-        }
 
         LOGI("handleVideoRender() for (;;) start\n");
         AVStream *stream = avFormatContext->streams[videoWrapper->father->streamIndex];
         AVFrame *decodedAVFrame = nullptr;
+        isVideoRendering = true;
         for (;;) {
             if (!audioWrapper->father->isHandling
                 || !videoWrapper->father->isHandling) {
@@ -1783,81 +1736,44 @@ namespace alexander_media_4k {
             }
 
             if (isQueue2Full() && isQueue1Empty()) {
-                //LOGI("handleVideoRender() isQueue2Full\n");
+                LOGI("handleVideoRender() isQueue2Full and isQueue1Empty\n");
                 pthread_mutex_lock(&decodeLockMutex);
                 FrameQueue *tempQueue = nullptr;
                 tempQueue = queue2;
                 queue2 = queue1;
                 queue1 = tempQueue;
-                /*AVFrame *avFrame1 = nullptr;
-                AVFrame *avFrame2 = nullptr;
-                for (int i = 0; i < FRAME_QUEUE_SIZE; i++) {
-                    avFrame1 = queue1->queue[i];
-                    avFrame2 = queue2->queue[i];
-                    av_frame_unref(avFrame1);
-                    av_frame_ref(avFrame1, avFrame2);
-                }
-                queue1->size = FRAME_QUEUE_SIZE;
-                queue1->index = 0;
-                queue2->size = 0;
-                queue2->index = 0;*/
                 pthread_mutex_unlock(&decodeLockMutex);
+                //LOGI("handleVideoRender() queue1->size: %d\n", queue1->size);
+                //LOGI("handleVideoRender() queue2->size: %d\n", queue2->size);
 
-                audioWrapper->father->isPausedForUser = false;
-                if (!audioWrapper->father->isPausedForCache) {
-                    notifyToHandle(audioWrapper->father);
-                }
                 notifyToDecode();
-            }
-
-            if (isQueue1Empty()) {
-                audioWrapper->father->isPausedForUser = true;
+                audioWrapper->father->isPausedForUser = false;
+                notifyToHandle(audioWrapper->father);
+            } else if (isQueue1Empty()) {
+                if (audioWrapper->father->isStarted
+                    && videoWrapper->father->isStarted) {
+                    audioWrapper->father->isPausedForUser = true;
+                }
                 av_usleep(10000);
                 continue;
             }
 
-            decodedAVFrame = get();
-            /*if (decodedAVFrame == nullptr) {
-                continue;
-            }*/
-
-            /*if (list1->size() > 0) {
-                //AVFrame *tempDecodedAVFrame = &list1->front();
-                //videoPts = tempDecodedAVFrame->pts * av_q2d(stream->time_base);
-                //LOGW("handleVideoDataImpl() videoPts: %lf temp\n", videoPts);
-                // 内容copy
-                //av_frame_unref(decodedAVFrame);
-                //av_frame_ref(decodedAVFrame, tempDecodedAVFrame);
-                //av_frame_unref(tempDecodedAVFrame);
-
-                decodedAVFrame = &list1->front();
-                list1->pop_front();
-                //LOGW("handleVideoDataImpl() list1->size(): %d\n", list1->size());
-            } else {
-                if (list2->size() < FRAME_QUEUE_SIZE) {
-                    if (audioWrapper != nullptr
-                        && audioWrapper->father != nullptr) {
-                        audioWrapper->father->isPausedForUser = true;
-                    }
-                    av_usleep(10000);
-                } else {
-                    pthread_mutex_lock(&decodeLockMutex);
-                    list1->clear();
-                    list1->assign(list2->begin(), list2->end());
-                    list2->clear();
-                    pthread_mutex_unlock(&decodeLockMutex);
-                    if (audioWrapper != nullptr
-                        && audioWrapper->father != nullptr) {
-                        audioWrapper->father->isPausedForUser = false;
-                        if (!audioWrapper->father->isPausedForCache) {
-                            notifyToHandle(audioWrapper->father);
-                        }
-                    }
-                    notifyToDecode();
-                    //LOGI("handleVideoRender() list1->size(): %d\n", list1->size());
+            videoWrapper->father->isStarted = true;
+            while (!audioWrapper->father->isStarted) {
+                if (videoWrapper->father->isPausedForSeek
+                    || !audioWrapper->father->isHandling
+                    || !videoWrapper->father->isHandling) {
+                    LOGI("handleVideoRender() videoWrapper->father->isStarted return\n");
+                    break;
                 }
+                av_usleep(1000);
+            }
+
+            decodedAVFrame = get();
+            if (decodedAVFrame == nullptr) {
+                LOGE("handleVideoRender() decodedAVFrame is nullptr\n");
                 continue;
-            }*/
+            }
 
             videoPts = decodedAVFrame->pts * av_q2d(stream->time_base);
             if (mediaDuration < 0 && preVideoPts > 0 && preVideoPts > videoPts) {
@@ -1890,13 +1806,13 @@ namespace alexander_media_4k {
                     if (frameRate >= 24) {
                         if (averageTimeDiff > 0.300000 && averageTimeDiff <= 0.400000) {
                             TIME_DIFFERENCE = 0.200000;
-                        } /*else if (averageTimeDiff > 0.400000 && averageTimeDiff <= 0.500000) {
+                        } else if (averageTimeDiff > 0.400000 && averageTimeDiff <= 0.500000) {
                             TIME_DIFFERENCE = 0.300000;
                         } else if (averageTimeDiff > 0.500000 && averageTimeDiff <= 0.700000) {
                             TIME_DIFFERENCE = 0.400000;
                         } else if (averageTimeDiff > 0.700000) {
                             TIME_DIFFERENCE = 0.300000;
-                        }*/ else if (averageTimeDiff > 0.400000) {
+                        } else if (averageTimeDiff > 0.400000) {
                             TIME_DIFFERENCE = 0.300000;
                         }
                     }
@@ -1929,6 +1845,7 @@ namespace alexander_media_4k {
                       videoWrapper->srcHeight,
                       videoWrapper->rgbAVFrame->data,
                       videoWrapper->rgbAVFrame->linesize);
+            av_frame_unref(decodedAVFrame);
             uint8_t *src = videoWrapper->rgbAVFrame->data[0];
             int srcStride = videoWrapper->rgbAVFrame->linesize[0];
             uint8_t *dst = (uint8_t *) mANativeWindow_Buffer.bits;
@@ -1956,6 +1873,7 @@ namespace alexander_media_4k {
 
             ANativeWindow_unlockAndPost(pANativeWindow);
         }// for (;;) end
+        isVideoRendering = false;
         LOGI("handleVideoRender() for (;;) end\n");
 
         LOGI("handleVideoRender() end\n");
@@ -1984,13 +1902,16 @@ namespace alexander_media_4k {
             int64_t startTime = av_gettime_relative();
             int64_t endTime = -1;
             while (isVideoHandling) {
-                endTime = av_gettime_relative();
+                /*endTime = av_gettime_relative();
                 if ((endTime - startTime) >= 10000000) {
                     LOGE("%s\n", "Exception Exit");
                     break;
-                }
+                }*/
                 av_usleep(1000);
             }
+            /*while (isVideoRendering) {
+                av_usleep(1000);
+            }*/
             avcodec_flush_buffers(audioWrapper->father->avCodecContext);
             avcodec_flush_buffers(videoWrapper->father->avCodecContext);
             closeAudio();
@@ -2743,16 +2664,6 @@ namespace alexander_media_4k {
             }
             av_free(queue2);
         }
-        if (copyDecodedAVFrame1 != nullptr) {
-            av_frame_unref(copyDecodedAVFrame1);
-            av_frame_free(&copyDecodedAVFrame1);
-            copyDecodedAVFrame1 = nullptr;
-        }
-        if (copyDecodedAVFrame2 != nullptr) {
-            av_frame_unref(copyDecodedAVFrame2);
-            av_frame_free(&copyDecodedAVFrame2);
-            copyDecodedAVFrame2 = nullptr;
-        }
 
         if (videoWrapper->father->avCodecContext != nullptr) {
             avcodec_close(videoWrapper->father->avCodecContext);
@@ -2789,34 +2700,6 @@ namespace alexander_media_4k {
         delete (videoWrapper->father->list2);
         videoWrapper->father->list1 = nullptr;
         videoWrapper->father->list2 = nullptr;
-
-        if (list1 != nullptr && list2 != nullptr) {
-            if (list1->size() != 0) {
-                LOGW("closeVideo() list1 is not empty, %d\n", list1->size());
-                std::list<AVFrame>::iterator iter;
-                for (iter = list1->begin();
-                     iter != list1->end();
-                     iter++) {
-                    AVFrame avFrame = *iter;
-                    av_frame_unref(&avFrame);
-                    //av_frame_free(avFrame);
-                }
-            }
-            if (list2->size() != 0) {
-                LOGW("closeVideo() list2 is not empty, %d\n", list2->size());
-                std::list<AVFrame>::iterator iter;
-                for (iter = list2->begin();
-                     iter != list2->end();
-                     iter++) {
-                    AVFrame avFrame = *iter;
-                    av_frame_unref(&avFrame);
-                }
-            }
-            delete (list1);
-            delete (list2);
-            list1 = nullptr;
-            list2 = nullptr;
-        }
 
         av_free(videoWrapper->father);
         videoWrapper->father = nullptr;
