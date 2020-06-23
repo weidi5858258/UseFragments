@@ -2002,6 +2002,8 @@ public class PlayerWrapper {
                     if (contents.length > 1) {
                         if (!mContentsMap.containsKey(key)) {
                             mContentsMap.put(key, sb.toString());
+                        } else {
+                            --i;
                         }
                     }
 
