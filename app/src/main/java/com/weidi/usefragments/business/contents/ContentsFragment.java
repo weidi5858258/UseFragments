@@ -423,6 +423,7 @@ public class ContentsFragment extends BaseFragment {
         if (!PlayerWrapper.mContentsMap.isEmpty()) {
             initAdapter();
             mRecyclerView.setLayoutManager(mLayoutManager);
+            mLayoutManager.setRecyclerView(mRecyclerView);
             mRecyclerView.setAdapter(mAdapter);
             mRecyclerView.addOnScrollListener(mOnScrollListener);
             MLog.d(TAG, "initView() PlayerWrapper.mContentsMap.size(): " +
@@ -738,7 +739,8 @@ public class ContentsFragment extends BaseFragment {
         if (position <= mLayoutManager.getItemCount()) {
             // 跳到position的位置就行了
             if (!mLayoutManager.getVisiblePositions().contains(position - 1)) {
-                mRecyclerView.smoothScrollToPosition(position - 1);
+                //mRecyclerView.smoothScrollToPosition(position - 1);
+                mLayoutManager.smoothScrollToPosition(position - 1);
             }
         } else {
             // 需要加载更多的数据
@@ -765,7 +767,8 @@ public class ContentsFragment extends BaseFragment {
             mUiHandler.postDelayed(new Runnable() {
                 @Override
                 public void run() {
-                    mRecyclerView.smoothScrollToPosition(finalPosition - 1);
+                    //mRecyclerView.smoothScrollToPosition(finalPosition - 1);
+                    mLayoutManager.smoothScrollToPosition(finalPosition - 1);
                 }
             }, 500);
         }

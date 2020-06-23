@@ -216,12 +216,11 @@ int videoSleepTime = 11;
 double TIME_DIFFERENCE = 1.000000;// 0.180000
 // 当前音频时间戳
 double audioPts = 0.0;
-double preAudioPts = 0.0;
 // 当前视频时间戳
 double videoPts = 0.0;
-double preVideoPts = 0.0;
 // 上一个时间戳
-double videoPtsPre = 0.0;
+double preAudioPts = 0.0;
+double preVideoPts = 0.0;
 
 ANativeWindow *pANativeWindow = NULL;
 
@@ -420,7 +419,6 @@ namespace alexander_media {
         videoPts = 0.0;
         preAudioPts = 0.0;
         preVideoPts = 0.0;
-        videoPtsPre = 0;
         runOneTime = true;
         runCounts = 0;
         averageTimeDiff = 0.0;
@@ -1012,15 +1010,15 @@ namespace alexander_media {
         audioWrapper->srcNbSamples = audioWrapper->father->avCodecContext->frame_size;
         audioWrapper->srcChannelLayout = audioWrapper->father->avCodecContext->channel_layout;
         LOGD("---------------------------------\n");
-        LOGD("srcSampleRate       : %d\n", audioWrapper->srcSampleRate);// 48000 48000 48000
-        LOGD("srcNbChannels       : %d\n", audioWrapper->srcNbChannels);// 2 6 0
-        LOGD("srcAVSampleFormat   : %d\n", audioWrapper->srcAVSampleFormat);// 8 -1 -1
-        LOGD("srcNbSamples        : %d\n", audioWrapper->srcNbSamples);// 1024 0 0
-        LOGD("srcChannelLayout1   : %d\n", audioWrapper->srcChannelLayout);// 3 0 0
+        LOGD("srcSampleRate        : %d\n", audioWrapper->srcSampleRate);// 48000 48000 48000
+        LOGD("srcNbChannels        : %d\n", audioWrapper->srcNbChannels);// 2 6 0
+        LOGD("srcAVSampleFormat    : %d\n", audioWrapper->srcAVSampleFormat);// 8 -1 -1
+        LOGD("srcNbSamples         : %d\n", audioWrapper->srcNbSamples);// 1024 0 0
+        LOGD("srcChannelLayout1    : %d\n", audioWrapper->srcChannelLayout);// 3 0 0
         // 有些视频从源视频中得到的channel_layout与使用函数得到的channel_layout结果是一样的
         // 但是还是要使用函数得到的channel_layout为好
         audioWrapper->srcChannelLayout = av_get_default_channel_layout(audioWrapper->srcNbChannels);
-        LOGD("srcChannelLayout2   : %d\n", audioWrapper->srcChannelLayout);// 3 63 0
+        LOGD("srcChannelLayout2    : %d\n", audioWrapper->srcChannelLayout);// 3 63 0
         LOGD("---------------------------------\n");
 
         // dst
@@ -1033,10 +1031,10 @@ namespace alexander_media {
         audioWrapper->dstNbChannels = av_get_channel_layout_nb_channels(
                 audioWrapper->dstChannelLayout);
 
-        LOGD("dstSampleRate       : %d\n", audioWrapper->dstSampleRate);// 48000 48000
-        LOGD("dstNbChannels       : %d\n", audioWrapper->dstNbChannels);// 2 2
-        LOGD("dstAVSampleFormat   : %d\n", audioWrapper->dstAVSampleFormat);// 1 1
-        LOGD("dstNbSamples        : %d\n", audioWrapper->dstNbSamples);// 1024 0
+        LOGD("dstSampleRate        : %d\n", audioWrapper->dstSampleRate);// 48000 48000
+        LOGD("dstNbChannels        : %d\n", audioWrapper->dstNbChannels);// 2 2
+        LOGD("dstAVSampleFormat    : %d\n", audioWrapper->dstAVSampleFormat);// 1 1
+        LOGD("dstNbSamples         : %d\n", audioWrapper->dstNbSamples);// 1024 0
         LOGD("---------------------------------\n");
         /*if (audioWrapper->dstNbSamples == 0) {
             audioWrapper->dstNbSamples = 1024;
@@ -1154,14 +1152,14 @@ namespace alexander_media {
         int frame_size = videoWrapper->father->avCodecContext->frame_size;
         int level = videoWrapper->father->avCodecContext->level;
         LOGW("---------------------------------\n");
-        LOGW("bit_rate            : %ld\n", (long) bit_rate);
-        LOGW("bit_rate_tolerance  : %d\n", bit_rate_tolerance);
+        LOGW("bit_rate             : %ld\n", (long) bit_rate);
+        LOGW("bit_rate_tolerance   : %d\n", bit_rate_tolerance);
         LOGW("bits_per_coded_sample: %d\n", bits_per_coded_sample);
-        LOGW("bits_per_raw_sample : %d\n", bits_per_raw_sample);
-        LOGW("delay               : %d\n", delay);
-        LOGW("level               : %d\n", level);
-        LOGW("frame_size          : %d\n", frame_size);
-        LOGW("frame_number        : %d\n", frame_number);
+        LOGW("bits_per_raw_sample  : %d\n", bits_per_raw_sample);
+        LOGW("delay                : %d\n", delay);
+        LOGW("level                : %d\n", level);
+        LOGW("frame_size           : %d\n", frame_size);
+        LOGW("frame_number         : %d\n", frame_number);
 
         AVStream *stream = avFormatContext->streams[videoWrapper->father->streamIndex];
         // 帧数
@@ -1193,14 +1191,14 @@ namespace alexander_media {
             frameRate = stream->avg_frame_rate.num / stream->avg_frame_rate.den;
         }
         int bitRate = avFormatContext->bit_rate / 1000;
-        LOGW("videoFrames         : %d\n", (long) videoFrames);
-        LOGW("frameRate           : %d fps/Hz\n", frameRate);
-        LOGW("bitRate             : %d kbps\n", bitRate);
-        LOGW("srcWidth            : %d\n", videoWrapper->srcWidth);
-        LOGW("srcHeight           : %d\n", videoWrapper->srcHeight);
-        LOGW("srcAVPixelFormat    : %d %s\n",
+        LOGW("videoFrames          : %d\n", (long) videoFrames);
+        LOGW("frameRate            : %d fps/Hz\n", frameRate);
+        LOGW("bitRate              : %d kbps\n", bitRate);
+        LOGW("srcWidth             : %d\n", videoWrapper->srcWidth);
+        LOGW("srcHeight            : %d\n", videoWrapper->srcHeight);
+        LOGW("srcAVPixelFormat     : %d %s\n",
              videoWrapper->srcAVPixelFormat, getStrAVPixelFormat(videoWrapper->srcAVPixelFormat));
-        LOGW("dstAVPixelFormat    : %d %s\n",// 在initVideo()中初始化设置
+        LOGW("dstAVPixelFormat     : %d %s\n",// 在initVideo()中初始化设置
              videoWrapper->dstAVPixelFormat, getStrAVPixelFormat(videoWrapper->dstAVPixelFormat));
         videoWrapper->dstWidth = videoWrapper->srcWidth;
         videoWrapper->dstHeight = videoWrapper->srcHeight;
@@ -1224,11 +1222,11 @@ namespace alexander_media {
                                                    videoWrapper->srcWidth,
                                                    videoWrapper->srcHeight,
                                                    1);
-        LOGW("imageGetBufferSize1 : %d\n", imageGetBufferSize);
-        LOGW("imageGetBufferSize2 : %d\n", videoWrapper->father->outBufferSize);
-        LOGW("imageFillArrays     : %d\n", imageFillArrays);
+        LOGW("imageGetBufferSize1  : %d\n", imageGetBufferSize);
+        LOGW("imageGetBufferSize2  : %d\n", videoWrapper->father->outBufferSize);
+        LOGW("imageFillArrays      : %d\n", imageFillArrays);
         if (imageFillArrays < 0) {
-            LOGE("imageFillArrays     : %d\n", imageFillArrays);
+            LOGE("imageFillArrays      : %d\n", imageFillArrays);
             return -1;
         }
         // 由于解码出来的帧格式不是RGBA,在渲染之前需要进行格式转换
@@ -1304,7 +1302,7 @@ namespace alexander_media {
         avcodec_flush_buffers(videoWrapper->father->avCodecContext);
         timeStamp = -1;
         preProgress = 0;
-        videoPtsPre = 0;
+        preVideoPts = 0.0;
         audioWrapper->father->isPausedForSeek = false;
         videoWrapper->father->isPausedForSeek = false;
         audioWrapper->father->isStarted = false;
@@ -1831,7 +1829,6 @@ namespace alexander_media {
         if (mediaDuration < 0 && preVideoPts > 0 && preVideoPts > videoPts) {
             return 0;
         }
-        preVideoPts = videoPts;
         //LOGW("handleVideoDataImpl() videoPts: %lf\n", videoPts);
         //LOGD("handleVideoDataImpl() audioPts: %lf\n", audioPts);
 
@@ -1941,7 +1938,7 @@ namespace alexander_media {
 
             // timeDifference = 0.040000
             // 单位: 毫秒
-            int tempSleep = ((int) ((videoPts - videoPtsPre) * 1000)) - 30;
+            int tempSleep = ((int) ((videoPts - preVideoPts) * 1000)) - 30;
             if (videoSleepTime != tempSleep) {
                 videoSleepTime = tempSleep;
                 //LOGW("handleVideoDataImpl() videoSleepTime     : %d\n", videoSleepTime);
@@ -1955,7 +1952,7 @@ namespace alexander_media {
                 }
                 // videoSleepTime <= 0时不需要sleep
             }
-            videoPtsPre = videoPts;
+            preVideoPts = videoPts;
 
             ////////////////////////////////////////////////////////
 
@@ -2184,6 +2181,16 @@ namespace alexander_media {
                 wrapper->list1->pop_front();
                 wrapper->handleFramesCount++;
                 wrapper->allowDecode = true;
+
+                if (wrapper->type == TYPE_AUDIO) {
+                } else {
+                    if (wrapper->isReading
+                        && !isLocal
+                        && wrapper->list2->size() < wrapper->list2LimitCounts
+                        && wrapper->list1->size() % 10 == 0) {
+                        notifyToRead(wrapper);
+                    }
+                }
 
                 // test
                 /*if (wrapper->type == TYPE_AUDIO) {

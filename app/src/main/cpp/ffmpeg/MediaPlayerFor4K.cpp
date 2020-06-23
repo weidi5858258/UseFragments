@@ -1711,9 +1711,10 @@ namespace alexander_media_4k {
     int handleVideoDataImpl(
             AVStream *stream, AVFrame *decodedAVFrame) {
         if (isQueue2Full()) {
-            LOGW("handleVideoDataImpl() wait start\n");
+            notifyToDecode();
+            LOGW("handleVideoDataImpl() isQueue2Full start\n");
             notifyToDecodeWait();
-            LOGW("handleVideoDataImpl() wait end\n");
+            LOGW("handleVideoDataImpl() isQueue2Full end\n");
         }
 
         add(decodedAVFrame);
@@ -1724,12 +1725,69 @@ namespace alexander_media_4k {
     // 需开启一个独立线程进行处理
     void handleVideoRender() {
         LOGI("handleVideoRender() start\n");
+        if (isQueue1Empty()) {
+            notifyToDecodeWait();
 
-        LOGI("handleVideoRender() for (;;) start\n");
+            av_usleep(1000000);
+            FrameQueue *tempQueue = nullptr;
+            tempQueue = queue2;
+            queue2 = queue1;
+            queue1 = tempQueue;
+
+            notifyToDecode();
+        }
+
+        videoWrapper->father->isStarted = true;
+        while (!audioWrapper->father->isStarted) {
+            if (videoWrapper->father->isPausedForSeek
+                || !audioWrapper->father->isHandling
+                || !videoWrapper->father->isHandling) {
+                LOGI("handleVideoRender() videoWrapper->father->isStarted return\n");
+                break;
+            }
+            av_usleep(1000);
+        }
+
         AVStream *stream = avFormatContext->streams[videoWrapper->father->streamIndex];
         AVFrame *decodedAVFrame = nullptr;
         isVideoRendering = true;
+        LOGI("handleVideoRender() for (;;) start\n");
         for (;;) {
+            if (audioWrapper->father->isPausedForUser
+                || videoWrapper->father->isPausedForUser
+                || audioWrapper->father->isPausedForCache
+                || videoWrapper->father->isPausedForCache
+                || audioWrapper->father->isPausedForSeek
+                || videoWrapper->father->isPausedForSeek) {
+                bool isPausedForUser = audioWrapper->father->isPausedForUser
+                                       || videoWrapper->father->isPausedForUser;
+                bool isPausedForSeek = audioWrapper->father->isPausedForSeek
+                                       || videoWrapper->father->isPausedForSeek;
+                if (isPausedForSeek) {
+                    LOGW("handleVideoRender()  isPausedForSeek start\n");
+                } else if (isPausedForUser) {
+                    LOGW("handleVideoRender()  isPausedForUser start\n");
+                } else {
+                    LOGW("handleVideoRender() isPausedForCache start\n");
+                }
+                notifyToDecodeWait();
+                /*if (audioWrapper->father->isPausedForUser
+                    || videoWrapper->father->isPausedForUser
+                    || audioWrapper->father->isPausedForCache
+                    || videoWrapper->father->isPausedForCache
+                    || audioWrapper->father->isPausedForSeek
+                    || videoWrapper->father->isPausedForSeek) {
+                    continue;
+                }*/
+                if (isPausedForSeek) {
+                    LOGW("handleVideoRender()  isPausedForSeek end\n");
+                } else if (isPausedForUser) {
+                    LOGW("handleVideoRender()  isPausedForUser end\n");
+                } else {
+                    LOGW("handleVideoRender() isPausedForCache end\n");
+                }
+            }// 暂停装置 end
+
             if (!audioWrapper->father->isHandling
                 || !videoWrapper->father->isHandling) {
                 break;
@@ -1749,24 +1807,13 @@ namespace alexander_media_4k {
                 notifyToDecode();
                 audioWrapper->father->isPausedForUser = false;
                 notifyToHandle(audioWrapper->father);
-            } else if (isQueue1Empty()) {
-                if (audioWrapper->father->isStarted
-                    && videoWrapper->father->isStarted) {
-                    audioWrapper->father->isPausedForUser = true;
-                }
-                av_usleep(10000);
+            } else if (!isQueue2Full() && isQueue1Empty()) {
+                audioWrapper->father->isPausedForUser = true;
+                // av_usleep(10000);
+                LOGI("handleVideoRender() isQueue1Empty start\n");
+                notifyToDecodeWait();
+                LOGI("handleVideoRender() isQueue1Empty end\n");
                 continue;
-            }
-
-            videoWrapper->father->isStarted = true;
-            while (!audioWrapper->father->isStarted) {
-                if (videoWrapper->father->isPausedForSeek
-                    || !audioWrapper->father->isHandling
-                    || !videoWrapper->father->isHandling) {
-                    LOGI("handleVideoRender() videoWrapper->father->isStarted return\n");
-                    break;
-                }
-                av_usleep(1000);
             }
 
             decodedAVFrame = get();
@@ -1796,7 +1843,7 @@ namespace alexander_media_4k {
                             || !audioWrapper->father->isHandling
                             || !videoWrapper->father->isHandling) {
                             LOGI("handleVideoDataImpl() RUN_COUNTS return\n");
-                            return;
+                            break;
                         }
                         totleTimeDiff += timeDiff[i];
                     }
@@ -1830,11 +1877,13 @@ namespace alexander_media_4k {
                         || !audioWrapper->father->isHandling
                         || !videoWrapper->father->isHandling) {
                         LOGI("handleVideoDataImpl() TIME_DIFFERENCE return\n");
-                        return;
+                        break;
                     }
                     av_usleep(1000);
                 }
             }
+
+            // region 视频渲染
 
             ANativeWindow_lock(pANativeWindow, &mANativeWindow_Buffer, nullptr);
 
@@ -1872,9 +1921,11 @@ namespace alexander_media_4k {
             ////////////////////////////////////////////////////////
 
             ANativeWindow_unlockAndPost(pANativeWindow);
+
+            // endregion
         }// for (;;) end
-        isVideoRendering = false;
         LOGI("handleVideoRender() for (;;) end\n");
+        isVideoRendering = false;
 
         LOGI("handleVideoRender() end\n");
     }
@@ -1902,16 +1953,16 @@ namespace alexander_media_4k {
             int64_t startTime = av_gettime_relative();
             int64_t endTime = -1;
             while (isVideoHandling) {
-                /*endTime = av_gettime_relative();
+                endTime = av_gettime_relative();
                 if ((endTime - startTime) >= 10000000) {
                     LOGE("%s\n", "Exception Exit");
                     break;
-                }*/
+                }
                 av_usleep(1000);
             }
-            /*while (isVideoRendering) {
+            while (isVideoRendering) {
                 av_usleep(1000);
-            }*/
+            }
             avcodec_flush_buffers(audioWrapper->father->avCodecContext);
             avcodec_flush_buffers(videoWrapper->father->avCodecContext);
             closeAudio();
@@ -2099,20 +2150,13 @@ namespace alexander_media_4k {
                 wrapper->handleFramesCount++;
                 wrapper->allowDecode = true;
 
-                // test
-                /*if (wrapper->type == TYPE_AUDIO) {
+                if (wrapper->type == TYPE_AUDIO) {
                 } else {
-                    // flags: 0, pts: 4443433650, dts: 4443427440, duration: 3103, size: 8378
-                    // flags: 1, pts: 4443436710, dts: 4443430500, duration: 3103, size: 23613
-                    // flags: 0, pts: 4443442920, dts: 4443433650, duration: 3103, size: 6137
-                    LOGW("handleData() video                   "
-                         "flags: %d, pts: %lld, dts: %lld, duration: %lld, size: %d\n",
-                         copyAVPacket->flags,
-                         (long long) copyAVPacket->pts,
-                         (long long) copyAVPacket->dts,
-                         (long long) copyAVPacket->duration,
-                         copyAVPacket->size);
-                }*/
+                    if (wrapper->isReading
+                        && wrapper->list2->size() < wrapper->list2LimitCounts) {
+                        notifyToRead(wrapper);
+                    }
+                }
             }
 
             size_t list1Size = wrapper->list1->size();
@@ -2286,6 +2330,10 @@ namespace alexander_media_4k {
                     // 通知视频结束暂停
                     videoWrapper->father->isPausedForCache = false;
                     notifyToHandle(videoWrapper->father);
+                    // 视频有可能是因为这里暂停,也有可能是因为isQueue2Full()而早就暂停了
+                    if (!isQueue2Full() && !isQueue1Empty()) {
+                        notifyToDecode();
+                    }
                 } else {
                     // 视频Cache引起的暂停
                     videoWrapper->father->isPausedForCache = true;
@@ -2306,6 +2354,9 @@ namespace alexander_media_4k {
                     // 通知音频结束暂停
                     audioWrapper->father->isPausedForCache = false;
                     notifyToHandle(audioWrapper->father);
+                    if (!isQueue1Empty()) {
+                        notifyToDecode();
+                    }
                 }
 
                 // 开始播放
@@ -2988,6 +3039,9 @@ namespace alexander_media_4k {
             if (!videoWrapper->father->isPausedForCache) {
                 notifyToHandle(videoWrapper->father);
             }
+        }
+        if (!isQueue2Full() && !isQueue1Empty()) {
+            notifyToDecode();
         }
         return 0;
     }

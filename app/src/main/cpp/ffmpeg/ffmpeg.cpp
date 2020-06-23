@@ -862,6 +862,10 @@ static jint onTransact_play(JNIEnv *env, jobject thiz,
             alexander_aac_h264::play();
             break;
         }
+        case USE_MODE_MEDIA_4K: {
+            alexander_media_4k::play();
+            break;
+        }
         default:
             break;
     }
@@ -890,6 +894,10 @@ static jint onTransact_pause(JNIEnv *env, jobject thiz,
         }
         case USE_MODE_AAC_H264: {
             alexander_aac_h264::pause();
+            break;
+        }
+        case USE_MODE_MEDIA_4K: {
+            alexander_media_4k::pause();
             break;
         }
         default:
@@ -985,6 +993,9 @@ static jboolean onTransact_isRunning(JNIEnv *env, jobject thiz,
         case USE_MODE_AAC_H264: {
             return (jboolean) alexander_aac_h264::isRunning();
         }
+        case USE_MODE_MEDIA_4K: {
+            return (jboolean) alexander_media_4k::isRunning();
+        }
         default:
             break;
     }
@@ -1010,6 +1021,9 @@ static jboolean onTransact_isPlaying(JNIEnv *env, jobject thiz,
         case USE_MODE_AAC_H264: {
             return (jboolean) alexander_aac_h264::isPlaying();
         }
+        case USE_MODE_MEDIA_4K: {
+            return (jboolean) alexander_media_4k::isPlaying();
+        }
         default:
             break;
     }
@@ -1034,6 +1048,9 @@ static jint onTransact_isPausedForUser(JNIEnv *env, jobject thiz,
         }
         case USE_MODE_AAC_H264: {
             return (jboolean) alexander_aac_h264::isPausedForUser();
+        }
+        case USE_MODE_MEDIA_4K: {
+            return (jboolean) alexander_media_4k::isPausedForUser();
         }
         default:
             break;
@@ -1065,6 +1082,10 @@ static jint onTransact_stepAdd(JNIEnv *env, jobject thiz,
         }
         case USE_MODE_AAC_H264: {
             alexander_aac_h264::stepAdd((int64_t) addStep);
+            break;
+        }
+        case USE_MODE_MEDIA_4K: {
+            alexander_media_4k::stepAdd((int64_t) addStep);
             break;
         }
         default:
@@ -1099,6 +1120,10 @@ static jint onTransact_stepSubtract(JNIEnv *env, jobject thiz,
             alexander_aac_h264::stepSubtract((int64_t) subtractStep);
             break;
         }
+        case USE_MODE_MEDIA_4K: {
+            alexander_media_4k::stepSubtract((int64_t) subtractStep);
+            break;
+        }
         default:
             break;
     }
@@ -1125,6 +1150,9 @@ static jint onTransact_seekTo(JNIEnv *env, jobject thiz,
         }
         case USE_MODE_AAC_H264: {
             return (jint) alexander_aac_h264::seekTo((int64_t) timestamp);
+        }
+        case USE_MODE_MEDIA_4K: {
+            return (jint) alexander_media_4k::seekTo((int64_t) timestamp);
         }
         default:
             break;
