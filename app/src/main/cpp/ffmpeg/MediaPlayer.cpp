@@ -13,6 +13,22 @@
 usleep(1000*40);//等待40毫秒
 av_gettime_relative() 单位:微秒
 
+AAC 128kbps
+60fps
+4320P 7680 x 4320 8K
+2160P 3840 x 2160 UHD 4K 超高清
+1440P 2560 x 1440 QHD 2K
+1080P 1920 x 1080 FHD    全高清
+ 720P 1280 x 720   HD
+ 480P  854 x 480
+ 360P
+ 240P
+ 144P
+
+4：3宽高比分辨率：640×480,800×600,960×720,1024×768,1280×960,1400×1050,1440×1080,1600×1200,1856×1392,1920×1440和2048× 1536。
+16:10宽高比分辨率：1280×800,1440×900,1680×1050,1920×1200和2560×1600。
+16：9宽高比分辨率：1024×576,1152×648,1280×720（HD），1366×768,1600×900,1920×1080（FHD），2560×1440,3880×2160（4K）和7680 x 4320（8K）。
+
 NV21(yuv420sp)和I420(yuv420p)
 NV21的排列是YYYYYYYY VUVU  -> YUV420SP
 I420的排列是YYYYYYYY UU VV -> YUV420P
@@ -1759,9 +1775,9 @@ namespace alexander_media {
             //double audioPos = decodedAVFrame->pkt_pos * av_q2d(stream->time_base);
             //LOGD("handleVideoDataImpl() audioPts: %lf\n", audioPts);
             //LOGD("handleVideoDataImpl() audioPos: %lf\n", audioPos);
-            if (mediaDuration < 0 && preAudioPts > 0 && preAudioPts > audioPts) {
+            /*if (mediaDuration < 0 && preAudioPts > 0 && preAudioPts > audioPts) {
                 return 0;
-            }
+            }*/
             preAudioPts = audioPts;
             //LOGD("handleVideoDataImpl() audioPts: %lf\n", audioPts);
 
@@ -1826,9 +1842,9 @@ namespace alexander_media {
          音频需要正常播放才是好的体验
          */
         videoPts = decodedAVFrame->pts * av_q2d(stream->time_base);
-        if (mediaDuration < 0 && preVideoPts > 0 && preVideoPts > videoPts) {
+        /*if (mediaDuration < 0 && preVideoPts > 0 && preVideoPts > videoPts) {
             return 0;
-        }
+        }*/
         //LOGW("handleVideoDataImpl() videoPts: %lf\n", videoPts);
         //LOGD("handleVideoDataImpl() audioPts: %lf\n", audioPts);
 

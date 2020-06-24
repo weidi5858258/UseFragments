@@ -23,7 +23,6 @@ public class MediaButtonReceiver extends BroadcastReceiver {
     private static final String TAG = "player_alexander";
     /*private static final String TAG =
             MediaButtonReceiver.class.getSimpleName();*/
-    private static final boolean DEBUG = true;
 
     @Override
     public void onReceive(Context context, Intent intent) {
@@ -32,31 +31,53 @@ public class MediaButtonReceiver extends BroadcastReceiver {
         }
 
         String intentAction = intent.getAction();
-        // MLog.d(TAG, "onReceive() intentAction: " + intentAction);
+        //MLog.d(TAG, "onReceive() intentAction: " + intentAction);
         if (Intent.ACTION_MEDIA_BUTTON.equals(intentAction)) {
             KeyEvent event = intent.getParcelableExtra(Intent.EXTRA_KEY_EVENT);
             if (event == null) {
                 return;
             }
 
-            switch (event.getKeyCode()) {
-                case KeyEvent.KEYCODE_HEADSETHOOK:
-                    if (event.getAction() == KeyEvent.ACTION_DOWN) {
-                        EventBusUtils.post(
-                                PlayerService.class, KeyEvent.KEYCODE_HEADSETHOOK, null);
-                    }
+            if (event.getAction() != KeyEvent.ACTION_UP) {
+                return;
+            }
+
+            int keyCode = event.getKeyCode();
+            MLog.d(TAG, "onReceive() " +
+                    "intentAction: " + intentAction +
+                    " keyCode: " + keyCode);
+            switch (keyCode) {
+                case KeyEvent.KEYCODE_HEADSETHOOK:// 79
+                    EventBusUtils.post(
+                            PlayerService.class, KeyEvent.KEYCODE_HEADSETHOOK, null);
                     break;
-                case KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE:
+                case KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE:// 85
+                    EventBusUtils.post(
+                            PlayerService.class, KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE, null);
                     break;
-                case KeyEvent.KEYCODE_MEDIA_PLAY:
+                case KeyEvent.KEYCODE_MEDIA_STOP:// 86
+                    EventBusUtils.post(
+                            PlayerService.class, KeyEvent.KEYCODE_MEDIA_STOP, null);
                     break;
-                case KeyEvent.KEYCODE_MEDIA_PAUSE:
+                case KeyEvent.KEYCODE_MEDIA_PREVIOUS:// 88
+                    // 三击
+                    EventBusUtils.post(
+                            PlayerService.class, KeyEvent.KEYCODE_MEDIA_PREVIOUS, null);
                     break;
-                case KeyEvent.KEYCODE_MEDIA_STOP:
+                case KeyEvent.KEYCODE_MEDIA_NEXT:// 87
+                    // 双击
+                    EventBusUtils.post(
+                            PlayerService.class, KeyEvent.KEYCODE_MEDIA_NEXT, null);
                     break;
-                case KeyEvent.KEYCODE_MEDIA_PREVIOUS:
+                case KeyEvent.KEYCODE_MEDIA_PLAY:// 126
+                    // 单击
+                    EventBusUtils.post(
+                            PlayerService.class, KeyEvent.KEYCODE_MEDIA_PLAY, null);
                     break;
-                case KeyEvent.KEYCODE_MEDIA_NEXT:
+                case KeyEvent.KEYCODE_MEDIA_PAUSE:// 127
+                    // 单击
+                    EventBusUtils.post(
+                            PlayerService.class, KeyEvent.KEYCODE_MEDIA_PAUSE, null);
                     break;
                 default:
                     break;

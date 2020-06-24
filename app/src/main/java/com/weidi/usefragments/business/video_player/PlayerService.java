@@ -258,8 +258,30 @@ public class PlayerService extends Service {
                 mUiHandler.removeMessages(COMMAND_HANDLE_PORTRAIT_SCREEN);
                 mUiHandler.sendEmptyMessage(COMMAND_HANDLE_PORTRAIT_SCREEN);
                 break;
-            case KeyEvent.KEYCODE_HEADSETHOOK:
+            case KeyEvent.KEYCODE_HEADSETHOOK:// 79
                 mPlayerWrapper.onEvent(KeyEvent.KEYCODE_HEADSETHOOK, null);
+                break;
+            case KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE:// 85
+                mPlayerWrapper.onEvent(KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE, null);
+                break;
+            case KeyEvent.KEYCODE_MEDIA_STOP:// 86
+                mPlayerWrapper.onEvent(KeyEvent.KEYCODE_MEDIA_STOP, null);
+                break;
+            case KeyEvent.KEYCODE_MEDIA_PREVIOUS:// 88
+                // 三击
+                mPlayerWrapper.onEvent(KeyEvent.KEYCODE_MEDIA_PREVIOUS, null);
+                break;
+            case KeyEvent.KEYCODE_MEDIA_NEXT:// 87
+                // 双击
+                mPlayerWrapper.onEvent(KeyEvent.KEYCODE_MEDIA_NEXT, null);
+                break;
+            case KeyEvent.KEYCODE_MEDIA_PLAY:// 126
+                // 单击
+                mPlayerWrapper.onEvent(KeyEvent.KEYCODE_MEDIA_PLAY, null);
+                break;
+            case KeyEvent.KEYCODE_MEDIA_PAUSE:// 127
+                // 单击
+                mPlayerWrapper.onEvent(KeyEvent.KEYCODE_MEDIA_PAUSE, null);
                 break;
             default:
                 break;

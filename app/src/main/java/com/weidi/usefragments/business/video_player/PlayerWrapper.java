@@ -559,7 +559,7 @@ public class PlayerWrapper {
             case Callback.MSG_ON_TRANSACT_PROGRESS_UPDATED:
                 onUpdated(msg);
                 break;
-            case KeyEvent.KEYCODE_HEADSETHOOK:// 单击事件
+            case KeyEvent.KEYCODE_HEADSETHOOK:// 79 单击事件
                 if (clickCounts > NEED_CLICK_COUNTS) {
                     clickCounts = NEED_CLICK_COUNTS;
                 }
@@ -611,14 +611,14 @@ public class PlayerWrapper {
                         sendEmptyMessage(DO_SOMETHING_CODE_videoHandleData);
                     }
                 });
-                ThreadPool.getFixedThreadPool().execute(new Runnable() {
+                /*ThreadPool.getFixedThreadPool().execute(new Runnable() {
                     @Override
                     public void run() {
                         MLog.d(TAG, "DO_SOMETHING_CODE_videoHandleRender start");
                         sendEmptyMessage(DO_SOMETHING_CODE_videoHandleRender);
                         MLog.d(TAG, "DO_SOMETHING_CODE_videoHandleRender end");
                     }
-                });
+                });*/
 
                 if (mIsSeparatedAudioVideo) {
                     ThreadPool.getFixedThreadPool().execute(new Runnable() {
@@ -1816,6 +1816,13 @@ public class PlayerWrapper {
     };
 
     private void clickOne() {
+        if (mFFMPEGPlayer != null) {
+            if (!Boolean.parseBoolean(mFFMPEGPlayer.onTransact(
+                    DO_SOMETHING_CODE_isRunning, null))) {
+                return;
+            }
+        }
+
         if (mControllerPanelLayout.getVisibility() == View.VISIBLE) {
             if (mVideoWidth != 0 && mVideoHeight != 0) {
                 mControllerPanelLayout.setVisibility(View.GONE);
@@ -1826,32 +1833,41 @@ public class PlayerWrapper {
     }
 
     private void clickTwo() {
-        // 播放与暂停
         if (mFFMPEGPlayer != null) {
-            if (Boolean.parseBoolean(mFFMPEGPlayer.onTransact(
+            if (!Boolean.parseBoolean(mFFMPEGPlayer.onTransact(
                     DO_SOMETHING_CODE_isRunning, null))) {
-                if (Boolean.parseBoolean(mFFMPEGPlayer.onTransact(
-                        DO_SOMETHING_CODE_isPlaying, null))) {
-                    mPlayIB.setVisibility(View.GONE);
-                    mPauseIB.setVisibility(View.VISIBLE);
-                    sendEmptyMessage(DO_SOMETHING_CODE_pause);
-                } else {
-                    mPlayIB.setVisibility(View.VISIBLE);
-                    mPauseIB.setVisibility(View.GONE);
-                    sendEmptyMessage(DO_SOMETHING_CODE_play);
-                }
+                return;
             }
+        }
+
+        // 播放与暂停
+        if (Boolean.parseBoolean(mFFMPEGPlayer.onTransact(
+                DO_SOMETHING_CODE_isPlaying, null))) {
+            mPlayIB.setVisibility(View.GONE);
+            mPauseIB.setVisibility(View.VISIBLE);
+            sendEmptyMessage(DO_SOMETHING_CODE_pause);
+        } else {
+            mPlayIB.setVisibility(View.VISIBLE);
+            mPauseIB.setVisibility(View.GONE);
+            sendEmptyMessage(DO_SOMETHING_CODE_play);
         }
     }
 
     private void clickThree() {
-
+        clickFour();
     }
 
     private boolean handleLandscapeScreenFlag = false;
 
     @SuppressLint("SourceLockedOrientationActivity")
     private void clickFour() {
+        if (mFFMPEGPlayer != null) {
+            if (!Boolean.parseBoolean(mFFMPEGPlayer.onTransact(
+                    DO_SOMETHING_CODE_isRunning, null))) {
+                return;
+            }
+        }
+
         if (mIsPhoneDevice) {
             if (mService != null) {
                 // 如果当前是横屏
@@ -2050,12 +2066,32 @@ public class PlayerWrapper {
     public Object onEvent(int what, Object[] objArray) {
         Object result = null;
         switch (what) {
-            case KeyEvent.KEYCODE_HEADSETHOOK:
+            case KeyEvent.KEYCODE_HEADSETHOOK:// 79
                 ++clickCounts;
 
                 // 单位时间内按1次,2次,3次分别实现单击,双击,三击
                 mUiHandler.removeMessages(KeyEvent.KEYCODE_HEADSETHOOK);
                 mUiHandler.sendEmptyMessageDelayed(KeyEvent.KEYCODE_HEADSETHOOK, 300);
+                break;
+            case KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE:// 85
+                break;
+            case KeyEvent.KEYCODE_MEDIA_STOP:// 86
+                break;
+            case KeyEvent.KEYCODE_MEDIA_PREVIOUS:// 88
+                // 三击
+                MLog.d(TAG, "clickThree()");
+                clickThree();
+                break;
+            case KeyEvent.KEYCODE_MEDIA_NEXT:// 87
+                // 双击
+                MLog.d(TAG, "clickTwo()");
+                clickTwo();
+                break;
+            case KeyEvent.KEYCODE_MEDIA_PLAY:// 126
+            case KeyEvent.KEYCODE_MEDIA_PAUSE:// 127
+                // 单击
+                MLog.d(TAG, "clickOne()");
+                clickOne();
                 break;
             default:
                 break;
