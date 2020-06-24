@@ -370,19 +370,22 @@ namespace alexander_media {
             LOGE("read_thread_interrupt_cb() 退出\n");
             isInterrupted = true;
             return 1;
-        } else if ((audioWrapper->father->isPausedForCache || !audioWrapper->father->isStarted)
+        } else if ((audioWrapper->father->isPausedForCache
+                    || videoWrapper->father->isPausedForCache
+                    || !audioWrapper->father->isStarted
+                    || !videoWrapper->father->isStarted)
                    && isReading
                    && startReadTime > 0
                    && (endReadTime - startReadTime) > MAX_RELATIVE_TIME) {
-            if (audioWrapper->father->list1->size() < audioWrapper->father->list1LimitCounts
+            /*if (audioWrapper->father->list1->size() < audioWrapper->father->list1LimitCounts
                 && videoWrapper->father->list1->size() < videoWrapper->father->list1LimitCounts
                 && audioWrapper->father->list2->size() < audioWrapper->father->list1LimitCounts
                 && videoWrapper->father->list2->size() < videoWrapper->father->list1LimitCounts) {
-                LOGE("read_thread_interrupt_cb() 读取数据超时\n");
-                isInterrupted = true;
-                onError(0x101, "读取数据超时");
-                return 1;
-            }
+            }*/
+            LOGE("read_thread_interrupt_cb() 读取数据超时\n");
+            isInterrupted = true;
+            onError(0x101, "读取数据超时");
+            return 1;
         }
         return 0;
     }
@@ -1348,12 +1351,12 @@ namespace alexander_media {
                 copyAVPacket->pts - pts_start_from[copyAVPacket->stream_index],
                 in_stream->time_base,
                 out_stream->time_base,
-                (AVRounding) (AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX));
+                (AVRounding)(AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX));
         copyAVPacket->dts = av_rescale_q_rnd(
                 copyAVPacket->dts - dts_start_from[copyAVPacket->stream_index],
                 in_stream->time_base,
                 out_stream->time_base,
-                (AVRounding) (AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX));
+                (AVRounding)(AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX));
 
         if (copyAVPacket->pts < 0) {
             copyAVPacket->pts = 0;
@@ -1416,13 +1419,13 @@ namespace alexander_media {
         copyAVPacket->pts = av_rescale_q_rnd(copyAVPacket->pts,
                                              wrapper->avStream->time_base,
                                              time_base,
-                                             (AVRounding) (AV_ROUND_NEAR_INF |
-                                                           AV_ROUND_PASS_MINMAX));
+                                             (AVRounding)(AV_ROUND_NEAR_INF |
+                                                          AV_ROUND_PASS_MINMAX));
         copyAVPacket->dts = av_rescale_q_rnd(copyAVPacket->dts,
                                              wrapper->avStream->time_base,
                                              time_base,
-                                             (AVRounding) (AV_ROUND_NEAR_INF |
-                                                           AV_ROUND_PASS_MINMAX));
+                                             (AVRounding)(AV_ROUND_NEAR_INF |
+                                                          AV_ROUND_PASS_MINMAX));
         copyAVPacket->duration = av_rescale_q(copyAVPacket->duration,
                                               wrapper->avStream->time_base,
                                               time_base);
@@ -3659,9 +3662,9 @@ namespace alexander_media {
                 }
 
                 pkt.pts = av_rescale_q_rnd(pkt.pts, in_stream->time_base, out_stream->time_base,
-                                           (AVRounding) (AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX));
+                                           (AVRounding)(AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX));
                 pkt.dts = av_rescale_q_rnd(pkt.dts, in_stream->time_base, out_stream->time_base,
-                                           (AVRounding) (AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX));
+                                           (AVRounding)(AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX));
                 pkt.duration = av_rescale_q(pkt.duration, in_stream->time_base,
                                             out_stream->time_base);
                 pkt.pos = -1;
