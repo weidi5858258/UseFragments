@@ -155,8 +155,9 @@ public class PlayerService extends Service {
     public static final int COMMAND_HIDE_WINDOW = 2;
     public static final int COMMAND_STOP_SERVICE = 3;
     public static final int COMMAND_RESTART_LOAD_CONTENTS = 4;
-    public static final int COMMAND_HANDLE_LANDSCAPE_SCREEN = 4;
-    public static final int COMMAND_HANDLE_PORTRAIT_SCREEN = 5;
+    public static final int COMMAND_HANDLE_LANDSCAPE_SCREEN = 5;
+    public static final int COMMAND_HANDLE_PORTRAIT_SCREEN = 6;
+    public static final int COMMAND_TEST = 7;
 
     // 测试时使用
     private void internalStartCommand(Intent intent, int flags, int startId) {

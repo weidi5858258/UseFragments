@@ -73,11 +73,9 @@ import static com.weidi.usefragments.business.video_player.FFMPEG.DO_SOMETHING_C
 import static com.weidi.usefragments.business.video_player.FFMPEG.USE_MODE_AAC_H264;
 import static com.weidi.usefragments.business.video_player.FFMPEG.USE_MODE_AUDIO_VIDEO;
 import static com.weidi.usefragments.business.video_player.FFMPEG.USE_MODE_MEDIA;
-import static com.weidi.usefragments.business.video_player.FFMPEG.USE_MODE_MEDIA_4K;
 import static com.weidi.usefragments.business.video_player.FFMPEG.USE_MODE_ONLY_AUDIO;
 import static com.weidi.usefragments.business.video_player.FFMPEG.VOLUME_MUTE;
 import static com.weidi.usefragments.business.video_player.FFMPEG.VOLUME_NORMAL;
-import static com.weidi.usefragments.business.video_player.FFMPEG.DO_SOMETHING_CODE_videoHandleRender;
 import static com.weidi.usefragments.service.DownloadFileService.PREFERENCES_NAME;
 
 public class PlayerWrapper {
@@ -1406,6 +1404,14 @@ public class PlayerWrapper {
         mThreadHandler.sendEmptyMessage(MSG_LOAD_CONTENTS);
     }
 
+    private boolean mIsTesting = false;
+
+    public void startTest() {
+        mIsTesting = true;
+        mCouldPlaybackPathList.clear();
+        mCouldPlaybackPathList.add("");
+    }
+
     private void onReady() {
         if (!mIsLocal) {
             mLoadingView.setVisibility(View.VISIBLE);
@@ -1526,6 +1532,10 @@ public class PlayerWrapper {
             startPlayback();
         } else {
             MyToast.show("Safe Exit");
+            if (mIsTesting) {
+
+                return;
+            }
             // 播放结束
             if (mService != null) {
                 if (!mService.needToPlaybackOtherVideo()) {
