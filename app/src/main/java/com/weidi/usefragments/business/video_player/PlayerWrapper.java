@@ -1079,6 +1079,11 @@ public class PlayerWrapper {
         }
         MLog.d(TAG, "Callback.MSG_ON_CHANGE_WINDOW x: " + x + " y: " + y);
 
+        // 控制面板高度
+        mControllerPanelLayoutHeight = mControllerPanelLayout.getHeight();
+        MLog.d(TAG, "Callback.MSG_ON_CHANGE_WINDOW mControllerPanelLayoutHeight: " +
+                mControllerPanelLayoutHeight);
+
         // 暂停按钮高度
         int pauseRlHeight = getPauseRlHeight();
 
@@ -1090,11 +1095,6 @@ public class PlayerWrapper {
         mScreenHeight = displayMetrics.heightPixels;
         MLog.d(TAG, "Callback.MSG_ON_CHANGE_WINDOW                 mScreenWidth: " +
                 mScreenWidth + " mScreenHeight: " + mScreenHeight);
-
-        // 控制面板高度
-        mControllerPanelLayoutHeight = mControllerPanelLayout.getHeight();
-        MLog.d(TAG, "Callback.MSG_ON_CHANGE_WINDOW mControllerPanelLayoutHeight: " +
-                mControllerPanelLayoutHeight);
 
         // 生产,消耗进度条高度
         mProgressBarLayoutHeight = mProgressBarLayout.getHeight();
@@ -1180,8 +1180,12 @@ public class PlayerWrapper {
                         return;
                     }
                 }
-                // 音乐 或者 mMediaDuration > 0
-                updateRootViewLayout(mScreenWidth, mControllerPanelLayoutHeight + 1, x, y);
+                if (mMediaDuration > 0) {
+                    // 音乐 或者 mMediaDuration > 0
+                    updateRootViewLayout(mScreenWidth, mControllerPanelLayoutHeight + 1, x, y);
+                } else {
+                    updateRootViewLayout(mScreenWidth, pauseRlHeight + 1, x, y);
+                }
             }
         }
     }
@@ -1485,6 +1489,10 @@ public class PlayerWrapper {
             }
             if (!mIsLocal) {
                 mProgressBarLayout.setVisibility(View.VISIBLE);
+            }
+            if (mVideoWidth == 0 && mVideoHeight == 0) {
+                mType = "audio/";
+                mControllerPanelLayout.setVisibility(View.VISIBLE);
             }
         } else if (mType.startsWith("audio/")) {
             mControllerPanelLayout.setVisibility(View.VISIBLE);
@@ -1864,7 +1872,22 @@ public class PlayerWrapper {
     }
 
     private void clickThree() {
-        clickFour();
+        if (mFFMPEGPlayer != null) {
+            if (!Boolean.parseBoolean(mFFMPEGPlayer.onTransact(
+                    DO_SOMETHING_CODE_isRunning, null))) {
+                if (TextUtils.isEmpty(mType)
+                        || mType.startsWith("video/")) {
+                    mType = "video/";
+                } else if (mType.startsWith("audio/")) {
+                    mType = "audio/";
+                }
+                EventBusUtils.post(
+                        PlayerService.class,
+                        PlayerService.COMMAND_SHOW_WINDOW,
+                        new Object[]{mPath, mType});
+                return;
+            }
+        }
     }
 
     private boolean handleLandscapeScreenFlag = false;

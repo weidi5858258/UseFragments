@@ -363,6 +363,12 @@ namespace alexander_media {
         if (isInterrupted) {
             return 1;
         }
+        if (audioWrapper == nullptr
+            || audioWrapper->father == nullptr
+            || videoWrapper == nullptr
+            || videoWrapper->father == nullptr) {
+            return 0;
+        }
         // 必须通过传参方式进行判断,不能用全局变量判断
         AudioWrapper *audioWrapper = (AudioWrapper *) opaque;
         endReadTime = av_gettime_relative();
@@ -1264,13 +1270,6 @@ namespace alexander_media {
         }
         LOGW("---------------------------------\n");
 
-        if (frameRate <= 23) {
-            TIME_DIFFERENCE = 0.000600;
-        } else if (frameRate == 24) {
-            TIME_DIFFERENCE = 0.500000;
-        }
-        LOGI("createSwsContext()    TIME_DIFFERENCE    : %lf\n", TIME_DIFFERENCE);
-
         LOGI("createSwsContext() end\n");
         return 0;
     }
@@ -1351,12 +1350,12 @@ namespace alexander_media {
                 copyAVPacket->pts - pts_start_from[copyAVPacket->stream_index],
                 in_stream->time_base,
                 out_stream->time_base,
-                (AVRounding)(AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX));
+                (AVRounding) (AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX));
         copyAVPacket->dts = av_rescale_q_rnd(
                 copyAVPacket->dts - dts_start_from[copyAVPacket->stream_index],
                 in_stream->time_base,
                 out_stream->time_base,
-                (AVRounding)(AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX));
+                (AVRounding) (AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX));
 
         if (copyAVPacket->pts < 0) {
             copyAVPacket->pts = 0;
@@ -1419,13 +1418,13 @@ namespace alexander_media {
         copyAVPacket->pts = av_rescale_q_rnd(copyAVPacket->pts,
                                              wrapper->avStream->time_base,
                                              time_base,
-                                             (AVRounding)(AV_ROUND_NEAR_INF |
-                                                          AV_ROUND_PASS_MINMAX));
+                                             (AVRounding) (AV_ROUND_NEAR_INF |
+                                                           AV_ROUND_PASS_MINMAX));
         copyAVPacket->dts = av_rescale_q_rnd(copyAVPacket->dts,
                                              wrapper->avStream->time_base,
                                              time_base,
-                                             (AVRounding)(AV_ROUND_NEAR_INF |
-                                                          AV_ROUND_PASS_MINMAX));
+                                             (AVRounding) (AV_ROUND_NEAR_INF |
+                                                           AV_ROUND_PASS_MINMAX));
         copyAVPacket->duration = av_rescale_q(copyAVPacket->duration,
                                               wrapper->avStream->time_base,
                                               time_base);
@@ -1733,6 +1732,35 @@ namespace alexander_media {
         return NULL;
     }
 
+    //
+    void hope_to_get_a_good_result() {
+        TIME_DIFFERENCE = averageTimeDiff + 0.050000;
+        LOGI("handleVideoDataImpl() frameRate: %d averageTimeDiff: %lf\n",
+             frameRate, averageTimeDiff);
+        /*if (frameRate >= 24) {
+        }*/
+        if (averageTimeDiff > 0.300000 && averageTimeDiff <= 0.400000) {
+            TIME_DIFFERENCE = 0.200000;
+        } /*else if (averageTimeDiff > 0.400000 && averageTimeDiff <= 0.500000) {
+            TIME_DIFFERENCE = 0.300000;
+        } else if (averageTimeDiff > 0.500000 && averageTimeDiff <= 0.700000) {
+            TIME_DIFFERENCE = 0.400000;
+        } else if (averageTimeDiff > 0.700000) {
+            TIME_DIFFERENCE = 0.300000;
+        }*/ else if (averageTimeDiff > 0.400000) {
+            TIME_DIFFERENCE = 0.300000;
+        }
+        /***
+         0.026983 0.037722 0.027684 0.018936 0.023516 0.035012 0.037547 0.029821 0.039632
+         0.014149 0.035779 0.028610 0.037615 0.030690 0.024403 0.018768 0.029898 0.027595
+         0.216413 0.266579 0.317310
+         */
+        if (TIME_DIFFERENCE < 0.100000) {
+            TIME_DIFFERENCE = 0.100000;
+        }
+        LOGI("handleVideoDataImpl() TIME_DIFFERENCE: %lf\n", TIME_DIFFERENCE);
+    }
+
     int handleAudioDataImpl(AVStream *stream, AVFrame *decodedAVFrame) {
         // 转换音频
         int ret = swr_convert(
@@ -1856,7 +1884,6 @@ namespace alexander_media {
             if (runCounts < RUN_COUNTS) {
                 if (tempTimeDifference > 0) {
                     timeDiff[runCounts++] = tempTimeDifference;
-                    //LOGI("handleVideoDataImpl() video - audio      : %lf\n", tempTimeDifference);
                 }
             } else if (runCounts == RUN_COUNTS) {
                 runCounts++;
@@ -1871,22 +1898,8 @@ namespace alexander_media {
                     totleTimeDiff += timeDiff[i];
                 }
                 averageTimeDiff = totleTimeDiff / RUN_COUNTS;
-                LOGI("handleVideoDataImpl() frameRate: %d averageTimeDiff: %lf\n",
-                     frameRate, averageTimeDiff);
-                if (frameRate >= 24) {
-                    if (averageTimeDiff > 0.300000 && averageTimeDiff <= 0.400000) {
-                        TIME_DIFFERENCE = 0.200000;
-                    } /*else if (averageTimeDiff > 0.400000 && averageTimeDiff <= 0.500000) {
-                        TIME_DIFFERENCE = 0.300000;
-                    } else if (averageTimeDiff > 0.500000 && averageTimeDiff <= 0.700000) {
-                        TIME_DIFFERENCE = 0.400000;
-                    } else if (averageTimeDiff > 0.700000) {
-                        TIME_DIFFERENCE = 0.300000;
-                    }*/ else if (averageTimeDiff > 0.400000) {
-                        TIME_DIFFERENCE = 0.300000;
-                    }
-                }
-                LOGI("handleVideoDataImpl() TIME_DIFFERENCE: %lf\n", TIME_DIFFERENCE);
+                //
+                hope_to_get_a_good_result();
             }
             if (tempTimeDifference < 0) {
                 // 正常情况下videoTimeDifference比audioTimeDifference大一些
@@ -2564,7 +2577,8 @@ namespace alexander_media {
                 } else if (wrapper->type == TYPE_VIDEO && preVideoAVFrame->pkt_size > 0) {
                     av_frame_ref(decodedAVFrame, preVideoAVFrame);
                     //http://101.71.255.229:6610/zjhs/2/10106/index.m3u8?virtualDomain=zjhs.live_hls.zte.com
-                    LOGW("handleData() video av_frame_ref\n");
+                    //http://101.71.255.229:6610/zjhs/2/10109/index.m3u8?virtualDomain=zjhs.live_hls.zte.com
+                    //LOGW("handleData() video av_frame_ref\n");
                 } else {
                     continue;
                 }
@@ -2972,14 +2986,14 @@ namespace alexander_media {
             fgetpos(fq, &post_end);
             // 计算文件大小
             fileLength = post_end - post_head;
-            LOGI("initPlayer()    fileLength: %.0lf\n", fileLength);
+            LOGI("initPlayer()      fileLength: %.0lf\n", fileLength);
             fclose(fp);
             fp = nullptr;
             fq = nullptr;
         }
 
         mediaDuration = (long long) (avFormatContext->duration / AV_TIME_BASE);
-        LOGI("initPlayer() mediaDuration: %lld\n", mediaDuration);
+        LOGI("initPlayer()   mediaDuration: %lld\n", mediaDuration);
         if (avFormatContext->duration != AV_NOPTS_VALUE) {
             // 得到的是秒数
             mediaDuration = (long long) ((avFormatContext->duration + 5000) / AV_TIME_BASE);
@@ -2991,8 +3005,15 @@ namespace alexander_media {
             mins %= 60;
             // 00:54:16
             // 单位: 秒
-            LOGI("initPlayer() media seconds: %lld\n", mediaDuration);
-            LOGI("initPlayer() media          %02lld:%02lld:%02lld\n", hours, mins, seconds);
+            LOGI("initPlayer()   media seconds: %lld %02lld:%02lld:%02lld\n",
+                 mediaDuration, hours, mins, seconds);
+        }
+
+        if (frameRate <= 23) {
+            TIME_DIFFERENCE = 0.000600;
+        } else {
+            //} else if (frameRate == 24) {
+            TIME_DIFFERENCE = 0.500000;
         }
 
         // 2K 4K
@@ -3662,9 +3683,9 @@ namespace alexander_media {
                 }
 
                 pkt.pts = av_rescale_q_rnd(pkt.pts, in_stream->time_base, out_stream->time_base,
-                                           (AVRounding)(AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX));
+                                           (AVRounding) (AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX));
                 pkt.dts = av_rescale_q_rnd(pkt.dts, in_stream->time_base, out_stream->time_base,
-                                           (AVRounding)(AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX));
+                                           (AVRounding) (AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX));
                 pkt.duration = av_rescale_q(pkt.duration, in_stream->time_base,
                                             out_stream->time_base);
                 pkt.pos = -1;

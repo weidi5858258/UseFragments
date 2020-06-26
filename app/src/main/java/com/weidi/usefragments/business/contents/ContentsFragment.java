@@ -573,9 +573,14 @@ public class ContentsFragment extends BaseFragment {
                     // 当不滚动时
                     switch (newState) {
                         case RecyclerView.SCROLL_STATE_IDLE:
-                            int lastVisibleItem = mLayoutManager.getLastVisiblePosition();
+                            int itemCount = mLayoutManager.getItemCount();
+                            int visibleItemCount = mLayoutManager.getVisibleItemCount();
+                            //int firstVisiblePosition = mLayoutManager.getFirstVisiblePosition();
+                            int lastVisiblePosition = mLayoutManager.getLastVisiblePosition();
                             if (isSlidingToLast
-                                    && lastVisibleItem == (mLayoutManager.getItemCount() - 1)) {
+                                    && lastVisiblePosition >= itemCount - visibleItemCount
+                                    && lastVisiblePosition <= itemCount - 1) {
+                                //&& lastVisiblePosition == (mLayoutManager.getItemCount() - 1)) {
                                 MLog.d(TAG, "onScrollStateChanged() SCROLL_STATE_IDLE");
                                 // 加载更多功能的代码
                                 mContentsMap.clear();
