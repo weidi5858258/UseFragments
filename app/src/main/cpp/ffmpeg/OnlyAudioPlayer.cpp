@@ -53,12 +53,8 @@ namespace alexander_only_audio {
     void initAV() {
         LOGD("initAV() start\n");
         av_register_all();
-        // 用于从网络接收数据,如果不是网络接收数据,可不用（如本例可不用）
         avcodec_register_all();
-        // 注册复用器和编解码器,所有的使用ffmpeg,首先必须调用这个函数
         avformat_network_init();
-        // 注册设备的函数,如用获取摄像头数据或音频等,需要此函数先注册
-        // avdevice_register_all();
         LOGD("initAV() version: %s\n", av_version_info());
         LOGD("initAV() end\n");
     }
@@ -71,10 +67,11 @@ namespace alexander_only_audio {
         wrapper->type = TYPE_AUDIO;
         if (isLocal) {
             wrapper->list1LimitCounts = MAX_AVPACKET_COUNT_AUDIO_LOCAL;
+            wrapper->list2LimitCounts = MAX_AVPACKET_COUNT_AUDIO_LOCAL;
         } else {
             wrapper->list1LimitCounts = MAX_AVPACKET_COUNT_AUDIO_HTTP;
+            wrapper->list2LimitCounts = MAX_AVPACKET_COUNT;
         }
-        wrapper->list2LimitCounts = MAX_AVPACKET_COUNT;
         LOGD("initAudio() list1LimitCounts: %d\n", wrapper->list1LimitCounts);
         LOGD("initAudio() list2LimitCounts: %d\n", wrapper->list2LimitCounts);
         wrapper->duration = -1;
@@ -547,48 +544,31 @@ namespace alexander_only_audio {
     }
 
     int handleAudioDataImpl(AVStream *stream, AVFrame *decodedAVFrame) {
-        // 转换音频
         int ret = swr_convert(
                 audioWrapper->swrContext,
-                // 输出缓冲区
                 &audioWrapper->father->outBuffer1,
-                // 每通道采样的可用空间量
                 MAX_AUDIO_FRAME_SIZE,
-                // 输入缓冲区
                 (const uint8_t **) decodedAVFrame->data,
-                // 一个通道中可用的输入采样数量
                 decodedAVFrame->nb_samples);
         if (ret >= 0) {
             if (!audioWrapper->father->isStarted) {
                 audioWrapper->father->isStarted = true;
                 LOGW("handleAudioDataImpl() 音频已经准备好,开始播放!!!\n");
-                // 回调(通知到java层)
                 onPlayed();
             }
 
             double audioPts = decodedAVFrame->pts * av_q2d(stream->time_base);
-            //LOGD("handleData() audio audioTimeDifference: %lf\n", audioTimeDifference);
-
-            //int64_t relativeTime = av_gettime_relative();
-            //LOGD("handleAudioDataImpl() audio relativeTime: %d\n", (int) relativeTime);
-
-            // 显示时间进度
             curProgress = (long) audioPts;
             if (curProgress > preProgress) {
                 preProgress = curProgress;
                 onProgressUpdated(curProgress);
             }
 
-            // 获取给定音频参数所需的缓冲区大小
             int out_buffer_size = av_samples_get_buffer_size(
                     NULL,
-                    // 输出的声道个数
                     audioWrapper->dstNbChannels,
-                    // 一个通道中音频采样数量
                     decodedAVFrame->nb_samples,
-                    // 输出采样格式16bit
                     audioWrapper->dstAVSampleFormat,
-                    // 缓冲区大小对齐（0 = 默认值,1 = 不对齐）
                     1);
 
             write(audioWrapper->father->outBuffer1, 0, out_buffer_size);
@@ -961,25 +941,23 @@ namespace alexander_only_audio {
     void setJniParameters(JNIEnv *env, const char *filePath, jobject surfaceJavaObject) {
         isLocal = false;
         memset(inFilePath, '\0', sizeof(inFilePath));
-//        const char *src = "/storage/emulated/0/Movies/权力的游戏第三季05.mp4";
-//        const char *src = "http://192.168.0.112:8080/tomcat_video/game_of_thrones/game_of_thrones_season_1/01.mp4";
-//        av_strlcpy(inVideoFilePath, src, sizeof(inVideoFilePath));
         av_strlcpy(inFilePath, filePath, sizeof(inFilePath));
         LOGI("setJniParameters() inVideoFilePath: %s", inFilePath);
+
         char *result = strstr(inFilePath, "http://");
         if (result == NULL) {
             result = strstr(inFilePath, "https://");
             if (result == NULL) {
-                result = strstr(inFilePath, "HTTP://");
+                result = strstr(inFilePath, "rtmp://");
                 if (result == NULL) {
-                    result = strstr(inFilePath, "HTTPS://");
+                    result = strstr(inFilePath, "rtsp://");
                     if (result == NULL) {
                         isLocal = true;
                     }
                 }
             }
         }
-        LOGI("setJniParameters() isLocal   : %d", isLocal);
+        LOGI("setJniParameters()         isLocal: %d", isLocal);
     }
 
     int play() {

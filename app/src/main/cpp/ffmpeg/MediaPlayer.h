@@ -84,6 +84,7 @@ extern "C" {
 }
 #endif
 
+#include <pthread.h>
 #include "ffmpeg.h"
 #include "../include/Log.h"
 

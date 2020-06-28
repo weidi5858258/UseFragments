@@ -627,6 +627,12 @@ public class ContentsFragment extends BaseFragment {
         switch (v.getId()) {
             case R.id.playback_btn:
                 String videoPlaybackPath = mAddressET.getText().toString().trim();
+                if (TextUtils.isEmpty(videoPlaybackPath)) {
+                    videoPlaybackPath = mPreferences.getString(PLAYBACK_ADDRESS, null);
+                }
+                if (TextUtils.isEmpty(videoPlaybackPath)) {
+                    return;
+                }
                 String newPath = videoPlaybackPath.toLowerCase();
                 if (!newPath.startsWith("http://")
                         && !newPath.startsWith("https://")

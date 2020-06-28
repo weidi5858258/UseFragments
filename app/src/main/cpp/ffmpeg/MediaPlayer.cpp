@@ -203,7 +203,6 @@ pthread_join(videoHandleDataThread, NULL);
  */
 
 #include <string>
-#include <pthread.h>
 #include "MediaPlayer.h"
 
 #define LOG "player_alexander"
@@ -871,13 +870,9 @@ namespace alexander_media {
             // 先通过AVCodecParameters找到AVCodec
             AVCodecID codecID = audioWrapper->father->avCodecParameters->codec_id;
             LOGD("findAndOpenAVCodecForAudio() codecID: %d\n", codecID);
-            // audio是没有下面这些东西的
             switch (codecID) {
                 case AV_CODEC_ID_FLAC: {
                     LOGD("findAndOpenAVCodecForAudio() AV_CODEC_ID_FLAC\n");
-                    // 硬解码264
-                    /*audioWrapper->father->decoderAVCodec = avcodec_find_decoder_by_name(
-                            "h264_mediacodec");*/
                     break;
                 }
                 case AV_CODEC_ID_AAC: {
@@ -1737,19 +1732,29 @@ namespace alexander_media {
         TIME_DIFFERENCE = averageTimeDiff + 0.050000;
         LOGI("handleVideoDataImpl() frameRate: %d averageTimeDiff: %lf\n",
              frameRate, averageTimeDiff);
-        /*if (frameRate >= 24) {
-        }*/
-        if (averageTimeDiff > 0.300000 && averageTimeDiff <= 0.400000) {
-            TIME_DIFFERENCE = 0.200000;
-        } /*else if (averageTimeDiff > 0.400000 && averageTimeDiff <= 0.500000) {
-            TIME_DIFFERENCE = 0.300000;
-        } else if (averageTimeDiff > 0.500000 && averageTimeDiff <= 0.700000) {
+
+        if (averageTimeDiff > 1.000000) {
+            TIME_DIFFERENCE = 0.900000;
+        } else if (averageTimeDiff > 0.900000 && averageTimeDiff < 1.000000) {
+            TIME_DIFFERENCE = 0.800000;
+        } else if (averageTimeDiff > 0.800000 && averageTimeDiff < 0.900000) {
+            TIME_DIFFERENCE = 0.700000;
+        } else if (averageTimeDiff > 0.700000 && averageTimeDiff < 0.800000) {
+            TIME_DIFFERENCE = 0.600000;
+        } else if (averageTimeDiff > 0.600000 && averageTimeDiff < 0.700000) {
+            TIME_DIFFERENCE = 0.500000;
+        } else if (averageTimeDiff > 0.500000 && averageTimeDiff < 0.600000) {
             TIME_DIFFERENCE = 0.400000;
-        } else if (averageTimeDiff > 0.700000) {
-            TIME_DIFFERENCE = 0.300000;
-        }*/ else if (averageTimeDiff > 0.400000) {
-            TIME_DIFFERENCE = 0.300000;
+        } else if (averageTimeDiff > 0.400000 && averageTimeDiff < 0.500000) {
+            TIME_DIFFERENCE = 0.300000;//
+        } else if (averageTimeDiff > 0.300000 && averageTimeDiff < 0.400000) {
+            TIME_DIFFERENCE = 0.200000;//
+        } else if (averageTimeDiff > 0.200000 && averageTimeDiff < 0.300000) {
+            TIME_DIFFERENCE = 0.100000;
+        } else if (averageTimeDiff > 0.100000 && averageTimeDiff < 0.200000) {
+            TIME_DIFFERENCE = averageTimeDiff;
         }
+
         /***
          0.026983 0.037722 0.027684 0.018936 0.023516 0.035012 0.037547 0.029821 0.039632
          0.014149 0.035779 0.028610 0.037615 0.030690 0.024403 0.018768 0.029898 0.027595
@@ -1898,7 +1903,7 @@ namespace alexander_media {
                     totleTimeDiff += timeDiff[i];
                 }
                 averageTimeDiff = totleTimeDiff / RUN_COUNTS;
-                //
+                // 希望得到一个好的TIME_DIFFERENCE值
                 hope_to_get_a_good_result();
             }
             if (tempTimeDifference < 0) {
@@ -1913,14 +1918,16 @@ namespace alexander_media {
                 // 不好的现象.为什么会出现这种情况还不知道?
                 //LOGE("handleVideoDataImpl() audioTimeDifference: %lf\n", audioPts);
                 //LOGE("handleVideoDataImpl() videoTimeDifference: %lf\n", videoPts);
-                //LOGE("handleVideoDataImpl() video - audio      : %lf\n", tempTimeDifference);
+                LOGE("handleVideoDataImpl() [video - audio]: %lf\n", tempTimeDifference);
                 videoPts = audioPts + averageTimeDiff;
                 //LOGE("handleVideoDataImpl() videoTimeDifference: %lf\n", videoPts);
             }
             // 如果videoTimeDifference比audioTimeDifference大出了一定的范围
             // 那么说明视频播放快了,应等待音频
             while (videoPts - audioPts > TIME_DIFFERENCE) {
-                if (videoWrapper->father->isPausedForSeek
+                if (videoWrapper->father->isPausedForUser
+                    || videoWrapper->father->isPausedForCache
+                    || videoWrapper->father->isPausedForSeek
                     || !audioWrapper->father->isHandling
                     || !videoWrapper->father->isHandling) {
                     LOGI("handleVideoDataImpl() TIME_DIFFERENCE return\n");
@@ -1931,68 +1938,60 @@ namespace alexander_media {
         }
 
         // 渲染画面
-        if (videoWrapper->father->isHandling) {
-            // startVideoLockedTime = av_gettime_relative();
+        // startVideoLockedTime = av_gettime_relative();
 
-            // 3.lock锁定下一个即将要绘制的Surface
-            //LOGW("handleVideoDataImpl() ANativeWindow_lock 1\n");
-            ANativeWindow_lock(pANativeWindow, &mANativeWindow_Buffer, NULL);
-            //LOGW("handleVideoDataImpl() ANativeWindow_lock 2\n");
+        // 3.lock锁定下一个即将要绘制的Surface
+        //LOGW("handleVideoDataImpl() ANativeWindow_lock 1\n");
+        ANativeWindow_lock(pANativeWindow, &mANativeWindow_Buffer, NULL);
+        //LOGW("handleVideoDataImpl() ANativeWindow_lock 2\n");
 
-            // 把decodedAVFrame的数据经过格式转换后保存到rgbAVFrame中
-            sws_scale(videoWrapper->swsContext,
-                      (uint8_t const *const *) decodedAVFrame->data,
-                      decodedAVFrame->linesize,
-                      0,
-                      videoWrapper->srcHeight,
-                      videoWrapper->rgbAVFrame->data,
-                      videoWrapper->rgbAVFrame->linesize);
+        // 把decodedAVFrame的数据经过格式转换后保存到rgbAVFrame中
+        sws_scale(videoWrapper->swsContext,
+                  (uint8_t const *const *) decodedAVFrame->data,
+                  decodedAVFrame->linesize,
+                  0,
+                  videoWrapper->srcHeight,
+                  videoWrapper->rgbAVFrame->data,
+                  videoWrapper->rgbAVFrame->linesize);
 
-            // 这段代码非常关键,还看不懂啥意思
-            // 把rgbAVFrame里面的数据复制到outBuffer中就能渲染画面了
-            uint8_t *src = videoWrapper->rgbAVFrame->data[0];
-            // 一行的长度
-            int srcStride = videoWrapper->rgbAVFrame->linesize[0];
-            uint8_t *dst = (uint8_t *) mANativeWindow_Buffer.bits;
-            int dstStride = mANativeWindow_Buffer.stride * 4;
-            // 由于window的stride和帧的stride不同,因此需要逐行复制
-            for (int h = 0; h < videoWrapper->srcHeight; h++) {
-                /*if (videoWrapper->father->isPausedForSeek
-                    || !videoWrapper->father->isHandling) {
-                    LOGI("handleVideoDataImpl() memcpy return\n");
-                    ANativeWindow_unlockAndPost(pANativeWindow);
-                    return 0;
-                }*/
-                memcpy(dst + h * dstStride, src + h * srcStride, srcStride);
-            }
-
-            ////////////////////////////////////////////////////////
-
-            // timeDifference = 0.040000
-            // 单位: 毫秒
-            int tempSleep = ((int) ((videoPts - preVideoPts) * 1000)) - 30;
-            if (videoSleepTime != tempSleep) {
-                videoSleepTime = tempSleep;
-                //LOGW("handleVideoDataImpl() videoSleepTime     : %d\n", videoSleepTime);
-            }
-            if (videoSleepTime < 12 && videoSleepTime > 0) {
-                videoSleep(videoSleepTime);
-            } else {
-                if (videoSleepTime > 0) {
-                    // 好像是个比较合理的值
-                    videoSleep(11);
-                }
-                // videoSleepTime <= 0时不需要sleep
-            }
-            preVideoPts = videoPts;
-
-            ////////////////////////////////////////////////////////
-
-            // 6.unlock绘制
-            //LOGW("handleVideoDataImpl() ANativeWindow_unlockAndPost 1\n");
-            ANativeWindow_unlockAndPost(pANativeWindow);
-            //LOGW("handleVideoDataImpl() ANativeWindow_unlockAndPost 2\n");
+        // 这段代码非常关键,还看不懂啥意思
+        // 把rgbAVFrame里面的数据复制到outBuffer中就能渲染画面了
+        uint8_t *src = videoWrapper->rgbAVFrame->data[0];
+        // 一行的长度
+        int srcStride = videoWrapper->rgbAVFrame->linesize[0];
+        uint8_t *dst = (uint8_t *) mANativeWindow_Buffer.bits;
+        int dstStride = mANativeWindow_Buffer.stride * 4;
+        // 由于window的stride和帧的stride不同,因此需要逐行复制
+        for (int h = 0; h < videoWrapper->srcHeight; h++) {
+            memcpy(dst + h * dstStride, src + h * srcStride, srcStride);
         }
+
+        ////////////////////////////////////////////////////////
+
+        // timeDifference = 0.040000
+        // 单位: 毫秒
+        int tempSleep = ((int) ((videoPts - preVideoPts) * 1000)) - 30;
+        if (videoSleepTime != tempSleep) {
+            videoSleepTime = tempSleep;
+            //LOGW("handleVideoDataImpl() videoSleepTime     : %d\n", videoSleepTime);
+        }
+        if (videoSleepTime < 12 && videoSleepTime > 0) {
+            videoSleep(videoSleepTime);
+        } else {
+            if (videoSleepTime > 0) {
+                // 好像是个比较合理的值
+                videoSleep(11);
+            }
+            // videoSleepTime <= 0时不需要sleep
+        }
+        preVideoPts = videoPts;
+
+        ////////////////////////////////////////////////////////
+
+        // 6.unlock绘制
+        //LOGW("handleVideoDataImpl() ANativeWindow_unlockAndPost 1\n");
+        ANativeWindow_unlockAndPost(pANativeWindow);
+        //LOGW("handleVideoDataImpl() ANativeWindow_unlockAndPost 2\n");
     }
 
     int handleDataClose(Wrapper *wrapper) {
@@ -3012,7 +3011,6 @@ namespace alexander_media {
         if (frameRate <= 23) {
             TIME_DIFFERENCE = 0.000600;
         } else {
-            //} else if (frameRate == 24) {
             TIME_DIFFERENCE = 0.500000;
         }
 

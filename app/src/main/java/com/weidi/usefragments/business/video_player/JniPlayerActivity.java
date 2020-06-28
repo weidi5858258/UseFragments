@@ -275,7 +275,7 @@ public class JniPlayerActivity extends BaseActivity {
         // 在本应用开启当前Activity时能得到这个路径,从其他应用打开时为null
         mPath = intent.getStringExtra(CONTENT_PATH);
         if (TextUtils.isEmpty(mPath)) {
-            MLog.d(TAG, "internalCreate() mPath is null");
+            MLog.d(TAG, "internalCreate()  mPath: null");
             /***
              1.
              uri : content://media/external/video/media/272775
