@@ -4,7 +4,7 @@
 
 #include "OnlyVideoPlayer.h"
 
-#define LOG "player_alexander"
+#define LOG "player_alexander_only_video"
 
 extern AVFormatContext *avFormatContext;
 extern struct VideoWrapper *videoWrapper;

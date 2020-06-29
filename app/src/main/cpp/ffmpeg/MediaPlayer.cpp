@@ -205,7 +205,7 @@ pthread_join(videoHandleDataThread, NULL);
 #include <string>
 #include "MediaPlayer.h"
 
-#define LOG "player_alexander"
+#define LOG "player_alexander_media"
 
 char inFilePath[2048];
 AVFormatContext *avFormatContext = NULL;

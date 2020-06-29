@@ -5,7 +5,7 @@
 #include <string>
 #include "AudioVideoPlayer.h"
 
-#define LOG "player_alexander"
+#define LOG "player_alexander_audio_video"
 
 namespace alexander_audio_video {
 

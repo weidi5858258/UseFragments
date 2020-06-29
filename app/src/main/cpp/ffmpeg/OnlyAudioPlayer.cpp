@@ -4,7 +4,7 @@
 
 #include "OnlyAudioPlayer.h"
 
-#define LOG "player_alexander"
+#define LOG "player_alexander_only_audio"
 
 extern AVFormatContext *avFormatContext;
 extern struct AudioWrapper *audioWrapper;

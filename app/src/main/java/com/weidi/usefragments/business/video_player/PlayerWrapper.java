@@ -1500,6 +1500,7 @@ public class PlayerWrapper {
                 //mControllerPanelLayout.setVisibility(View.INVISIBLE);
             }*/
             if (!mIsLocal && mVideoWidth != 0 && mVideoHeight != 0) {
+                mProgressBarLayout.setVisibility(View.VISIBLE);
                 boolean show = mSP.getBoolean(PLAYBACK_SHOW_CONTROLLERPANELLAYOUT, false);
                 if (show) {
                     mControllerPanelLayout.setVisibility(View.VISIBLE);
@@ -1507,10 +1508,22 @@ public class PlayerWrapper {
                     mControllerPanelLayout.setVisibility(View.INVISIBLE);
                 }
             }
+
             if (mVideoWidth == 0 && mVideoHeight == 0) {
                 mType = "audio/";
                 mControllerPanelLayout.setVisibility(View.VISIBLE);
             }
+
+            if (!mCouldPlaybackPathList.contains(mPath)) {
+                mCouldPlaybackPathList.add(mPath);
+            }
+            SharedPreferences.Editor edit = mSP.edit();
+            // 保存播放地址
+            edit.putString(PLAYBACK_ADDRESS, mPath);
+            // 开始播放设置为false,表示初始化状态
+            edit.putBoolean(PLAYBACK_NORMAL_FINISH, false);
+            edit.putString(PLAYBACK_MEDIA_TYPE, mType);
+            edit.commit();
         }
 
         if (mIsPhoneDevice) {
@@ -1530,20 +1543,6 @@ public class PlayerWrapper {
         } else {
             MLog.i(TAG, "Callback.MSG_ON_CHANGE_WINDOW 电视机");
             handlePortraitScreenWithTV();
-        }
-
-        if (TextUtils.isEmpty(mType)
-                || mType.startsWith("video/")) {
-            if (!mCouldPlaybackPathList.contains(mPath)) {
-                mCouldPlaybackPathList.add(mPath);
-            }
-            SharedPreferences.Editor edit = mSP.edit();
-            // 保存播放地址
-            edit.putString(PLAYBACK_ADDRESS, mPath);
-            // 开始播放设置为false,表示初始化状态
-            edit.putBoolean(PLAYBACK_NORMAL_FINISH, false);
-            edit.putString(PLAYBACK_MEDIA_TYPE, mType);
-            edit.commit();
         }
     }
 

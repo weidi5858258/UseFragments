@@ -6,7 +6,7 @@
 #include <pthread.h>
 #include "MediaPlayerFor4K.h"
 
-#define LOG "player_alexander_4k"
+#define LOG "player_alexander_media_4k"
 
 extern char inFilePath[2048];
 extern AVFormatContext *avFormatContext;
