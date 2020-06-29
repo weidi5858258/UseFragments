@@ -5,6 +5,7 @@ import android.app.Fragment;
 import android.content.Context;
 import android.content.Intent;
 import android.content.res.Configuration;
+import android.content.res.Resources;
 import android.graphics.PixelFormat;
 import android.os.Build;
 import android.os.Bundle;
@@ -270,6 +271,21 @@ public abstract class BaseActivity extends Activity {
             }
         }
         return null;
+    }
+
+    protected int getStatusBarHeight() {
+        int height = 0;
+        Resources resources = mContext.getResources();
+        int resourceId = resources.getIdentifier(
+                "status_bar_height",
+                "dimen",
+                "android");
+        if (resourceId > 0) {
+            height = resources.getDimensionPixelSize(resourceId);
+        }
+        // getStatusBarHeight() height: 48 95
+        MLog.d(TAG, "getStatusBarHeight() height: " + height);
+        return height;
     }
 
     protected String printThis() {

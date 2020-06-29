@@ -756,6 +756,7 @@ public class ContentsFragment extends BaseFragment {
         } else {
             // 需要加载更多的数据
             int needToLoadCount = position - mLayoutManager.getItemCount();
+            needToLoadCount += ONE_TIME_ADD_COUNT;
             mContentsMap.clear();
             int i = 0;
             int addCount = 0;

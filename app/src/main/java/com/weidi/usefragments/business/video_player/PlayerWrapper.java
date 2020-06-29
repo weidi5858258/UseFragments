@@ -103,6 +103,9 @@ public class PlayerWrapper {
     // 保存窗口位置
     public static final String PLAYBACK_WINDOW_POSITION = "playback_window_position";
     public static final String PLAYBACK_WINDOW_POSITION_TAG = "@@@@@@@@@@";
+    // 显示控制面板(true表示显示,false表示隐藏)
+    public static final String PLAYBACK_SHOW_CONTROLLERPANELLAYOUT =
+            "playback_show_controllerpanellayout";
 
     private HashMap<String, Long> mPathTimeMap = new HashMap<>();
     private ArrayList<String> mCouldPlaybackPathList = new ArrayList<>();
@@ -1417,8 +1420,22 @@ public class PlayerWrapper {
     }
 
     private void onReady() {
-        if (!mIsLocal) {
-            mLoadingView.setVisibility(View.VISIBLE);
+        // 是否显示控制面板
+        if (TextUtils.isEmpty(mType)
+                || mType.startsWith("video/")) {
+            if (!mIsLocal) {
+                mLoadingView.setVisibility(View.VISIBLE);
+                mControllerPanelLayout.setVisibility(View.VISIBLE);
+            } else {
+                boolean show = mSP.getBoolean(PLAYBACK_SHOW_CONTROLLERPANELLAYOUT, false);
+                if (show) {
+                    mControllerPanelLayout.setVisibility(View.VISIBLE);
+                } else {
+                    mControllerPanelLayout.setVisibility(View.INVISIBLE);
+                }
+            }
+        } else if (mType.startsWith("audio/")) {
+            mControllerPanelLayout.setVisibility(View.VISIBLE);
         }
         mProgressTimeTV.setText("");
         mDurationTimeTV.setText("");
@@ -1455,10 +1472,6 @@ public class PlayerWrapper {
         } else {
             mFileNameTV.setText("");
         }
-        if (TextUtils.isEmpty(mType)
-                || mType.startsWith("video/")) {
-            mControllerPanelLayout.setVisibility(View.INVISIBLE);
-        }
     }
 
     private void onChangeWindow(Message msg) {
@@ -1479,23 +1492,25 @@ public class PlayerWrapper {
             mDurationTimeTV.setText(String.valueOf(mMediaDuration));
         }
 
-        // 是否显示控制面板
         if (TextUtils.isEmpty(mType)
                 || mType.startsWith("video/")) {
-            if ((mMediaDuration > 0 && mMediaDuration <= 300) || mIsH264) {
+            /*if ((mMediaDuration > 0 && mMediaDuration <= 300) || mIsH264) {
                 mControllerPanelLayout.setVisibility(View.VISIBLE);
             } else {
                 //mControllerPanelLayout.setVisibility(View.INVISIBLE);
-            }
-            if (!mIsLocal) {
-                mProgressBarLayout.setVisibility(View.VISIBLE);
+            }*/
+            if (!mIsLocal && mVideoWidth != 0 && mVideoHeight != 0) {
+                boolean show = mSP.getBoolean(PLAYBACK_SHOW_CONTROLLERPANELLAYOUT, false);
+                if (show) {
+                    mControllerPanelLayout.setVisibility(View.VISIBLE);
+                } else {
+                    mControllerPanelLayout.setVisibility(View.INVISIBLE);
+                }
             }
             if (mVideoWidth == 0 && mVideoHeight == 0) {
                 mType = "audio/";
                 mControllerPanelLayout.setVisibility(View.VISIBLE);
             }
-        } else if (mType.startsWith("audio/")) {
-            mControllerPanelLayout.setVisibility(View.VISIBLE);
         }
 
         if (mIsPhoneDevice) {
@@ -1844,9 +1859,11 @@ public class PlayerWrapper {
         if (mControllerPanelLayout.getVisibility() == View.VISIBLE) {
             if (mVideoWidth != 0 && mVideoHeight != 0) {
                 mControllerPanelLayout.setVisibility(View.GONE);
+                mSP.edit().putBoolean(PLAYBACK_SHOW_CONTROLLERPANELLAYOUT, false).commit();
             }
         } else {
             mControllerPanelLayout.setVisibility(View.VISIBLE);
+            mSP.edit().putBoolean(PLAYBACK_SHOW_CONTROLLERPANELLAYOUT, true).commit();
         }
     }
 
