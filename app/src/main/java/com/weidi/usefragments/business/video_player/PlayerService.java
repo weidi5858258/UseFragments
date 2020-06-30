@@ -434,6 +434,7 @@ public class PlayerService extends Service {
                 case TelephonyManager.CALL_STATE_IDLE:
                     // 挂断或启动监听时
                     MLog.i(TAG, "onCallStateChanged() TelephonyManager.CALL_STATE_IDLE");
+                    mPlayerWrapper.playPlayerWithTelephonyCall();
                     break;
                 case TelephonyManager.CALL_STATE_RINGING:
                     // 来电

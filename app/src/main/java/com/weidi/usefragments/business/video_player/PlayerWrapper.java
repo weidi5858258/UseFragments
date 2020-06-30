@@ -2148,6 +2148,31 @@ public class PlayerWrapper {
         return result;
     }
 
+    public void playPlayerWithTelephonyCall() {
+        if (mFFMPEGPlayer != null) {
+            if (Boolean.parseBoolean(mFFMPEGPlayer.onTransact(
+                    DO_SOMETHING_CODE_isRunning, null))) {
+                boolean isMute = mSP.getBoolean(PLAYBACK_IS_MUTE, false);
+                if (!isMute) {
+                    mFFMPEGPlayer.setVolume(VOLUME_NORMAL);
+                    mVolumeNormal.setVisibility(View.VISIBLE);
+                    mVolumeMute.setVisibility(View.GONE);
+                } else {
+                    mFFMPEGPlayer.setVolume(VOLUME_MUTE);
+                    mVolumeNormal.setVisibility(View.GONE);
+                    mVolumeMute.setVisibility(View.VISIBLE);
+                }
+
+                if (!Boolean.parseBoolean(mFFMPEGPlayer.onTransact(
+                        DO_SOMETHING_CODE_isPlaying, null))) {
+                    mPlayIB.setVisibility(View.VISIBLE);
+                    mPauseIB.setVisibility(View.GONE);
+                    sendEmptyMessage(DO_SOMETHING_CODE_play);
+                }
+            }
+        }
+    }
+
     public void pausePlayerWithTelephonyCall() {
         if (mFFMPEGPlayer != null) {
             if (Boolean.parseBoolean(mFFMPEGPlayer.onTransact(

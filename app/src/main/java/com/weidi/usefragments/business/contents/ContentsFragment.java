@@ -463,7 +463,7 @@ public class ContentsFragment extends BaseFragment {
                 new ContentsAdapter.OnItemClickListener() {
                     @Override
                     public void onItemClick(String key, int position, int viewId) {
-                        MLog.d(TAG, "onItemClick(): " + key);
+                        MLog.d(TAG, "onItemClick()                  : " + key);
 
                         String videoPlaybackPath = key;
                         if (TextUtils.isEmpty(videoPlaybackPath)) {
@@ -626,72 +626,12 @@ public class ContentsFragment extends BaseFragment {
     private void onClick(View v) {
         switch (v.getId()) {
             case R.id.playback_btn:
-                String videoPlaybackPath = mAddressET.getText().toString().trim();
-                if (TextUtils.isEmpty(videoPlaybackPath)) {
-                    videoPlaybackPath = mPreferences.getString(PLAYBACK_ADDRESS, null);
-                }
-                if (TextUtils.isEmpty(videoPlaybackPath)) {
-                    return;
-                }
-                String newPath = videoPlaybackPath.toLowerCase();
-                if (!newPath.startsWith("http://")
-                        && !newPath.startsWith("https://")
-                        && !newPath.startsWith("rtmp://")
-                        && !newPath.startsWith("rtsp://")
-                        && !newPath.startsWith("/storage/")) {
-                    if (PlayerWrapper.mContentsMap.containsValue(videoPlaybackPath)) {
-                        for (Map.Entry<String, String> entry :
-                                PlayerWrapper.mContentsMap.entrySet()) {
-                            if (TextUtils.equals(videoPlaybackPath, entry.getValue())) {
-                                videoPlaybackPath = entry.getKey();
-                                break;
-                            }
-                        }
-                    } else {
-                        maybeJumpToPosition(videoPlaybackPath);
-                        return;
-                    }
-                }
-
-                //FFMPEG.getDefault().setMode(FFMPEG.USE_MODE_MEDIA);
-                EventBusUtils.post(
-                        PlayerService.class,
-                        PlayerService.COMMAND_SHOW_WINDOW,
-                        new Object[]{videoPlaybackPath, "video/"});
-
-                //boolean videoIsFinished = false;
-                /*mPreferences.getBoolean(
-                        DownloadFileService.VIDEO_IS_FINISHED, false);*/
-                /*if (TextUtils.isEmpty(videoPlaybackPath) && videoIsFinished) {
-                    // 如果要播放下载好的视频,那么把地址栏清空
-                    boolean isExist = false;
-                    File moviesFile = new File(DownloadFileService.PATH);
-                    for (File file : moviesFile.listFiles()) {
-                        if (file == null) {
-                            continue;
-                        }
-                        if (file.getName().contains("alexander_mylove.")) {
-                            // 需要指向那个文件,然后打开时才能播放
-                            Contents.setPath(file.getAbsolutePath());
-                            isExist = true;
-                            break;
-                        }
-                    }
-                    if (!isExist) {
-                        return;
-                    }
-                } else {
-                    Contents.setTitle("");
-                    Contents.setPath(videoPlaybackPath);
-                }*/
-                /*Intent intent = new Intent();
-                intent.setClass(getContext(), PlayerActivity.class);
-                intent.putExtra(PlayerActivity.CONTENT_PATH, videoPlaybackPath);
-                getAttachedActivity().startActivity(intent);
-                ((BaseActivity) getAttachedActivity()).enterActivity();*/
+                mClickCount++;
+                mUiHandler.removeMessages(MSG_ON_CLICK_PLAYBACK_BUTTOM);
+                mUiHandler.sendEmptyMessageDelayed(MSG_ON_CLICK_PLAYBACK_BUTTOM, 500);
                 break;
             case R.id.download_tv:
-                videoPlaybackPath = mAddressET.getText().toString();
+                String videoPlaybackPath = mAddressET.getText().toString();
                 if (TextUtils.isEmpty(videoPlaybackPath)) {
                     return;
                 }
@@ -789,6 +729,8 @@ public class ContentsFragment extends BaseFragment {
     private final int REQUEST_CODE_SELECT_VIDEO = 112;
 
     private static final int MSG_ON_PROGRESS_UPDATED = 1;
+    private static final int MSG_ON_CLICK_PLAYBACK_BUTTOM = 2;
+    private int mClickCount = 0;
 
     private void uiHandleMessage(Message msg) {
         if (msg == null) {
@@ -798,6 +740,61 @@ public class ContentsFragment extends BaseFragment {
         switch (msg.what) {
             case MSG_ON_PROGRESS_UPDATED:
                 mAdapter.setProgress(mProgress + "%");
+                break;
+            case MSG_ON_CLICK_PLAYBACK_BUTTOM:
+                if (mClickCount > 2) {
+                    mClickCount = 2;
+                }
+
+                String videoPlaybackPath = mAddressET.getText().toString().trim();
+                if (TextUtils.isEmpty(videoPlaybackPath)) {
+                    videoPlaybackPath = mPreferences.getString(PLAYBACK_ADDRESS, null);
+                }
+                if (TextUtils.isEmpty(videoPlaybackPath)) {
+                    mClickCount = 0;
+                    return;
+                }
+                String newPath = videoPlaybackPath.toLowerCase();
+                if (!newPath.startsWith("http://")
+                        && !newPath.startsWith("https://")
+                        && !newPath.startsWith("rtmp://")
+                        && !newPath.startsWith("rtsp://")
+                        && !newPath.startsWith("/storage/")) {
+                    int index = 0;
+                    if (PlayerWrapper.mContentsMap.containsValue(videoPlaybackPath)) {
+                        for (Map.Entry<String, String> entry :
+                                PlayerWrapper.mContentsMap.entrySet()) {
+                            index++;
+                            if (TextUtils.equals(videoPlaybackPath, entry.getValue())) {
+                                videoPlaybackPath = entry.getKey();
+                                break;
+                            }
+                        }
+                        MLog.i(TAG, "onClick() index: " + index);
+
+                        switch (mClickCount) {
+                            case 1:
+                                EventBusUtils.post(
+                                        PlayerService.class,
+                                        PlayerService.COMMAND_SHOW_WINDOW,
+                                        new Object[]{videoPlaybackPath, "video/"});
+                                break;
+                            case 2:
+                                maybeJumpToPosition(String.valueOf(index));
+                                break;
+                            default:
+                                break;
+                        }
+                    } else {
+                        maybeJumpToPosition(videoPlaybackPath);
+                    }
+                    mClickCount = 0;
+                } else {
+                    EventBusUtils.post(
+                            PlayerService.class,
+                            PlayerService.COMMAND_SHOW_WINDOW,
+                            new Object[]{videoPlaybackPath, "video/"});
+                }
                 break;
             default:
                 break;
