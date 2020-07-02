@@ -70,6 +70,7 @@ import static com.weidi.usefragments.business.video_player.FFMPEG.DO_SOMETHING_C
 import static com.weidi.usefragments.business.video_player.FFMPEG.DO_SOMETHING_CODE_stepAdd;
 import static com.weidi.usefragments.business.video_player.FFMPEG.DO_SOMETHING_CODE_stepSubtract;
 import static com.weidi.usefragments.business.video_player.FFMPEG.DO_SOMETHING_CODE_videoHandleData;
+import static com.weidi.usefragments.business.video_player.FFMPEG.DO_SOMETHING_CODE_videoHandleRender;
 import static com.weidi.usefragments.business.video_player.FFMPEG.USE_MODE_AAC_H264;
 import static com.weidi.usefragments.business.video_player.FFMPEG.USE_MODE_AUDIO_VIDEO;
 import static com.weidi.usefragments.business.video_player.FFMPEG.USE_MODE_MEDIA;
@@ -612,14 +613,14 @@ public class PlayerWrapper {
                         sendEmptyMessage(DO_SOMETHING_CODE_videoHandleData);
                     }
                 });
-                /*ThreadPool.getFixedThreadPool().execute(new Runnable() {
+                ThreadPool.getFixedThreadPool().execute(new Runnable() {
                     @Override
                     public void run() {
                         MLog.d(TAG, "DO_SOMETHING_CODE_videoHandleRender start");
                         sendEmptyMessage(DO_SOMETHING_CODE_videoHandleRender);
                         MLog.d(TAG, "DO_SOMETHING_CODE_videoHandleRender end");
                     }
-                });*/
+                });
 
                 if (mIsSeparatedAudioVideo) {
                     ThreadPool.getFixedThreadPool().execute(new Runnable() {
@@ -847,7 +848,8 @@ public class PlayerWrapper {
                     if (TextUtils.isEmpty(mType)
                             || mType.startsWith("video/")) {
                         mFFMPEGPlayer.onTransact(DO_SOMETHING_CODE_setMode,
-                                JniObject.obtain().writeInt(USE_MODE_MEDIA));// USE_MODE_MEDIA_4K
+                                // USE_MODE_MEDIA_4K
+                                JniObject.obtain().writeInt(FFMPEG.USE_MODE_MEDIA));
                     } else if (mType.startsWith("audio/")) {
                         mFFMPEGPlayer.onTransact(DO_SOMETHING_CODE_setMode,
                                 JniObject.obtain().writeInt(USE_MODE_ONLY_AUDIO));

@@ -1918,7 +1918,7 @@ namespace alexander_media {
                 // 不好的现象.为什么会出现这种情况还不知道?
                 //LOGE("handleVideoDataImpl() audioTimeDifference: %lf\n", audioPts);
                 //LOGE("handleVideoDataImpl() videoTimeDifference: %lf\n", videoPts);
-                LOGE("handleVideoDataImpl() [video - audio]: %lf\n", tempTimeDifference);
+                //LOGE("handleVideoDataImpl() [video - audio]: %lf\n", tempTimeDifference);
                 videoPts = audioPts + averageTimeDiff;
                 //LOGE("handleVideoDataImpl() videoTimeDifference: %lf\n", videoPts);
             }
