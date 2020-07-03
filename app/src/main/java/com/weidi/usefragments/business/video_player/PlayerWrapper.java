@@ -849,7 +849,7 @@ public class PlayerWrapper {
                             || mType.startsWith("video/")) {
                         mFFMPEGPlayer.onTransact(DO_SOMETHING_CODE_setMode,
                                 // USE_MODE_MEDIA_4K
-                                JniObject.obtain().writeInt(FFMPEG.USE_MODE_MEDIA_4K));
+                                JniObject.obtain().writeInt(FFMPEG.USE_MODE_MEDIA));
                     } else if (mType.startsWith("audio/")) {
                         mFFMPEGPlayer.onTransact(DO_SOMETHING_CODE_setMode,
                                 JniObject.obtain().writeInt(USE_MODE_ONLY_AUDIO));
