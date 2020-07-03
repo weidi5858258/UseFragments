@@ -849,7 +849,7 @@ public class PlayerWrapper {
                             || mType.startsWith("video/")) {
                         mFFMPEGPlayer.onTransact(DO_SOMETHING_CODE_setMode,
                                 // USE_MODE_MEDIA_4K
-                                JniObject.obtain().writeInt(FFMPEG.USE_MODE_MEDIA));
+                                JniObject.obtain().writeInt(FFMPEG.USE_MODE_MEDIA_4K));
                     } else if (mType.startsWith("audio/")) {
                         mFFMPEGPlayer.onTransact(DO_SOMETHING_CODE_setMode,
                                 JniObject.obtain().writeInt(USE_MODE_ONLY_AUDIO));
@@ -2017,7 +2017,6 @@ public class PlayerWrapper {
                 MLog.i(TAG, "loadContents() end");
                 return;
             }
-
         }
 
         for (Map.Entry<String, String> tempMap : Contents.movieMap.entrySet()) {

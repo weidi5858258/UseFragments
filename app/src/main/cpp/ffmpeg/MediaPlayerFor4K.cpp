@@ -1766,9 +1766,9 @@ namespace alexander_media_4k {
             AVStream *stream, AVFrame *decodedAVFrame) {
         if (isQueue2Full()) {
             notifyToRender();
-            //LOGW("handleVideoDataImpl() isQueue2Full start\n");
+            LOGW("handleVideoDataImpl() isQueue2Full start\n");
             notifyToDecodeWait();
-            //LOGW("handleVideoDataImpl() isQueue2Full end\n");
+            LOGW("handleVideoDataImpl() isQueue2Full end\n");
         }
 
         add(decodedAVFrame);
@@ -1813,7 +1813,7 @@ namespace alexander_media_4k {
             }
 
             if (isQueue2Full() && isQueue1Empty()) {
-                //LOGI("handleVideoRender()   isQueue2Full and isQueue1Empty\n");
+                LOGI("handleVideoRender()   isQueue2Full and isQueue1Empty\n");
                 pthread_mutex_lock(&decodeLockMutex);
                 FrameQueue *tempQueue = nullptr;
                 tempQueue = queue2;
@@ -1832,9 +1832,9 @@ namespace alexander_media_4k {
             } else if (!isQueue2Full() && isQueue1Empty()) {
                 audioWrapper->father->isPausedForUser = true;
                 // av_usleep(10000);
-                //LOGI("handleVideoRender()   isQueue1Empty start\n");
+                LOGI("handleVideoRender()   isQueue1Empty start\n");
                 notifyToRenderWait();
-                //LOGI("handleVideoRender()   isQueue1Empty end\n");
+                LOGI("handleVideoRender()   isQueue1Empty end\n");
                 continue;
             }
 
