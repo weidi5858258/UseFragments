@@ -87,21 +87,21 @@ public class Main1Fragment extends BaseFragment {
                             case 3:
                                 MLog.d(TAG, "clickThree()");
                                 // 视频播放后才可以打开这个Activity
-                                /*Intent intent = new Intent();
+                                Intent intent = new Intent();
                                 intent.putExtra(JniPlayerActivity.COMMAND_NO_FINISH, true);
                                 intent.setClass(getContext(), JniPlayerActivity.class);
-                                getAttachedActivity().startActivity(intent);*/
+                                getAttachedActivity().startActivity(intent);
 
-                                String path = "/storage/1532-48AD/Videos/Movies/Huawei_Share/" +
+                                /*String path = "/storage/1532-48AD/Videos/Movies/Huawei_Share/" +
                                         //"[Thz.la]fc2ppv_785172.mp4";
                                         "[ThZu.Cc]122118_003-caribpr-1080p.mp4";
-                                /*path = "/storage/1532-48AD/Videos/Movies/" +
-                                        "AQUAMAN_Trailer_3840_2160_4K.webm";*/
+                                //path = "/storage/1532-48AD/Videos/Movies/" +
+                                //        "AQUAMAN_Trailer_3840_2160_4K.webm";
                                 // path = "http://ivi.bupt.edu.cn/hls/cctv13.m3u8";
                                 Intent intent = new Intent();
                                 intent.putExtra(PlayerActivity.CONTENT_PATH, path);
                                 intent.setClass(getContext(), PlayerActivity.class);
-                                getAttachedActivity().startActivity(intent);
+                                getAttachedActivity().startActivity(intent);*/
                                 break;
                             default:
                                 break;
