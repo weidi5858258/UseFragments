@@ -210,41 +210,43 @@ fps不大于30,kbps为0或者小于4000,最大分辨率为1080P
 
 #define LOG "player_alexander_media"
 
-char inFilePath[2048];
-AVFormatContext *avFormatContext = NULL;
-struct AudioWrapper *audioWrapper = NULL;
-struct VideoWrapper *videoWrapper = NULL;
-pthread_mutex_t readLockMutex = PTHREAD_MUTEX_INITIALIZER;
-pthread_cond_t readLockCondition = PTHREAD_COND_INITIALIZER;
-bool isLocal = false;
-bool isH264 = false;
-bool isReading = false;
-bool isVideoHandling = false;
-bool isVideoRendering = false;
-bool isInterrupted = false;
-bool runOneTime = true;
-double fileLength = 0.0;
-// seek时间
-int64_t timeStamp = -1;
-long long curProgress = 0;
-long long preProgress = 0;
-// 视频播放时每帧之间的暂停时间,单位为ms
-int videoSleepTime = 11;
-
-double TIME_DIFFERENCE = 1.000000;// 0.180000
-// 当前音频时间戳
-double audioPts = 0.0;
-// 当前视频时间戳
-double videoPts = 0.0;
-// 上一个时间戳
-double preAudioPts = 0.0;
-double preVideoPts = 0.0;
-
-ANativeWindow *pANativeWindow = NULL;
 
 extern int use_mode;
 
-namespace alexander_media {
+namespace alexander_media_mediacodec {
+    ////////////////////////////////////////////////////////////
+    char inFilePath[2048];
+    AVFormatContext *avFormatContext = NULL;
+    struct AudioWrapper *audioWrapper = NULL;
+    struct VideoWrapper *videoWrapper = NULL;
+    pthread_mutex_t readLockMutex = PTHREAD_MUTEX_INITIALIZER;
+    pthread_cond_t readLockCondition = PTHREAD_COND_INITIALIZER;
+    bool isLocal = false;
+    bool isH264 = false;
+    bool isReading = false;
+    bool isVideoHandling = false;
+    bool isVideoRendering = false;
+    bool isInterrupted = false;
+    bool runOneTime = true;
+    double fileLength = 0.0;
+// seek时间
+    int64_t timeStamp = -1;
+    long long curProgress = 0;
+    long long preProgress = 0;
+// 视频播放时每帧之间的暂停时间,单位为ms
+    int videoSleepTime = 11;
+
+    double TIME_DIFFERENCE = 1.000000;// 0.180000
+// 当前音频时间戳
+    double audioPts = 0.0;
+// 当前视频时间戳
+    double videoPts = 0.0;
+// 上一个时间戳
+    double preAudioPts = 0.0;
+    double preVideoPts = 0.0;
+
+    ANativeWindow *pANativeWindow = NULL;
+    ////////////////////////////////////////////////////////////
 
     // 绘制时的缓冲区
     static ANativeWindow_Buffer mANativeWindow_Buffer;
