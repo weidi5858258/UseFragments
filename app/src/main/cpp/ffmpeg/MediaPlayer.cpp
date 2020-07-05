@@ -200,6 +200,9 @@ pthread_join(videoHandleDataThread, NULL);
 // 取消线程
 //pthread_cancel(videoReadDataThread);
 //pthread_cancel(videoHandleDataThread);
+
+适合播放对象:
+fps不大于30,kbps为0或者小于4000,最大分辨率为1080P
  */
 
 #include <string>
@@ -1729,7 +1732,6 @@ namespace alexander_media {
 
     //
     void hope_to_get_a_good_result() {
-        TIME_DIFFERENCE = averageTimeDiff + 0.050000;
         LOGI("handleVideoDataImpl() frameRate: %d averageTimeDiff: %lf\n",
              frameRate, averageTimeDiff);
 
@@ -1753,6 +1755,8 @@ namespace alexander_media {
             TIME_DIFFERENCE = 0.100000;
         } else if (averageTimeDiff > 0.100000 && averageTimeDiff < 0.200000) {
             TIME_DIFFERENCE = averageTimeDiff;
+        } else if (averageTimeDiff < 0.100000) {
+            TIME_DIFFERENCE = averageTimeDiff + 0.050000;
         }
 
         /***

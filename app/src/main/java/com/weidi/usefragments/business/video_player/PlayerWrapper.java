@@ -2230,7 +2230,7 @@ public class PlayerWrapper {
                     sb.append(PLAYBACK_WINDOW_POSITION_TAG);
                     sb.append(tempY);
                     mSP.edit().putString(PLAYBACK_WINDOW_POSITION, sb.toString()).commit();
-                    MLog.i(TAG, "Callback.MSG_ON_CHANGE_WINDOW sb.toString(): " + sb.toString());
+                    // MLog.i(TAG, "Callback.MSG_ON_CHANGE_WINDOW sb.toString(): " + sb.toString());
                     break;
                 default:
                     break;

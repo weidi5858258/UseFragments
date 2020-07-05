@@ -1814,27 +1814,27 @@ namespace alexander_media_4k {
 
             if (isQueue2Full() && isQueue1Empty()) {
                 LOGI("handleVideoRender()   isQueue2Full and isQueue1Empty\n");
-                pthread_mutex_lock(&decodeLockMutex);
+                //pthread_mutex_lock(&decodeLockMutex);
                 FrameQueue *tempQueue = nullptr;
                 tempQueue = queue2;
                 queue2 = queue1;
                 queue1 = tempQueue;
-                pthread_mutex_unlock(&decodeLockMutex);
+                //pthread_mutex_unlock(&decodeLockMutex);
                 //LOGI("handleVideoRender() queue1->size: %d\n", queue1->size);
                 //LOGI("handleVideoRender() queue2->size: %d\n", queue2->size);
 
-                //LOGI("handleVideoRender()   notifyToDecode start\n");
+                LOGI("handleVideoRender()   notifyToDecode start\n");
+                // 通知继续解码
                 notifyToDecode();
-                //LOGI("handleVideoRender()   notifyToDecode end\n");
+                LOGI("handleVideoRender()   notifyToDecode end\n");
                 // 通知audio继续
                 audioWrapper->father->isPausedForUser = false;
                 notifyToHandle(audioWrapper->father);
             } else if (!isQueue2Full() && isQueue1Empty()) {
                 audioWrapper->father->isPausedForUser = true;
-                // av_usleep(10000);
-                LOGI("handleVideoRender()   isQueue1Empty start\n");
+                LOGE("handleVideoRender()   isQueue1Empty start\n");
                 notifyToRenderWait();
-                LOGI("handleVideoRender()   isQueue1Empty end\n");
+                LOGE("handleVideoRender()   isQueue1Empty end\n");
                 continue;
             }
 
