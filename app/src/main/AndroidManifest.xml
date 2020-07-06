@@ -151,7 +151,7 @@
             </intent-filter>
         </receiver>
 
-        <activity
+        <!--<activity
             android:name="com.weidi.usefragments.business.video_player.PlayerActivity"
             android:screenOrientation="landscape"
             android:configChanges="uiMode|keyboard|keyboardHidden|screenSize|orientation|fontScale"
@@ -160,7 +160,7 @@
             android:theme="@style/Theme.AppCompat.Light">
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
-                <!-- Resume Play support -->
+                &lt;!&ndash; Resume Play support &ndash;&gt;
                 <action android:name="com.alexander.video.action.START_PLAYBACK" />
                 <action android:name="com.weidi.dtv.osat.video.action.START_PLAYBACK" />
                 <category android:name="android.intent.category.DEFAULT" />
@@ -169,7 +169,7 @@
             </intent-filter>
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
-                <!-- Resume Play support -->
+                &lt;!&ndash; Resume Play support &ndash;&gt;
                 <action android:name="com.alexander.video.action.START_PLAYBACK" />
                 <action android:name="com.weidi.dtv.osat.video.action.START_PLAYBACK" />
                 <action android:name="com.alexander.video.action.START_PLAYBACK_WITH_DETAIL" />
@@ -183,7 +183,7 @@
             </intent-filter>
             <intent-filter >
                 <action android:name="android.intent.action.VIEW" />
-                <!-- Resume Play support -->
+                &lt;!&ndash; Resume Play support &ndash;&gt;
                 <action android:name="com.alexander.video.action.START_PLAYBACK" />
                 <action android:name="com.weidi.dtv.osat.video.action.START_PLAYBACK" />
                 <action android:name="com.alexander.video.action.START_PLAYBACK_WITH_DETAIL" />
@@ -211,9 +211,9 @@
                 <data android:mimeType="application/sdp" />
             </intent-filter>
             <intent-filter >
-                <!-- HTTP Streaming support -->
+                &lt;!&ndash; HTTP Streaming support &ndash;&gt;
                 <action android:name="android.intent.action.VIEW" />
-                <!-- Resume Play support -->
+                &lt;!&ndash; Resume Play support &ndash;&gt;
                 <action android:name="com.alexander.video.action.START_PLAYBACK" />
                 <action android:name="com.weidi.dtv.osat.video.action.START_PLAYBACK" />
                 <action android:name="com.alexander.video.action.START_PLAYBACK_WITH_DETAIL" />
@@ -228,8 +228,8 @@
                 <data android:mimeType="application/dash+xml" />
             </intent-filter>
             <intent-filter >
-                <!-- HTTP Streaming support -->
-                <!-- HTTP live Streaming support -->
+                &lt;!&ndash; HTTP Streaming support &ndash;&gt;
+                &lt;!&ndash; HTTP live Streaming support &ndash;&gt;
                 <action android:name="android.intent.action.VIEW" />
                 <action android:name="com.alexander.video.action.START_PLAYBACK" />
                 <action android:name="com.weidi.dtv.osat.video.action.START_PLAYBACK" />
@@ -242,13 +242,13 @@
                 <data android:pathPattern=".*.m3u8"/>
             </intent-filter>
             <intent-filter>
-                <!-- VU Progressive DL playback support -->
+                &lt;!&ndash; VU Progressive DL playback support &ndash;&gt;
                 <action android:name="com.alexander.video.action.PROGRESSIVE_PLAYBACK" />
                 <action android:name="com.alexander.video.action.PROGRESSIVE_PLAYBACK_WITH_DETAIL" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <data android:mimeType="video/vnd.weidi.mnv" />
             </intent-filter>
-        </activity>
+        </activity>-->
 
         <!--android:screenOrientation="landscape"-->
         <!--android:configChanges="keyboardHidden|screenLayout|screenSize|smallestScreenSize|orientation"-->

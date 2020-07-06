@@ -41,7 +41,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import static com.weidi.usefragments.business.video_player.FFMPEG.DO_SOMETHING_CODE_audioHandleData;
 import static com.weidi.usefragments.business.video_player.FFMPEG.USE_MODE_ONLY_VIDEO;
 
 /***
@@ -79,10 +78,10 @@ import static com.weidi.usefragments.business.video_player.FFMPEG.USE_MODE_ONLY_
 
  */
 
-public class SimpleVideoPlayer9 {
+public class SimpleVideoPlayer {
 
     private static final String TAG =
-            SimpleVideoPlayer9.class.getSimpleName();
+            SimpleVideoPlayer.class.getSimpleName();
     private static final boolean DEBUG = true;
 
     public static final int MAX_CACHE_AUDIO_COUNT = 600;// 5000
@@ -154,9 +153,10 @@ public class SimpleVideoPlayer9 {
     private boolean isReading = false;
     private Object readDataLock = new Object();
     private Object handleDataLock = new Object();
-    private AudioWrapper mAudioWrapper = new AudioWrapper(TYPE_AUDIO);
-    private VideoWrapper mVideoWrapper = new VideoWrapper(TYPE_VIDEO);
+    public AudioWrapper mAudioWrapper = new AudioWrapper(TYPE_AUDIO);
+    public VideoWrapper mVideoWrapper = new VideoWrapper(TYPE_VIDEO);
     private int use_mode = FFMPEG.USE_MODE_MEDIA;
+    private int roomIndex;
 
     private static class SimpleWrapper {
         public String mime = null;
@@ -230,7 +230,7 @@ public class SimpleVideoPlayer9 {
             switch (type) {
                 case TYPE_AUDIO:
                     this.type = TYPE_AUDIO;
-                    //CACHE = MAX_CACHE_AUDIO_COUNT;
+                    CACHE = MAX_CACHE_AUDIO_COUNT;
                     frameMaxLength = AUDIO_FRAME_MAX_LENGTH;
                     break;
                 case TYPE_VIDEO:
@@ -323,7 +323,7 @@ public class SimpleVideoPlayer9 {
         }
     }
 
-    public SimpleVideoPlayer9() {
+    public SimpleVideoPlayer() {
         init();
     }
 
@@ -332,7 +332,7 @@ public class SimpleVideoPlayer9 {
         registerHeadsetPlugReceiver();
     }
 
-    public void setPath(String path) {
+    public void setDataSource(String path) {
         // mPath = Contents.getUri();
         mPath = path;
         if (DEBUG)
@@ -341,6 +341,13 @@ public class SimpleVideoPlayer9 {
 
     public void setSurface(Surface surface) {
         mVideoWrapper.mSurface = surface;
+    }
+
+    // 从PlayerWrapper那里传过来的
+    private Handler mPWHandler;
+
+    public void setHandler(Handler handler) {
+        mPWHandler = handler;
     }
 
     public void setCallback(com.weidi.usefragments.tool.Callback callback) {
@@ -478,6 +485,10 @@ public class SimpleVideoPlayer9 {
     public boolean isRunning() {
         return mAudioWrapper.isHandling
                 || mVideoWrapper.isHandling;
+    }
+
+    public boolean initPlayer() {
+        return internalPrepare() && prepareAudio() && prepareVideo();
     }
 
     private boolean firstFlag = false;
@@ -713,7 +724,7 @@ public class SimpleVideoPlayer9 {
     }
 
     // 读到的都是压缩数据
-    private void readData() {
+    public void readData() {
 
         //setProgressUs(721057837);
 
@@ -895,7 +906,7 @@ public class SimpleVideoPlayer9 {
     }
 
     @TargetApi(Build.VERSION_CODES.M)
-    private void handleData(SimpleWrapper wrapper) {
+    public void handleData(SimpleWrapper wrapper) {
         switch (use_mode) {
             case FFMPEG.USE_MODE_MEDIA:
                 if (wrapper.type == TYPE_AUDIO) {
@@ -1154,13 +1165,13 @@ public class SimpleVideoPlayer9 {
         mThreadHandler = new Handler(mHandlerThread.getLooper()) {
             @Override
             public void handleMessage(Message msg) {
-                SimpleVideoPlayer9.this.threadHandleMessage(msg);
+                SimpleVideoPlayer.this.threadHandleMessage(msg);
             }
         };
         mUiHandler = new Handler(Looper.getMainLooper()) {
             @Override
             public void handleMessage(Message msg) {
-                SimpleVideoPlayer9.this.uiHandleMessage(msg);
+                SimpleVideoPlayer.this.uiHandleMessage(msg);
             }
         };
     }
@@ -1432,8 +1443,6 @@ public class SimpleVideoPlayer9 {
         mAudioWrapper.clear();
         mVideoWrapper.clear();
         isReading = true;
-        //        mAudioWrapper.isReading = true;
-        //        mVideoWrapper.isReading = true;
         mAudioWrapper.isHandling = true;
         mVideoWrapper.isHandling = true;
 
@@ -1444,14 +1453,12 @@ public class SimpleVideoPlayer9 {
             File file = new File(mPath);
             if (!file.canRead()
                     || file.isDirectory()) {
-                if (DEBUG)
-                    MLog.e(TAG, "不能读取此文件: " + mPath);
+                MLog.e(TAG, "不能读取此文件: " + mPath);
                 internalRelease();
                 return false;
             }
             long fileSize = file.length();
-            if (DEBUG)
-                MLog.i(TAG, "internalPrepare() fileSize: " + fileSize);
+            MLog.i(TAG, "internalPrepare() fileSize: " + fileSize);
             mAudioWrapper.CACHE_START = START_CACHE_COUNT_LOCAL;
             mVideoWrapper.CACHE_START = START_CACHE_COUNT_LOCAL;
             mIsLocal = true;
@@ -1503,18 +1510,19 @@ public class SimpleVideoPlayer9 {
         if (mAudioWrapper.trackIndex != -1 && mVideoWrapper.trackIndex != -1) {
             use_mode = FFMPEG.USE_MODE_MEDIA;
         } else if (mAudioWrapper.trackIndex != -1 && mVideoWrapper.trackIndex == -1) {
-            use_mode = FFMPEG.USE_MODE_ONLY_AUDIO;
             mAudioWrapper.CACHE = MAX_CACHE_AUDIO_COUNT;
             mAudioWrapper.CACHE_START = START_CACHE_COUNT_LOCAL;
+            use_mode = FFMPEG.USE_MODE_ONLY_AUDIO;
         } else if (mAudioWrapper.trackIndex == -1 && mVideoWrapper.trackIndex != -1) {
             use_mode = FFMPEG.USE_MODE_ONLY_VIDEO;
         }
 
         // Test
-        use_mode = FFMPEG.USE_MODE_ONLY_AUDIO;
-        mAudioWrapper.CACHE = MAX_CACHE_AUDIO_COUNT;
-        mAudioWrapper.CACHE_START = START_CACHE_COUNT_LOCAL;
-        use_mode = FFMPEG.USE_MODE_ONLY_VIDEO;
+        //mAudioWrapper.CACHE = MAX_CACHE_AUDIO_COUNT;
+        //mAudioWrapper.CACHE_START = START_CACHE_COUNT_LOCAL;
+        //use_mode = FFMPEG.USE_MODE_ONLY_AUDIO;
+        //use_mode = FFMPEG.USE_MODE_ONLY_VIDEO;
+        //use_mode = FFMPEG.USE_MODE_MEDIA;
 
         MLog.i(TAG, "internalPrepare() end");
 
@@ -1749,14 +1757,15 @@ public class SimpleVideoPlayer9 {
                 }
                 // 房间大小
                 int roomSize = roomInfo.size;
+                // 不能根据room是否为null来判断是audio还是video(我的三星Note2手机上是可以的)
                 if (room != null) {
                     // audio
                     room.position(roomInfo.offset);
                     room.limit(roomInfo.offset + roomSize);
-                    handleAudioOutputBuffer(roomIndex, room, roomInfo, roomSize);
+                    handleAudioOutputBuffer(wrapper, roomIndex, room, roomInfo, roomSize);
                 } else {
                     // video
-                    handleVideoOutputBuffer(roomIndex, null, roomInfo, roomSize);
+                    handleVideoOutputBuffer(wrapper, roomIndex, null, roomInfo, roomSize);
                 }
 
                 if ((roomInfo.flags & MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0) {
@@ -1995,19 +2004,21 @@ public class SimpleVideoPlayer9 {
         MLog.w(TAG, "handleVideoOutputFormat() 画面马上输出......");
     }
 
-    private int handleAudioOutputBuffer(
-            int roomIndex, ByteBuffer room, MediaCodec.BufferInfo roomInfo, int roomSize) {
-        mAudioWrapper.presentationTimeUs = roomInfo.presentationTimeUs;
-
-        // 输出音频
-        if (mAudioWrapper.isHandling
-                && mAudioWrapper.mAudioTrack != null
-                && mAudioWrapper.mAudioTrack.getState() == AudioTrack.STATE_INITIALIZED) {
-            room.position(roomInfo.offset);
-            room.limit(roomInfo.offset + roomSize);
-            byte[] audioData = new byte[roomSize];
-            room.get(audioData, 0, audioData.length);
-            mAudioWrapper.mAudioTrack.write(audioData, 0, audioData.length);
+    private int handleAudioOutputBuffer(SimpleWrapper wrapper,
+                                        int roomIndex, ByteBuffer room,
+                                        MediaCodec.BufferInfo roomInfo, int roomSize) {
+        if (wrapper.type == TYPE_AUDIO) {
+            mAudioWrapper.presentationTimeUs = roomInfo.presentationTimeUs;
+            // 输出音频
+            if (mAudioWrapper.isHandling
+                    && mAudioWrapper.mAudioTrack != null
+                    && mAudioWrapper.mAudioTrack.getState() == AudioTrack.STATE_INITIALIZED) {
+                byte[] audioData = new byte[roomSize];
+                room.get(audioData, 0, audioData.length);
+                mAudioWrapper.mAudioTrack.write(audioData, 0, audioData.length);
+            }
+        } else {
+            handleVideoOutputBuffer(wrapper, roomIndex, room, roomInfo, roomSize);
         }
 
         return 0;
@@ -2022,8 +2033,9 @@ public class SimpleVideoPlayer9 {
     private int runCounts = 0;
 
     // 最最最关键的一步
-    private int handleVideoOutputBuffer(
-            int roomIndex, ByteBuffer room, MediaCodec.BufferInfo roomInfo, int roomSize) {
+    private int handleVideoOutputBuffer(SimpleWrapper wrapper,
+                                        int roomIndex, ByteBuffer room,
+                                        MediaCodec.BufferInfo roomInfo, int roomSize) {
         mVideoWrapper.presentationTimeUs = roomInfo.presentationTimeUs;
 
         if (mVideoWrapper.presentationTimeUs > 0 && mAudioWrapper.presentationTimeUs > 0) {

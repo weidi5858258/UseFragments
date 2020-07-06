@@ -73,7 +73,6 @@ import static com.weidi.usefragments.business.video_player.FFMPEG.DO_SOMETHING_C
 import static com.weidi.usefragments.business.video_player.FFMPEG.DO_SOMETHING_CODE_videoHandleRender;
 import static com.weidi.usefragments.business.video_player.FFMPEG.USE_MODE_AAC_H264;
 import static com.weidi.usefragments.business.video_player.FFMPEG.USE_MODE_AUDIO_VIDEO;
-import static com.weidi.usefragments.business.video_player.FFMPEG.USE_MODE_MEDIA;
 import static com.weidi.usefragments.business.video_player.FFMPEG.USE_MODE_ONLY_AUDIO;
 import static com.weidi.usefragments.business.video_player.FFMPEG.VOLUME_MUTE;
 import static com.weidi.usefragments.business.video_player.FFMPEG.VOLUME_NORMAL;
@@ -115,6 +114,7 @@ public class PlayerWrapper {
     private PowerManager.WakeLock mPowerWakeLock;
     private SurfaceHolder mSurfaceHolder;
     private FFMPEG mFFMPEGPlayer;
+    private SimpleVideoPlayer mSimpleVideoPlayer;
     private String mPath;
     // 有些mp3文件含有video,因此播放失败
     private String mType;
@@ -186,6 +186,8 @@ public class PlayerWrapper {
     private boolean mIsPhoneDevice;
     // 是否是竖屏 true为竖屏
     private boolean mIsPortraitScreen;
+    // 本地视频硬件解码,成功为true
+    private boolean mIsHWDecodeSuccess = false;
 
     // 第一个存储视频地址,第二个存储标题
     public static final LinkedHashMap<String, String> mContentsMap = new LinkedHashMap();
@@ -365,6 +367,14 @@ public class PlayerWrapper {
         mContentsMap.clear();
 
         mIsPhoneDevice = isPhoneDevice();
+        if (mFFMPEGPlayer == null) {
+            mFFMPEGPlayer = FFMPEG.getDefault();
+        }
+        mFFMPEGPlayer.setContext(mContext);
+        if (mSimpleVideoPlayer == null) {
+            mSimpleVideoPlayer = new SimpleVideoPlayer();
+        }
+        mSimpleVideoPlayer.setContext(mContext);
 
         mUiHandler = new Handler(Looper.getMainLooper()) {
             @Override
@@ -384,10 +394,6 @@ public class PlayerWrapper {
 
         sendMessageForLoadContents();
 
-        if (mFFMPEGPlayer == null) {
-            mFFMPEGPlayer = FFMPEG.getDefault();
-        }
-        mFFMPEGPlayer.setContext(mContext);
         int duration = (int) mMediaDuration;
         int currentPosition = (int) mPresentationTime;
         float pos = (float) currentPosition / duration;
@@ -794,20 +800,17 @@ public class PlayerWrapper {
         mSurfaceHolder.setFormat(PixelFormat.RGBA_8888);
         // 底层有关参数的设置
         mFFMPEGPlayer.setHandler(mUiHandler);
+        mSimpleVideoPlayer.setHandler(mUiHandler);
+        mSimpleVideoPlayer.setSurface(mSurfaceHolder.getSurface());
 
         // 开启线程初始化ffmpeg
         ThreadPool.getFixedThreadPool().execute(new Runnable() {
             @Override
             public void run() {
-                sendEmptyMessage(DO_SOMETHING_CODE_init);
-
-                // test
-                // mPath = "/storage/emulated/0/Music/人间道.mp3";
-
-                mIsSeparatedAudioVideo = false;
-                String tempPath = "";
                 MLog.d(TAG, "startPlayback()                  mPath: " + mPath);
 
+                String tempPath = "";
+                mIsSeparatedAudioVideo = false;
                 if (mPath.endsWith(".m4s")) {
                     tempPath = mPath.substring(0, mPath.lastIndexOf("/"));
                     File audioFile = new File(tempPath + "/audio.m4s");
@@ -844,12 +847,20 @@ public class PlayerWrapper {
                 }
 
                 MLog.d(TAG, "startPlayback() mIsSeparatedAudioVideo: " + mIsSeparatedAudioVideo);
+                sendEmptyMessage(DO_SOMETHING_CODE_init);
+                mIsHWDecodeSuccess = false;
                 if (!mIsSeparatedAudioVideo) {
                     if (TextUtils.isEmpty(mType)
                             || mType.startsWith("video/")) {
-                        mFFMPEGPlayer.onTransact(DO_SOMETHING_CODE_setMode,
-                                // USE_MODE_MEDIA_4K
-                                JniObject.obtain().writeInt(FFMPEG.USE_MODE_MEDIA));
+                        /*if (mIsLocal && mSimpleVideoPlayer.initPlayer()) {
+                            mIsHWDecodeSuccess = true;
+                        }*/
+
+                        if (!mIsHWDecodeSuccess) {
+                            mFFMPEGPlayer.onTransact(DO_SOMETHING_CODE_setMode,
+                                    // USE_MODE_MEDIA_4K
+                                    JniObject.obtain().writeInt(FFMPEG.USE_MODE_MEDIA));
+                        }
                     } else if (mType.startsWith("audio/")) {
                         mFFMPEGPlayer.onTransact(DO_SOMETHING_CODE_setMode,
                                 JniObject.obtain().writeInt(USE_MODE_ONLY_AUDIO));
@@ -858,8 +869,12 @@ public class PlayerWrapper {
                     if (mPathTimeMap.containsKey(mPath)) {
                         long position = mPathTimeMap.get(mPath);
                         MLog.d(TAG, "startPlayback()               position: " + position);
-                        mFFMPEGPlayer.onTransact(DO_SOMETHING_CODE_seekTo,
-                                JniObject.obtain().writeLong(position));
+                        if (!mIsHWDecodeSuccess) {
+                            mFFMPEGPlayer.onTransact(DO_SOMETHING_CODE_seekTo,
+                                    JniObject.obtain().writeLong(position));
+                        } else {
+                            mSimpleVideoPlayer.setProgressUs(position * 1000000);
+                        }
                     }
                 } else {
                     if (mPath.endsWith(".m4s")) {
@@ -871,28 +886,28 @@ public class PlayerWrapper {
                     }
                 }
 
-                mFFMPEGPlayer.onTransact(DO_SOMETHING_CODE_setSurface,
-                        JniObject.obtain()
-                                .writeString(mPath)
-                                .writeObject(mSurfaceHolder.getSurface()));
+                if (!mIsHWDecodeSuccess) {
+                    mFFMPEGPlayer.onTransact(DO_SOMETHING_CODE_setSurface,
+                            JniObject.obtain()
+                                    .writeString(mPath)
+                                    .writeObject(mSurfaceHolder.getSurface()));
 
-                if (Integer.parseInt(mFFMPEGPlayer.onTransact(
-                        DO_SOMETHING_CODE_initPlayer, null)) != 0) {
-                    // 不在这里做事了.遇到error会从底层回调到java端的
-                    //MyToast.show("音视频初始化失败");
-                    //mUiHandler.removeMessages(Callback.MSG_ON_ERROR);
-                    //mUiHandler.sendEmptyMessage(Callback.MSG_ON_ERROR);
-                    return;
+                    if (Integer.parseInt(mFFMPEGPlayer.onTransact(
+                            DO_SOMETHING_CODE_initPlayer, null)) != 0) {
+                        // 不在这里做事了.遇到error会从底层回调到java端的
+                        //MyToast.show("音视频初始化失败");
+                        //mUiHandler.removeMessages(Callback.MSG_ON_ERROR);
+                        //mUiHandler.sendEmptyMessage(Callback.MSG_ON_ERROR);
+                        return;
+                    }
+                } else {
+                    mSimpleVideoPlayer.setDataSource(mPath);
                 }
 
-                /*if (TextUtils.isEmpty(mType)
-                        || mType.startsWith("video/")) {
-                    MyToast.show("音视频初始化成功");
-                }*/
                 mUiHandler.removeMessages(MSG_START_PLAYBACK);
                 mUiHandler.sendEmptyMessage(MSG_START_PLAYBACK);
                 if (!mIsSeparatedAudioVideo) {
-                    SystemClock.sleep(500);
+                    SystemClock.sleep(600);
                     sendEmptyMessage(DO_SOMETHING_CODE_readData);
                 }
             }
@@ -1734,8 +1749,10 @@ public class PlayerWrapper {
         public void surfaceDestroyed(
                 SurfaceHolder holder) {
             MLog.d(TAG, "surfaceDestroyed()");
-            if (mFFMPEGPlayer != null) {
+            if (!mIsHWDecodeSuccess) {
                 mFFMPEGPlayer.releaseAll();
+            } else {
+                mSimpleVideoPlayer.release();
             }
         }
     };
