@@ -186,8 +186,8 @@ public class PlayerActivity extends BaseActivity {
     private PowerManager.WakeLock mPowerWakeLock;
     // private SimpleVideoPlayer mSampleVideoPlayer;
     // private SimpleAudioPlayer2 mSampleVideoPlayer;
-    private SimpleVideoPlayer10 mSampleVideoPlayer;
-    // private SimpleVideoPlayer9 mSampleVideoPlayer;
+    // private SimpleVideoPlayer10 mSampleVideoPlayer;
+    private SimpleVideoPlayer9 mSampleVideoPlayer;
     // private SimpleVideoPlayer8 mSampleVideoPlayer;
     // private OnlyVideoPlayer mSampleVideoPlayer;
     private String mPath;
@@ -291,8 +291,8 @@ public class PlayerActivity extends BaseActivity {
 
         // mSampleVideoPlayer = new SimpleVideoPlayer();
         // mSampleVideoPlayer = new SimpleAudioPlayer2();
-        mSampleVideoPlayer = new SimpleVideoPlayer10();
-        // mSampleVideoPlayer = new SimpleVideoPlayer9();
+        // mSampleVideoPlayer = new SimpleVideoPlayer10();
+        mSampleVideoPlayer = new SimpleVideoPlayer9();
         // mSampleVideoPlayer = new SimpleVideoPlayer8();
         // mSampleVideoPlayer = new OnlyVideoPlayer();
 

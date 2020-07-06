@@ -1293,8 +1293,8 @@ public class MediaUtils {
         //int channelConfig = decideChannelConfig(channelCount, false, "");
         int bufferSizeInBytes = getMinBufferSize(
                 sampleRateInHz, channelConfig, audioFormat);
-        if (DEBUG)
-            MLog.d(TAG, "createAudioTrack(...) bufferSizeInBytes: " + bufferSizeInBytes);
+        MLog.d(TAG, "createAudioTrack(...)     channelConfig: " + channelConfig);
+        MLog.d(TAG, "createAudioTrack(...) bufferSizeInBytes: " + bufferSizeInBytes);
         if (bufferSizeInBytes <= 0) {
             if (DEBUG)
                 MLog.e(TAG, String.format(Locale.US,

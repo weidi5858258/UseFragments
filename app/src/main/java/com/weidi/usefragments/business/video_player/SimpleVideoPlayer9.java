@@ -6,7 +6,6 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.content.ServiceConnection;
 import android.media.AudioFormat;
 import android.media.AudioManager;
 import android.media.AudioTrack;
@@ -14,11 +13,9 @@ import android.media.MediaCodec;
 import android.media.MediaCodecInfo;
 import android.media.MediaExtractor;
 import android.media.MediaFormat;
-import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Handler;
 import android.os.HandlerThread;
-import android.os.IBinder;
 import android.os.Looper;
 import android.os.Message;
 import android.os.SystemClock;
@@ -29,6 +26,7 @@ import android.view.KeyEvent;
 import android.view.Surface;
 
 import com.weidi.eventbus.EventBusUtils;
+import com.weidi.threadpool.ThreadPool;
 import com.weidi.usefragments.media.MediaUtils;
 import com.weidi.usefragments.receiver.MediaButtonReceiver;
 import com.weidi.usefragments.tool.AACPlayer;
@@ -39,11 +37,12 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
-import java.sql.Wrapper;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+
+import static com.weidi.usefragments.business.video_player.FFMPEG.DO_SOMETHING_CODE_audioHandleData;
+import static com.weidi.usefragments.business.video_player.FFMPEG.USE_MODE_ONLY_VIDEO;
 
 /***
  Created by weidi on 2019/8/6.
@@ -86,11 +85,11 @@ public class SimpleVideoPlayer9 {
             SimpleVideoPlayer9.class.getSimpleName();
     private static final boolean DEBUG = true;
 
-    public static final int MAX_CACHE_AUDIO_COUNT = 400;// 5000
-    public static final int MAX_CACHE_VIDEO_COUNT = 500;
+    public static final int MAX_CACHE_AUDIO_COUNT = 600;// 5000
+    public static final int MAX_CACHE_VIDEO_COUNT = 60;
 
     private static final int START_CACHE_COUNT_HTTP = 100;// 3000
-    private static final int START_CACHE_COUNT_LOCAL = 100;
+    private static final int START_CACHE_COUNT_LOCAL = 30;
 
     // 只是设置为默认值
     // 音频一帧的大小不能超过这个值,不然出错(如果设成1024 * 1024会有杂音,不能过大,调查了好久才发现跟这个有关)
@@ -147,8 +146,6 @@ public class SimpleVideoPlayer9 {
     private boolean mIsLocal = false;
     private MediaExtractor extractor = null;
 
-    private IMediaDataInterface mIMediaDataStub;
-
     private Handler mUiHandler = null;
     private Handler mThreadHandler = null;
     private HandlerThread mHandlerThread = null;
@@ -159,9 +156,7 @@ public class SimpleVideoPlayer9 {
     private Object handleDataLock = new Object();
     private AudioWrapper mAudioWrapper = new AudioWrapper(TYPE_AUDIO);
     private VideoWrapper mVideoWrapper = new VideoWrapper(TYPE_VIDEO);
-
-    //private AVPacketQueue audioQueue = new AVPacketQueue();
-    //private AVPacketQueue videoQueue = new AVPacketQueue();
+    private int use_mode = FFMPEG.USE_MODE_MEDIA;
 
     private static class SimpleWrapper {
         public String mime = null;
@@ -177,10 +172,8 @@ public class SimpleVideoPlayer9 {
         public boolean isHandling = false;
         // readData用于缓存数据,handleData用于处理数据
         public ArrayList<AVPacket> readData = null;
-        public ArrayList<AVPacket> handleData = null;
-        public boolean handleDataFull = false;
-
-        public AVPacketQueue queue = null;
+        // public ArrayList<AVPacket> handleData = null;
+        // public boolean handleDataFull = false;
 
         public int CACHE;
         public int CACHE_START;
@@ -189,11 +182,11 @@ public class SimpleVideoPlayer9 {
         // 总时长
         public long durationUs = 0;
         // 播放的时长(下面两个参数一起做的事是每隔一秒发一次回调函数)
-        public long presentationTimeUs1 = 0;
+        public long sampleTime = 0;
         public long startTimeUs = 0;
 
         // 使用于时间戳
-        public long presentationTimeUs2 = 0;
+        public long presentationTimeUs = 0;
 
         //        // 下面4个变量在没有seek过的情况下统计是正确的,seek过后就不正确了
         //        // "块"的概念,一"块"有N个字节.
@@ -222,9 +215,9 @@ public class SimpleVideoPlayer9 {
         // 一帧音频或者视频的最大值
         public int frameMaxLength = 0;
         // 音频或者视频一帧的实际大小
-        public int frameDataLength = 0;
+        public int size = 0;
         // 放一帧音频或者视频的容器
-        public byte[] frameData = null;
+        public byte[] data = null;
 
         // seekTo
         public long progressUs = -1;
@@ -237,7 +230,7 @@ public class SimpleVideoPlayer9 {
             switch (type) {
                 case TYPE_AUDIO:
                     this.type = TYPE_AUDIO;
-                    CACHE = MAX_CACHE_AUDIO_COUNT;
+                    //CACHE = MAX_CACHE_AUDIO_COUNT;
                     frameMaxLength = AUDIO_FRAME_MAX_LENGTH;
                     break;
                 case TYPE_VIDEO:
@@ -266,9 +259,9 @@ public class SimpleVideoPlayer9 {
             //readData.clear();
             //handleData.clear();
             durationUs = 0;
-            presentationTimeUs1 = 0;
+            sampleTime = 0;
             startTimeUs = 0;
-            presentationTimeUs2 = 0;
+            presentationTimeUs = 0;
             if (outputStream != null) {
                 try {
                     outputStream.flush();
@@ -280,7 +273,7 @@ public class SimpleVideoPlayer9 {
             }
             savePath = null;
             frameMaxLength = 0;
-            frameDataLength = 0;
+            size = 0;
 
             /*progressUs = -1;
             needToSeek = false;*/
@@ -303,6 +296,7 @@ public class SimpleVideoPlayer9 {
             }
             if (decoderMediaCodec != null) {
                 decoderMediaCodec.release();
+                decoderMediaCodec = null;
             }
             super.clear();
         }
@@ -310,6 +304,8 @@ public class SimpleVideoPlayer9 {
 
     private static class VideoWrapper extends SimpleWrapper {
         public Surface mSurface = null;
+        public int width = 0;
+        public int height = 0;
 
         private VideoWrapper() {
         }
@@ -321,16 +317,10 @@ public class SimpleVideoPlayer9 {
         public void clear() {
             if (decoderMediaCodec != null) {
                 decoderMediaCodec.release();
+                decoderMediaCodec = null;
             }
             super.clear();
         }
-    }
-
-    private static class AVPacketQueue {
-        AVPacket queue[];
-        int size;
-        int readIndex;
-        int handleIndex;
     }
 
     public SimpleVideoPlayer9() {
@@ -380,7 +370,6 @@ public class SimpleVideoPlayer9 {
         mProgressUs = progressUs;
         mAudioWrapper.durationUs = progressUs;
         mVideoWrapper.durationUs = progressUs;
-        notifyToRead();
         notifyToRead(mAudioWrapper);
         notifyToRead(mVideoWrapper);
     }
@@ -390,10 +379,6 @@ public class SimpleVideoPlayer9 {
             SystemClock.sleep(1);
         }
         MLog.i(TAG, "seekTo() start");
-        mAudioWrapper.needToSeek = false;
-        mVideoWrapper.needToSeek = false;
-        mAudioWrapper.isPausedForSeek = false;
-        mVideoWrapper.isPausedForSeek = false;
         /*int index = -1;
         int size = wrapper.readData.size();
         if (size >= 2) {
@@ -431,6 +416,12 @@ public class SimpleVideoPlayer9 {
         }
         // SEEK_TO_PREVIOUS_SYNC SEEK_TO_CLOSEST_SYNC SEEK_TO_NEXT_SYNC
         extractor.seekTo(mProgressUs, MediaExtractor.SEEK_TO_PREVIOUS_SYNC);
+        mAudioWrapper.needToSeek = false;
+        mVideoWrapper.needToSeek = false;
+        mAudioWrapper.isPausedForSeek = false;
+        mVideoWrapper.isPausedForSeek = false;
+        mAudioWrapper.presentationTimeUs = 0;
+        mVideoWrapper.presentationTimeUs = 0;
 
         MLog.i(TAG, "seekTo() end");
     }
@@ -547,10 +538,25 @@ public class SimpleVideoPlayer9 {
 
                 if (internalPrepare()) {
                     if (prepareAudio() && prepareVideo()) {
-                        new Thread(mAudioHandleData).start();
-                        new Thread(mVideoHandleData).start();
+                        ThreadPool.getFixedThreadPool().execute(new Runnable() {
+                            @Override
+                            public void run() {
+                                handleData(mAudioWrapper);
+                            }
+                        });
+                        ThreadPool.getFixedThreadPool().execute(new Runnable() {
+                            @Override
+                            public void run() {
+                                handleData(mVideoWrapper);
+                            }
+                        });
                         SystemClock.sleep(500);
-                        new Thread(mReadData).start();
+                        ThreadPool.getFixedThreadPool().execute(new Runnable() {
+                            @Override
+                            public void run() {
+                                readData();
+                            }
+                        });
                     } else {
                         if (mCallback != null) {
                             MLog.e(TAG, "onError prepareAudio() || prepareVideo()");
@@ -671,7 +677,7 @@ public class SimpleVideoPlayer9 {
                         mCallback.onPlaybackFinished();
                     }*/
                     if (mProgressUs == -1) {
-                        step = (int) ((mVideoWrapper.presentationTimeUs2
+                        step = (int) ((mVideoWrapper.presentationTimeUs
                                 / (mVideoWrapper.durationUs * 1.00)) * 3840.00);
                         Log.d(TAG, "onKeuiHandleMessageyDown() step: " + step);
                     }
@@ -708,30 +714,34 @@ public class SimpleVideoPlayer9 {
 
     // 读到的都是压缩数据
     private void readData() {
-        MLog.i(TAG, "readData() start");
 
         //setProgressUs(721057837);
 
         int readSize = -1;
         int trackIndex = -1;
         ByteBuffer room = ByteBuffer.allocate(mVideoWrapper.frameMaxLength);
-        byte[] buffer = new byte[mVideoWrapper.frameMaxLength];
+        //byte[] audioBuffer = new byte[mAudioWrapper.frameMaxLength];
+        //byte[] videoBuffer = new byte[mVideoWrapper.frameMaxLength];
 
-        boolean isStarted = false;
-        boolean isSuccess = true;
+        MLog.i(TAG, "readData() start");
+        boolean audioStarted = false;
+        boolean videoStarted = false;
+        int audioSize = 0;
+        int videoSize = 0;
+        AVPacket data = null;
         while (isReading) {
             try {
                 // seekTo
                 if (mAudioWrapper.isPausedForSeek
                         || mVideoWrapper.isPausedForSeek) {
                     seekTo();
+                    audioStarted = false;
+                    videoStarted = false;
                 }
 
-                if (isSuccess) {
-                    room.clear();
-                    readSize = extractor.readSampleData(room, 0);
-                    trackIndex = extractor.getSampleTrackIndex();
-                }
+                room.clear();
+                readSize = extractor.readSampleData(room, 0);
+                trackIndex = extractor.getSampleTrackIndex();
 
                 if (readSize < 0) {
                     // 没有数据可读了,结束
@@ -744,8 +754,8 @@ public class SimpleVideoPlayer9 {
                     MLog.e(TAG, "readData() end videoDataSize: " + mVideoWrapper.readData.size());
 
                     isReading = false;
-                    //                    mAudioWrapper.isReading = false;
-                    //                    mVideoWrapper.isReading = false;
+                    // mAudioWrapper.isReading = false;
+                    // mVideoWrapper.isReading = false;
                     // 开启任务处理数据(如果还没有开启任务过的话)
                     // 如果任务是在这里被开启的,那么说明网络文件长度小于等于CACHE
                     if (!mAudioWrapper.isPausedForUser && !mVideoWrapper.isPausedForUser) {
@@ -759,81 +769,119 @@ public class SimpleVideoPlayer9 {
                     MLog.e(TAG, "readData() notifyToReadWait end");
                     if (mAudioWrapper.isPausedForSeek || mVideoWrapper.isPausedForSeek) {
                         isReading = true;
-                        //                        mAudioWrapper.isReading = true;
-                        //                        mVideoWrapper.isReading = true;
+                        // mAudioWrapper.isReading = true;
+                        // mVideoWrapper.isReading = true;
                         continue;
                     } else {
                         break;
                     }
                 }// readSize < 0
 
-                if (isSuccess) {
-                    Arrays.fill(buffer, (byte) 0);
-                    room.get(buffer, 0, readSize);
+                data = new AVPacket(readSize, extractor.getSampleTime());
+                room.get(data.data, 0, readSize);
+
+                switch (use_mode) {
+                    case FFMPEG.USE_MODE_MEDIA:
+                        if (trackIndex == mAudioWrapper.trackIndex) {
+                            synchronized (mAudioWrapper.readDataLock) {
+                                mAudioWrapper.readData.add(data);
+                                audioSize = mAudioWrapper.readData.size();
+                            }
+
+                            if (!audioStarted && audioSize == mAudioWrapper.CACHE_START) {
+                                MLog.i(TAG, "readData() audio notifyToHandle");
+                                audioStarted = true;
+                                notifyToHandle(mAudioWrapper);
+                            }
+                        } else if (trackIndex == mVideoWrapper.trackIndex) {
+                            synchronized (mVideoWrapper.readDataLock) {
+                                mVideoWrapper.readData.add(data);
+                                videoSize = mVideoWrapper.readData.size();
+                            }
+
+                            if (videoStarted && videoSize >= mVideoWrapper.CACHE) {
+                                //MLog.i(TAG, "readData() notifyToReadWait start");
+                                System.gc();
+                                notifyToReadWait(mVideoWrapper);
+                                if (mAudioWrapper.isPausedForSeek
+                                        || mVideoWrapper.isPausedForSeek) {
+                                    MLog.i(TAG, "readData() notifyToReadWait end for Seek");
+                                    continue;
+                                }
+                                //MLog.i(TAG, "readData() notifyToReadWait end");
+                            } else if (!videoStarted && videoSize == mVideoWrapper.CACHE_START) {
+                                MLog.i(TAG, "readData() video notifyToHandle");
+                                videoStarted = true;
+                                notifyToHandle(mVideoWrapper);
+                            }
+                        }
+                        break;
+                    case FFMPEG.USE_MODE_ONLY_AUDIO:
+                        if (trackIndex == mAudioWrapper.trackIndex) {
+                            synchronized (mAudioWrapper.readDataLock) {
+                                mAudioWrapper.readData.add(data);
+                                audioSize = mAudioWrapper.readData.size();
+                            }
+
+                            if (audioStarted && audioSize >= mAudioWrapper.CACHE) {
+                                System.gc();
+                                notifyToReadWait(mAudioWrapper);
+                                if (mAudioWrapper.isPausedForSeek) {
+                                    continue;
+                                }
+                            } else if (!audioStarted && audioSize == mAudioWrapper.CACHE_START) {
+                                MLog.i(TAG, "readData() audio notifyToHandle");
+                                audioStarted = true;
+                                notifyToHandle(mAudioWrapper);
+                            }
+                        }
+                        break;
+                    case FFMPEG.USE_MODE_ONLY_VIDEO:
+                        if (trackIndex == mVideoWrapper.trackIndex) {
+                            synchronized (mVideoWrapper.readDataLock) {
+                                mVideoWrapper.readData.add(data);
+                                videoSize = mVideoWrapper.readData.size();
+                            }
+
+                            if (videoStarted && videoSize >= mVideoWrapper.CACHE) {
+                                System.gc();
+                                notifyToReadWait(mVideoWrapper);
+                                if (mVideoWrapper.isPausedForSeek) {
+                                    continue;
+                                }
+                            } else if (!videoStarted && videoSize == mVideoWrapper.CACHE_START) {
+                                MLog.i(TAG, "readData() video notifyToHandle");
+                                videoStarted = true;
+                                notifyToHandle(mVideoWrapper);
+                            }
+                        }
+                        break;
+                    default:
+                        break;
                 }
 
-                if (trackIndex == mAudioWrapper.trackIndex) {
-                    isSuccess = push(mAudioWrapper, buffer, readSize, extractor.getSampleTime());
 
-                    if (isSuccess && isStarted && isFull(mAudioWrapper)) {
-                        MLog.i(TAG,
-                                "readData() audio audioDataSize: " + getSize(mAudioWrapper));
-                        MLog.i(TAG,
-                                "readData() audio videoDataSize: " + getSize(mVideoWrapper));
-                        MLog.i(TAG, "readData() audio notifyToReadWait start");
-                        notifyToHandle(mAudioWrapper);
-                        notifyToHandle(mVideoWrapper);
-                        System.gc();
-                        notifyToReadWait();
-                        if (mAudioWrapper.isPausedForSeek
-                                || mVideoWrapper.isPausedForSeek) {
-                            MLog.i(TAG, "readData() notifyToReadWait end for Seek");
-                            continue;
-                        }
-                        MLog.i(TAG, "readData() audio notifyToReadWait end");
-                    } else if (isSuccess
-                            && !isStarted
-                            && getSize(mAudioWrapper) >= mAudioWrapper.CACHE_START) {
-                        MLog.i(TAG, "readData() audio notifyToHandle");
-                        isStarted = true;
-                        notifyToHandle(mAudioWrapper);
-                        notifyToHandle(mVideoWrapper);
+                // Test
+                /*if (trackIndex == mAudioWrapper.trackIndex) {
+                    mAudioWrapper.data = data.data;
+                    mAudioWrapper.size = data.size;
+                    mAudioWrapper.sampleTime = data.sampleTime;
+                    if (!feedInputBufferAndDrainOutputBuffer(mAudioWrapper)) {
+                        mAudioWrapper.isHandling = false;
+                        break;
                     }
                 } else if (trackIndex == mVideoWrapper.trackIndex) {
-                    isSuccess = push(mVideoWrapper, buffer, readSize, extractor.getSampleTime());
-
-                    if (isSuccess && isStarted && isFull(mVideoWrapper)) {
-                        MLog.i(TAG,
-                                "readData() video audioDataSize: " + getSize(mAudioWrapper));
-                        MLog.i(TAG,
-                                "readData() video videoDataSize: " + getSize(mVideoWrapper));
-                        MLog.i(TAG, "readData() video notifyToReadWait start");
-                        notifyToHandle(mAudioWrapper);
-                        notifyToHandle(mVideoWrapper);
-                        System.gc();
-                        notifyToReadWait();
-                        if (mAudioWrapper.isPausedForSeek
-                                || mVideoWrapper.isPausedForSeek) {
-                            MLog.i(TAG, "readData() notifyToReadWait end for Seek");
-                            continue;
-                        }
-                        MLog.i(TAG, "readData() video notifyToReadWait end");
-                    } else if (isSuccess
-                            && !isStarted
-                            && getSize(mVideoWrapper) >= mVideoWrapper.CACHE_START) {
-                        MLog.i(TAG, "readData() video notifyToHandle");
-                        isStarted = true;
-                        notifyToHandle(mAudioWrapper);
-                        notifyToHandle(mVideoWrapper);
+                    mVideoWrapper.data = data.data;
+                    mVideoWrapper.size = data.size;
+                    mVideoWrapper.sampleTime = data.sampleTime;
+                    if (!feedInputBufferAndDrainOutputBuffer(mVideoWrapper)) {
+                        mVideoWrapper.isHandling = false;
+                        break;
                     }
-                }
+                }*/
 
-                if (isSuccess) {
-                    // 跳到下一帧
-                    extractor.advance();
-                } else {
-                    SystemClock.sleep(1);
-                }
+                // 跳到下一帧
+                extractor.advance();
             } catch (Exception e) {
                 e.printStackTrace();
                 isReading = false;
@@ -848,30 +896,59 @@ public class SimpleVideoPlayer9 {
 
     @TargetApi(Build.VERSION_CODES.M)
     private void handleData(SimpleWrapper wrapper) {
-        if (wrapper.type == TYPE_AUDIO) {
-            MLog.d(TAG, "handleData() audio notifyToHandleWait start");
-        } else {
-            MLog.w(TAG, "handleData() video notifyToHandleWait start");
+        switch (use_mode) {
+            case FFMPEG.USE_MODE_MEDIA:
+                if (wrapper.type == TYPE_AUDIO) {
+                    mAudioWrapper.isHandling = true;
+                } else {
+                    mVideoWrapper.isHandling = true;
+                }
+                break;
+            case FFMPEG.USE_MODE_ONLY_AUDIO:
+                if (wrapper.type == TYPE_AUDIO) {
+                    mAudioWrapper.isHandling = true;
+                } else {
+                    mVideoWrapper.isHandling = false;
+                }
+                break;
+            case FFMPEG.USE_MODE_ONLY_VIDEO:
+                if (wrapper.type == TYPE_AUDIO) {
+                    mAudioWrapper.isHandling = false;
+                } else {
+                    mVideoWrapper.isHandling = true;
+                }
+                break;
+            default:
+                break;
         }
-        wrapper.isHandling = true;
-        notifyToHandleWait(wrapper);
-        if (wrapper.type == TYPE_AUDIO) {
-            MLog.d(TAG, "handleData() audio notifyToHandleWait end");
-        } else {
-            MLog.w(TAG, "handleData() video notifyToHandleWait end");
-        }
-        if (!wrapper.isHandling) {
-            return;
+
+        if (wrapper.isHandling) {
+            if (wrapper.type == TYPE_AUDIO) {
+                MLog.d(TAG, "handleData() audio notifyToHandleWait start");
+            } else {
+                MLog.w(TAG, "handleData() video notifyToHandleWait start");
+            }
+            notifyToHandleWait(wrapper);
+            if (wrapper.type == TYPE_AUDIO) {
+                MLog.d(TAG, "handleData() audio notifyToHandleWait end");
+            } else {
+                MLog.w(TAG, "handleData() video notifyToHandleWait end");
+            }
+            if (!wrapper.isHandling) {
+                return;
+            }
         }
 
         AVPacket data = null;
+        int readDataSize = 0;
         if (wrapper.type == TYPE_AUDIO) {
             MLog.d(TAG, "handleData() audio start");
         } else {
             MLog.w(TAG, "handleData() video start");
         }
         while (wrapper.isHandling) {
-            // pause装置
+            // region 暂停装置
+
             if (wrapper.isPausedForUser
                     || wrapper.isPausedForCache
                     || wrapper.isPausedForSeek) {
@@ -879,9 +956,8 @@ public class SimpleVideoPlayer9 {
                 boolean isPausedForSeek = wrapper.isPausedForSeek;
 
                 if (isPausedForSeek) {
-                    wrapper.handleDataFull = false;
-                    wrapper.handleData.clear();
                     wrapper.needToSeek = true;
+                    preElapsedTime = null;
                     if (wrapper.type == TYPE_AUDIO) {
                         MLog.d(TAG, "handleData() audio Seek notifyToHandleWait start");
                     } else {
@@ -926,38 +1002,41 @@ public class SimpleVideoPlayer9 {
                         MLog.w(TAG, "handleData() video Cache notifyToHandleWait end");
                     }
                 }
-            }// pause end
+            }
 
-            if (!isEmpty(wrapper)) {
-                if (wrapper.type == TYPE_AUDIO) {
-                } else {
-                    MLog.w(TAG, "handleData() pull(wrapper) start");
+            // endregion
+
+            // 取得一个AVPacket
+            synchronized (wrapper.readDataLock) {
+                if (!wrapper.readData.isEmpty()) {
+                    data = wrapper.readData.get(0);
+                    wrapper.readData.remove(0);
                 }
-                data = pull(wrapper);
-                if (wrapper.type == TYPE_AUDIO) {
-                } else {
-                    MLog.w(TAG, "handleData() pull(wrapper) end");
-                }
-                if (data == null) {
-                    if (wrapper.type == TYPE_AUDIO) {
-                        MLog.e(TAG, "handleData() audio data is null");
-                    } else {
-                        MLog.e(TAG, "handleData() video data is null");
+                readDataSize = wrapper.readData.size();
+            }
+
+            if (wrapper.type == TYPE_AUDIO) {
+                //MLog.d(TAG, "handleData() audio readDataSize: " + readDataSize);
+                if (use_mode == FFMPEG.USE_MODE_ONLY_AUDIO) {
+                    if ((mIsLocal && (readDataSize % 30 == 0))
+                            || (!mIsLocal && readDataSize < mAudioWrapper.CACHE)) {
+                        notifyToRead(wrapper);
                     }
-                    SystemClock.sleep(1);
-                    continue;
                 }
-
-                if (!isFull(mAudioWrapper) && !isFull(mVideoWrapper)) {
-                    notifyToRead();
+            } else {
+                //MLog.w(TAG, "handleData() video readDataSize: " + readDataSize);
+                if (use_mode == FFMPEG.USE_MODE_MEDIA || use_mode == USE_MODE_ONLY_VIDEO) {
+                    if ((mIsLocal && (readDataSize % 30 == 0))
+                            || (!mIsLocal && readDataSize < mVideoWrapper.CACHE)) {
+                        notifyToRead(wrapper);
+                    }
                 }
+            }
 
-                wrapper.frameData = new byte[data.size];
-                System.arraycopy(data.data, 0, wrapper.frameData, 0, data.size);
-                wrapper.frameDataLength = data.size;
-                wrapper.presentationTimeUs1 = data.sampleTime;
-                data.size = -1;
-                data.sampleTime = -1;
+            if (readDataSize > 0) {
+                wrapper.data = data.data;
+                wrapper.size = data.size;
+                wrapper.sampleTime = data.sampleTime;
 
                 // 向MediaCodec喂数据
                 if (!feedInputBufferAndDrainOutputBuffer(wrapper)) {
@@ -965,28 +1044,29 @@ public class SimpleVideoPlayer9 {
                     break;
                 }
 
+                data.clear();
+
                 if (wrapper.type == TYPE_AUDIO) {
-                } else {
                     curElapsedTime = DateUtils.formatElapsedTime(
-                            (wrapper.presentationTimeUs1 / 1000) / 1000);
+                            (wrapper.sampleTime / 1000) / 1000);
                     if (mCallback != null
                             // 防止重复更新
                             && !TextUtils.equals(curElapsedTime, preElapsedTime)) {
-                        mCallback.onProgressUpdated(wrapper.presentationTimeUs1);
+                        mCallback.onProgressUpdated(wrapper.sampleTime);
                         preElapsedTime = curElapsedTime;
-                        MLog.w(TAG, "handleData() curElapsedTime: " + curElapsedTime);
+                        //MLog.d(TAG, "handleData() curElapsedTime: " + curElapsedTime);
                     }
+                } else {
                 }
             } else {
                 if (isReading) {
-                    notifyToRead();
                     if (mCallback != null) {
-                        mCallback.onPaused();
                         if (wrapper.type == TYPE_AUDIO) {
                             MLog.d(TAG, "handleData() audio onPaused");
                         } else {
                             MLog.w(TAG, "handleData() video onPaused");
                         }
+                        mCallback.onPaused();
                     }
 
                     if (wrapper.type == TYPE_AUDIO) {
@@ -1125,22 +1205,12 @@ public class SimpleVideoPlayer9 {
         }
         MLog.d(TAG, "prepareAudio() audio     frameMaxLength: " +
                 mAudioWrapper.frameMaxLength);
-        //mAudioWrapper.readData = new ArrayList<AVPacket>(mAudioWrapper.CACHE);
-        //mAudioWrapper.handleData = new ArrayList<AVPacket>(mAudioWrapper.CACHE);
-        mAudioWrapper.queue = new AVPacketQueue();
-        mAudioWrapper.queue.queue = new AVPacket[mAudioWrapper.CACHE];
-        mAudioWrapper.queue.size = 0;
-        mAudioWrapper.queue.readIndex = 0;
-        mAudioWrapper.queue.handleIndex = 0;
-        for (int i = 0; i < mAudioWrapper.CACHE; i++) {
-            AVPacket data = new AVPacket(mAudioWrapper.frameMaxLength, 0);
-            data.size = -1;
-            data.sampleTime = -1;
-            mAudioWrapper.queue.queue[i] = data;
-        }
+        mAudioWrapper.readData = new ArrayList<AVPacket>();
+        //        mAudioWrapper.handleData = new ArrayList<AVPacket>(mAudioWrapper.CACHE);
         // 创建音频解码器
         try {
             extractor.selectTrack(mAudioWrapper.trackIndex);
+            MLog.d(TAG, "prepareAudio() audio mAudioWrapper.mime: " + mAudioWrapper.mime);
             switch (mAudioWrapper.mime) {
                 case "audio/ac4":
                     MediaCodecInfo mediaCodecInfo =
@@ -1237,6 +1307,9 @@ public class SimpleVideoPlayer9 {
         MLog.w(TAG, "prepareVideo() video decoderMediaFormat: " +
                 mVideoWrapper.decoderMediaFormat.toString());
 
+        mVideoWrapper.width = mVideoWrapper.decoderMediaFormat.getInteger(MediaFormat.KEY_WIDTH);
+        mVideoWrapper.height = mVideoWrapper.decoderMediaFormat.getInteger(MediaFormat.KEY_HEIGHT);
+
         /***
          解码前
          {
@@ -1251,6 +1324,7 @@ public class SimpleVideoPlayer9 {
          color-standard=1, crop-left=0, color-transfer=3, stride=1280,
          mime=video/raw, slice-height=720, width=1280, color-range=2, crop-bottom=719}
          */
+        // durationUs
         if (mVideoWrapper.decoderMediaFormat.containsKey(MediaFormat.KEY_DURATION)) {
             mVideoWrapper.durationUs =
                     mVideoWrapper.decoderMediaFormat.getLong(MediaFormat.KEY_DURATION);
@@ -1268,25 +1342,15 @@ public class SimpleVideoPlayer9 {
                 mVideoWrapper.durationUs = mAudioWrapper.durationUs;
             }
         }
+        // max-input-size
         if (mVideoWrapper.decoderMediaFormat.containsKey(MediaFormat.KEY_MAX_INPUT_SIZE)) {
             mVideoWrapper.frameMaxLength =
                     mVideoWrapper.decoderMediaFormat.getInteger(MediaFormat.KEY_MAX_INPUT_SIZE);
         }
         MLog.w(TAG, "prepareVideo() video     frameMaxLength: " +
                 mVideoWrapper.frameMaxLength);
-        //mVideoWrapper.readData = new ArrayList<AVPacket>(mVideoWrapper.CACHE);
-        //mVideoWrapper.handleData = new ArrayList<AVPacket>(mVideoWrapper.CACHE);
-        mVideoWrapper.queue = new AVPacketQueue();
-        mVideoWrapper.queue.queue = new AVPacket[mVideoWrapper.CACHE];
-        mVideoWrapper.queue.size = 0;
-        mVideoWrapper.queue.readIndex = 0;
-        mVideoWrapper.queue.handleIndex = 0;
-        for (int i = 0; i < mVideoWrapper.CACHE; i++) {
-            AVPacket data = new AVPacket(mVideoWrapper.frameMaxLength, 0);
-            data.size = -1;
-            data.sampleTime = -1;
-            mVideoWrapper.queue.queue[i] = data;
-        }
+        // 创建队列
+        mVideoWrapper.readData = new ArrayList<AVPacket>(mVideoWrapper.CACHE);
         // 创建视频解码器
         try {
             extractor.selectTrack(mVideoWrapper.trackIndex);
@@ -1412,6 +1476,7 @@ public class SimpleVideoPlayer9 {
             internalRelease();
             return false;
         }
+
         int trackCount = extractor.getTrackCount();
         for (int i = 0; i < trackCount; i++) {
             MediaFormat format = extractor.getTrackFormat(i);
@@ -1435,6 +1500,21 @@ public class SimpleVideoPlayer9 {
             internalRelease();
             return false;
         }
+        if (mAudioWrapper.trackIndex != -1 && mVideoWrapper.trackIndex != -1) {
+            use_mode = FFMPEG.USE_MODE_MEDIA;
+        } else if (mAudioWrapper.trackIndex != -1 && mVideoWrapper.trackIndex == -1) {
+            use_mode = FFMPEG.USE_MODE_ONLY_AUDIO;
+            mAudioWrapper.CACHE = MAX_CACHE_AUDIO_COUNT;
+            mAudioWrapper.CACHE_START = START_CACHE_COUNT_LOCAL;
+        } else if (mAudioWrapper.trackIndex == -1 && mVideoWrapper.trackIndex != -1) {
+            use_mode = FFMPEG.USE_MODE_ONLY_VIDEO;
+        }
+
+        // Test
+        use_mode = FFMPEG.USE_MODE_ONLY_AUDIO;
+        mAudioWrapper.CACHE = MAX_CACHE_AUDIO_COUNT;
+        mAudioWrapper.CACHE_START = START_CACHE_COUNT_LOCAL;
+        use_mode = FFMPEG.USE_MODE_ONLY_VIDEO;
 
         MLog.i(TAG, "internalPrepare() end");
 
@@ -1614,6 +1694,11 @@ public class SimpleVideoPlayer9 {
             try {
                 // 房间号
                 int roomIndex = wrapper.decoderMediaCodec.dequeueOutputBuffer(roomInfo, TIME_OUT);
+                /*if (wrapper.type == TYPE_AUDIO) {
+                    MLog.d(TAG, "drainOutputBuffer() Audio roomIndex: " + roomIndex);
+                } else {
+                    MLog.w(TAG, "drainOutputBuffer() Video roomIndex: " + roomIndex);
+                }*/
                 switch (roomIndex) {
                     case MediaCodec.INFO_TRY_AGAIN_LATER:
                         // 像音频,第一个输出日志
@@ -1682,6 +1767,7 @@ public class SimpleVideoPlayer9 {
                         MLog.w(TAG, "drainOutputBuffer() " +
                                 "Video Output MediaCodec.BUFFER_FLAG_END_OF_STREAM");
                     }
+                    wrapper.decoderMediaCodec.releaseOutputBuffer(roomIndex, wrapper.render);
                     return false;
                 }
                 if ((roomInfo.flags & MediaCodec.BUFFER_FLAG_CODEC_CONFIG) != 0) {
@@ -1721,19 +1807,19 @@ public class SimpleVideoPlayer9 {
             return true;
         }
 
-        // 互相等待,一起start
-        /*wrapper.isStarted = true;
+        /*// 互相等待,一起start
         if (wrapper.type == TYPE_AUDIO) {
             // 如果是音频先走到这里,那么等待视频的开始
-            while (wrapper.isStarted && !mVideoWrapper.isStarted) {
+            while (!mVideoWrapper.isStarted) {
                 if (!wrapper.isHandling) {
                     return false;
                 }
                 SystemClock.sleep(10);
             }
         } else {
+            wrapper.isStarted = true;
             // 如果是视频先走到这里,那么等待音频的开始
-            while (wrapper.isStarted && !mAudioWrapper.isStarted) {
+            while (!mAudioWrapper.isStarted) {
                 if (!wrapper.isHandling) {
                     return false;
                 }
@@ -1747,10 +1833,10 @@ public class SimpleVideoPlayer9 {
             // Input Data
             feedInputBufferResult = feedInputBuffer(
                     wrapper.decoderMediaCodec,
-                    wrapper.frameData,
+                    wrapper.data,
                     0,
-                    wrapper.frameDataLength,
-                    wrapper.presentationTimeUs1);
+                    wrapper.size,
+                    wrapper.sampleTime);
 
             // Output Data
             drainOutputBufferResult = drainOutputBuffer(wrapper);
@@ -1772,8 +1858,8 @@ public class SimpleVideoPlayer9 {
          解码后
          {pcm-encoding=2, mime=audio/raw, channel-count=2, sample-rate=48000}
          */
-        MediaFormat newMediaFormat = mAudioWrapper.decoderMediaCodec.getOutputFormat();
         try {
+            MediaFormat newMediaFormat = mAudioWrapper.decoderMediaCodec.getOutputFormat();
             Class clazz = Class.forName("android.media.MediaFormat");
             Method method = clazz.getDeclaredMethod("getMap");
             method.setAccessible(true);
@@ -1789,11 +1875,11 @@ public class SimpleVideoPlayer9 {
                     oldMap.put(entry.getKey(), entry.getValue());
                 }
             }
+            MLog.d(TAG, "handleAudioOutputFormat() newMediaFormat: " +
+                    mAudioWrapper.decoderMediaFormat);
         } catch (Exception e) {
             e.printStackTrace();
         }
-        MLog.d(TAG, "handleAudioOutputFormat() newMediaFormat: " +
-                mAudioWrapper.decoderMediaFormat);
 
         if (mAudioWrapper.mAudioTrack != null) {
             mAudioWrapper.mAudioTrack.release();
@@ -1821,7 +1907,7 @@ public class SimpleVideoPlayer9 {
                 " audioFormat: " + audioFormat);
 
         // create AudioTrack
-        /*mAudioWrapper.mAudioTrack = MediaUtils.createAudioTrack(
+        mAudioWrapper.mAudioTrack = MediaUtils.createAudioTrack(
                 AudioManager.STREAM_MUSIC,
                 sampleRateInHz, channelCount, audioFormat,
                 AudioTrack.MODE_STREAM);
@@ -1829,13 +1915,19 @@ public class SimpleVideoPlayer9 {
             setVolume();
             mAudioWrapper.mAudioTrack.play();
             mAudioWrapper.isStarted = true;
+            /*while (!mVideoWrapper.isStarted) {
+                if (!mAudioWrapper.isHandling) {
+                    return;
+                }
+                SystemClock.sleep(10);
+            }*/
             MLog.d(TAG, "handleAudioOutputFormat() 声音马上输出......");
         } else {
             MLog.e(TAG, "handleAudioOutputFormat() AudioTrack is null");
             mAudioWrapper.isHandling = false;
             notifyToRead(mAudioWrapper);
             notifyToHandle(mAudioWrapper);
-        }*/
+        }
 
         mAudioWrapper.decoderMediaFormat.setInteger(MediaFormat.KEY_IS_ADTS, 1);
         mAudioWrapper.decoderMediaFormat.setInteger(MediaFormat.KEY_PRIORITY, 0);
@@ -1846,6 +1938,12 @@ public class SimpleVideoPlayer9 {
                     AACPlayer.sampleRateIndexMap.get(sampleRateInHz),
                     AACPlayer.channelConfigIndexMap.get(channelCount)));
             MediaUtils.setCsdBuffers(mAudioWrapper.decoderMediaFormat, list);
+        }
+
+        // 音视频都已经开始的话,就可以播放了
+        if (mCallback != null) {
+            MLog.i(TAG, "onPlayed");
+            mCallback.onPlayed();
         }
     }
 
@@ -1862,8 +1960,8 @@ public class SimpleVideoPlayer9 {
          color-standard=1, crop-left=0, color-transfer=3, stride=1280,
          mime=video/raw, slice-height=720, width=1280, color-range=2, crop-bottom=719}
          */
-        MediaFormat newMediaFormat = mVideoWrapper.decoderMediaCodec.getOutputFormat();
         try {
+            MediaFormat newMediaFormat = mVideoWrapper.decoderMediaCodec.getOutputFormat();
             Class clazz = Class.forName("android.media.MediaFormat");
             Method method = clazz.getDeclaredMethod("getMap");
             method.setAccessible(true);
@@ -1879,26 +1977,27 @@ public class SimpleVideoPlayer9 {
                     oldMap.put(entry.getKey(), entry.getValue());
                 }
             }
+            MLog.w(TAG, "handleVideoOutputFormat() newMediaFormat: " +
+                    mVideoWrapper.decoderMediaFormat);
         } catch (Exception e) {
             e.printStackTrace();
         }
-        MLog.w(TAG, "handleVideoOutputFormat() newMediaFormat: " +
-                mVideoWrapper.decoderMediaFormat);
+
+        mVideoWrapper.isStarted = true;
+        // 如果是视频先走到这里,那么等待音频的开始
+        /*while (!mAudioWrapper.isStarted) {
+            if (!mVideoWrapper.isHandling) {
+                return;
+            }
+            SystemClock.sleep(10);
+        }*/
+
         MLog.w(TAG, "handleVideoOutputFormat() 画面马上输出......");
-
-        // 音视频都已经开始的话,就可以播放了
-        if (mCallback != null) {
-            MLog.i(TAG, "onPlayed");
-            mCallback.onPlayed();
-        }
     }
-
-    byte[] audioData = new byte[4096];
 
     private int handleAudioOutputBuffer(
             int roomIndex, ByteBuffer room, MediaCodec.BufferInfo roomInfo, int roomSize) {
-        // 被使用到video那里进行"睡眠"多少时间的判断
-        mAudioWrapper.presentationTimeUs2 = roomInfo.presentationTimeUs;
+        mAudioWrapper.presentationTimeUs = roomInfo.presentationTimeUs;
 
         // 输出音频
         if (mAudioWrapper.isHandling
@@ -1906,22 +2005,10 @@ public class SimpleVideoPlayer9 {
                 && mAudioWrapper.mAudioTrack.getState() == AudioTrack.STATE_INITIALIZED) {
             room.position(roomInfo.offset);
             room.limit(roomInfo.offset + roomSize);
-            //byte[] audioData = new byte[roomSize];
-            //room.get(audioData, 0, audioData.length);
-            //mAudioWrapper.mAudioTrack.write(audioData, 0, audioData.length);
-            Arrays.fill(audioData, (byte) 0);
-            room.get(audioData, 0, roomSize);
-            mAudioWrapper.mAudioTrack.write(audioData, 0, roomSize);
-
-            /*String elapsedTime = DateUtils.formatElapsedTime(
-                    (roomInfo.presentationTimeUs / 1000) / 1000);
-            MLog.e(TAG, "mAudioCallback             presentationTimeUs: " +
-                    roomInfo.presentationTimeUs / 1000);
-            MLog.e(TAG, "mAudioCallback                    elapsedTime: " +
-                    elapsedTime);*/
+            byte[] audioData = new byte[roomSize];
+            room.get(audioData, 0, audioData.length);
+            mAudioWrapper.mAudioTrack.write(audioData, 0, audioData.length);
         }
-
-        SystemClock.sleep(1000);
 
         return 0;
     }
@@ -1929,61 +2016,57 @@ public class SimpleVideoPlayer9 {
     private boolean mIsSeeked = false;
     private int mCountWithSeek = 0;
     private long prePresentationTimeUs;
+    private static final int RUN_COUNTS = 100;
+    private int[] timeDiff = new int[RUN_COUNTS];
+    private int TIME_DIFFERENCE = 150;
+    private int runCounts = 0;
 
     // 最最最关键的一步
     private int handleVideoOutputBuffer(
             int roomIndex, ByteBuffer room, MediaCodec.BufferInfo roomInfo, int roomSize) {
-        mVideoWrapper.presentationTimeUs2 = roomInfo.presentationTimeUs;
-        /*MLog.w(TAG, "handleVideoOutputBuffer() 时间差: " +
-                (mVideoWrapper.presentationTimeUs2-prePresentationTimeUs));*/
-        /*int diffTime = (int)((mVideoWrapper.presentationTimeUs2 - prePresentationTimeUs)/1000);
-        SystemClock.sleep(diffTime);
-        prePresentationTimeUs = mVideoWrapper.presentationTimeUs2;*/
+        mVideoWrapper.presentationTimeUs = roomInfo.presentationTimeUs;
 
-        // test
-
-        // 不能执行,不然很卡顿
-        /*if (roomInfo.presentationTimeUs / 1000
-                - mAudioWrapper.presentationTimeUs2 / 1000 < 0) {
-            return;
-        }*/
-
-        // SystemClock.sleep(10);
-
-        long timeUs = mVideoWrapper.presentationTimeUs2 / 1000
-                - mAudioWrapper.presentationTimeUs2 / 1000;
-        MLog.w(TAG, "handleVideoOutputBuffer() videoUs - audioUs: " + timeUs);
-        if (mIsSeeked && (timeUs > 1000 || timeUs < 0)) {
-            // MLog.e(TAG, "handleVideoOutputBuffer() videoUs - audioUs: " + timeUs);
-            if (++mCountWithSeek <= 10) {
-                mVideoWrapper.presentationTimeUs2 = mAudioWrapper.presentationTimeUs2;
-            } else {
-                mIsSeeked = false;
-                mCountWithSeek = 0;
+        if (mVideoWrapper.presentationTimeUs > 0 && mAudioWrapper.presentationTimeUs > 0) {
+            int diffTime =
+                    (int) ((mVideoWrapper.presentationTimeUs - mAudioWrapper.presentationTimeUs) / 1000);
+            if (runCounts < RUN_COUNTS) {
+                if (diffTime > 0) {
+                    timeDiff[runCounts++] = diffTime;
+                }
+            } else if (runCounts == RUN_COUNTS) {
+                runCounts++;
+                int totleTimeDiff = 0;
+                for (int i = 0; i < RUN_COUNTS; i++) {
+                    totleTimeDiff += timeDiff[i];
+                }
+                int averageTimeDiff = totleTimeDiff / RUN_COUNTS;
+                // 希望得到一个好的TIME_DIFFERENCE值
+                // hope_to_get_a_good_result();
+                TIME_DIFFERENCE = averageTimeDiff;
+                MLog.w(TAG, "handleVideoOutputBuffer() TIME_DIFFERENCE: " + TIME_DIFFERENCE);
             }
-            return -1;
+            if (diffTime < 0) {
+                return 0;
+            }
+            while (diffTime > TIME_DIFFERENCE) {
+                if (!mVideoWrapper.isHandling
+                        || !mAudioWrapper.isHandling
+                        || mVideoWrapper.isPausedForUser
+                        || mAudioWrapper.isPausedForUser
+                        || mVideoWrapper.isPausedForCache
+                        || mAudioWrapper.isPausedForCache
+                        || mVideoWrapper.isPausedForSeek
+                        || mAudioWrapper.isPausedForSeek) {
+                    return 0;
+                }
+
+                SystemClock.sleep(1);
+                diffTime =
+                        (int) ((mVideoWrapper.presentationTimeUs - mAudioWrapper.presentationTimeUs) / 1000);
+            }
         }
 
-        /*while (mAudioWrapper.isHandling
-                && mVideoWrapper.isHandling
-                && (mVideoWrapper.presentationTimeUs2 / 1000
-                - mAudioWrapper.presentationTimeUs2 / 1000 >= 650)) {
-            if (mVideoWrapper.isPausedForSeek) {
-                return 0;
-            }
-            SystemClock.sleep(1);
-        }*/
-
-        /*while (roomInfo.presentationTimeUs / 1000 > System.currentTimeMillis()
-                - MediaUtils.startTimeMs
-                - MediaUtils.paustTimeMs
-                + MediaUtils.progressTimeMs
-                - MediaUtils.variableValues) {
-            if (mVideoWrapper.isPausedForSeek) {
-                return 0;
-            }
-            SystemClock.sleep(1);
-        }*/
+        SystemClock.sleep(11);
 
         return 0;
     }
@@ -2047,131 +2130,6 @@ public class SimpleVideoPlayer9 {
             e.printStackTrace();
         }
     }
-
-    private boolean push(SimpleWrapper wrapper, byte[] buffer, int readSize, long sampleTime) {
-        synchronized (wrapper.readDataLock) {
-            if (wrapper.queue.readIndex < wrapper.CACHE
-                    && wrapper.queue.size < wrapper.CACHE) {
-                AVPacket data = wrapper.queue.queue[wrapper.queue.readIndex];
-                if (data.size < 0) {
-                    data.size = readSize;
-                    data.sampleTime = sampleTime;
-                    Arrays.fill(data.data, (byte) 0);
-                    System.arraycopy(buffer, 0, data.data, 0, readSize);
-                    wrapper.queue.size++;
-                    wrapper.queue.readIndex++;
-                    if (wrapper.queue.readIndex == wrapper.CACHE) {
-                        wrapper.queue.readIndex = 0;
-                    }
-                    /*if (wrapper.type == TYPE_AUDIO) {
-                        MLog.d(TAG, "push() audio" +
-                                " readIndex: " + wrapper.queue.readIndex +
-                                " size: " + wrapper.queue.size);
-                    } else {
-                        MLog.w(TAG, "push() video" +
-                                " readIndex: " + wrapper.queue.readIndex +
-                                " size: " + wrapper.queue.size);
-                    }*/
-                } else {
-                    return false;
-                }
-            } else {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    private AVPacket pull(SimpleWrapper wrapper) {
-        AVPacket data = null;
-        synchronized (wrapper.readDataLock) {
-            if (wrapper.queue.handleIndex < wrapper.CACHE
-                    && wrapper.queue.size > 0) {
-                data = wrapper.queue.queue[wrapper.queue.handleIndex];
-                if (data.size > 0) {
-                    wrapper.queue.size--;
-                    wrapper.queue.handleIndex++;
-                    if (wrapper.queue.handleIndex == wrapper.CACHE) {
-                        wrapper.queue.handleIndex = 0;
-                    }
-                    /*if (wrapper.type == TYPE_AUDIO) {
-                        MLog.d(TAG, "pull() audio" +
-                                " handleIndex: " + wrapper.queue.handleIndex +
-                                " size: " + wrapper.queue.size);
-
-                    } else {
-                        MLog.i(TAG, "pull() video" +
-                                " handleIndex: " + wrapper.queue.handleIndex +
-                                " size: " + wrapper.queue.size);
-                    }*/
-                } else {
-                    data = null;
-                }
-            } else {
-                data = null;
-            }
-        }
-        return data;
-    }
-
-    private boolean isFull(SimpleWrapper wrapper) {
-        boolean isFull = false;
-        synchronized (wrapper.readDataLock) {
-            isFull = wrapper.queue.size == wrapper.CACHE;
-        }
-        return isFull;
-    }
-
-    private boolean isEmpty(SimpleWrapper wrapper) {
-        boolean isEmpty = false;
-        synchronized (wrapper.readDataLock) {
-            isEmpty = wrapper.queue.size == 0;
-        }
-        return isEmpty;
-    }
-
-    private int getSize(SimpleWrapper wrapper) {
-        int size = 0;
-        synchronized (wrapper.readDataLock) {
-            size = wrapper.queue.size;
-        }
-        return size;
-    }
-
-    private Runnable mAudioHandleData = new Runnable() {
-        @Override
-        public void run() {
-            handleData(mAudioWrapper);
-        }
-    };
-
-    private Runnable mVideoHandleData = new Runnable() {
-        @Override
-        public void run() {
-            handleData(mVideoWrapper);
-        }
-    };
-
-    private Runnable mReadData = new Runnable() {
-        @Override
-        public void run() {
-            readData();
-        }
-    };
-
-    private ServiceConnection serviceConnection = new ServiceConnection() {
-        @Override
-        public void onServiceConnected(ComponentName name, IBinder service) {
-            MLog.d(TAG, "onServiceConnected()");
-            mIMediaDataStub = IMediaDataInterface.Stub.asInterface(service);
-        }
-
-        @Override
-        public void onServiceDisconnected(ComponentName name) {
-            MLog.d(TAG, "onServiceDisconnected()");
-            mIMediaDataStub = null;
-        }
-    };
 
     /////////////////////////////////////////////////////////////////
 
