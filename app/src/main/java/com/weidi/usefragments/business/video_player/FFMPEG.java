@@ -213,111 +213,112 @@ public class FFMPEG {
     }
 
     // 供jni层调用(底层信息才是通过这个接口反映到java层的)
-    public Callback mCallback = new Callback() {
-        @Override
-        public int onTransact(int code, Parcel data, Parcel reply) {
-            return 0;
-        }
+    public com.weidi.usefragments.tool.Callback mCallback =
+            new com.weidi.usefragments.tool.Callback() {
+                @Override
+                public int onTransact(int code, Parcel data, Parcel reply) {
+                    return 0;
+                }
 
-        @Override
-        public int onTransact(int code, JniObject jniObject) {
-            //MLog.i(TAG, "onTransact() code: " + code + " " + jniObject.toString());
-            if (mUiHandler != null) {
-                Message msg = mUiHandler.obtainMessage();
-                msg.what = code;
-                msg.obj = jniObject;
-                mUiHandler.removeMessages(code);
-                mUiHandler.sendMessage(msg);
-            }
-            return 0;
-        }
+                @Override
+                public int onTransact(int code, JniObject jniObject) {
+                    //MLog.i(TAG, "onTransact() code: " + code + " " + jniObject.toString());
+                    if (mUiHandler != null) {
+                        Message msg = mUiHandler.obtainMessage();
+                        msg.what = code;
+                        msg.obj = jniObject;
+                        mUiHandler.removeMessages(code);
+                        mUiHandler.sendMessage(msg);
+                    }
+                    return 0;
+                }
 
-        @Override
-        public void onReady() {
-            MLog.i(TAG, "FFMPEG onReady()");
-            if (mUiHandler != null) {
-                mUiHandler.removeMessages(Callback.MSG_ON_TRANSACT_READY);
-                mUiHandler.sendEmptyMessage(Callback.MSG_ON_TRANSACT_READY);
-            }
-        }
+                @Override
+                public void onReady() {
+                    MLog.i(TAG, "FFMPEG onReady()");
+                    if (mUiHandler != null) {
+                        mUiHandler.removeMessages(Callback.MSG_ON_TRANSACT_READY);
+                        mUiHandler.sendEmptyMessage(Callback.MSG_ON_TRANSACT_READY);
+                    }
+                }
 
-        @Override
-        public void onChangeWindow(int width, int height) {
-            MLog.i(TAG, "FFMPEG onChangeWindow() width: " + width + " height: " + height);
-            if (mUiHandler != null) {
-                Message msg = mUiHandler.obtainMessage();
-                msg.what = Callback.MSG_ON_TRANSACT_CHANGE_WINDOW;
-                msg.arg1 = width;
-                msg.arg2 = height;
-                mUiHandler.removeMessages(Callback.MSG_ON_TRANSACT_CHANGE_WINDOW);
-                mUiHandler.sendMessage(msg);
-            }
-        }
+                @Override
+                public void onChangeWindow(int width, int height) {
+                    MLog.i(TAG, "FFMPEG onChangeWindow() width: " + width + " height: " + height);
+                    if (mUiHandler != null) {
+                        Message msg = mUiHandler.obtainMessage();
+                        msg.what = Callback.MSG_ON_TRANSACT_CHANGE_WINDOW;
+                        msg.arg1 = width;
+                        msg.arg2 = height;
+                        mUiHandler.removeMessages(Callback.MSG_ON_TRANSACT_CHANGE_WINDOW);
+                        mUiHandler.sendMessage(msg);
+                    }
+                }
 
-        @Override
-        public void onPlayed() {
-            MLog.i(TAG, "FFMPEG onPlayed()");
-            if (mUiHandler != null) {
-                mUiHandler.removeMessages(Callback.MSG_ON_TRANSACT_PLAYED);
-                mUiHandler.sendEmptyMessage(Callback.MSG_ON_TRANSACT_PLAYED);
-            }
-        }
+                @Override
+                public void onPlayed() {
+                    MLog.i(TAG, "FFMPEG onPlayed()");
+                    if (mUiHandler != null) {
+                        mUiHandler.removeMessages(Callback.MSG_ON_TRANSACT_PLAYED);
+                        mUiHandler.sendEmptyMessage(Callback.MSG_ON_TRANSACT_PLAYED);
+                    }
+                }
 
-        @Override
-        public void onPaused() {
-            MLog.i(TAG, "FFMPEG onPaused()");
-            if (mUiHandler != null) {
-                mUiHandler.removeMessages(Callback.MSG_ON_TRANSACT_PAUSED);
-                mUiHandler.sendEmptyMessage(Callback.MSG_ON_TRANSACT_PAUSED);
-            }
-        }
+                @Override
+                public void onPaused() {
+                    MLog.i(TAG, "FFMPEG onPaused()");
+                    if (mUiHandler != null) {
+                        mUiHandler.removeMessages(Callback.MSG_ON_TRANSACT_PAUSED);
+                        mUiHandler.sendEmptyMessage(Callback.MSG_ON_TRANSACT_PAUSED);
+                    }
+                }
 
-        @Override
-        public void onFinished() {
-            MLog.i(TAG, "FFMPEG onFinished()");
-            if (mUiHandler != null) {
-                mUiHandler.removeMessages(Callback.MSG_ON_TRANSACT_FINISHED);
-                mUiHandler.sendEmptyMessage(Callback.MSG_ON_TRANSACT_FINISHED);
-            }
-        }
+                @Override
+                public void onFinished() {
+                    MLog.i(TAG, "FFMPEG onFinished()");
+                    if (mUiHandler != null) {
+                        mUiHandler.removeMessages(Callback.MSG_ON_TRANSACT_FINISHED);
+                        mUiHandler.sendEmptyMessage(Callback.MSG_ON_TRANSACT_FINISHED);
+                    }
+                }
 
-        @Override
-        public void onProgressUpdated(long presentationTime) {
-            // 视频时长小于0时(如直播节目),不回调
-            if (mUiHandler != null) {
-                Message msg = mUiHandler.obtainMessage();
-                msg.what = Callback.MSG_ON_TRANSACT_PROGRESS_UPDATED;
-                msg.obj = presentationTime;
-                mUiHandler.removeMessages(Callback.MSG_ON_TRANSACT_PROGRESS_UPDATED);
-                mUiHandler.sendMessage(msg);
-            }
-        }
+                @Override
+                public void onProgressUpdated(long presentationTime) {
+                    // 视频时长小于0时(如直播节目),不回调
+                    if (mUiHandler != null) {
+                        Message msg = mUiHandler.obtainMessage();
+                        msg.what = Callback.MSG_ON_TRANSACT_PROGRESS_UPDATED;
+                        msg.obj = presentationTime;
+                        mUiHandler.removeMessages(Callback.MSG_ON_TRANSACT_PROGRESS_UPDATED);
+                        mUiHandler.sendMessage(msg);
+                    }
+                }
 
-        @Override
-        public void onError(int error, String errorInfo) {
-            MLog.e(TAG, "FFMPEG onError() error: " + error + " errorInfo: " + errorInfo);
-            if (mUiHandler != null) {
-                Message msg = mUiHandler.obtainMessage();
-                msg.what = Callback.MSG_ON_TRANSACT_ERROR;
-                msg.arg1 = error;
-                msg.obj = errorInfo;
-                mUiHandler.removeMessages(Callback.MSG_ON_TRANSACT_ERROR);
-                mUiHandler.sendMessage(msg);
-            }
-        }
+                @Override
+                public void onError(int error, String errorInfo) {
+                    MLog.e(TAG, "FFMPEG onError() error: " + error + " errorInfo: " + errorInfo);
+                    if (mUiHandler != null) {
+                        Message msg = mUiHandler.obtainMessage();
+                        msg.what = Callback.MSG_ON_TRANSACT_ERROR;
+                        msg.arg1 = error;
+                        msg.obj = errorInfo;
+                        mUiHandler.removeMessages(Callback.MSG_ON_TRANSACT_ERROR);
+                        mUiHandler.sendMessage(msg);
+                    }
+                }
 
-        @Override
-        public void onInfo(String info) {
-            MLog.i(TAG, "FFMPEG onInfo() info: " + info);
-            if (mUiHandler != null) {
-                Message msg = mUiHandler.obtainMessage();
-                msg.what = Callback.MSG_ON_TRANSACT_INFO;
-                msg.obj = info;
-                mUiHandler.removeMessages(Callback.MSG_ON_TRANSACT_INFO);
-                mUiHandler.sendMessage(msg);
-            }
-        }
-    };
+                @Override
+                public void onInfo(String info) {
+                    MLog.i(TAG, "FFMPEG onInfo() info: " + info);
+                    if (mUiHandler != null) {
+                        Message msg = mUiHandler.obtainMessage();
+                        msg.what = Callback.MSG_ON_TRANSACT_INFO;
+                        msg.obj = info;
+                        mUiHandler.removeMessages(Callback.MSG_ON_TRANSACT_INFO);
+                        mUiHandler.sendMessage(msg);
+                    }
+                }
+            };
 
     public static void decodeYUV420SP(byte[] rgbBuf, byte[] yuv420sp, int width, int height) {
         final int frameSize = width * height;
