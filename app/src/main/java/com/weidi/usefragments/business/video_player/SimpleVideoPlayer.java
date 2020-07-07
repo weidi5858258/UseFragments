@@ -1214,6 +1214,7 @@ public class SimpleVideoPlayer {
         // 创建音频解码器
         try {
             extractor.selectTrack(mAudioWrapper.trackIndex);
+            // audio/vorbis
             MLog.d(TAG, "prepareAudio() audio mAudioWrapper.mime: " + mAudioWrapper.mime);
             switch (mAudioWrapper.mime) {
                 case "audio/ac4":
@@ -1369,6 +1370,8 @@ public class SimpleVideoPlayer {
         // 创建视频解码器
         try {
             extractor.selectTrack(mVideoWrapper.trackIndex);
+            // video/x-vnd.on2.vp9
+            MLog.w(TAG, "prepareVideo() video mVideoWrapper.mime: " + mVideoWrapper.mime);
             mVideoWrapper.decoderMediaCodec =
                     MediaUtils.getVideoDecoderMediaCodec(
                             mVideoWrapper.mime,
