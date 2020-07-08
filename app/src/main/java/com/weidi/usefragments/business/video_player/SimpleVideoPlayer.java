@@ -80,15 +80,20 @@ import static com.weidi.usefragments.service.DownloadFileService.PREFERENCES_NAM
  从缓存中copy过来的数据都是一帧帧的音视频帧.
  因此只要截取每一帧然后进行解码就行了.
 
+ mp4,flv,rtmp不需要adts头
+ hls,rtp,ts需要adts头
+
+ android的无法分离高profile的h264文件,分离的是Baseline（profile）
+
  “video/x-vnd.on2.vp8” - VP8 video (i.e. video in .webm)
  “video/x-vnd.on2.vp9” - VP9 video (i.e. video in .webm)
- “video/mp4v-es”       - MPEG4 video
+ “video/mp4v-es”       - MPEG4 video (mp4)
  “video/3gpp”          - H.263 video
  “video/avc”           - H.264/AVC video
  “audio/mp4a-latm”     - AAC audio (note, this is raw AAC packets, not packaged in LATM!)
  “audio/3gpp”          - AMR narrowband audio
  “audio/amr-wb”        - AMR wideband audio
- “audio/mpeg”          - MPEG1/2 audio layer III
+ “audio/mpeg”          - MPEG1/2 audio layer III (mp3)
  “audio/vorbis”        - vorbis audio
  “audio/g711-alaw”     - G.711 alaw audio
  “audio/g711-mlaw”     - G.711 ulaw audio
