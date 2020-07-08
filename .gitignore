@@ -11,3 +11,5 @@ build
 gradle
 weidi_library
 local.properties
+.push_git.sh
+.git_push_impl.sh
