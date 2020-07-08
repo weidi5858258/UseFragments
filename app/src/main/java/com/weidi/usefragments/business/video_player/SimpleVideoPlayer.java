@@ -80,6 +80,21 @@ import static com.weidi.usefragments.service.DownloadFileService.PREFERENCES_NAM
  从缓存中copy过来的数据都是一帧帧的音视频帧.
  因此只要截取每一帧然后进行解码就行了.
 
+ “video/x-vnd.on2.vp8” - VP8 video (i.e. video in .webm)
+ “video/x-vnd.on2.vp9” - VP9 video (i.e. video in .webm)
+ “video/mp4v-es”       - MPEG4 video
+ “video/3gpp”          - H.263 video
+ “video/avc”           - H.264/AVC video
+ “audio/mp4a-latm”     - AAC audio (note, this is raw AAC packets, not packaged in LATM!)
+ “audio/3gpp”          - AMR narrowband audio
+ “audio/amr-wb”        - AMR wideband audio
+ “audio/mpeg”          - MPEG1/2 audio layer III
+ “audio/vorbis”        - vorbis audio
+ “audio/g711-alaw”     - G.711 alaw audio
+ “audio/g711-mlaw”     - G.711 ulaw audio
+ “text/vtt”
+ “text/cea-608”
+ “text/cea-708”
  */
 
 public class SimpleVideoPlayer {
