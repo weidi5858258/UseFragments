@@ -31,6 +31,7 @@ import com.weidi.threadpool.ThreadPool;
 import com.weidi.usefragments.media.MediaUtils;
 import com.weidi.usefragments.receiver.MediaButtonReceiver;
 import com.weidi.usefragments.tool.AACPlayer;
+import com.weidi.usefragments.tool.Callback;
 import com.weidi.usefragments.tool.MLog;
 
 import java.io.BufferedOutputStream;
@@ -98,7 +99,7 @@ public class SimpleVideoPlayer {
     // 音频一帧的大小不能超过这个值,不然出错(如果设成1024 * 1024会有杂音,不能过大,调查了好久才发现跟这个有关)
     private static final int AUDIO_FRAME_MAX_LENGTH = 1024 * 100;// 1024 * 100
     // 视频一帧的大小不能超过这个值,不然出错
-    private static final int VIDEO_FRAME_MAX_LENGTH = 1024 * 1024;
+    private static final int VIDEO_FRAME_MAX_LENGTH = 1024 * 1024 * 5;
 
     public static final int TYPE_AUDIO = 0x0001;
     public static final int TYPE_VIDEO = 0x0002;
@@ -353,7 +354,9 @@ public class SimpleVideoPlayer {
         MLog.i(TAG, "----------------------------------------------------------");
         if (progressUs < 0
                 || progressUs > mAudioWrapper.durationUs
-                || progressUs > mVideoWrapper.durationUs) {
+                || progressUs > mVideoWrapper.durationUs
+                || mAudioWrapper.isPausedForSeek
+                || mVideoWrapper.isPausedForSeek) {
             MLog.i(TAG, "setProgressUs() return");
             return;
         }
@@ -1201,16 +1204,16 @@ public class SimpleVideoPlayer {
             }
         }
         // max-input-size
-        mAudioWrapper.frameMaxLength = AUDIO_FRAME_MAX_LENGTH;
-        if (mAudioWrapper.decoderMediaFormat.containsKey(MediaFormat.KEY_MAX_INPUT_SIZE)) {
-            mAudioWrapper.frameMaxLength =
-                    mAudioWrapper.decoderMediaFormat.getInteger(MediaFormat.KEY_MAX_INPUT_SIZE);
-            if (mAudioWrapper.frameMaxLength <= 0) {
-                mAudioWrapper.frameMaxLength = AUDIO_FRAME_MAX_LENGTH;
-            }
+        if (!mAudioWrapper.decoderMediaFormat.containsKey(MediaFormat.KEY_MAX_INPUT_SIZE)) {
+            // 4K 8192
+            mAudioWrapper.decoderMediaFormat.setInteger(
+                    MediaFormat.KEY_MAX_INPUT_SIZE, AUDIO_FRAME_MAX_LENGTH);
         }
+        mAudioWrapper.frameMaxLength =
+                mAudioWrapper.decoderMediaFormat.getInteger(MediaFormat.KEY_MAX_INPUT_SIZE);
         MLog.d(TAG, "prepareAudio() audio     frameMaxLength: " +
                 mAudioWrapper.frameMaxLength);
+        String errorInfo = null;
         // 创建音频解码器
         try {
             extractor.selectTrack(mAudioWrapper.trackIndex);
@@ -1248,6 +1251,7 @@ public class SimpleVideoPlayer {
                 | IllegalArgumentException
                 | IOException e) {
             e.printStackTrace();
+            errorInfo = e.toString();
             if (mAudioWrapper.decoderMediaCodec != null) {
                 mAudioWrapper.decoderMediaCodec.release();
                 mAudioWrapper.decoderMediaCodec = null;
@@ -1259,6 +1263,9 @@ public class SimpleVideoPlayer {
                 extractor = null;
             }
             internalRelease();
+            if (mCallback != null) {
+                mCallback.onError(Callback.ERROR_FFMPEG_INIT, errorInfo);
+            }
             return false;
         }
 
@@ -1306,6 +1313,9 @@ public class SimpleVideoPlayer {
             mVideoWrapper.mSurface = mSurface;
         } else {
             MLog.e(TAG, "prepareVideo() mSurface is null");
+            if (mCallback != null) {
+                mCallback.onError(Callback.ERROR_FFMPEG_INIT, "Surface is null");
+            }
             return false;
         }
         /***
@@ -1357,16 +1367,16 @@ public class SimpleVideoPlayer {
             }
         }
         // max-input-size
-        mVideoWrapper.frameMaxLength = VIDEO_FRAME_MAX_LENGTH;
-        if (mVideoWrapper.decoderMediaFormat.containsKey(MediaFormat.KEY_MAX_INPUT_SIZE)) {
-            mVideoWrapper.frameMaxLength =
-                    mVideoWrapper.decoderMediaFormat.getInteger(MediaFormat.KEY_MAX_INPUT_SIZE);
-            if (mVideoWrapper.frameMaxLength <= 0) {
-                mVideoWrapper.frameMaxLength = VIDEO_FRAME_MAX_LENGTH;
-            }
+        if (!mVideoWrapper.decoderMediaFormat.containsKey(MediaFormat.KEY_MAX_INPUT_SIZE)) {
+            // 4K 3110400
+            mVideoWrapper.decoderMediaFormat.setInteger(
+                    MediaFormat.KEY_MAX_INPUT_SIZE, VIDEO_FRAME_MAX_LENGTH);
         }
+        mVideoWrapper.frameMaxLength =
+                mVideoWrapper.decoderMediaFormat.getInteger(MediaFormat.KEY_MAX_INPUT_SIZE);
         MLog.w(TAG, "prepareVideo() video     frameMaxLength: " +
                 mVideoWrapper.frameMaxLength);
+        String errorInfo = null;
         // 创建视频解码器
         try {
             extractor.selectTrack(mVideoWrapper.trackIndex);
@@ -1382,6 +1392,7 @@ public class SimpleVideoPlayer {
                 | IllegalStateException
                 | IllegalArgumentException e) {
             e.printStackTrace();
+            errorInfo = e.toString();
             if (mVideoWrapper.decoderMediaCodec != null) {
                 mVideoWrapper.decoderMediaCodec.release();
                 mVideoWrapper.decoderMediaCodec = null;
@@ -1393,6 +1404,9 @@ public class SimpleVideoPlayer {
                 extractor = null;
             }
             internalRelease();
+            if (mCallback != null) {
+                mCallback.onError(Callback.ERROR_FFMPEG_INIT, errorInfo);
+            }
             return false;
         }
 
@@ -1458,10 +1472,14 @@ public class SimpleVideoPlayer {
 
         if (mPath.startsWith("/storage/")) {
             File file = new File(mPath);
-            if (!file.canRead()
+            if (!file.exists()
+                    || !file.canRead()
                     || file.isDirectory()) {
                 MLog.e(TAG, "internalPrepare() 不能读取此文件: " + mPath);
                 internalRelease();
+                if (mCallback != null) {
+                    mCallback.onError(Callback.ERROR_FFMPEG_INIT, "文件有问题");
+                }
                 return false;
             }
             long fileSize = file.length();
@@ -1485,6 +1503,10 @@ public class SimpleVideoPlayer {
                 extractor = null;
             }
             internalRelease();
+            if (mCallback != null) {
+                mCallback.onError(
+                        Callback.ERROR_FFMPEG_INIT, "setDataSource() occurs error");
+            }
             return false;
         }
 
@@ -1513,6 +1535,10 @@ public class SimpleVideoPlayer {
                 extractor = null;
             }
             internalRelease();
+            if (mCallback != null) {
+                mCallback.onError(
+                        Callback.ERROR_FFMPEG_INIT, "audio and video aren't find");
+            }
             return false;
         }
 
@@ -1729,6 +1755,7 @@ public class SimpleVideoPlayer {
                     } else {
                         handleVideoOutputBuffer(roomIndex, room, roomInfo, roomSize);
                     }
+                    room.clear();
                 } else {
                     // video
                     handleVideoOutputBuffer(roomIndex, null, roomInfo, roomSize);
@@ -1742,7 +1769,6 @@ public class SimpleVideoPlayer {
                         MLog.w(TAG, "drainOutputBuffer() " +
                                 "Video Output MediaCodec.BUFFER_FLAG_END_OF_STREAM");
                     }
-                    wrapper.decoderMediaCodec.releaseOutputBuffer(roomIndex, wrapper.render);
                     return false;
                 }
                 if ((roomInfo.flags & MediaCodec.BUFFER_FLAG_CODEC_CONFIG) != 0) {
@@ -1990,7 +2016,8 @@ public class SimpleVideoPlayer {
                 && mAudioWrapper.mAudioTrack.getState() == AudioTrack.STATE_INITIALIZED) {
             byte[] audioData = new byte[roomSize];
             room.get(audioData, 0, audioData.length);
-            mAudioWrapper.mAudioTrack.write(audioData, 0, audioData.length);
+            mAudioWrapper.mAudioTrack.write(audioData, roomInfo.offset, audioData.length);
+            //mAudioWrapper.mAudioTrack.write(audioData, 0, audioData.length);
         }
 
         return 0;

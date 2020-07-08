@@ -187,6 +187,7 @@ public class PlayerWrapper {
     // 是否是竖屏 true为竖屏
     private boolean mIsPortraitScreen;
 
+    public static final String PLAYBACK_USE_PLAYER = "playback_use_player";
     public static final String PLAYER_FFMPEG = "player_ffmpeg";
     public static final String PLAYER_MEDIACODEC = "player_mediacodec";
     private String whatPlayer = PLAYER_FFMPEG;
@@ -444,7 +445,6 @@ public class PlayerWrapper {
             public void onStopTrackingTouch(SeekBar seekBar) {
             }
         });
-
         mProgressBar.setOnTouchListener(new View.OnTouchListener() {
             @Override
             public boolean onTouch(View v, MotionEvent event) {
@@ -845,8 +845,7 @@ public class PlayerWrapper {
     public void startPlayback() {
         MLog.d(TAG, "startPlayback()");
 
-        // Test
-        // setPlayer(PLAYER_MEDIACODEC);
+        whatPlayer = mSP.getString(PLAYBACK_USE_PLAYER, PLAYER_FFMPEG);
 
         if (mSurfaceHolder == null) {
             mSurfaceHolder = mSurfaceView.getHolder();
@@ -919,6 +918,7 @@ public class PlayerWrapper {
                                 mSimpleVideoPlayer.setDataSource(mPath);
                                 mSimpleVideoPlayer.setSurface(mSurfaceHolder.getSurface());
                                 if (!mSimpleVideoPlayer.initPlayer()) {
+
                                     return;
                                 }
                                 break;

@@ -14,7 +14,6 @@ import android.os.Message;
 import android.provider.MediaStore;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
-import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.text.TextUtils;
 import android.view.LayoutInflater;
@@ -43,6 +42,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 import static com.weidi.usefragments.business.video_player.PlayerWrapper.PLAYBACK_ADDRESS;
+import static com.weidi.usefragments.business.video_player.PlayerWrapper.PLAYBACK_USE_PLAYER;
 
 /***
 
@@ -678,6 +678,7 @@ public class ContentsFragment extends BaseFragment {
         try {
             position = Integer.parseInt(jumpToPosition);
         } catch (NumberFormatException e) {
+            numberFormatException(jumpToPosition);
             return;
         }
         MLog.i(TAG, "maybeJumpToPosition()       position: " + position);
@@ -723,6 +724,14 @@ public class ContentsFragment extends BaseFragment {
                     mLayoutManager.smoothScrollToPosition(finalPosition - 1);
                 }
             }, 500);
+        }
+    }
+
+    private void numberFormatException(String text) {
+        if (text.startsWith("player_")) {
+            mPreferences.edit().putString(PLAYBACK_USE_PLAYER, text).commit();
+            mAddressET.setText("");
+            MyToast.show(text);
         }
     }
 
