@@ -463,8 +463,7 @@ public class PlayerWrapper {
                             MLog.d(TAG, "MotionEvent.ACTION_UP mProgress: " + mProgress);
                         }
                         if (mProgress >= 0 && mProgress <= mMediaDuration) {
-                            if (TextUtils.equals(whatPlayer, PLAYER_MEDIACODEC)
-                                    && (TextUtils.isEmpty(mType) || mType.startsWith("video/"))) {
+                            if (TextUtils.equals(whatPlayer, PLAYER_MEDIACODEC)) {
                                 mSimpleVideoPlayer.setProgressUs(mProgress * 1000000);
                             } else {
                                 mFFMPEGPlayer.onTransact(
@@ -630,8 +629,7 @@ public class PlayerWrapper {
                 clickCounts = 0;
                 break;
             case MSG_START_PLAYBACK:
-                if (TextUtils.equals(whatPlayer, PLAYER_MEDIACODEC)
-                        && (TextUtils.isEmpty(mType) || mType.startsWith("video/"))) {
+                if (TextUtils.equals(whatPlayer, PLAYER_MEDIACODEC)) {
                     ThreadPool.getFixedThreadPool().execute(new Runnable() {
                         @Override
                         public void run() {
@@ -685,8 +683,7 @@ public class PlayerWrapper {
                 }
                 break;
             case MSG_SEEK_TO_ADD:
-                if (TextUtils.equals(whatPlayer, PLAYER_MEDIACODEC)
-                        && (TextUtils.isEmpty(mType) || mType.startsWith("video/"))) {
+                if (TextUtils.equals(whatPlayer, PLAYER_MEDIACODEC)) {
                     mSimpleVideoPlayer.setProgressUs(
                             mSimpleVideoPlayer.getCurrentPosition() + addStep * 1000000);
                 } else {
@@ -699,8 +696,7 @@ public class PlayerWrapper {
                 addStep = 0;
                 break;
             case MSG_SEEK_TO_SUBTRACT:
-                if (TextUtils.equals(whatPlayer, PLAYER_MEDIACODEC)
-                        && (TextUtils.isEmpty(mType) || mType.startsWith("video/"))) {
+                if (TextUtils.equals(whatPlayer, PLAYER_MEDIACODEC)) {
                     mSimpleVideoPlayer.setProgressUs(
                             mSimpleVideoPlayer.getCurrentPosition() - subtractStep * 1000000);
                 } else {
@@ -843,7 +839,7 @@ public class PlayerWrapper {
     }
 
     public void startPlayback() {
-        MLog.d(TAG, "startPlayback()");
+        MLog.d(TAG, "startPlayback() start");
 
         whatPlayer = mSP.getString(PLAYBACK_USE_PLAYER, PLAYER_FFMPEG);
 
@@ -854,6 +850,7 @@ public class PlayerWrapper {
         mSurfaceHolder.setFormat(PixelFormat.RGBA_8888);
         // 底层有关参数的设置
         mFFMPEGPlayer.setHandler(mUiHandler);
+        mSimpleVideoPlayer.setHandler(mUiHandler);
         mSimpleVideoPlayer.setCallback(mFFMPEGPlayer.mCallback);
 
         // 开启线程初始化ffmpeg
@@ -904,38 +901,45 @@ public class PlayerWrapper {
 
                 // endregion
 
+                if (mIsSeparatedAudioVideo
+                        && TextUtils.equals(whatPlayer, PLAYER_MEDIACODEC)) {
+                    MyToast.show(PLAYER_MEDIACODEC + "模式下不能播放");
+                    if (mService != null) {
+                        mService.removeView();
+                        if (mSurfaceHolder != null) {
+                            mSurfaceHolder.removeCallback(mSurfaceCallback);
+                            mSurfaceHolder = null;
+                        }
+                    }
+                    return;
+                }
+
                 sendEmptyMessage(DO_SOMETHING_CODE_init);
                 if (!mIsSeparatedAudioVideo) {
-                    if (TextUtils.isEmpty(mType)
-                            || mType.startsWith("video/")) {
-                        switch (whatPlayer) {
-                            case PLAYER_FFMPEG:
-                                mFFMPEGPlayer.onTransact(DO_SOMETHING_CODE_setMode,
-                                        // USE_MODE_MEDIA_4K
-                                        JniObject.obtain().writeInt(FFMPEG.USE_MODE_MEDIA));
-                                break;
-                            case PLAYER_MEDIACODEC:
-                                mSimpleVideoPlayer.setDataSource(mPath);
-                                mSimpleVideoPlayer.setSurface(mSurfaceHolder.getSurface());
-                                if (!mSimpleVideoPlayer.initPlayer()) {
+                    if (TextUtils.equals(whatPlayer, PLAYER_MEDIACODEC)) {
+                        mSimpleVideoPlayer.setDataSource(mPath);
+                        mSimpleVideoPlayer.setSurface(mSurfaceHolder.getSurface());
+                        if (!mSimpleVideoPlayer.initPlayer()) {
 
-                                    return;
-                                }
-                                break;
-                            default:
-                                break;
+                            return;
                         }
-                    } else if (mType.startsWith("audio/")) {
-                        mFFMPEGPlayer.onTransact(DO_SOMETHING_CODE_setMode,
-                                JniObject.obtain().writeInt(USE_MODE_ONLY_AUDIO));
+                    } else {
+                        if (TextUtils.isEmpty(mType)
+                                || mType.startsWith("video/")) {
+                            mFFMPEGPlayer.onTransact(DO_SOMETHING_CODE_setMode,
+                                    // USE_MODE_MEDIA_4K
+                                    JniObject.obtain().writeInt(FFMPEG.USE_MODE_MEDIA));
+                        } else if (mType.startsWith("audio/")) {
+                            mFFMPEGPlayer.onTransact(DO_SOMETHING_CODE_setMode,
+                                    JniObject.obtain().writeInt(USE_MODE_ONLY_AUDIO));
+                        }
                     }
 
                     if (mPathTimeMap.containsKey(mPath)) {
                         long position = mPathTimeMap.get(mPath);
                         MLog.d(TAG, "startPlayback()               position: " + position);
 
-                        if (TextUtils.equals(whatPlayer, PLAYER_MEDIACODEC)
-                                && (TextUtils.isEmpty(mType) || mType.startsWith("video/"))) {
+                        if (TextUtils.equals(whatPlayer, PLAYER_MEDIACODEC)) {
                             mSimpleVideoPlayer.setProgressUs(position * 1000000);
                         } else {
                             mFFMPEGPlayer.onTransact(DO_SOMETHING_CODE_seekTo,
@@ -952,8 +956,7 @@ public class PlayerWrapper {
                     }
                 }
 
-                if (TextUtils.equals(whatPlayer, PLAYER_MEDIACODEC)
-                        && (TextUtils.isEmpty(mType) || mType.startsWith("video/"))) {
+                if (TextUtils.equals(whatPlayer, PLAYER_MEDIACODEC)) {
                 } else {
                     mFFMPEGPlayer.onTransact(DO_SOMETHING_CODE_setSurface,
                             JniObject.obtain()
@@ -974,13 +977,14 @@ public class PlayerWrapper {
                 mUiHandler.sendEmptyMessage(MSG_START_PLAYBACK);
                 if (!mIsSeparatedAudioVideo) {
                     SystemClock.sleep(600);
-                    if (TextUtils.equals(whatPlayer, PLAYER_MEDIACODEC)
-                            && (TextUtils.isEmpty(mType) || mType.startsWith("video/"))) {
+                    if (TextUtils.equals(whatPlayer, PLAYER_MEDIACODEC)) {
                         mSimpleVideoPlayer.readData();
                     } else {
                         sendEmptyMessage(DO_SOMETHING_CODE_readData);
                     }
                 }
+
+                MLog.d(TAG, "startPlayback() end");
             }
         });
     }
@@ -1566,8 +1570,7 @@ public class PlayerWrapper {
         // 视频宽高
         mVideoWidth = msg.arg1;
         mVideoHeight = msg.arg2;
-        if (TextUtils.equals(whatPlayer, PLAYER_MEDIACODEC)
-                && (TextUtils.isEmpty(mType) || mType.startsWith("video/"))) {
+        if (TextUtils.equals(whatPlayer, PLAYER_MEDIACODEC)) {
             mMediaDuration = mSimpleVideoPlayer.getDurationUs() / 1000000;
         } else {
             mMediaDuration = Long.parseLong(
@@ -1824,8 +1827,7 @@ public class PlayerWrapper {
         public void surfaceDestroyed(
                 SurfaceHolder holder) {
             MLog.d(TAG, "surfaceDestroyed()");
-            if (TextUtils.equals(whatPlayer, PLAYER_MEDIACODEC)
-                    && (TextUtils.isEmpty(mType) || mType.startsWith("video/"))) {
+            if (TextUtils.equals(whatPlayer, PLAYER_MEDIACODEC)) {
                 mSimpleVideoPlayer.release();
             } else {
                 mFFMPEGPlayer.releaseAll();
@@ -1860,8 +1862,7 @@ public class PlayerWrapper {
                     }
                     break;
                 case R.id.button_play:
-                    if (TextUtils.equals(whatPlayer, PLAYER_MEDIACODEC)
-                            && (TextUtils.isEmpty(mType) || mType.startsWith("video/"))) {
+                    if (TextUtils.equals(whatPlayer, PLAYER_MEDIACODEC)) {
                         if (mSimpleVideoPlayer.isRunning()) {
                             if (mSimpleVideoPlayer.isPlaying()) {
                                 mPlayIB.setVisibility(View.GONE);
@@ -1884,8 +1885,7 @@ public class PlayerWrapper {
                     }
                     break;
                 case R.id.button_pause:
-                    if (TextUtils.equals(whatPlayer, PLAYER_MEDIACODEC)
-                            && (TextUtils.isEmpty(mType) || mType.startsWith("video/"))) {
+                    if (TextUtils.equals(whatPlayer, PLAYER_MEDIACODEC)) {
                         if (mSimpleVideoPlayer.isRunning()) {
                             if (!mSimpleVideoPlayer.isPlaying()) {
                                 mPlayIB.setVisibility(View.VISIBLE);
@@ -1938,8 +1938,7 @@ public class PlayerWrapper {
                 case R.id.volume_normal:
                     mVolumeNormal.setVisibility(View.GONE);
                     mVolumeMute.setVisibility(View.VISIBLE);
-                    if (TextUtils.equals(whatPlayer, PLAYER_MEDIACODEC)
-                            && (TextUtils.isEmpty(mType) || mType.startsWith("video/"))) {
+                    if (TextUtils.equals(whatPlayer, PLAYER_MEDIACODEC)) {
                         mSimpleVideoPlayer.setVolume(VOLUME_MUTE);
                     } else {
                         mFFMPEGPlayer.setVolume(VOLUME_MUTE);
@@ -1949,8 +1948,7 @@ public class PlayerWrapper {
                 case R.id.volume_mute:
                     mVolumeNormal.setVisibility(View.VISIBLE);
                     mVolumeMute.setVisibility(View.GONE);
-                    if (TextUtils.equals(whatPlayer, PLAYER_MEDIACODEC)
-                            && (TextUtils.isEmpty(mType) || mType.startsWith("video/"))) {
+                    if (TextUtils.equals(whatPlayer, PLAYER_MEDIACODEC)) {
                         mSimpleVideoPlayer.setVolume(VOLUME_NORMAL);
                     } else {
                         mFFMPEGPlayer.setVolume(VOLUME_NORMAL);

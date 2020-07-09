@@ -43,6 +43,8 @@ import java.util.Map;
 
 import static com.weidi.usefragments.business.video_player.PlayerWrapper.PLAYBACK_ADDRESS;
 import static com.weidi.usefragments.business.video_player.PlayerWrapper.PLAYBACK_USE_PLAYER;
+import static com.weidi.usefragments.business.video_player.PlayerWrapper.PLAYER_FFMPEG;
+import static com.weidi.usefragments.business.video_player.PlayerWrapper.PLAYER_MEDIACODEC;
 
 /***
 
@@ -728,10 +730,14 @@ public class ContentsFragment extends BaseFragment {
     }
 
     private void numberFormatException(String text) {
-        if (text.startsWith("player_")) {
-            mPreferences.edit().putString(PLAYBACK_USE_PLAYER, text).commit();
+        if (text.startsWith("player_f")) {
+            mPreferences.edit().putString(PLAYBACK_USE_PLAYER, PLAYER_FFMPEG).commit();
             mAddressET.setText("");
-            MyToast.show(text);
+            MyToast.show(PLAYER_FFMPEG);
+        } else if (text.startsWith("player_m")) {
+            mPreferences.edit().putString(PLAYBACK_USE_PLAYER, PLAYER_MEDIACODEC).commit();
+            mAddressET.setText("");
+            MyToast.show(PLAYER_MEDIACODEC);
         }
     }
 
