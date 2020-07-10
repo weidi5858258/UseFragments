@@ -5,7 +5,7 @@ import android.app.Application;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Build;
-import android.support.annotation.NonNull;
+
 
 import com.weidi.usefragments.business.audio_player.MusicService;
 
@@ -23,7 +23,7 @@ public final class KeepLive {
      如果在不充电的情况下,把应用移到后台,后台任务就暂停
      如果在  充电的情况下,把应用移到后台,后台任务就运行
      */
-    public static void startWork(@NonNull Application application) {
+    public static void startWork(Application application) {
         if (isMain(application)) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
                 //启动定时器，在定时器中启动本地服务和守护进程

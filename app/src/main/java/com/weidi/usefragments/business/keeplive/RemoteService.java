@@ -11,12 +11,14 @@ import android.os.Build;
 import android.os.IBinder;
 import android.os.PowerManager;
 import android.os.RemoteException;
-import android.support.annotation.Nullable;
-import android.support.v4.app.NotificationCompat;
+
+//import android.support.v4.app.NotificationCompat;
 
 import com.weidi.log.MLog;
 import com.weidi.usefragments.R;
 import com.weidi.usefragments.business.audio_player.MusicService;
+
+import androidx.core.app.NotificationCompat;
 
 /**
  * Created by root on 19-7-1.
@@ -24,7 +26,7 @@ import com.weidi.usefragments.business.audio_player.MusicService;
 
 public class RemoteService extends Service {
 
-    @Nullable
+
     @Override
     public IBinder onBind(Intent intent) {
         MLog.d(TAG, "onBind() ---> MusicService");

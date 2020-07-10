@@ -12,8 +12,8 @@ import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
 import android.provider.MediaStore;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
+
+
 import android.support.v7.widget.RecyclerView;
 import android.text.TextUtils;
 import android.view.LayoutInflater;
@@ -102,7 +102,7 @@ public class ContentsFragment extends BaseFragment {
     }
 
     @Override
-    public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
+    public void onViewCreated(View view, Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
         if (DEBUG)
             MLog.d(TAG, "onViewCreated(): " + printThis() +
@@ -304,8 +304,8 @@ public class ContentsFragment extends BaseFragment {
     @Override
     public void onRequestPermissionsResult(
             int requestCode,
-            @NonNull String[] permissions,
-            @NonNull int[] grantResults) {
+            String[] permissions,
+            int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         if (DEBUG)
             MLog.d(TAG, "onRequestPermissionsResult(): " + printThis() +

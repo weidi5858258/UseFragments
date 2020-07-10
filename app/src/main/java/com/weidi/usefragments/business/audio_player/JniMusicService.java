@@ -18,7 +18,7 @@ import android.os.Looper;
 import android.os.Message;
 import android.os.SystemClock;
 import android.preference.PreferenceManager;
-import android.support.annotation.Nullable;
+
 import android.text.TextUtils;
 import android.text.format.DateUtils;
 import android.util.Log;
@@ -35,7 +35,7 @@ import com.weidi.usefragments.tool.MLog;
  */
 public class JniMusicService extends Service {
 
-    @Nullable
+
     @Override
     public IBinder onBind(Intent intent) {
         MLog.d(TAG, "onBind() ---> RemoteService");

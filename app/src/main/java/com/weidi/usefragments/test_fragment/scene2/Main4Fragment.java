@@ -3,7 +3,7 @@ package com.weidi.usefragments.test_fragment.scene2;
 import android.app.Activity;
 import android.content.res.Configuration;
 import android.os.Bundle;
-import android.support.annotation.Nullable;
+
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -69,7 +69,7 @@ public class Main4Fragment extends BaseFragment {
     }
 
     @Override
-    public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
+    public void onViewCreated(View view, Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
         if (DEBUG)
             MLog.d(TAG, "onViewCreated(): " + this

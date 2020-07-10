@@ -14,10 +14,8 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
-import android.os.Parcel;
 import android.os.PowerManager;
 import android.provider.Settings;
-import android.support.annotation.RequiresApi;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.KeyEvent;
@@ -26,8 +24,7 @@ import android.view.WindowManager;
 import android.view.accessibility.AccessibilityManager;
 import android.widget.FrameLayout;
 
-import com.weidi.eventbus.EventBusUtils;
-import com.weidi.usefragments.business.audio_player.JniMusicService;
+import com.weidi.usefragments.business.audio_player.SimpleAudioPlayer;
 import com.weidi.usefragments.business.back_stack.ShowTitleDialogFragment;
 import com.weidi.usefragments.business.contents.ContentsFragment;
 import com.weidi.usefragments.business.media.AudioFragment;
@@ -41,13 +38,10 @@ import com.weidi.usefragments.business.media.ThrowingScreenFragment;
 import com.weidi.usefragments.business.media.VideoLiveBroadcastingFragment;
 import com.weidi.usefragments.business.medical_record.MedicalRecordFragment;
 import com.weidi.usefragments.business.test_horizontal_card.HorizontalCardFragment;
-import com.weidi.usefragments.business.video_player.FFMPEG;
 import com.weidi.usefragments.business.video_player.PlayerService;
 import com.weidi.usefragments.fragment.FragOperManager;
 import com.weidi.usefragments.fragment.base.BaseFragment;
 import com.weidi.usefragments.javabean.Person;
-import com.weidi.usefragments.business.audio_player.MusicService;
-import com.weidi.usefragments.service.DownloadFileService;
 import com.weidi.usefragments.test_fragment.scene2.A2Fragment;
 import com.weidi.usefragments.test_fragment.scene2.B2Fragment;
 import com.weidi.usefragments.test_fragment.scene2.C2Fragment;
@@ -61,13 +55,14 @@ import com.weidi.usefragments.test_fragment.scene2.TestMotionEventFragment;
 import com.weidi.usefragments.test_fragment.scene2.ViewPagerFragment;
 import com.weidi.usefragments.tool.JniUtils;
 import com.weidi.usefragments.tool.MLog;
-import com.weidi.usefragments.business.audio_player.SimpleAudioPlayer;
 import com.weidi.usefragments.tool.SimpleVideoPlayer;
 
 import java.io.File;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import androidx.annotation.RequiresApi;
 
 /***
  场景:

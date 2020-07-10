@@ -1,0 +1,890 @@
+[
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/layout_fragment_test_viewpager.xml.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/layout/fragment_test_viewpager.xml"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/drawable_media_ic_minus_pressed.png.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/drawable/media_ic_minus_pressed.png"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/layout_activity_main.xml.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/layout/activity_main.xml"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/drawable_media_ic_pause_pressed.png.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/drawable/media_ic_pause_pressed.png"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/drawable_media_ic_next_focused.png.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/drawable/media_ic_next_focused.png"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/animator_exit_left_out.xml.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/animator/exit_left_out.xml"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/drawable_volume_normal.png.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/drawable/volume_normal.png"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/drawable_media_ic_play_focused.png.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/drawable/media_ic_play_focused.png"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/drawable_media_ic_option_repeatall.png.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/drawable/media_ic_option_repeatall.png"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/layout_fragment_contents.xml.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/layout/fragment_contents.xml"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/drawable_media_ic_option_fitscr.png.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/drawable/media_ic_option_fitscr.png"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/drawable_media_ic_option_shuffle_off_focused.png.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/drawable/media_ic_option_shuffle_off_focused.png"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/layout-land_fragment_one_layout.xml.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/layout-land/fragment_one_layout.xml"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/layout-land_controller_panel.xml.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/layout-land/controller_panel.xml"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/drawable_media_ic_state_rw_2.png.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/drawable/media_ic_state_rw_2.png"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/drawable_media_ic_option_subtitle_gray.png.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/drawable/media_ic_option_subtitle_gray.png"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/drawable_a2.jpeg.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/drawable/a2.jpeg"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/layout-land_fragment_record_screen.xml.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/layout-land/fragment_record_screen.xml"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/drawable_media_ic_ff_normal.png.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/drawable/media_ic_ff_normal.png"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/drawable_media_ic_option_repeaton_pressed.png.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/drawable/media_ic_option_repeaton_pressed.png"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/drawable_media_ic_play.xml.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/drawable/media_ic_play.xml"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/animator_exit.xml.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/animator/exit.xml"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/drawable_media_illust_noitems_network.png.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/drawable/media_illust_noitems_network.png"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/drawable_media_ic_plus_pressed.png.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/drawable/media_ic_plus_pressed.png"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/drawable_a8.jpeg.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/drawable/a8.jpeg"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/drawable_media_ic_help_bg.9.png.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/drawable/media_ic_help_bg.9.png"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/drawable_audio_progressbar_bg.xml.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/drawable/audio_progressbar_bg.xml"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/layout_device_title_layout.xml.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/layout/device_title_layout.xml"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/drawable_media_ic_popup_bg.9.png.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/drawable/media_ic_popup_bg.9.png"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/drawable_media_ic_pause_selected.png.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/drawable/media_ic_pause_selected.png"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/layout_content_layout.xml.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/layout/content_layout.xml"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/drawable_media_ic_option_subtitle.png.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/drawable/media_ic_option_subtitle.png"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/drawable_media_ic_ff_pressed.png.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/drawable/media_ic_ff_pressed.png"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/drawable_media_thumb_tile_folder.png.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/drawable/media_thumb_tile_folder.png"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/xml_device_filter.xml.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/xml/device_filter.xml"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/drawable_media_ic_state_rw_3.png.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/drawable/media_ic_state_rw_3.png"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/drawable_media_ic_option_zoom.png.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/drawable/media_ic_option_zoom.png"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/mipmap-mdpi_ic_launcher.png.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/mipmap-mdpi/ic_launcher.png"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/drawable_media_ic_plus_focused.png.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/drawable/media_ic_plus_focused.png"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/drawable_media_ic_prev_pressed.png.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/drawable/media_ic_prev_pressed.png"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/drawable_media_ic_option_fitscr_gray.png.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/drawable/media_ic_option_fitscr_gray.png"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/drawable_media_ic_option_searchinfo.png.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/drawable/media_ic_option_searchinfo.png"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/drawable_media_ic_tile_rec.png.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/drawable/media_ic_tile_rec.png"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/layout_fragment_audio.xml.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/layout/fragment_audio.xml"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/mipmap-hdpi_ic_launcher_round.png.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/mipmap-hdpi/ic_launcher_round.png"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/drawable_a9.jpeg.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/drawable/a9.jpeg"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/layout-land_fragment_video_live_broadcasting.xml.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/layout-land/fragment_video_live_broadcasting.xml"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/drawable_media_ic_option_delete.png.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/drawable/media_ic_option_delete.png"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/layout-land_fragment_audio.xml.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/layout-land/fragment_audio.xml"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/animator_card_flip_left_out.xml.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/animator/card_flip_left_out.xml"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/layout_controller_panel.xml.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/layout/controller_panel.xml"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/drawable_media_ic_option_shuffle_off_normal.png.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/drawable/media_ic_option_shuffle_off_normal.png"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/layout-land_activity_player.xml.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/layout-land/activity_player.xml"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/mipmap-hdpi_ic_launcher.png.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/mipmap-hdpi/ic_launcher.png"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/drawable_media_ic_prev_focused.png.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/drawable/media_ic_prev_focused.png"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/drawable_media_ic_next.xml.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/drawable/media_ic_next.xml"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/drawable_media_ic_option.png.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/drawable/media_ic_option.png"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/drawable_media_ic_pause_focused.png.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/drawable/media_ic_pause_focused.png"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/drawable_media_ic_minus_focused.png.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/drawable/media_ic_minus_focused.png"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/drawable_media_ic_option_rotate.png.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/drawable/media_ic_option_rotate.png"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/drawable_media_ic_next_normal.png.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/drawable/media_ic_next_normal.png"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/layout_fragment_test_motionevent.xml.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/layout/fragment_test_motionevent.xml"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/drawable_media_ic_arrow_up_morecontent.png.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/drawable/media_ic_arrow_up_morecontent.png"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/drawable_a4.jpg.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/drawable/a4.jpg"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/drawable_media_tile_4k.png.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/drawable/media_tile_4k.png"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/layout_fragment_medical_record_dialog.xml.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/layout/fragment_medical_record_dialog.xml"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/drawable_media_ic_fr_selected.png.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/drawable/media_ic_fr_selected.png"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/animator_enter.xml.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/animator/enter.xml"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/layout_fragment_main4.xml.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/layout/fragment_main4.xml"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/animator_card_flip_right_out.xml.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/animator/card_flip_right_out.xml"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/drawable_media_ic_option_repeaton_focused.png.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/drawable/media_ic_option_repeaton_focused.png"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/layout_fragment_test_edittext.xml.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/layout/fragment_test_edittext.xml"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/layout-land_fragment_throwing_screen.xml.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/layout-land/fragment_throwing_screen.xml"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/drawable_media_ic_option_repeatonce_pressed.png.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/drawable/media_ic_option_repeatonce_pressed.png"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/drawable-v24_ic_launcher_foreground.xml.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/drawable-v24/ic_launcher_foreground.xml"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/mipmap-anydpi-v26_ic_launcher.xml.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/drawable_playback_progress_bar.xml.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/drawable/playback_progress_bar.xml"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/layout-land_fragment_main.xml.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/layout-land/fragment_main.xml"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/drawable_media_thumb_tile_photo.png.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/drawable/media_thumb_tile_photo.png"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/layout_activity_player.xml.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/layout/activity_player.xml"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/layout_fragment_main.xml.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/layout/fragment_main.xml"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/drawable_media_illust_noitems_usb.png.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/drawable/media_illust_noitems_usb.png"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/drawable_media_ic_option_playone.png.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/drawable/media_ic_option_playone.png"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/mipmap-xxxhdpi_ic_launcher.png.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/drawable_media_thumb_tile_music.png.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/drawable/media_thumb_tile_music.png"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/layout_activity_main1.xml.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/layout/activity_main1.xml"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/animator_enter_left_in.xml.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/animator/enter_left_in.xml"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/layout_fragment_one_layout.xml.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/layout/fragment_one_layout.xml"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/layout_fragment_record_screen.xml.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/layout/fragment_record_screen.xml"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/drawable_download1.png.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/drawable/download1.png"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/animator_exit_right_out.xml.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/animator/exit_right_out.xml"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/drawable_video_progressbar_bg.xml.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/drawable/video_progressbar_bg.xml"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/layout_activity_player_jni.xml.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/layout/activity_player_jni.xml"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/drawable_media_ic_option_close_pressed.png.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/drawable/media_ic_option_close_pressed.png"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/layout_activity_main2.xml.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/layout/activity_main2.xml"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/drawable_a6.jpeg.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/drawable/a6.jpeg"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/drawable_download2.png.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/drawable/download2.png"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/drawable_media_ic_option_repeatoff.png.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/drawable/media_ic_option_repeatoff.png"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/drawable_media_ic_play_selected.png.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/drawable/media_ic_play_selected.png"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/layout_item_horizontal_card.xml.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/layout/item_horizontal_card.xml"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/drawable_media_ic_option_repeaton_normal.png.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/drawable/media_ic_option_repeaton_normal.png"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/drawable_media_ic_option_shuffle_off_pressed.png.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/drawable/media_ic_option_shuffle_off_pressed.png"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/drawable_media_ic_option_close_focused.png.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/drawable/media_ic_option_close_focused.png"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/drawable_media_ic_option_sizeoriginal_gray.png.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/drawable/media_ic_option_sizeoriginal_gray.png"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/drawable_media_ic_option_repeatoff_pressed.png.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/drawable/media_ic_option_repeatoff_pressed.png"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/drawable_media_ic_ff_focused.png.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/drawable/media_ic_ff_focused.png"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/drawable_media_ic_option_repeatonce.png.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/drawable/media_ic_option_repeatonce.png"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/anim_push_right_in.xml.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/anim/push_right_in.xml"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/anim_slide_in_bottom.xml.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/anim/slide_in_bottom.xml"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/layout_layout_popup_view.xml.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/layout/layout_popup_view.xml"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/drawable_media_ic_option_repeatonce_focused.png.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/drawable/media_ic_option_repeatonce_focused.png"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/drawable_media_ic_option_open_focused.png.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/drawable/media_ic_option_open_focused.png"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/drawable_media_ic_option_close_selected.png.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/drawable/media_ic_option_close_selected.png"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/drawable_media_ic_option_flash_plus.png.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/drawable/media_ic_option_flash_plus.png"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/layout-land_activity_main.xml.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/layout-land/activity_main.xml"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/drawable_media_ic_tile_play.png.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/drawable/media_ic_tile_play.png"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/drawable_media_ic_option_open_normal.png.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/drawable/media_ic_option_open_normal.png"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/mipmap-xhdpi_ic_launcher_round.png.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/mipmap-xhdpi/ic_launcher_round.png"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/drawable_media_ic_option_open_selected.png.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/drawable/media_ic_option_open_selected.png"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/layout_item_medical_record_input.xml.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/layout/item_medical_record_input.xml"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/anim_slide_out_bottom.xml.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/anim/slide_out_bottom.xml"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/drawable_media_ic_state_ff_1.png.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/drawable/media_ic_state_ff_1.png"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/layout_fragment_decode_audio.xml.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/layout/fragment_decode_audio.xml"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/layout_fragment_main1.xml.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/layout/fragment_main1.xml"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/drawable_han_clothes_00002.png.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/drawable/han_clothes_00002.png"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/drawable_media_ic_prev_normal.png.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/drawable/media_ic_prev_normal.png"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/drawable_media_ic_option_shuffle_focused.png.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/drawable/media_ic_option_shuffle_focused.png"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/anim_push_left_in.xml.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/anim/push_left_in.xml"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/layout_fragment_camera2_basic_preview.xml.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/layout/fragment_camera2_basic_preview.xml"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/drawable_media_tile_8k.png.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/drawable/media_tile_8k.png"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/drawable_media_ic_plus_normal.png.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/drawable/media_ic_plus_normal.png"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/drawable_media_ic_option_always_exif_off.png.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/drawable/media_ic_option_always_exif_off.png"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/mipmap-xxhdpi_ic_launcher_round.png.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/mipmap-xxhdpi/ic_launcher_round.png"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/drawable_media_ic_help_triangle.png.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/drawable/media_ic_help_triangle.png"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/drawable_media_ic_fr_pressed.png.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/drawable/media_ic_fr_pressed.png"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/drawable_media_ic_prev.xml.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/drawable/media_ic_prev.xml"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/animator_push_left_in.xml.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/animator/push_left_in.xml"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/anim_slide_left_out.xml.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/anim/slide_left_out.xml"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/drawable_baseline_tv_white_24dp.png.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/drawable/baseline_tv_white_24dp.png"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/drawable_han_clothes_00011.png.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/drawable/han_clothes_00011.png"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/drawable_media_ic_tile_movie.png.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/drawable/media_ic_tile_movie.png"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/animator_enter_right_in.xml.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/animator/enter_right_in.xml"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/drawable_media_ic_tile_photo.png.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/drawable/media_ic_tile_photo.png"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/drawable_media_ic_option_repeatoff_focused.png.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/drawable/media_ic_option_repeatoff_focused.png"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/drawable_media_ic_option_sizedisp.png.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/drawable/media_ic_option_sizedisp.png"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/drawable_media_ic_option_shuffle_normal.png.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/drawable/media_ic_option_shuffle_normal.png"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/drawable_media_ic_ff_selected.png.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/drawable/media_ic_ff_selected.png"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/mipmap-mdpi_ic_launcher_round.png.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/mipmap-mdpi/ic_launcher_round.png"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/layout-land_fragment_decode_play.xml.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/layout-land/fragment_decode_play.xml"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/drawable_media_thumb_tile_livetuner.png.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/drawable/media_thumb_tile_livetuner.png"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/drawable_media_ic_fr_normal.png.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/drawable/media_ic_fr_normal.png"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/animator_card_flip_left_in.xml.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/animator/card_flip_left_in.xml"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/layout_fragment_camera2_basic.xml.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/layout/fragment_camera2_basic.xml"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/anim_slide_right_out.xml.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/anim/slide_right_out.xml"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/layout_fragment_main3.xml.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/layout/fragment_main3.xml"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/layout_fragment_decode_play.xml.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/layout/fragment_decode_play.xml"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/layout_fragment_test_dialog_recycleview.xml.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/layout/fragment_test_dialog_recycleview.xml"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/layout_activity_main3.xml.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/layout/activity_main3.xml"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/drawable_media_ic_option_zoom_gray.png.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/drawable/media_ic_option_zoom_gray.png"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/drawable_media_ic_play_normal.png.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/drawable/media_ic_play_normal.png"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/drawable_media_ic_state_ff_2.png.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/drawable/media_ic_state_ff_2.png"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/mipmap-anydpi-v26_ic_launcher_round.xml.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/drawable_media_ic_pause.xml.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/drawable/media_ic_pause.xml"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/drawable_media_ic_option_shuffle.png.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/drawable/media_ic_option_shuffle.png"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/drawable_a7.jpeg.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/drawable/a7.jpeg"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/layout_fragment_medical_record.xml.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/layout/fragment_medical_record.xml"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/anim_slide_left_in.xml.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/anim/slide_left_in.xml"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/layout_transparent_player.xml.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/layout/transparent_player.xml"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/drawable_media_illust_noitems_all.png.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/drawable/media_illust_noitems_all.png"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/drawable_exit_view.png.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/drawable/exit_view.png"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/drawable_ic_launcher_background.xml.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/drawable/ic_launcher_background.xml"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/drawable_media_ic_option_shuffle_pressed.png.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/drawable/media_ic_option_shuffle_pressed.png"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/drawable_media_ic_option_close_normal.png.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/drawable/media_ic_option_close_normal.png"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/drawable_media_thumb_tile_movie.png.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/drawable/media_thumb_tile_movie.png"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/anim_push_left_out.xml.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/anim/push_left_out.xml"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/drawable_media_ic_tile_music.png.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/drawable/media_ic_tile_music.png"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/mipmap-xxxhdpi_ic_launcher_round.png.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.png"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/drawable_media_ic_next_pressed.png.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/drawable/media_ic_next_pressed.png"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/drawable_media_ic_pause_normal.png.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/drawable/media_ic_pause_normal.png"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/drawable_a1.jpeg.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/drawable/a1.jpeg"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/layout_fragment_video_live_broadcasting.xml.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/layout/fragment_video_live_broadcasting.xml"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/drawable_media_ic_option_sizeoriginal.png.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/drawable/media_ic_option_sizeoriginal.png"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/drawable_media_ic_next_selected.png.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/drawable/media_ic_next_selected.png"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/drawable_media_ic_drawer_settings.png.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/drawable/media_ic_drawer_settings.png"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/drawable_media_ic_play_pressed.png.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/drawable/media_ic_play_pressed.png"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/drawable_media_ic_option_repeatoff_normal.png.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/drawable/media_ic_option_repeatoff_normal.png"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/drawable_media_ic_arrow_down_morecontent.png.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/drawable/media_ic_arrow_down_morecontent.png"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/animator_push_right_in.xml.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/animator/push_right_in.xml"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/drawable_ic_action_info.png.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/drawable/ic_action_info.png"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/drawable_media_ic_option_music.png.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/drawable/media_ic_option_music.png"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/layout_fragment_horizontal_card.xml.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/layout/fragment_horizontal_card.xml"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/mipmap-xxhdpi_ic_launcher.png.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/mipmap-xxhdpi/ic_launcher.png"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/layout_activity_title_view.xml.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/layout/activity_title_view.xml"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/drawable_media_ic_fr_focused.png.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/drawable/media_ic_fr_focused.png"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/animator_card_flip_right_in.xml.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/animator/card_flip_right_in.xml"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/drawable_a3.jpeg.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/drawable/a3.jpeg"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/drawable_media_ic_option_flash_minus.png.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/drawable/media_ic_option_flash_minus.png"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/drawable_media_ic_option_music_gray.png.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/drawable/media_ic_option_music_gray.png"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/drawable_media_ic_option_repeatonce_normal.png.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/drawable/media_ic_option_repeatonce_normal.png"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/layout_fragment_main2.xml.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/layout/fragment_main2.xml"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/drawable_media_ic_minus_normal.png.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/drawable/media_ic_minus_normal.png"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/drawable_volume_mute.png.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/drawable/volume_mute.png"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/layout_item_medical_record.xml.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/layout/item_medical_record.xml"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/anim_slide_right_in.xml.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/anim/slide_right_in.xml"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/drawable_media_ic_option_playall.png.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/drawable/media_ic_option_playall.png"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/drawable_media_ic_option_shuffle_off.png.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/drawable/media_ic_option_shuffle_off.png"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/drawable_media_ic_state_ff_3.png.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/drawable/media_ic_state_ff_3.png"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/drawable_media_ic_prev_selected.png.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/drawable/media_ic_prev_selected.png"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/drawable_media_ic_option_always_exif_on.png.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/drawable/media_ic_option_always_exif_on.png"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/drawable_media_ic_tile_rec_for_control_panel.png.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/drawable/media_ic_tile_rec_for_control_panel.png"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/drawable_media_ic_option_open_pressed.png.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/drawable/media_ic_option_open_pressed.png"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/layout_fragment_throwing_screen.xml.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/layout/fragment_throwing_screen.xml"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/drawable_media_ic_option_repeaton.png.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/drawable/media_ic_option_repeaton.png"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/drawable_a5.jpeg.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/drawable/a5.jpeg"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/drawable_item_selector.xml.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/drawable/item_selector.xml"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/drawable_media_ic_option_expandscr.png.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/drawable/media_ic_option_expandscr.png"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/mipmap-xhdpi_ic_launcher.png.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/mipmap-xhdpi/ic_launcher.png"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/drawable_media_tile_hr.png.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/drawable/media_tile_hr.png"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/xml_accessibility_config.xml.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/xml/accessibility_config.xml"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/drawable_media_ic_state_rw_1.png.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/drawable/media_ic_state_rw_1.png"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/anim_push_right_out.xml.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/anim/push_right_out.xml"
+    },
+    {
+        "merged": "/root/mydev/workspace_android/UseFragments/app/buildout/intermediates/res/merged/debug/layout_fragment_test_view.xml.flat",
+        "source": "/root/mydev/workspace_android/UseFragments/app/src/main/res/layout/fragment_test_view.xml"
+    }
+]

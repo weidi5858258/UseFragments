@@ -1,8 +1,8 @@
 package com.weidi.usefragments.test_view;
 
 import android.content.Context;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
+
+
 import android.util.AttributeSet;
 import android.view.MotionEvent;
 import android.widget.LinearLayout;
@@ -19,20 +19,20 @@ public class LayoutView2 extends LinearLayout {
             LayoutView2.class.getSimpleName();
     private static final boolean DEBUG = true;
 
-    public LayoutView2(@NonNull Context context) {
+    public LayoutView2(Context context) {
         super(context);
     }
 
-    public LayoutView2(@NonNull Context context, @Nullable AttributeSet attrs) {
+    public LayoutView2(Context context, AttributeSet attrs) {
         super(context, attrs);
     }
 
-    public LayoutView2(@NonNull Context context, @Nullable AttributeSet attrs,
+    public LayoutView2(Context context, AttributeSet attrs,
                        int defStyleAttr) {
         super(context, attrs, defStyleAttr);
     }
 
-    public LayoutView2(@NonNull Context context, @Nullable AttributeSet attrs,
+    public LayoutView2(Context context, AttributeSet attrs,
                        int defStyleAttr, int defStyleRes) {
         super(context, attrs, defStyleAttr, defStyleRes);
     }

@@ -1,8 +1,8 @@
 package com.weidi.usefragments.test_view;
 
 import android.content.Context;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
+
+
 import android.util.AttributeSet;
 import android.view.MotionEvent;
 import android.widget.TextView;
@@ -19,15 +19,15 @@ public class MyTextView extends TextView {
             MyTextView.class.getSimpleName();
     private static final boolean DEBUG = true;
 
-    public MyTextView(@NonNull Context context) {
+    public MyTextView(Context context) {
         super(context);
     }
 
-    public MyTextView(@NonNull Context context, @Nullable AttributeSet attrs) {
+    public MyTextView(Context context, AttributeSet attrs) {
         super(context, attrs);
     }
 
-    public MyTextView(@NonNull Context context, @Nullable AttributeSet attrs,
+    public MyTextView(Context context, AttributeSet attrs,
                       int defStyleAttr) {
         super(context, attrs, defStyleAttr);
     }

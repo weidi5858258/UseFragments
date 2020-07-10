@@ -41,7 +41,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-import android.support.annotation.NonNull;
+
 
 /***
  mimeType是已知的,都是通过mimeType去得到各种对象
@@ -319,7 +319,7 @@ public class MediaUtils {
      * 解码器
      * "OMX.google.aac.decoder"
      */
-    public static @NonNull
+    public static
     MediaCodecInfo[] findAllEncodersByMime(String mime) {
         // MediaCodecList.REGULAR_CODECS
         // MediaCodecList.ALL_CODECS
@@ -358,7 +358,7 @@ public class MediaUtils {
         return mediaCodecInfos.toArray(new MediaCodecInfo[mediaCodecInfos.size()]);
     }
 
-    public static @NonNull
+    public static
     MediaCodecInfo[] findAllDecodersByMime(String mime) {
         MediaCodecList codecList = new MediaCodecList(MediaCodecList.ALL_CODECS);
         List<MediaCodecInfo> mediaCodecInfos = new ArrayList<MediaCodecInfo>();
@@ -520,16 +520,16 @@ public class MediaUtils {
 
             @Override
             public void onInputBufferAvailable(
-                    @NonNull MediaCodec codec,
+                    MediaCodec codec,
                     int index) {
                 // 这个方法在使用surface模式的时候不会回调
             }
 
             @Override
             public void onOutputBufferAvailable(
-                    @NonNull MediaCodec codec,
+                    MediaCodec codec,
                     int index,
-                    @NonNull MediaCodec.BufferInfo info) {
+                    MediaCodec.BufferInfo info) {
                 ByteBuffer outputBuffer = codec.getOutputBuffer(index);
                 // 处理数据
 
@@ -539,16 +539,16 @@ public class MediaUtils {
 
             @Override
             public void onError(
-                    @NonNull MediaCodec codec,
-                    @NonNull MediaCodec.CodecException e) {
+                    MediaCodec codec,
+                    MediaCodec.CodecException e) {
                 if (DEBUG)
                     MLog.e(TAG, "onError()\n" + e.getDiagnosticInfo());
             }
 
             @Override
             public void onOutputFormatChanged(
-                    @NonNull MediaCodec codec,
-                    @NonNull MediaFormat format) {
+                    MediaCodec codec,
+                    MediaFormat format) {
                 if (DEBUG)
                     MLog.d(TAG, "onOutputFormatChanged() format: " + format);
                 // getSpsPpsByteBuffer(mediaFormat);
@@ -710,30 +710,30 @@ public class MediaUtils {
 
             @Override
             public void onInputBufferAvailable(
-                    @NonNull MediaCodec codec, int index) {
+                    MediaCodec codec, int index) {
                 // 处理数据
             }
 
             @Override
             public void onOutputBufferAvailable(
-                    @NonNull MediaCodec codec,
+                    MediaCodec codec,
                     int index,
-                    @NonNull MediaCodec.BufferInfo info) {
+                    MediaCodec.BufferInfo info) {
                 // 直接释放即可
                 codec.releaseOutputBuffer(index, true);
             }
 
             @Override
             public void onError(
-                    @NonNull MediaCodec codec,
-                    @NonNull MediaCodec.CodecException e) {
+                    MediaCodec codec,
+                    MediaCodec.CodecException e) {
 
             }
 
             @Override
             public void onOutputFormatChanged(
-                    @NonNull MediaCodec codec,
-                    @NonNull MediaFormat format) {
+                    MediaCodec codec,
+                    MediaFormat format) {
 
             }
         });*/

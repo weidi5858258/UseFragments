@@ -18,8 +18,7 @@ package com.weidi.usefragments.myhandler;
 
 import android.os.Binder;
 import android.os.SystemClock;
-import android.support.annotation.IntDef;
-import android.support.annotation.NonNull;
+
 import android.util.Log;
 import android.util.SparseArray;
 
@@ -27,6 +26,8 @@ import java.io.FileDescriptor;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.util.ArrayList;
+
+import androidx.annotation.IntDef;
 
 public final class MessageQueue {
     private static final String TAG = "MessageQueue";
@@ -99,7 +100,7 @@ public final class MessageQueue {
      *
      * @param handler The IdleHandler to be added.
      */
-    public void addIdleHandler(@NonNull IdleHandler handler) {
+    public void addIdleHandler(IdleHandler handler) {
         if (handler == null) {
             throw new NullPointerException("Can't add a null IdleHandler");
         }
@@ -117,7 +118,7 @@ public final class MessageQueue {
      *
      * @param handler The IdleHandler to be removed.
      */
-    public void removeIdleHandler(@NonNull IdleHandler handler) {
+    public void removeIdleHandler(IdleHandler handler) {
         synchronized (this) {
             mIdleHandlers.remove(handler);
         }
@@ -146,9 +147,9 @@ public final class MessageQueue {
         return !mQuitting && nativeIsPolling(mPtr);
     }
 
-    public void addOnFileDescriptorEventListener(@NonNull FileDescriptor fd,
+    public void addOnFileDescriptorEventListener(FileDescriptor fd,
                                                  @OnFileDescriptorEventListener.Events int events,
-                                                 @NonNull OnFileDescriptorEventListener listener) {
+                                                 OnFileDescriptorEventListener listener) {
         if (fd == null) {
             throw new IllegalArgumentException("fd must not be null");
         }
@@ -161,7 +162,7 @@ public final class MessageQueue {
         }
     }
 
-    public void removeOnFileDescriptorEventListener(@NonNull FileDescriptor fd) {
+    public void removeOnFileDescriptorEventListener(FileDescriptor fd) {
         if (fd == null) {
             throw new IllegalArgumentException("fd must not be null");
         }
@@ -838,7 +839,7 @@ public final class MessageQueue {
          * @see #EVENT_ERROR
          */
         @Events
-        int onFileDescriptorEvents(@NonNull FileDescriptor fd, @Events int events);
+        int onFileDescriptorEvents(FileDescriptor fd, @Events int events);
     }
 
     private static final class FileDescriptorRecord {

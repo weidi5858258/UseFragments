@@ -11,7 +11,7 @@ import android.os.IBinder;
 import android.os.Looper;
 import android.os.Message;
 import android.os.storage.StorageManager;
-import android.support.annotation.Nullable;
+
 import android.text.TextUtils;
 import android.util.Log;
 
@@ -47,7 +47,7 @@ public class DownloadFileService extends Service {
             DownloadFileService.class.getSimpleName();
     private static final boolean DEBUG = true;
 
-    @Nullable
+
     @Override
     public IBinder onBind(Intent intent) {
         MLog.i(TAG, "onBind() intent: " + intent);

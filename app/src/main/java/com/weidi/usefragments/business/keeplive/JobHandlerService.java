@@ -13,12 +13,13 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Build;
-import android.support.annotation.RequiresApi;
-import android.support.v4.app.NotificationCompat;
 
 import com.weidi.log.MLog;
 import com.weidi.usefragments.R;
 import com.weidi.usefragments.business.audio_player.MusicService;
+
+import androidx.annotation.RequiresApi;
+import androidx.core.app.NotificationCompat;
 
 /**
  * 定时器

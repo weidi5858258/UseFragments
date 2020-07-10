@@ -81,6 +81,7 @@ android {
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
 
+    implementation project(':library:core')
     implementation project(":weidi_library")
 
     implementation 'com.fanjun:keeplive:1.1.20'

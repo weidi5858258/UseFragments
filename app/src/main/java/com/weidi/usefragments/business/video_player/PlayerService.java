@@ -15,7 +15,7 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
 import android.os.Message;
-import android.support.annotation.Nullable;
+
 import android.telephony.PhoneStateListener;
 import android.telephony.TelephonyManager;
 import android.text.TextUtils;
@@ -45,7 +45,7 @@ public class PlayerService extends Service {
     private static final String TAG = "player_alexander";
     private static final boolean DEBUG = true;
 
-    @Nullable
+
     @Override
     public IBinder onBind(Intent intent) {
         MLog.i(TAG, "onBind() intent: " + intent);

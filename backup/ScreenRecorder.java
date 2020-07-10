@@ -26,7 +26,7 @@ import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Looper;
 import android.os.Message;
-import android.support.annotation.NonNull;
+
 import android.util.Log;
 
 import com.weidi.usefragments.media.encoder.AudioEncodeConfig;
@@ -405,16 +405,16 @@ public class ScreenRecorder {
 
             @Override
             public void onInputBufferAvailable(
-                    @NonNull MediaCodec codec,
+                    MediaCodec codec,
                     int index) {
 
             }
 
             @Override
             public void onOutputBufferAvailable(
-                    @NonNull MediaCodec codec,
+                    MediaCodec codec,
                     int index,
-                    @NonNull MediaCodec.BufferInfo info) {
+                    MediaCodec.BufferInfo info) {
                 if (VERBOSE) Log.i(TAG, "VideoEncoder output buffer available: index=" + index);
                 try {
                     muxVideo(index, info);
@@ -426,8 +426,8 @@ public class ScreenRecorder {
 
             @Override
             public void onError(
-                    @NonNull MediaCodec codec,
-                    @NonNull MediaCodec.CodecException e) {
+                    MediaCodec codec,
+                    MediaCodec.CodecException e) {
                 ranIntoError = true;
                 Log.e(TAG, "VideoEncoder ran into an error! ", e);
                 Message.obtain(mThreadHandler, MSG_THREAD_ERROR, e).sendToTarget();
@@ -435,8 +435,8 @@ public class ScreenRecorder {
 
             @Override
             public void onOutputFormatChanged(
-                    @NonNull MediaCodec codec,
-                    @NonNull MediaFormat format) {
+                    MediaCodec codec,
+                    MediaFormat format) {
                 resetVideoOutputFormat(format);
                 startMuxerIfReady();
             }
@@ -454,16 +454,16 @@ public class ScreenRecorder {
             boolean ranIntoError = false;
             @Override
             public void onInputBufferAvailable(
-                    @NonNull MediaCodec codec,
+                    MediaCodec codec,
                     int index) {
 
             }
 
             @Override
             public void onOutputBufferAvailable(
-                    @NonNull MediaCodec codec,
+                    MediaCodec codec,
                     int index,
-                    @NonNull MediaCodec.BufferInfo info) {
+                    MediaCodec.BufferInfo info) {
                 if (VERBOSE)
                     Log.i(TAG, "[" + Thread.currentThread().getId() + "] AudioEncoder output " +
                             "buffer available: index=" + index);
@@ -477,8 +477,8 @@ public class ScreenRecorder {
 
             @Override
             public void onError(
-                    @NonNull MediaCodec codec,
-                    @NonNull MediaCodec.CodecException e) {
+                    MediaCodec codec,
+                    MediaCodec.CodecException e) {
                 ranIntoError = true;
                 Log.e(TAG, "MicRecorder ran into an error! ", e);
                 Message.obtain(mThreadHandler, MSG_THREAD_ERROR, e).sendToTarget();
@@ -486,8 +486,8 @@ public class ScreenRecorder {
 
             @Override
             public void onOutputFormatChanged(
-                    @NonNull MediaCodec codec,
-                    @NonNull MediaFormat format) {
+                    MediaCodec codec,
+                    MediaFormat format) {
                 if (VERBOSE)
                     Log.d(TAG, "[" + Thread.currentThread().getId() + "] AudioEncoder returned " +
                             "new format " + format);

@@ -13,7 +13,7 @@
     android:orientation="vertical"
     android:gravity="center">
 
-    <android.support.v4.view.ViewPager
+    <androidx.viewpager.widget.ViewPager
         android:id="@+id/test_viewpager"
         android:gravity="center"
         android:layout_weight="8"

@@ -18,8 +18,6 @@ package com.weidi.usefragments.tool;
 import android.os.Looper;
 import android.text.TextUtils;
 
-import android.support.annotation.Nullable;
-
 /**
  * Provides methods for asserting the truth of expressions and properties.
  */
@@ -107,7 +105,7 @@ public final class Assertions {
      * @throws NullPointerException If {@code reference} is null.
      */
     @SuppressWarnings({"contracts.postcondition.not.satisfied", "return.type.incompatible"})
-    public static <T> T checkNotNull(@Nullable T reference) {
+    public static <T> T checkNotNull(T reference) {
         if (ASSERTIONS_ENABLED && reference == null) {
             throw new NullPointerException();
         }
@@ -125,7 +123,7 @@ public final class Assertions {
      * @throws NullPointerException If {@code reference} is null.
      */
     @SuppressWarnings({"contracts.postcondition.not.satisfied", "return.type.incompatible"})
-    public static <T> T checkNotNull(@Nullable T reference, Object errorMessage) {
+    public static <T> T checkNotNull(T reference, Object errorMessage) {
         if (ASSERTIONS_ENABLED && reference == null) {
             throw new NullPointerException(String.valueOf(errorMessage));
         }
@@ -140,7 +138,7 @@ public final class Assertions {
      * @throws IllegalArgumentException If {@code string} is null or 0-length.
      */
     @SuppressWarnings({"contracts.postcondition.not.satisfied", "return.type.incompatible"})
-    public static String checkNotEmpty(@Nullable String string) {
+    public static String checkNotEmpty(String string) {
         if (ASSERTIONS_ENABLED && TextUtils.isEmpty(string)) {
             throw new IllegalArgumentException();
         }
@@ -157,7 +155,7 @@ public final class Assertions {
      * @throws IllegalArgumentException If {@code string} is null or 0-length.
      */
     @SuppressWarnings({"contracts.postcondition.not.satisfied", "return.type.incompatible"})
-    public static String checkNotEmpty(@Nullable String string, Object errorMessage) {
+    public static String checkNotEmpty(String string, Object errorMessage) {
         if (ASSERTIONS_ENABLED && TextUtils.isEmpty(string)) {
             throw new IllegalArgumentException(String.valueOf(errorMessage));
         }

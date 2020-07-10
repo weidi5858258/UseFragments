@@ -19,8 +19,8 @@ package com.weidi.usefragments.myhandler;
 import android.os.Binder;
 import android.os.SystemClock;
 import android.os.Trace;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
+
+
 import android.util.Log;
 import android.util.Printer;
 
@@ -240,7 +240,7 @@ public final class Looper {
      * @param printer A Printer object that will receive log messages, or
      *                null to disable message logging.
      */
-    public void setMessageLogging(@Nullable Printer printer) {
+    public void setMessageLogging(Printer printer) {
         mLogging = printer;
     }
 
@@ -318,7 +318,7 @@ public final class Looper {
      * @param pw     A printer to receive the contents of the dump.
      * @param prefix A prefix to prepend to each line which is printed.
      */
-    public void dump(@NonNull Printer pw, @NonNull String prefix) {
+    public void dump(Printer pw, String prefix) {
         pw.println(prefix + toString());
         //mQueue.dump(pw, prefix + "  ", null);
     }
@@ -331,7 +331,7 @@ public final class Looper {
      * @param handler Only dump messages for this Handler.
      * @hide
      */
-    public void dump(@NonNull Printer pw, @NonNull String prefix, Handler handler) {
+    public void dump(Printer pw, String prefix, Handler handler) {
         pw.println(prefix + toString());
         //mQueue.dump(pw, prefix + "  ", handler);
     }

@@ -1,0 +1,790 @@
+1<?xml version="1.0" encoding="utf-8"?>
+2<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+3    package="com.weidi.usefragments"
+4    android:versionCode="1"
+5    android:versionName="1.0" >
+6
+7    <uses-sdk
+8        android:minSdkVersion="21"
+8-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml
+9        android:targetSdkVersion="28" />
+9-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml
+10
+11    <!-- 使用摄像头硬件功能 -->
+12    <uses-feature
+12-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:6:5-8:36
+13        android:name="android.hardware.camera"
+13-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:7:9-47
+14        android:required="false" />
+14-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:8:9-33
+15    <!-- 闪光灯功能 -->
+16    <uses-feature
+16-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:10:5-12:36
+17        android:name="android.hardware.camera.flash"
+17-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:11:9-53
+18        android:required="false" />
+18-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:12:9-33
+19    <!-- 自动对焦功能 -->
+20    <uses-feature
+20-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:14:5-16:36
+21        android:name="android.hardware.camera.autofocus"
+21-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:15:9-57
+22        android:required="false" />
+22-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:16:9-33
+23    <!--  -->
+24    <uses-feature
+24-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:18:5-20:35
+25        android:name="android.hardware.usb.host"
+25-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:19:9-49
+26        android:required="true" />
+26-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:20:9-32
+27
+28    <!-- 相机权限 -->
+29    <uses-permission android:name="android.permission.CAMERA" />
+29-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:23:5-65
+29-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:23:22-62
+30    <!-- 录音权限 -->
+31    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+31-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:25:5-81
+31-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:25:22-78
+32    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+32-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:26:5-71
+32-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:26:22-68
+33    <!-- 读写权限 -->
+34    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+34-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:28:5-80
+34-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:28:22-77
+35    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+35-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:29:5-81
+35-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:29:22-78
+36    <!-- 悬浮窗权限 -->
+37    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+37-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:31:5-78
+37-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:31:22-75
+38    <!-- 这个权限是必须有的，否则操作不了硬件,google的文档没有说出来，据说是因为有过滤器后自动获得，但是我的项目没这句话不成功。 -->
+39    <uses-permission android:name="android.permission.HARDWARE_TEST" />
+39-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:33:5-72
+39-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:33:22-69
+40    <uses-permission android:name="android.permission.WAKE_LOCK" />
+40-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:34:5-68
+40-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:34:22-65
+41    <!-- 加入电池白名单 -->
+42    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
+42-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:36:5-95
+42-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:36:22-92
+43    <uses-permission android:name="android.permission.BIND_ACCESSIBILITY_SERVICE" />
+43-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:37:5-85
+43-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:37:22-82
+44    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+44-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:38:5-77
+44-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:38:22-74
+45    <!-- 电话 -->
+46    <uses-permission android:name="android.permission.READ_PHONE_STATE" />
+46-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:40:5-75
+46-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:40:22-72
+47    <uses-permission android:name="android.permission.PROCESS_OUTGOING_CALLS" />
+47-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:41:5-81
+47-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:41:22-78
+48    <uses-permission android:name="android.permission.READ_PRIVILEGED_PHONE_STATE" />
+48-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:42:5-86
+48-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:42:22-83
+49    <uses-permission android:name="android.permission.INTERNET" />
+49-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:44:5-67
+49-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:44:22-64
+50    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+50-->[:library:core] /root/mydev/workspace_android/UseFragments/library/core/buildout/intermediates/library_manifest/debug/AndroidManifest.xml:24:5-79
+50-->[:library:core] /root/mydev/workspace_android/UseFragments/library/core/buildout/intermediates/library_manifest/debug/AndroidManifest.xml:24:22-76
+51    <uses-permission android:name="android.permission.VIBRATE" /> <!-- wifi控制和状态权限 -->
+51-->[:weidi_library] /root/mydev/workspace_android/UseFragments/weidi_library/buildout/intermediates/library_manifest/debug/AndroidManifest.xml:10:5-66
+51-->[:weidi_library] /root/mydev/workspace_android/UseFragments/weidi_library/buildout/intermediates/library_manifest/debug/AndroidManifest.xml:10:22-63
+52    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+52-->[:weidi_library] /root/mydev/workspace_android/UseFragments/weidi_library/buildout/intermediates/library_manifest/debug/AndroidManifest.xml:13:5-76
+52-->[:weidi_library] /root/mydev/workspace_android/UseFragments/weidi_library/buildout/intermediates/library_manifest/debug/AndroidManifest.xml:13:22-73
+53    <uses-permission android:name="android.permission.CHANGE_WIFI_STATE" />
+53-->[:weidi_library] /root/mydev/workspace_android/UseFragments/weidi_library/buildout/intermediates/library_manifest/debug/AndroidManifest.xml:14:5-76
+53-->[:weidi_library] /root/mydev/workspace_android/UseFragments/weidi_library/buildout/intermediates/library_manifest/debug/AndroidManifest.xml:14:22-73
+54    <uses-permission android:name="android.permission.CHANGE_NETWORK_STATE" /> <!-- 6.0以上打开蓝牙和wifi最好加上定位权限，获取wifi列表要用 -->
+54-->[:weidi_library] /root/mydev/workspace_android/UseFragments/weidi_library/buildout/intermediates/library_manifest/debug/AndroidManifest.xml:17:5-79
+54-->[:weidi_library] /root/mydev/workspace_android/UseFragments/weidi_library/buildout/intermediates/library_manifest/debug/AndroidManifest.xml:17:22-76
+55    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+55-->[:weidi_library] /root/mydev/workspace_android/UseFragments/weidi_library/buildout/intermediates/library_manifest/debug/AndroidManifest.xml:19:5-79
+55-->[:weidi_library] /root/mydev/workspace_android/UseFragments/weidi_library/buildout/intermediates/library_manifest/debug/AndroidManifest.xml:19:22-76
+56    <uses-permission android:name="android.permission.GET_TASKS" />
+56-->[com.fanjun:keeplive:1.1.20] /root/.gradle/caches/transforms-2/files-2.1/c0bf66a5a536037c743848e68639adda/jetified-keeplive-1.1.20/AndroidManifest.xml:13:5-68
+56-->[com.fanjun:keeplive:1.1.20] /root/.gradle/caches/transforms-2/files-2.1/c0bf66a5a536037c743848e68639adda/jetified-keeplive-1.1.20/AndroidManifest.xml:13:22-65
+57    <uses-permission android:name="android.permission.REORDER_TASKS" />
+57-->[com.fanjun:keeplive:1.1.20] /root/.gradle/caches/transforms-2/files-2.1/c0bf66a5a536037c743848e68639adda/jetified-keeplive-1.1.20/AndroidManifest.xml:15:5-72
+57-->[com.fanjun:keeplive:1.1.20] /root/.gradle/caches/transforms-2/files-2.1/c0bf66a5a536037c743848e68639adda/jetified-keeplive-1.1.20/AndroidManifest.xml:15:22-69
+58
+59    <application
+59-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:46:5-404:19
+60        android:name="com.weidi.usefragments.MyApplication"
+60-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:47:9-60
+61        android:allowBackup="true"
+61-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:48:9-35
+62        android:appComponentFactory="androidx.core.app.CoreComponentFactory"
+62-->[androidx.core:core:1.0.0] /root/.gradle/caches/transforms-2/files-2.1/f88df7c86cbc989e82020e686162bad6/core-1.0.0/AndroidManifest.xml:22:18-86
+63        android:debuggable="true"
+64        android:icon="@mipmap/ic_launcher"
+64-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:49:9-43
+65        android:label="@string/app_name"
+65-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:50:9-41
+66        android:roundIcon="@mipmap/ic_launcher_round"
+66-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:51:9-54
+67        android:supportsRtl="true"
+67-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:52:9-35
+68        android:theme="@style/AppTheme" >
+68-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:53:9-40
+69
+70        <!-- android:largeHeap="true" -->
+71
+72
+73        <!-- android:screenOrientation="portrait" 强制竖屏 -->
+74        <activity
+74-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:57:9-85:20
+75            android:name="com.weidi.usefragments.MainActivity1"
+75-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:58:13-42
+76            android:configChanges="keyboardHidden|screenLayout|screenSize|smallestScreenSize|orientation"
+76-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:59:13-106
+77            android:enabled="true"
+77-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:60:13-35
+78            android:launchMode="singleTop" >
+78-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:61:13-43
+79            <intent-filter>
+79-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:62:13-69:29
+80                <action android:name="android.intent.action.MAIN" />
+80-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:63:17-69
+80-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:63:25-66
+81
+82                <category android:name="android.intent.category.LAUNCHER" />
+82-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:65:17-77
+82-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:65:27-74
+83                <category android:name="android.intent.category.DEFAULT" />
+83-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:66:17-76
+83-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:66:27-73
+84                <category android:name="android.intent.category.APP_GALLERY" />
+84-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:67:17-80
+84-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:67:27-77
+85                <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
+85-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:68:17-86
+85-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:68:27-83
+86            </intent-filter>
+87            <intent-filter>
+87-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:71:13-75:29
+88                <action android:name="com.weidi.dtv.smartmediaapp.ACTION_MAIN" />
+88-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:72:17-82
+88-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:72:25-79
+89
+90                <category android:name="android.intent.category.DEFAULT" />
+90-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:66:17-76
+90-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:66:27-73
+91            </intent-filter>
+92
+93            <!-- 以下这个过滤器是要手工增加上，如果不增加也可以在代码中动态注册，不过我的代码是在这里注册 -->
+94            <intent-filter>
+94-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:78:13-80:29
+95                <action android:name="android.hardware.usb.action.USB_DEVICE_ATTACHED" />
+95-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:79:17-90
+95-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:79:25-87
+96            </intent-filter>
+97            <!-- 以下这个meta-data是要手工增加上，他是用来过滤你的具体USB设备的，其中的device_filter是个xml文件 -->
+98            <meta-data
+98-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:82:13-84:57
+99                android:name="android.hardware.usb.action.USB_DEVICE_ATTACHED"
+99-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:83:17-79
+100                android:resource="@xml/device_filter" />
+100-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:84:17-54
+101        </activity>
+102        <activity
+102-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:87:9-90:40
+103            android:name="com.weidi.usefragments.MainActivity2"
+103-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:88:13-42
+104            android:configChanges="keyboardHidden|screenLayout|screenSize|smallestScreenSize|orientation"
+104-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:89:13-106
+105            android:exported="false" />
+105-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:90:13-37
+106        <activity
+106-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:92:9-95:40
+107            android:name="com.weidi.usefragments.MainActivity3"
+107-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:93:13-42
+108            android:configChanges="keyboardHidden|screenLayout|screenSize|smallestScreenSize|orientation"
+108-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:94:13-106
+109            android:exported="false" />
+109-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:95:13-37
+110        <activity
+110-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:97:9-101:55
+111            android:name="com.weidi.usefragments.business.keeplive.OnePixelActivity"
+111-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:98:13-85
+112            android:excludeFromRecents="true"
+112-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:99:13-46
+113            android:launchMode="singleInstance"
+113-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:100:13-48
+114            android:theme="@style/onePixelActivity" />
+114-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:101:13-52
+115
+116        <service
+116-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:103:9-107:39
+117            android:name="com.weidi.usefragments.business.audio_player.MusicService"
+117-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:104:13-63
+118            android:exported="true"
+118-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:105:13-36
+119            android:persistent="true"
+119-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:106:13-38
+120            android:priority="1000" />
+120-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:107:13-36
+121        <service
+121-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:109:9-113:39
+122            android:name="com.weidi.usefragments.business.audio_player.JniMusicService"
+122-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:110:13-66
+123            android:exported="true"
+123-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:111:13-36
+124            android:persistent="true"
+124-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:112:13-38
+125            android:priority="1000" />
+125-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:113:13-36
+126        <service
+126-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:115:9-119:39
+127            android:name="com.weidi.usefragments.business.video_player.PlayerService"
+127-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:116:13-64
+128            android:exported="true"
+128-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:117:13-36
+129            android:persistent="true"
+129-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:118:13-38
+130            android:priority="1000" />
+130-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:119:13-36
+131        <service
+131-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:121:9-123:40
+132            android:name="com.weidi.usefragments.service.DownloadFileService"
+132-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:122:13-56
+133            android:exported="false" />
+133-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:123:13-37
+134        <service
+134-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:125:9-138:19
+135            android:name="com.weidi.usefragments.service.AccessibilityImpl"
+135-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:126:13-76
+136            android:enabled="true"
+136-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:127:13-35
+137            android:exported="true"
+137-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:128:13-36
+138            android:label="@string/app_name"
+138-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:129:13-45
+139            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE" >
+139-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:130:13-79
+140
+141            <!-- @bool/enable_accessibility -->
+142            <intent-filter>
+142-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:132:13-134:29
+143                <action android:name="android.accessibilityservice.AccessibilityService" />
+143-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:133:17-92
+143-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:133:25-89
+144            </intent-filter>
+145
+146            <meta-data
+146-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:135:13-137:64
+147                android:name="android.accessibilityservice"
+147-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:136:17-60
+148                android:resource="@xml/accessibility_config" />
+148-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:137:17-61
+149        </service>
+150
+151        <receiver android:name="com.weidi.usefragments.receiver.MediaButtonReceiver" >
+151-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:140:9-145:20
+151-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:140:19-63
+152            <intent-filter android:priority="2147483647" >
+152-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:141:13-144:29
+152-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:141:28-57
+153                <action android:name="android.intent.action.MEDIA_BUTTON" />
+153-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:142:17-77
+153-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:142:25-74
+154                <action android:name="android.media.AUDIO_BECOMING_NOISY" />
+154-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:143:17-77
+154-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:143:25-74
+155            </intent-filter>
+156        </receiver>
+157        <receiver android:name="com.weidi.usefragments.receiver.PhoneReceiver" >
+157-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:147:9-152:20
+157-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:147:19-57
+158            <intent-filter android:priority="2147483647" >
+158-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:148:13-151:29
+158-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:148:28-57
+159                <action android:name="android.intent.action.PHONE_STATE" />
+159-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:149:17-76
+159-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:149:25-73
+160                <action android:name="android.intent.action.NEW_OUTGOING_CALL" />
+160-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:150:17-82
+160-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:150:25-79
+161            </intent-filter>
+162        </receiver>
+163
+164        <!--
+165        <activity
+166            android:name="com.weidi.usefragments.business.video_player.PlayerActivity"
+167            android:screenOrientation="landscape"
+168            android:configChanges="uiMode|keyboard|keyboardHidden|screenSize|orientation|fontScale"
+169            android:windowSoftInputMode="stateAlwaysHidden|adjustPan"
+170            android:launchMode="singleTask"
+171            android:theme="@style/Theme.AppCompat.Light">
+172            <intent-filter>
+173                <action android:name="android.intent.action.VIEW" />
+174                &lt;!&ndash; Resume Play support &ndash;&gt;
+175                <action android:name="com.alexander.video.action.START_PLAYBACK" />
+176                <action android:name="com.weidi.dtv.osat.video.action.START_PLAYBACK" />
+177                <category android:name="android.intent.category.DEFAULT" />
+178                <category android:name="android.intent.category.BROWSABLE" />
+179                <data android:scheme="rtsp" />
+180            </intent-filter>
+181            <intent-filter>
+182                <action android:name="android.intent.action.VIEW" />
+183                &lt;!&ndash; Resume Play support &ndash;&gt;
+184                <action android:name="com.alexander.video.action.START_PLAYBACK" />
+185                <action android:name="com.weidi.dtv.osat.video.action.START_PLAYBACK" />
+186                <action android:name="com.alexander.video.action.START_PLAYBACK_WITH_DETAIL" />
+187                <category android:name="android.intent.category.DEFAULT" />
+188                <data android:mimeType="video/*" />
+189                <data android:mimeType="application/sdp" />
+190            </intent-filter>
+191            <intent-filter>
+192                <action android:name="com.weidi.dtv.osat.video.action.START_PLAYBACK" />
+193                <category android:name="android.intent.category.DEFAULT" />
+194            </intent-filter>
+195            <intent-filter >
+196                <action android:name="android.intent.action.VIEW" />
+197                &lt;!&ndash; Resume Play support &ndash;&gt;
+198                <action android:name="com.alexander.video.action.START_PLAYBACK" />
+199                <action android:name="com.weidi.dtv.osat.video.action.START_PLAYBACK" />
+200                <action android:name="com.alexander.video.action.START_PLAYBACK_WITH_DETAIL" />
+201                <category android:name="android.intent.category.DEFAULT" />
+202                <category android:name="android.intent.category.BROWSABLE" />
+203                <data android:scheme="http" />
+204                <data android:scheme="https" />
+205                <data android:scheme="dlna" />
+206                <data android:scheme="content" />
+207                <data android:scheme="file" />
+208                <data android:mimeType="video/mpeg4" />
+209                <data android:mimeType="video/mp4" />
+210                <data android:mimeType="video/3gp" />
+211                <data android:mimeType="video/3gpp" />
+212                <data android:mimeType="video/3gpp2" />
+213                <data android:mimeType="video/webm" />
+214                <data android:mimeType="video/avi" />
+215                <data android:mimeType="video/ismv" />
+216                <data android:mimeType="video/x-m4v" />
+217                <data android:mimeType="video/mpeg" />
+218                <data android:mimeType="video/vnd.dlna.mpeg-tts" />
+219                <data android:mimeType="video/x-ms-asf" />
+220                <data android:mimeType="video/x-matroska" />
+221                <data android:mimeType="video/x-ms-wmv" />
+222                <data android:mimeType="application/sdp" />
+223            </intent-filter>
+224            <intent-filter >
+225                &lt;!&ndash; HTTP Streaming support &ndash;&gt;
+226                <action android:name="android.intent.action.VIEW" />
+227                &lt;!&ndash; Resume Play support &ndash;&gt;
+228                <action android:name="com.alexander.video.action.START_PLAYBACK" />
+229                <action android:name="com.weidi.dtv.osat.video.action.START_PLAYBACK" />
+230                <action android:name="com.alexander.video.action.START_PLAYBACK_WITH_DETAIL" />
+231                <category android:name="android.intent.category.DEFAULT" />
+232                <category android:name="android.intent.category.BROWSABLE" />
+233                <data android:scheme="http" />
+234                <data android:scheme="https" />
+235                <data android:mimeType="audio/x-mpegurl" />
+236                <data android:mimeType="audio/mpegurl" />
+237                <data android:mimeType="application/vnd.apple.mpegurl" />
+238                <data android:mimeType="application/x-mpegurl" />
+239                <data android:mimeType="application/dash+xml" />
+240            </intent-filter>
+241            <intent-filter >
+242                &lt;!&ndash; HTTP Streaming support &ndash;&gt;
+243                &lt;!&ndash; HTTP live Streaming support &ndash;&gt;
+244                <action android:name="android.intent.action.VIEW" />
+245                <action android:name="com.alexander.video.action.START_PLAYBACK" />
+246                <action android:name="com.weidi.dtv.osat.video.action.START_PLAYBACK" />
+247                <action android:name="com.alexander.video.action.START_PLAYBACK_WITH_DETAIL" />
+248                <category android:name="android.intent.category.DEFAULT" />
+249                <category android:name="android.intent.category.BROWSABLE" />
+250                <data android:scheme="http" />
+251                <data android:scheme="https" />
+252                <data android:host="*"/>
+253                <data android:pathPattern=".*.m3u8"/>
+254            </intent-filter>
+255            <intent-filter>
+256                &lt;!&ndash; VU Progressive DL playback support &ndash;&gt;
+257                <action android:name="com.alexander.video.action.PROGRESSIVE_PLAYBACK" />
+258                <action android:name="com.alexander.video.action.PROGRESSIVE_PLAYBACK_WITH_DETAIL" />
+259                <category android:name="android.intent.category.DEFAULT" />
+260                <data android:mimeType="video/vnd.weidi.mnv" />
+261            </intent-filter>
+262        </activity>
+263        -->
+264
+265
+266        <!-- android:screenOrientation="landscape" -->
+267        <!-- android:configChanges="keyboardHidden|screenLayout|screenSize|smallestScreenSize|orientation" -->
+268        <activity
+268-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:255:9-372:20
+269            android:name="com.weidi.usefragments.business.video_player.JniPlayerActivity"
+269-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:256:13-90
+270            android:configChanges="uiMode|keyboard|keyboardHidden|screenSize|orientation|fontScale"
+270-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:257:13-100
+271            android:enabled="true"
+271-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:258:13-35
+272            android:exported="true"
+272-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:259:13-36
+273            android:launchMode="singleTask"
+273-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:260:13-44
+274            android:theme="@android:style/Theme.Translucent.NoTitleBar.Fullscreen"
+274-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:261:13-83
+275            android:windowSoftInputMode="stateAlwaysHidden|adjustPan" >
+275-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:262:13-70
+276            <intent-filter>
+276-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:263:13-273:29
+277                <action android:name="android.intent.action.VIEW" />
+277-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:264:17-69
+277-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:264:25-66
+278                <!-- Resume Play support -->
+279                <action android:name="com.alexander.video.action.START_PLAYBACK" />
+279-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:266:17-84
+279-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:266:25-81
+280                <action android:name="com.weidi.dtv.osat.video.action.START_PLAYBACK" />
+280-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:267:17-89
+280-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:267:25-86
+281
+282                <category android:name="android.intent.category.DEFAULT" />
+282-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:66:17-76
+282-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:66:27-73
+283                <category android:name="android.intent.category.BROWSABLE" />
+283-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:270:17-78
+283-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:270:27-75
+284
+285                <data android:scheme="rtsp" />
+285-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:272:17-47
+285-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:272:23-44
+286            </intent-filter>
+287            <intent-filter>
+287-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:274:13-285:29
+288                <action android:name="android.intent.action.VIEW" />
+288-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:264:17-69
+288-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:264:25-66
+289                <!-- Resume Play support -->
+290                <action android:name="com.alexander.video.action.START_PLAYBACK" />
+290-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:266:17-84
+290-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:266:25-81
+291                <action android:name="com.weidi.dtv.osat.video.action.START_PLAYBACK" />
+291-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:267:17-89
+291-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:267:25-86
+292                <action android:name="com.alexander.video.action.START_PLAYBACK_WITH_DETAIL" />
+292-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:279:17-96
+292-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:279:25-93
+293
+294                <category android:name="android.intent.category.DEFAULT" />
+294-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:66:17-76
+294-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:66:27-73
+295
+296                <data android:mimeType="video/*" />
+296-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:272:17-47
+296-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:283:23-49
+297                <data android:mimeType="application/sdp" />
+297-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:272:17-47
+297-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:283:23-49
+298            </intent-filter>
+299            <intent-filter>
+299-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:287:13-293:29
+300                <action android:name="android.intent.action.VIEW" />
+300-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:264:17-69
+300-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:264:25-66
+301
+302                <category android:name="android.intent.category.DEFAULT" />
+302-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:66:17-76
+302-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:66:27-73
+303
+304                <data android:mimeType="audio/*" />
+304-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:272:17-47
+304-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:283:23-49
+305                <data android:mimeType="application/sdp" />
+305-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:272:17-47
+305-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:283:23-49
+306            </intent-filter>
+307            <intent-filter>
+307-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:294:13-297:29
+308                <action android:name="com.weidi.dtv.osat.video.action.START_PLAYBACK" />
+308-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:267:17-89
+308-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:267:25-86
+309
+310                <category android:name="android.intent.category.DEFAULT" />
+310-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:66:17-76
+310-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:66:27-73
+311            </intent-filter>
+312            <intent-filter>
+312-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:298:13-328:29
+313                <action android:name="android.intent.action.VIEW" />
+313-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:264:17-69
+313-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:264:25-66
+314                <!-- Resume Play support -->
+315                <action android:name="com.alexander.video.action.START_PLAYBACK" />
+315-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:266:17-84
+315-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:266:25-81
+316                <action android:name="com.weidi.dtv.osat.video.action.START_PLAYBACK" />
+316-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:267:17-89
+316-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:267:25-86
+317                <action android:name="com.alexander.video.action.START_PLAYBACK_WITH_DETAIL" />
+317-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:279:17-96
+317-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:279:25-93
+318
+319                <category android:name="android.intent.category.DEFAULT" />
+319-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:66:17-76
+319-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:66:27-73
+320                <category android:name="android.intent.category.BROWSABLE" />
+320-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:270:17-78
+320-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:270:27-75
+321
+322                <data android:scheme="http" />
+322-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:272:17-47
+322-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:272:23-44
+323                <data android:scheme="https" />
+323-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:272:17-47
+323-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:272:23-44
+324                <data android:scheme="dlna" />
+324-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:272:17-47
+324-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:272:23-44
+325                <data android:scheme="content" />
+325-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:272:17-47
+325-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:272:23-44
+326                <data android:scheme="file" />
+326-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:272:17-47
+326-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:272:23-44
+327                <data android:mimeType="video/mpeg4" />
+327-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:272:17-47
+327-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:283:23-49
+328                <data android:mimeType="video/mp4" />
+328-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:272:17-47
+328-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:283:23-49
+329                <data android:mimeType="video/3gp" />
+329-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:272:17-47
+329-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:283:23-49
+330                <data android:mimeType="video/3gpp" />
+330-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:272:17-47
+330-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:283:23-49
+331                <data android:mimeType="video/3gpp2" />
+331-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:272:17-47
+331-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:283:23-49
+332                <data android:mimeType="video/webm" />
+332-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:272:17-47
+332-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:283:23-49
+333                <data android:mimeType="video/avi" />
+333-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:272:17-47
+333-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:283:23-49
+334                <data android:mimeType="video/ismv" />
+334-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:272:17-47
+334-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:283:23-49
+335                <data android:mimeType="video/x-m4v" />
+335-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:272:17-47
+335-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:283:23-49
+336                <data android:mimeType="video/mpeg" />
+336-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:272:17-47
+336-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:283:23-49
+337                <data android:mimeType="video/vnd.dlna.mpeg-tts" />
+337-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:272:17-47
+337-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:283:23-49
+338                <data android:mimeType="video/x-ms-asf" />
+338-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:272:17-47
+338-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:283:23-49
+339                <data android:mimeType="video/x-matroska" />
+339-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:272:17-47
+339-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:283:23-49
+340                <data android:mimeType="video/x-ms-wmv" />
+340-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:272:17-47
+340-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:283:23-49
+341                <data android:mimeType="application/sdp" />
+341-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:272:17-47
+341-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:283:23-49
+342            </intent-filter>
+343            <intent-filter>
+343-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:329:13-347:29
+344
+345                <!-- HTTP Streaming support -->
+346                <action android:name="android.intent.action.VIEW" />
+346-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:264:17-69
+346-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:264:25-66
+347                <!-- Resume Play support -->
+348                <action android:name="com.alexander.video.action.START_PLAYBACK" />
+348-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:266:17-84
+348-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:266:25-81
+349                <action android:name="com.weidi.dtv.osat.video.action.START_PLAYBACK" />
+349-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:267:17-89
+349-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:267:25-86
+350                <action android:name="com.alexander.video.action.START_PLAYBACK_WITH_DETAIL" />
+350-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:279:17-96
+350-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:279:25-93
+351
+352                <category android:name="android.intent.category.DEFAULT" />
+352-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:66:17-76
+352-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:66:27-73
+353                <category android:name="android.intent.category.BROWSABLE" />
+353-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:270:17-78
+353-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:270:27-75
+354
+355                <data android:scheme="http" />
+355-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:272:17-47
+355-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:272:23-44
+356                <data android:scheme="https" />
+356-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:272:17-47
+356-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:272:23-44
+357                <data android:mimeType="audio/x-mpegurl" />
+357-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:272:17-47
+357-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:283:23-49
+358                <data android:mimeType="audio/mpegurl" />
+358-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:272:17-47
+358-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:283:23-49
+359                <data android:mimeType="application/vnd.apple.mpegurl" />
+359-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:272:17-47
+359-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:283:23-49
+360                <data android:mimeType="application/x-mpegurl" />
+360-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:272:17-47
+360-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:283:23-49
+361                <data android:mimeType="application/dash+xml" />
+361-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:272:17-47
+361-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:283:23-49
+362            </intent-filter>
+363            <intent-filter>
+363-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:348:13-363:29
+364
+365                <!-- HTTP Streaming support -->
+366                <!-- HTTP live Streaming support -->
+367                <action android:name="android.intent.action.VIEW" />
+367-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:264:17-69
+367-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:264:25-66
+368                <action android:name="com.alexander.video.action.START_PLAYBACK" />
+368-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:266:17-84
+368-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:266:25-81
+369                <action android:name="com.weidi.dtv.osat.video.action.START_PLAYBACK" />
+369-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:267:17-89
+369-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:267:25-86
+370                <action android:name="com.alexander.video.action.START_PLAYBACK_WITH_DETAIL" />
+370-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:279:17-96
+370-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:279:25-93
+371
+372                <category android:name="android.intent.category.DEFAULT" />
+372-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:66:17-76
+372-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:66:27-73
+373                <category android:name="android.intent.category.BROWSABLE" />
+373-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:270:17-78
+373-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:270:27-75
+374
+375                <data android:scheme="http" />
+375-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:272:17-47
+375-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:272:23-44
+376                <data android:scheme="https" />
+376-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:272:17-47
+376-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:272:23-44
+377                <data android:host="*" />
+377-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:272:17-47
+377-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:361:23-39
+378                <data android:pathPattern=".*.m3u8" />
+378-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:272:17-47
+378-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:362:23-52
+379            </intent-filter>
+380            <intent-filter>
+380-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:364:13-371:29
+381
+382                <!-- VU Progressive DL playback support -->
+383                <action android:name="com.alexander.video.action.PROGRESSIVE_PLAYBACK" />
+383-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:366:17-90
+383-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:366:25-87
+384                <action android:name="com.alexander.video.action.PROGRESSIVE_PLAYBACK_WITH_DETAIL" />
+384-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:367:17-102
+384-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:367:25-99
+385
+386                <category android:name="android.intent.category.DEFAULT" />
+386-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:66:17-76
+386-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:66:27-73
+387
+388                <data android:mimeType="video/vnd.weidi.mnv" />
+388-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:272:17-47
+388-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:283:23-49
+389            </intent-filter>
+390        </activity>
+391
+392        <!--
+393        <activity
+394            android:name=".MainActivity2">
+395            <intent-filter>
+396                <action android:name="android.intent.action.MAIN" />
+397
+398                <category android:name="android.intent.category.LAUNCHER" />
+399            </intent-filter>
+400        </activity>
+401        <activity
+402            android:name=".MainActivity1"/>
+403
+404        <activity
+405            android:name=".MainActivity3"/>
+406        -->
+407
+408        <service
+408-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:388:9-390:72
+409            android:name="com.weidi.usefragments.business.keeplive.JobHandlerService"
+409-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:389:13-86
+410            android:permission="android.permission.BIND_JOB_SERVICE" />
+410-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:390:13-69
+411        <service
+411-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:392:9-396:41
+412            android:name="com.weidi.usefragments.business.keeplive.RemoteService"
+412-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:393:13-82
+413            android:enabled="true"
+413-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:394:13-35
+414            android:exported="true"
+414-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:395:13-36
+415            android:process=":remote" />
+415-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:396:13-38
+416        <service
+416-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:398:9-402:45
+417            android:name="com.weidi.usefragments.business.video_player.MediaDataService"
+417-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:399:13-89
+418            android:enabled="true"
+418-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:400:13-35
+419            android:exported="true"
+419-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:401:13-36
+420            android:process=":mediadata1" />
+420-->/root/mydev/workspace_android/UseFragments/app/src/main/AndroidManifest.xml:402:13-42
+421
+422        <!-- tools:replace="android:appComponentFactory" -->
+423        <activity android:name="com.weidi.activity.ScanCodeActivity" />
+423-->[:weidi_library] /root/mydev/workspace_android/UseFragments/weidi_library/buildout/intermediates/library_manifest/debug/AndroidManifest.xml:31:9-72
+423-->[:weidi_library] /root/mydev/workspace_android/UseFragments/weidi_library/buildout/intermediates/library_manifest/debug/AndroidManifest.xml:31:19-69
+424
+425        <receiver android:name="com.fanjun.keeplive.receiver.NotificationClickReceiver" />
+425-->[com.fanjun:keeplive:1.1.20] /root/.gradle/caches/transforms-2/files-2.1/c0bf66a5a536037c743848e68639adda/jetified-keeplive-1.1.20/AndroidManifest.xml:18:9-91
+425-->[com.fanjun:keeplive:1.1.20] /root/.gradle/caches/transforms-2/files-2.1/c0bf66a5a536037c743848e68639adda/jetified-keeplive-1.1.20/AndroidManifest.xml:18:19-88
+426
+427        <activity
+427-->[com.fanjun:keeplive:1.1.20] /root/.gradle/caches/transforms-2/files-2.1/c0bf66a5a536037c743848e68639adda/jetified-keeplive-1.1.20/AndroidManifest.xml:20:9-24:55
+428            android:name="com.fanjun.keeplive.activity.OnePixelActivity"
+428-->[com.fanjun:keeplive:1.1.20] /root/.gradle/caches/transforms-2/files-2.1/c0bf66a5a536037c743848e68639adda/jetified-keeplive-1.1.20/AndroidManifest.xml:21:13-73
+429            android:excludeFromRecents="true"
+429-->[com.fanjun:keeplive:1.1.20] /root/.gradle/caches/transforms-2/files-2.1/c0bf66a5a536037c743848e68639adda/jetified-keeplive-1.1.20/AndroidManifest.xml:22:13-46
+430            android:launchMode="singleInstance"
+430-->[com.fanjun:keeplive:1.1.20] /root/.gradle/caches/transforms-2/files-2.1/c0bf66a5a536037c743848e68639adda/jetified-keeplive-1.1.20/AndroidManifest.xml:23:13-48
+431            android:theme="@style/onePixelActivity" />
+431-->[com.fanjun:keeplive:1.1.20] /root/.gradle/caches/transforms-2/files-2.1/c0bf66a5a536037c743848e68639adda/jetified-keeplive-1.1.20/AndroidManifest.xml:24:13-52
+432
+433        <service android:name="com.fanjun.keeplive.service.LocalService" />
+433-->[com.fanjun:keeplive:1.1.20] /root/.gradle/caches/transforms-2/files-2.1/c0bf66a5a536037c743848e68639adda/jetified-keeplive-1.1.20/AndroidManifest.xml:26:9-76
+433-->[com.fanjun:keeplive:1.1.20] /root/.gradle/caches/transforms-2/files-2.1/c0bf66a5a536037c743848e68639adda/jetified-keeplive-1.1.20/AndroidManifest.xml:26:18-73
+434        <service android:name="com.fanjun.keeplive.service.HideForegroundService" />
+434-->[com.fanjun:keeplive:1.1.20] /root/.gradle/caches/transforms-2/files-2.1/c0bf66a5a536037c743848e68639adda/jetified-keeplive-1.1.20/AndroidManifest.xml:27:9-85
+434-->[com.fanjun:keeplive:1.1.20] /root/.gradle/caches/transforms-2/files-2.1/c0bf66a5a536037c743848e68639adda/jetified-keeplive-1.1.20/AndroidManifest.xml:27:18-82
+435        <service
+435-->[com.fanjun:keeplive:1.1.20] /root/.gradle/caches/transforms-2/files-2.1/c0bf66a5a536037c743848e68639adda/jetified-keeplive-1.1.20/AndroidManifest.xml:28:9-30:72
+436            android:name="com.fanjun.keeplive.service.JobHandlerService"
+436-->[com.fanjun:keeplive:1.1.20] /root/.gradle/caches/transforms-2/files-2.1/c0bf66a5a536037c743848e68639adda/jetified-keeplive-1.1.20/AndroidManifest.xml:29:13-73
+437            android:permission="android.permission.BIND_JOB_SERVICE" />
+437-->[com.fanjun:keeplive:1.1.20] /root/.gradle/caches/transforms-2/files-2.1/c0bf66a5a536037c743848e68639adda/jetified-keeplive-1.1.20/AndroidManifest.xml:30:13-69
+438        <service
+438-->[com.fanjun:keeplive:1.1.20] /root/.gradle/caches/transforms-2/files-2.1/c0bf66a5a536037c743848e68639adda/jetified-keeplive-1.1.20/AndroidManifest.xml:31:9-33:41
+439            android:name="com.fanjun.keeplive.service.RemoteService"
+439-->[com.fanjun:keeplive:1.1.20] /root/.gradle/caches/transforms-2/files-2.1/c0bf66a5a536037c743848e68639adda/jetified-keeplive-1.1.20/AndroidManifest.xml:32:13-69
+440            android:process=":remote" />
+440-->[com.fanjun:keeplive:1.1.20] /root/.gradle/caches/transforms-2/files-2.1/c0bf66a5a536037c743848e68639adda/jetified-keeplive-1.1.20/AndroidManifest.xml:33:13-38
+441    </application>
+442
+443</manifest>

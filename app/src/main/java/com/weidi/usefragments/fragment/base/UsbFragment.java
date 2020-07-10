@@ -12,8 +12,8 @@ import android.hardware.usb.UsbEndpoint;
 import android.hardware.usb.UsbInterface;
 import android.hardware.usb.UsbManager;
 import android.os.Bundle;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
+
+
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -83,7 +83,7 @@ public class UsbFragment extends BaseFragment {
     }
 
     @Override
-    public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
+    public void onViewCreated(View view, Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
         if (DEBUG)
             MLog.d(TAG, "onViewCreated() " + printThis() +
@@ -244,8 +244,8 @@ public class UsbFragment extends BaseFragment {
     @Override
     public void onRequestPermissionsResult(
             int requestCode,
-            @NonNull String[] permissions,
-            @NonNull int[] grantResults) {
+            String[] permissions,
+            int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         if (DEBUG)
             MLog.d(TAG, "onRequestPermissionsResult() " + printThis() +

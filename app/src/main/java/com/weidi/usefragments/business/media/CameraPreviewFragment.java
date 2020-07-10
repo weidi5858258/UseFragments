@@ -33,10 +33,8 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Message;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
-import android.support.v13.app.FragmentCompat;
-import android.support.v4.content.ContextCompat;
+
+
 import android.util.Log;
 import android.util.Size;
 import android.view.LayoutInflater;
@@ -62,6 +60,9 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+
+import androidx.core.content.ContextCompat;
+import androidx.legacy.app.FragmentCompat;
 
 
 public class CameraPreviewFragment extends BaseFragment
@@ -117,7 +118,7 @@ public class CameraPreviewFragment extends BaseFragment
     }
 
     @Override
-    public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
+    public void onViewCreated(View view, Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
         if (DEBUG)
             MLog.d(TAG, "onViewCreated(): " + printThis() +
@@ -263,8 +264,8 @@ public class CameraPreviewFragment extends BaseFragment
     @Override
     public void onRequestPermissionsResult(
             int requestCode,
-            @NonNull String[] permissions,
-            @NonNull int[] grantResults) {
+            String[] permissions,
+            int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         if (DEBUG)
             MLog.d(TAG, "onRequestPermissionsResult(): " + printThis() +
@@ -568,7 +569,7 @@ public class CameraPreviewFragment extends BaseFragment
             new CameraDevice.StateCallback() {
 
                 @Override
-                public void onOpened(@NonNull CameraDevice cameraDevice) {
+                public void onOpened(CameraDevice cameraDevice) {
                     // This method is called when the camera is opened.  We start camera preview
                     // here.
                     if (DEBUG)
@@ -579,7 +580,7 @@ public class CameraPreviewFragment extends BaseFragment
                 }
 
                 @Override
-                public void onDisconnected(@NonNull CameraDevice cameraDevice) {
+                public void onDisconnected(CameraDevice cameraDevice) {
                     if (DEBUG)
                         MLog.d(TAG, "mStateCallback onDisconnected()");
                     mCameraOpenCloseLock.release();
@@ -588,7 +589,7 @@ public class CameraPreviewFragment extends BaseFragment
                 }
 
                 @Override
-                public void onError(@NonNull CameraDevice cameraDevice, int error) {
+                public void onError(CameraDevice cameraDevice, int error) {
                     if (DEBUG)
                         MLog.d(TAG, "mStateCallback onError()");
                     mCameraOpenCloseLock.release();
@@ -641,8 +642,8 @@ public class CameraPreviewFragment extends BaseFragment
             new CameraCaptureSession.CaptureCallback() {
 
                 public void onCaptureStarted(
-                        @NonNull CameraCaptureSession session,
-                        @NonNull CaptureRequest request,
+                        CameraCaptureSession session,
+                        CaptureRequest request,
                         long timestamp,
                         long frameNumber) {
                     // default empty implementation
@@ -650,9 +651,9 @@ public class CameraPreviewFragment extends BaseFragment
 
                 @Override
                 public void onCaptureProgressed(
-                        @NonNull CameraCaptureSession session,
-                        @NonNull CaptureRequest request,
-                        @NonNull CaptureResult partialResult) {
+                        CameraCaptureSession session,
+                        CaptureRequest request,
+                        CaptureResult partialResult) {
                     if (DEBUG)
                         MLog.d(TAG, "onCaptureProgressed()");
                     process(partialResult);
@@ -660,16 +661,16 @@ public class CameraPreviewFragment extends BaseFragment
 
                 @Override
                 public void onCaptureCompleted(
-                        @NonNull CameraCaptureSession session,
-                        @NonNull CaptureRequest request,
-                        @NonNull TotalCaptureResult result) {
+                        CameraCaptureSession session,
+                        CaptureRequest request,
+                        TotalCaptureResult result) {
                     process(result);
                 }
 
                 public void onCaptureFailed(
-                        @NonNull CameraCaptureSession session,
-                        @NonNull CaptureRequest request,
-                        @NonNull CaptureFailure failure) {
+                        CameraCaptureSession session,
+                        CaptureRequest request,
+                        CaptureFailure failure) {
                     // default empty implementation
                 }
 
@@ -953,7 +954,7 @@ public class CameraPreviewFragment extends BaseFragment
 
                         @Override
                         public void onConfigured(
-                                @NonNull CameraCaptureSession cameraCaptureSession) {
+                                CameraCaptureSession cameraCaptureSession) {
                             // The camera is already closed
                             if (null == mCameraDevice) {
                                 return;
@@ -986,7 +987,7 @@ public class CameraPreviewFragment extends BaseFragment
 
                         @Override
                         public void onConfigureFailed(
-                                @NonNull CameraCaptureSession cameraCaptureSession) {
+                                CameraCaptureSession cameraCaptureSession) {
                             showToast("Failed");
                         }
                     },

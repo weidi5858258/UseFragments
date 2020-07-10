@@ -17,8 +17,8 @@
 package com.weidi.usefragments.myhandler;
 
 import android.os.SystemClock;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
+
+
 import android.util.Log;
 import android.util.Printer;
 
@@ -96,7 +96,7 @@ public class Handler {
         mAsynchronous = async;
     }
 
-    @NonNull
+
     public static Handler getMain() {
         if (MAIN_THREAD_HANDLER == null) {
             MAIN_THREAD_HANDLER = new Handler(Looper.getMainLooper());
@@ -104,8 +104,8 @@ public class Handler {
         return MAIN_THREAD_HANDLER;
     }
 
-    @NonNull
-    public static Handler mainIfNull(@Nullable Handler handler) {
+
+    public static Handler mainIfNull(Handler handler) {
         return handler == null ? getMain() : handler;
     }
 

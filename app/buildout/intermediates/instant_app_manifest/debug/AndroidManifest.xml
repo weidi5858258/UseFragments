@@ -1,0 +1,444 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.weidi.usefragments"
+    android:targetSandboxVersion="2"
+    android:versionCode="1"
+    android:versionName="1.0" >
+
+    <uses-sdk
+        android:minSdkVersion="21"
+        android:targetSdkVersion="28" />
+
+    <!-- 使用摄像头硬件功能 -->
+    <uses-feature
+        android:name="android.hardware.camera"
+        android:required="false" />
+    <!-- 闪光灯功能 -->
+    <uses-feature
+        android:name="android.hardware.camera.flash"
+        android:required="false" />
+    <!-- 自动对焦功能 -->
+    <uses-feature
+        android:name="android.hardware.camera.autofocus"
+        android:required="false" />
+    <!--  -->
+    <uses-feature
+        android:name="android.hardware.usb.host"
+        android:required="true" />
+
+    <!-- 相机权限 -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <!-- 录音权限 -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <!-- 读写权限 -->
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <!-- 悬浮窗权限 -->
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+    <!-- 这个权限是必须有的，否则操作不了硬件,google的文档没有说出来，据说是因为有过滤器后自动获得，但是我的项目没这句话不成功。 -->
+    <uses-permission android:name="android.permission.HARDWARE_TEST" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <!-- 加入电池白名单 -->
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
+    <uses-permission android:name="android.permission.BIND_ACCESSIBILITY_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <!-- 电话 -->
+    <uses-permission android:name="android.permission.READ_PHONE_STATE" />
+    <uses-permission android:name="android.permission.PROCESS_OUTGOING_CALLS" />
+    <uses-permission android:name="android.permission.READ_PRIVILEGED_PHONE_STATE" />
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.VIBRATE" /> <!-- wifi控制和状态权限 -->
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+    <uses-permission android:name="android.permission.CHANGE_WIFI_STATE" />
+    <uses-permission android:name="android.permission.CHANGE_NETWORK_STATE" /> <!-- 6.0以上打开蓝牙和wifi最好加上定位权限，获取wifi列表要用 -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.GET_TASKS" />
+    <uses-permission android:name="android.permission.REORDER_TASKS" />
+
+    <application
+        android:name="com.weidi.usefragments.MyApplication"
+        android:allowBackup="true"
+        android:appComponentFactory="androidx.core.app.CoreComponentFactory"
+        android:debuggable="true"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/AppTheme" >
+
+        <!-- android:largeHeap="true" -->
+
+
+        <!-- android:screenOrientation="portrait" 强制竖屏 -->
+        <activity
+            android:name="com.weidi.usefragments.MainActivity1"
+            android:configChanges="keyboardHidden|screenLayout|screenSize|smallestScreenSize|orientation"
+            android:enabled="true"
+            android:launchMode="singleTop" >
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.APP_GALLERY" />
+                <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="com.weidi.dtv.smartmediaapp.ACTION_MAIN" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+
+            <!-- 以下这个过滤器是要手工增加上，如果不增加也可以在代码中动态注册，不过我的代码是在这里注册 -->
+            <intent-filter>
+                <action android:name="android.hardware.usb.action.USB_DEVICE_ATTACHED" />
+            </intent-filter>
+            <!-- 以下这个meta-data是要手工增加上，他是用来过滤你的具体USB设备的，其中的device_filter是个xml文件 -->
+            <meta-data
+                android:name="android.hardware.usb.action.USB_DEVICE_ATTACHED"
+                android:resource="@xml/device_filter" />
+        </activity>
+        <activity
+            android:name="com.weidi.usefragments.MainActivity2"
+            android:configChanges="keyboardHidden|screenLayout|screenSize|smallestScreenSize|orientation"
+            android:exported="false" />
+        <activity
+            android:name="com.weidi.usefragments.MainActivity3"
+            android:configChanges="keyboardHidden|screenLayout|screenSize|smallestScreenSize|orientation"
+            android:exported="false" />
+        <activity
+            android:name="com.weidi.usefragments.business.keeplive.OnePixelActivity"
+            android:excludeFromRecents="true"
+            android:launchMode="singleInstance"
+            android:theme="@style/onePixelActivity" />
+
+        <service
+            android:name="com.weidi.usefragments.business.audio_player.MusicService"
+            android:exported="true"
+            android:persistent="true"
+            android:priority="1000" />
+        <service
+            android:name="com.weidi.usefragments.business.audio_player.JniMusicService"
+            android:exported="true"
+            android:persistent="true"
+            android:priority="1000" />
+        <service
+            android:name="com.weidi.usefragments.business.video_player.PlayerService"
+            android:exported="true"
+            android:persistent="true"
+            android:priority="1000" />
+        <service
+            android:name="com.weidi.usefragments.service.DownloadFileService"
+            android:exported="false" />
+        <service
+            android:name="com.weidi.usefragments.service.AccessibilityImpl"
+            android:enabled="true"
+            android:exported="true"
+            android:label="@string/app_name"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE" >
+
+            <!-- @bool/enable_accessibility -->
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService" />
+            </intent-filter>
+
+            <meta-data
+                android:name="android.accessibilityservice"
+                android:resource="@xml/accessibility_config" />
+        </service>
+
+        <receiver android:name="com.weidi.usefragments.receiver.MediaButtonReceiver" >
+            <intent-filter android:priority="2147483647" >
+                <action android:name="android.intent.action.MEDIA_BUTTON" />
+                <action android:name="android.media.AUDIO_BECOMING_NOISY" />
+            </intent-filter>
+        </receiver>
+        <receiver android:name="com.weidi.usefragments.receiver.PhoneReceiver" >
+            <intent-filter android:priority="2147483647" >
+                <action android:name="android.intent.action.PHONE_STATE" />
+                <action android:name="android.intent.action.NEW_OUTGOING_CALL" />
+            </intent-filter>
+        </receiver>
+
+        <!--
+        <activity
+            android:name="com.weidi.usefragments.business.video_player.PlayerActivity"
+            android:screenOrientation="landscape"
+            android:configChanges="uiMode|keyboard|keyboardHidden|screenSize|orientation|fontScale"
+            android:windowSoftInputMode="stateAlwaysHidden|adjustPan"
+            android:launchMode="singleTask"
+            android:theme="@style/Theme.AppCompat.Light">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                &lt;!&ndash; Resume Play support &ndash;&gt;
+                <action android:name="com.alexander.video.action.START_PLAYBACK" />
+                <action android:name="com.weidi.dtv.osat.video.action.START_PLAYBACK" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="rtsp" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                &lt;!&ndash; Resume Play support &ndash;&gt;
+                <action android:name="com.alexander.video.action.START_PLAYBACK" />
+                <action android:name="com.weidi.dtv.osat.video.action.START_PLAYBACK" />
+                <action android:name="com.alexander.video.action.START_PLAYBACK_WITH_DETAIL" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="video/*" />
+                <data android:mimeType="application/sdp" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="com.weidi.dtv.osat.video.action.START_PLAYBACK" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+            <intent-filter >
+                <action android:name="android.intent.action.VIEW" />
+                &lt;!&ndash; Resume Play support &ndash;&gt;
+                <action android:name="com.alexander.video.action.START_PLAYBACK" />
+                <action android:name="com.weidi.dtv.osat.video.action.START_PLAYBACK" />
+                <action android:name="com.alexander.video.action.START_PLAYBACK_WITH_DETAIL" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="http" />
+                <data android:scheme="https" />
+                <data android:scheme="dlna" />
+                <data android:scheme="content" />
+                <data android:scheme="file" />
+                <data android:mimeType="video/mpeg4" />
+                <data android:mimeType="video/mp4" />
+                <data android:mimeType="video/3gp" />
+                <data android:mimeType="video/3gpp" />
+                <data android:mimeType="video/3gpp2" />
+                <data android:mimeType="video/webm" />
+                <data android:mimeType="video/avi" />
+                <data android:mimeType="video/ismv" />
+                <data android:mimeType="video/x-m4v" />
+                <data android:mimeType="video/mpeg" />
+                <data android:mimeType="video/vnd.dlna.mpeg-tts" />
+                <data android:mimeType="video/x-ms-asf" />
+                <data android:mimeType="video/x-matroska" />
+                <data android:mimeType="video/x-ms-wmv" />
+                <data android:mimeType="application/sdp" />
+            </intent-filter>
+            <intent-filter >
+                &lt;!&ndash; HTTP Streaming support &ndash;&gt;
+                <action android:name="android.intent.action.VIEW" />
+                &lt;!&ndash; Resume Play support &ndash;&gt;
+                <action android:name="com.alexander.video.action.START_PLAYBACK" />
+                <action android:name="com.weidi.dtv.osat.video.action.START_PLAYBACK" />
+                <action android:name="com.alexander.video.action.START_PLAYBACK_WITH_DETAIL" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="http" />
+                <data android:scheme="https" />
+                <data android:mimeType="audio/x-mpegurl" />
+                <data android:mimeType="audio/mpegurl" />
+                <data android:mimeType="application/vnd.apple.mpegurl" />
+                <data android:mimeType="application/x-mpegurl" />
+                <data android:mimeType="application/dash+xml" />
+            </intent-filter>
+            <intent-filter >
+                &lt;!&ndash; HTTP Streaming support &ndash;&gt;
+                &lt;!&ndash; HTTP live Streaming support &ndash;&gt;
+                <action android:name="android.intent.action.VIEW" />
+                <action android:name="com.alexander.video.action.START_PLAYBACK" />
+                <action android:name="com.weidi.dtv.osat.video.action.START_PLAYBACK" />
+                <action android:name="com.alexander.video.action.START_PLAYBACK_WITH_DETAIL" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="http" />
+                <data android:scheme="https" />
+                <data android:host="*"/>
+                <data android:pathPattern=".*.m3u8"/>
+            </intent-filter>
+            <intent-filter>
+                &lt;!&ndash; VU Progressive DL playback support &ndash;&gt;
+                <action android:name="com.alexander.video.action.PROGRESSIVE_PLAYBACK" />
+                <action android:name="com.alexander.video.action.PROGRESSIVE_PLAYBACK_WITH_DETAIL" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="video/vnd.weidi.mnv" />
+            </intent-filter>
+        </activity>
+        -->
+
+
+        <!-- android:screenOrientation="landscape" -->
+        <!-- android:configChanges="keyboardHidden|screenLayout|screenSize|smallestScreenSize|orientation" -->
+        <activity
+            android:name="com.weidi.usefragments.business.video_player.JniPlayerActivity"
+            android:configChanges="uiMode|keyboard|keyboardHidden|screenSize|orientation|fontScale"
+            android:enabled="true"
+            android:exported="true"
+            android:launchMode="singleTask"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar.Fullscreen"
+            android:windowSoftInputMode="stateAlwaysHidden|adjustPan" >
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <!-- Resume Play support -->
+                <action android:name="com.alexander.video.action.START_PLAYBACK" />
+                <action android:name="com.weidi.dtv.osat.video.action.START_PLAYBACK" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data android:scheme="rtsp" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <!-- Resume Play support -->
+                <action android:name="com.alexander.video.action.START_PLAYBACK" />
+                <action android:name="com.weidi.dtv.osat.video.action.START_PLAYBACK" />
+                <action android:name="com.alexander.video.action.START_PLAYBACK_WITH_DETAIL" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+
+                <data android:mimeType="video/*" />
+                <data android:mimeType="application/sdp" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+
+                <data android:mimeType="audio/*" />
+                <data android:mimeType="application/sdp" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="com.weidi.dtv.osat.video.action.START_PLAYBACK" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <!-- Resume Play support -->
+                <action android:name="com.alexander.video.action.START_PLAYBACK" />
+                <action android:name="com.weidi.dtv.osat.video.action.START_PLAYBACK" />
+                <action android:name="com.alexander.video.action.START_PLAYBACK_WITH_DETAIL" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data android:scheme="http" />
+                <data android:scheme="https" />
+                <data android:scheme="dlna" />
+                <data android:scheme="content" />
+                <data android:scheme="file" />
+                <data android:mimeType="video/mpeg4" />
+                <data android:mimeType="video/mp4" />
+                <data android:mimeType="video/3gp" />
+                <data android:mimeType="video/3gpp" />
+                <data android:mimeType="video/3gpp2" />
+                <data android:mimeType="video/webm" />
+                <data android:mimeType="video/avi" />
+                <data android:mimeType="video/ismv" />
+                <data android:mimeType="video/x-m4v" />
+                <data android:mimeType="video/mpeg" />
+                <data android:mimeType="video/vnd.dlna.mpeg-tts" />
+                <data android:mimeType="video/x-ms-asf" />
+                <data android:mimeType="video/x-matroska" />
+                <data android:mimeType="video/x-ms-wmv" />
+                <data android:mimeType="application/sdp" />
+            </intent-filter>
+            <intent-filter>
+
+                <!-- HTTP Streaming support -->
+                <action android:name="android.intent.action.VIEW" />
+                <!-- Resume Play support -->
+                <action android:name="com.alexander.video.action.START_PLAYBACK" />
+                <action android:name="com.weidi.dtv.osat.video.action.START_PLAYBACK" />
+                <action android:name="com.alexander.video.action.START_PLAYBACK_WITH_DETAIL" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data android:scheme="http" />
+                <data android:scheme="https" />
+                <data android:mimeType="audio/x-mpegurl" />
+                <data android:mimeType="audio/mpegurl" />
+                <data android:mimeType="application/vnd.apple.mpegurl" />
+                <data android:mimeType="application/x-mpegurl" />
+                <data android:mimeType="application/dash+xml" />
+            </intent-filter>
+            <intent-filter>
+
+                <!-- HTTP Streaming support -->
+                <!-- HTTP live Streaming support -->
+                <action android:name="android.intent.action.VIEW" />
+                <action android:name="com.alexander.video.action.START_PLAYBACK" />
+                <action android:name="com.weidi.dtv.osat.video.action.START_PLAYBACK" />
+                <action android:name="com.alexander.video.action.START_PLAYBACK_WITH_DETAIL" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data android:scheme="http" />
+                <data android:scheme="https" />
+                <data android:host="*" />
+                <data android:pathPattern=".*.m3u8" />
+            </intent-filter>
+            <intent-filter>
+
+                <!-- VU Progressive DL playback support -->
+                <action android:name="com.alexander.video.action.PROGRESSIVE_PLAYBACK" />
+                <action android:name="com.alexander.video.action.PROGRESSIVE_PLAYBACK_WITH_DETAIL" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+
+                <data android:mimeType="video/vnd.weidi.mnv" />
+            </intent-filter>
+        </activity>
+
+        <!--
+        <activity
+            android:name=".MainActivity2">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".MainActivity1"/>
+
+        <activity
+            android:name=".MainActivity3"/>
+        -->
+
+        <service
+            android:name="com.weidi.usefragments.business.keeplive.JobHandlerService"
+            android:permission="android.permission.BIND_JOB_SERVICE" />
+        <service
+            android:name="com.weidi.usefragments.business.keeplive.RemoteService"
+            android:enabled="true"
+            android:exported="true"
+            android:process=":remote" />
+        <service
+            android:name="com.weidi.usefragments.business.video_player.MediaDataService"
+            android:enabled="true"
+            android:exported="true"
+            android:process=":mediadata1" />
+
+        <!-- tools:replace="android:appComponentFactory" -->
+        <activity android:name="com.weidi.activity.ScanCodeActivity" />
+
+        <receiver android:name="com.fanjun.keeplive.receiver.NotificationClickReceiver" />
+
+        <activity
+            android:name="com.fanjun.keeplive.activity.OnePixelActivity"
+            android:excludeFromRecents="true"
+            android:launchMode="singleInstance"
+            android:theme="@style/onePixelActivity" />
+
+        <service android:name="com.fanjun.keeplive.service.LocalService" />
+        <service android:name="com.fanjun.keeplive.service.HideForegroundService" />
+        <service
+            android:name="com.fanjun.keeplive.service.JobHandlerService"
+            android:permission="android.permission.BIND_JOB_SERVICE" />
+        <service
+            android:name="com.fanjun.keeplive.service.RemoteService"
+            android:process=":remote" />
+    </application>
+
+</manifest>

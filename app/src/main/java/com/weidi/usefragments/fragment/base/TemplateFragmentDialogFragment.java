@@ -3,8 +3,8 @@ package com.weidi.usefragments.fragment.base;
 import android.app.Activity;
 import android.content.Context;
 import android.os.Bundle;
-import android.support.annotation.Nullable;
-import android.support.v4.app.DialogFragment;
+
+//import android.support.v4.app.DialogFragment;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -12,6 +12,8 @@ import android.view.ViewGroup;
 import com.weidi.inject.InjectOnClick;
 import com.weidi.usefragments.R;
 import com.weidi.usefragments.tool.MLog;
+
+import androidx.fragment.app.DialogFragment;
 
 /***
  * Created by root on 17-1-13.
@@ -70,7 +72,7 @@ public class TemplateFragmentDialogFragment extends BaseDialogFragment {
     }
 
     @Override
-    public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
+    public void onViewCreated(View view, Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
         if (DEBUG)
             MLog.d(TAG, "onViewCreated() " + printThis() +

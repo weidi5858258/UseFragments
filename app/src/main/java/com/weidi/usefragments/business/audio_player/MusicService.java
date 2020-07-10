@@ -29,8 +29,8 @@ import android.os.Message;
 import android.os.PowerManager;
 import android.os.RemoteException;
 import android.os.SystemClock;
-import android.support.annotation.Nullable;
-import android.support.v4.app.NotificationCompat;
+
+//import android.support.v4.app.NotificationCompat;
 import android.text.TextUtils;
 import android.text.format.DateUtils;
 import android.util.Log;
@@ -69,7 +69,7 @@ import java.util.Map;
 
 public class MusicService extends Service {
 
-    @Nullable
+
     @Override
     public IBinder onBind(Intent intent) {
         MLog.d(TAG, "onBind() ---> RemoteService");

@@ -6,10 +6,10 @@ import android.content.Intent;
 import android.content.res.Configuration;
 import android.os.Bundle;
 import android.os.Handler;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
-import android.support.v4.view.PagerAdapter;
-import android.support.v4.view.ViewPager;
+
+
+import androidx.viewpager.widget.PagerAdapter;
+import androidx.viewpager.widget.ViewPager;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -25,6 +25,10 @@ import com.weidi.usefragments.inject.InjectView;
 import com.weidi.usefragments.tool.MLog;
 
 import java.util.ArrayList;
+
+import androidx.viewpager.widget.PagerAdapter;
+import androidx.viewpager.widget.ViewPager;
+
 
 /***
  框架模板类
@@ -82,7 +86,7 @@ public class ViewPagerFragment extends BaseFragment {
     }
 
     @Override
-    public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
+    public void onViewCreated(View view, Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
         if (DEBUG)
             MLog.d(TAG, "onViewCreated() " + printThis() +
@@ -243,8 +247,8 @@ public class ViewPagerFragment extends BaseFragment {
     @Override
     public void onRequestPermissionsResult(
             int requestCode,
-            @NonNull String[] permissions,
-            @NonNull int[] grantResults) {
+            String[] permissions,
+            int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         if (DEBUG)
             MLog.d(TAG, "onRequestPermissionsResult() " + printThis() +
