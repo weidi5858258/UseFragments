@@ -1942,14 +1942,15 @@ public class SimpleVideoPlayer {
                 } else {
                     room = codec.getInputBuffers()[roomIndex];
                 }
-                if (room != null) {
-                    // 入住之前打扫一下房间
-                    room.clear();
-                    // 入住
-                    room.put(data, offset, size);
+                if (room == null) {
+                    return false;
                 }
+                // 入住之前打扫一下房间
+                room.clear();
+                // 入住
+                room.put(data, offset, size);
                 int flags = 0;
-                if (size == 0) {
+                if (size <= 0) {
                     presentationTimeUs = 0L;
                     flags = MediaCodec.BUFFER_FLAG_END_OF_STREAM;
                 }
@@ -1960,6 +1961,9 @@ public class SimpleVideoPlayer {
                         size,
                         presentationTimeUs,
                         flags);
+                // reset
+                roomIndex = -1;
+                room = null;
             }
         } catch (MediaCodec.CryptoException
                 | IllegalStateException
