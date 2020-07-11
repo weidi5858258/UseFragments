@@ -10,6 +10,7 @@ import android.content.SharedPreferences;
 import android.media.AudioFormat;
 import android.media.AudioManager;
 import android.media.AudioTrack;
+import android.media.Image;
 import android.media.MediaCodec;
 import android.media.MediaCodecInfo;
 import android.media.MediaExtractor;
@@ -1327,6 +1328,11 @@ public class SimpleVideoPlayer {
         switch (use_mode) {
             case FFMPEG.USE_MODE_MEDIA:
                 if (wrapper != null) {
+                    if (wrapper.type == TYPE_AUDIO) {
+                        mAudioWrapper.decoderMediaCodec.flush();
+                    } else {
+                        mVideoWrapper.decoderMediaCodec.flush();
+                    }
                     wrapper.clear();
                     if (wrapper.type == TYPE_AUDIO) {
                         mAudioWrapper = null;
@@ -1338,6 +1344,10 @@ public class SimpleVideoPlayer {
                 break;
             case FFMPEG.USE_MODE_ONLY_AUDIO:
                 if (wrapper != null) {
+                    if (wrapper.type == TYPE_AUDIO) {
+                        mAudioWrapper.decoderMediaCodec.flush();
+                    } else {
+                    }
                     wrapper.clear();
                     if (wrapper.type == TYPE_AUDIO) {
                         mAudioWrapper = null;
@@ -1348,6 +1358,10 @@ public class SimpleVideoPlayer {
                 break;
             case FFMPEG.USE_MODE_ONLY_VIDEO:
                 if (wrapper != null) {
+                    if (wrapper.type == TYPE_AUDIO) {
+                    } else {
+                        mVideoWrapper.decoderMediaCodec.flush();
+                    }
                     wrapper.clear();
                     if (wrapper.type == TYPE_AUDIO) {
                     } else {
@@ -1546,6 +1560,7 @@ public class SimpleVideoPlayer {
             MLog.d(TAG, "prepareVideo() return");
             return true;
         }
+
         // Video
         MLog.w(TAG, "prepareVideo() start");
         if (mSurface != null) {
@@ -1557,19 +1572,25 @@ public class SimpleVideoPlayer {
             }
             return false;
         }
+        MLog.w(TAG, "prepareVideo() video decoderMediaFormat: " +
+                mVideoWrapper.decoderMediaFormat.toString());
         /***
          BITRATE_MODE_CQ:  表示完全不控制码率，尽最大可能保证图像质量
          BITRATE_MODE_CBR: 表示编码器会尽量把输出码率控制为设定值
          BITRATE_MODE_VBR: 表示编码器会根据图像内容的复杂度（实际上是帧间变化量的大小）来动态调整输出码率，
          图像复杂则码率高，图像简单则码率低
          */
-        mVideoWrapper.decoderMediaFormat.setInteger(
-                MediaFormat.KEY_BITRATE_MODE, MediaCodecInfo.EncoderCapabilities.BITRATE_MODE_CQ);
-        // 使用于编码器
-        /*mVideoWrapper.decoderMediaFormat.setInteger(MediaFormat.KEY_COLOR_FORMAT,
-                MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420Flexible);*/
-        MLog.w(TAG, "prepareVideo() video decoderMediaFormat: " +
-                mVideoWrapper.decoderMediaFormat.toString());
+        mVideoWrapper.decoderMediaFormat.setInteger(MediaFormat.KEY_BITRATE_MODE,
+                MediaCodecInfo.EncoderCapabilities.BITRATE_MODE_CQ);
+        // https://www.polarxiong.com/archives/Android-MediaCodec%E8%A7%86%E9%A2%91%E6%96%87%E4
+        // %BB%B6%E7%A1%AC%E4%BB%B6%E8%A7%A3%E7%A0%81-%E9%AB%98%E6%95%88%E7%8E%87%E5%BE%97%E5%88
+        // %B0YUV%E6%A0%BC%E5%BC%8F%E5%B8%A7-%E5%BF%AB%E9%80%9F%E4%BF%9D%E5%AD%98JPEG%E5%9B%BE%E7
+        // %89%87-%E4%B8%8D%E4%BD%BF%E7%94%A8OpenGL.html
+        // 指定解码后的帧格式(解码器将编码的帧解码为这种指定的格式)
+        // COLOR_FormatYUV420Flexible是几乎所有解码器都支持的一种帧格式
+        // 经过这种格式的指定,解码视频后的帧格式可以很方便的转换成YUV420SemiPlanar(NV21)或YUV420Planar(I420)格式
+        mVideoWrapper.decoderMediaFormat.setInteger(MediaFormat.KEY_COLOR_FORMAT,
+                MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420Flexible);
 
         /***
          解码前
@@ -2037,6 +2058,38 @@ public class SimpleVideoPlayer {
                     break;
                 }
 
+                /*if (wrapper.type == TYPE_AUDIO) {
+                } else {
+                    // https://www.polarxiong
+                    .com/archives/Android-YUV_420_888%E7%BC%96%E7%A0%81Image%E8%BD%AC%E6%8D%A2%E4
+                    %B8%BAI420%E5%92%8CNV21%E6%A0%BC%E5%BC%8Fbyte%E6%95%B0%E7%BB%84.html
+                    Image image = wrapper.decoderMediaCodec.getOutputImage(roomIndex);
+                    MLog.w(TAG, "drainOutputBuffer() " +
+                            "image format: " + image.getFormat());
+                    if (outputImageFileType != -1) {
+                        String fileName;
+                        switch (outputImageFileType) {
+                            case FILE_TypeI420:
+                                fileName = OUTPUT_DIR +
+                                        String.format("frame_%05d_I420_%dx%d.yuv",
+                                                outputFrameCount, width, height);
+                                dumpFile(fileName, getDataFromImage(image, COLOR_FormatI420));
+                                break;
+                            case FILE_TypeNV21:
+                                fileName = OUTPUT_DIR +
+                                        String.format("frame_%05d_NV21_%dx%d.yuv",
+                                                outputFrameCount, width, height);
+                                dumpFile(fileName, getDataFromImage(image, COLOR_FormatNV21));
+                                break;
+                            case FILE_TypeJPEG:
+                                fileName = OUTPUT_DIR +
+                                        String.format("frame_%05d.jpg", outputFrameCount);
+                                compressToJpeg(fileName, image);
+                                break;
+                        }
+                    }
+                }*/
+
                 ByteBuffer room = null;
                 // 根据房间号找到房间
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
@@ -2046,7 +2099,7 @@ public class SimpleVideoPlayer {
                 }
                 // 房间大小
                 int roomSize = roomInfo.size;
-                // 不能根据room是否为null来判断是audio还是video(我的三星Note2手机上是可以的)
+                // 不能根据room是否为null来判断是audio还是video(但我的三星Note2手机上是可以的)
                 if (room != null) {
                     // audio
                     room.position(roomInfo.offset);
@@ -2070,6 +2123,7 @@ public class SimpleVideoPlayer {
                         MLog.w(TAG, "drainOutputBuffer() " +
                                 "Video Output MediaCodec.BUFFER_FLAG_END_OF_STREAM");
                     }
+                    // 结束
                     return false;
                 }
                 if ((roomInfo.flags & MediaCodec.BUFFER_FLAG_CODEC_CONFIG) != 0) {

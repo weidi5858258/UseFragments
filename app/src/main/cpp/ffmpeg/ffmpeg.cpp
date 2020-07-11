@@ -2,6 +2,7 @@
 // Created by ex-wangliwei on 2016/2/14.
 //
 
+#include <libavcodec/jni.h>
 #include <string>
 #include "ffmpeg.h"
 #include "MediaPlayer.h"
@@ -120,9 +121,12 @@ int runCount = 0;
  这个方法只有放在这个文件里才有效,在其他文件不会被回调
  */
 jint JNI_OnLoad(JavaVM *vm, void *reserved) {
-    LOGD("JNI_OnLoad\n");
+    LOGD("JNI_OnLoad()\n");
     gJavaVm = vm;
-    //av_jni_set_java_vm(vm, NULL);
+    /*int result = av_jni_set_java_vm(vm, NULL);
+    if (result < 0) {
+        LOGE("JNI_OnLoad() av_jni_set_java_vm() error\n");
+    }*/
     return JNI_VERSION_1_6;
 }
 

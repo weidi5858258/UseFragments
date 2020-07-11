@@ -324,6 +324,9 @@ public class CameraPreviewFragment extends BaseFragment
 
     /////////////////////////////////////////////////////////////////
 
+    // https://www.polarxiong.com/archives/Android%E7%9B%B8%E6%9C%BA%E5%BC%80%E5%8F%91%E7%B3%BB
+    // %E5%88%97.html
+
     private void onShow() {
         if (DEBUG)
             MLog.d(TAG, "onShow(): " + printThis());
@@ -332,7 +335,8 @@ public class CameraPreviewFragment extends BaseFragment
 
         // When the screen is turned off and turned back on, the SurfaceTexture is already
         // available, and "onSurfaceTextureAvailable" will not be called. In that case, we can open
-        // a camera and start preview from here (otherwise, we wait until the surfaceJavaObject is ready in
+        // a camera and start preview from here (otherwise, we wait until the surfaceJavaObject
+        // is ready in
         // the SurfaceTextureListener).
         if (mTextureView.isAvailable()) {
             openCamera(mTextureView.getWidth(), mTextureView.getHeight());

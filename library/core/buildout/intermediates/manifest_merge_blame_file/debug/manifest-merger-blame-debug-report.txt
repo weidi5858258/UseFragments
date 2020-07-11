@@ -19,12 +19,12 @@
 19
 20    <uses-sdk
 21        android:minSdkVersion="16"
-21-->/root/mydev/workspace_android/UseFragments/library/core/src/main/AndroidManifest.xml
+21-->/Users/alexander/mydev/workspace_android/UseFragments/library/core/src/main/AndroidManifest.xml
 22        android:targetSdkVersion="28" />
-22-->/root/mydev/workspace_android/UseFragments/library/core/src/main/AndroidManifest.xml
+22-->/Users/alexander/mydev/workspace_android/UseFragments/library/core/src/main/AndroidManifest.xml
 23
 24    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-24-->/root/mydev/workspace_android/UseFragments/library/core/src/main/AndroidManifest.xml:19:3-76
-24-->/root/mydev/workspace_android/UseFragments/library/core/src/main/AndroidManifest.xml:19:20-74
+24-->/Users/alexander/mydev/workspace_android/UseFragments/library/core/src/main/AndroidManifest.xml:19:3-76
+24-->/Users/alexander/mydev/workspace_android/UseFragments/library/core/src/main/AndroidManifest.xml:19:20-74
 25
 26</manifest>
