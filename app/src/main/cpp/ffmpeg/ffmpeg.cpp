@@ -11,6 +11,7 @@
 #include "AudioVideoPlayer.h"
 #include "AACH264Player.h"
 #include "MediaPlayerFor4K.h"
+#include "MediaPlayerForMediaCodec.h"
 
 // 这个是自定义的LOG的标识
 #define LOG "player_alexander"
@@ -74,6 +75,7 @@ static JavaVM *gJavaVm = nullptr;
 
 // 下面的jobject,jmethodID按照java的反射过程去理解,套路(jni层调用java层方法)跟反射是一样的
 // java层FFMPEG对象
+jmethodID feedInputBufferAndDrainOutputBufferMethodID = nullptr;
 jobject ffmpegJavaObject = nullptr;
 jmethodID createAudioTrackMethodID = nullptr;
 jmethodID writeMethodID = nullptr;
@@ -177,15 +179,19 @@ void write(unsigned char *pcmData,
         && ffmpegJavaObject != nullptr
         && writeMethodID != nullptr) {
         jbyteArray audioData = audioEnv->NewByteArray(sizeInBytes);
+
+        // 第一种方式
+        audioEnv->SetByteArrayRegion(
+                audioData, 0, sizeInBytes, reinterpret_cast<const jbyte *>(pcmData));
+
+        // 第二种方式
         // 拷贝数组需要对指针操作
-        jbyte *cache = audioEnv->GetByteArrayElements(audioData, NULL);
-
+        /*jbyte *cache = audioEnv->GetByteArrayElements(audioData, NULL);
         memcpy(cache, pcmData, (size_t) sizeInBytes);
-
         // 同步到audioData,并释放cache,与GetByteArrayElements对应
         // 如果不调用,audioData里面是空的,播放无声,并且会内存泄漏
         // 不能放到audioEnv->CallVoidMethod(...)的后面调用
-        audioEnv->ReleaseByteArrayElements(audioData, cache, 0);
+        audioEnv->ReleaseByteArrayElements(audioData, cache, 0);*/
 
         // AudioTrack->write
         audioEnv->CallVoidMethod(ffmpegJavaObject, writeMethodID,
@@ -193,6 +199,28 @@ void write(unsigned char *pcmData,
 
         // 释放局部引用,对应NewByteArray
         audioEnv->DeleteLocalRef(audioData);
+    }
+    if (audioIsAttached) {
+        gJavaVm->DetachCurrentThread();
+    }
+}
+
+void feedInputBufferAndDrainOutputBuffer(int type,
+                                         unsigned char *encodedData,
+                                         int size,
+                                         long long presentationTimeUs) {
+    JNIEnv *bufferEnv;
+    bool audioIsAttached = getEnv(&bufferEnv);
+    if (bufferEnv != nullptr
+        && ffmpegJavaObject != nullptr
+        && feedInputBufferAndDrainOutputBufferMethodID != nullptr) {
+        jbyteArray data = bufferEnv->NewByteArray(size);
+        bufferEnv->SetByteArrayRegion(
+                data, 0, size, reinterpret_cast<const jbyte *>(encodedData));
+        bufferEnv->CallVoidMethod(ffmpegJavaObject,
+                                  feedInputBufferAndDrainOutputBufferMethodID,
+                                  (jint) type, data, (jint) size, (jlong) presentationTimeUs);
+        bufferEnv->DeleteLocalRef(data);
     }
     if (audioIsAttached) {
         gJavaVm->DetachCurrentThread();
@@ -490,12 +518,15 @@ static jint onTransact_init(JNIEnv *env, jobject ffmpegObject,
     //jclass FFMPEGClass = env->FindClass("com/weidi/usefragments/business/video_player/FFMPEG");
     //CHECK(FFMPEGClass != nullptr);
     // 第三个参数: 括号中是java端方法的参数签名,括号后面是java端方法的返回值签名(V表示void)
+    feedInputBufferAndDrainOutputBufferMethodID = env->GetMethodID(
+            FFMPEGClass, "feedInputBufferAndDrainOutputBuffer", "(I[BIJ)V");
     createAudioTrackMethodID = env->GetMethodID(
             FFMPEGClass, "createAudioTrack", "(III)V");
     writeMethodID = env->GetMethodID(
             FFMPEGClass, "write", "([BII)V");
     sleepMethodID = env->GetMethodID(
             FFMPEGClass, "sleep", "(J)V");
+
 
     if (videoProducerObject) {
         env->DeleteGlobalRef(videoProducerObject);
@@ -612,7 +643,8 @@ static jint onTransact_setMode(JNIEnv *env, jobject thiz,
         && use_mode != USE_MODE_ONLY_AUDIO
         && use_mode != USE_MODE_AUDIO_VIDEO
         && use_mode != USE_MODE_AAC_H264
-        && use_mode != USE_MODE_MEDIA_4K) {
+        && use_mode != USE_MODE_MEDIA_4K
+        && use_mode != USE_MODE_MEDIA_MEDIACODEC) {
         use_mode = USE_MODE_MEDIA;
     }
 
@@ -652,6 +684,10 @@ static jint onTransact_setSurface(JNIEnv *env, jobject ffmpegObject,
             alexander_media_4k::setJniParameters(env, filePath, surfaceObject);
             break;
         }
+        case USE_MODE_MEDIA_MEDIACODEC: {
+            alexander_media_mediacodec::setJniParameters(env, filePath, surfaceObject);
+            break;
+        }
         default:
             break;
     }
@@ -683,6 +719,9 @@ static jint onTransact_initPlayer(JNIEnv *env, jobject thiz,
         }
         case USE_MODE_MEDIA_4K: {
             return (jint) alexander_media_4k::initPlayer();
+        }
+        case USE_MODE_MEDIA_MEDIACODEC: {
+            return (jint) alexander_media_mediacodec::initPlayer();
         }
         default:
             break;
@@ -738,6 +777,10 @@ static jint onTransact_readData(JNIEnv *env, jobject thiz,
             alexander_media_4k::readData(NULL);
             break;
         }
+        case USE_MODE_MEDIA_MEDIACODEC: {
+            alexander_media_mediacodec::readData(NULL);
+            break;
+        }
         default:
             break;
     }
@@ -773,6 +816,10 @@ static jint onTransact_audioHandleData(JNIEnv *env, jobject thiz,
             alexander_media_4k::handleData(&type);
             break;
         }
+        case USE_MODE_MEDIA_MEDIACODEC: {
+            alexander_media_mediacodec::handleData(&type);
+            break;
+        }
         default:
             break;
     }
@@ -806,6 +853,10 @@ static jint onTransact_videoHandleData(JNIEnv *env, jobject thiz,
         }
         case USE_MODE_MEDIA_4K: {
             alexander_media_4k::handleData(&type);
+            break;
+        }
+        case USE_MODE_MEDIA_MEDIACODEC: {
+            alexander_media_mediacodec::handleData(&type);
             break;
         }
         default:
@@ -870,6 +921,10 @@ static jint onTransact_play(JNIEnv *env, jobject thiz,
             alexander_media_4k::play();
             break;
         }
+        case USE_MODE_MEDIA_MEDIACODEC: {
+            alexander_media_mediacodec::play();
+            break;
+        }
         default:
             break;
     }
@@ -902,6 +957,10 @@ static jint onTransact_pause(JNIEnv *env, jobject thiz,
         }
         case USE_MODE_MEDIA_4K: {
             alexander_media_4k::pause();
+            break;
+        }
+        case USE_MODE_MEDIA_MEDIACODEC: {
+            alexander_media_mediacodec::pause();
             break;
         }
         default:
@@ -938,6 +997,10 @@ static jint onTransact_stop(JNIEnv *env, jobject thiz,
             alexander_media_4k::stop();
             break;
         }
+        case USE_MODE_MEDIA_MEDIACODEC: {
+            alexander_media_mediacodec::stop();
+            break;
+        }
         default:
             break;
     }
@@ -972,6 +1035,10 @@ static jint onTransact_release(JNIEnv *env, jobject thiz,
             alexander_media_4k::release();
             break;
         }
+        case USE_MODE_MEDIA_MEDIACODEC: {
+            alexander_media_mediacodec::release();
+            break;
+        }
         default:
             break;
     }
@@ -1000,6 +1067,9 @@ static jboolean onTransact_isRunning(JNIEnv *env, jobject thiz,
         case USE_MODE_MEDIA_4K: {
             return (jboolean) alexander_media_4k::isRunning();
         }
+        case USE_MODE_MEDIA_MEDIACODEC: {
+            return (jboolean) alexander_media_mediacodec::isRunning();
+        }
         default:
             break;
     }
@@ -1027,6 +1097,9 @@ static jboolean onTransact_isPlaying(JNIEnv *env, jobject thiz,
         }
         case USE_MODE_MEDIA_4K: {
             return (jboolean) alexander_media_4k::isPlaying();
+        }
+        case USE_MODE_MEDIA_MEDIACODEC: {
+            return (jboolean) alexander_media_mediacodec::isPlaying();
         }
         default:
             break;
@@ -1185,6 +1258,9 @@ static jlong onTransact_getDuration(JNIEnv *env, jobject thiz,
         }
         case USE_MODE_MEDIA_4K: {
             return (jlong) alexander_media_4k::getDuration();
+        }
+        case USE_MODE_MEDIA_MEDIACODEC: {
+            return (jlong) alexander_media_mediacodec::getDuration();
         }
         default:
             break;

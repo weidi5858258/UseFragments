@@ -91,6 +91,7 @@ public class FFMPEG {
     public static final int USE_MODE_AUDIO_VIDEO = 4;
     public static final int USE_MODE_AAC_H264 = 5;
     public static final int USE_MODE_MEDIA_4K = 6;
+    public static final int USE_MODE_MEDIA_MEDIACODEC = 7;
 
     // 0(开始下载,边播放边下) 1(停止下载) 2(只下载音频,暂时不用) 3(只下载视频,暂时不用)
     // 4(只下载,不播放.不调用seekTo) 5(只提取音视频,不播放.调用seekTo到0)
@@ -120,8 +121,42 @@ public class FFMPEG {
     public static final int DO_SOMETHING_CODE_videoHandleRender = 1120;
 
     public void releaseAll() {
+        if (mFfmpegUseMediaCodecDecode != null) {
+            mFfmpegUseMediaCodecDecode.release();
+        }
         onTransact(DO_SOMETHING_CODE_release, null);
         MediaUtils.releaseAudioTrack(mAudioTrack);
+    }
+
+    private FfmpegUseMediaCodecDecode mFfmpegUseMediaCodecDecode;
+
+    public void setFfmpegUseMediaCodecDecode(FfmpegUseMediaCodecDecode decode) {
+        mFfmpegUseMediaCodecDecode = decode;
+    }
+
+    private void feedInputBufferAndDrainOutputBuffer(
+            int type, byte[] data, int size, long presentationTimeUs) {
+        if (mFfmpegUseMediaCodecDecode != null) {
+            switch (type) {
+                case FfmpegUseMediaCodecDecode.TYPE_AUDIO:
+                    mFfmpegUseMediaCodecDecode.mAudioWrapper.data = data;
+                    mFfmpegUseMediaCodecDecode.mAudioWrapper.size = size;
+                    mFfmpegUseMediaCodecDecode.mAudioWrapper.sampleTime = presentationTimeUs;
+                    mFfmpegUseMediaCodecDecode.feedInputBufferAndDrainOutputBuffer(
+                            mFfmpegUseMediaCodecDecode.mAudioWrapper);
+                    break;
+                case FfmpegUseMediaCodecDecode.TYPE_VIDEO:
+                    mFfmpegUseMediaCodecDecode.mVideoWrapper.data = data;
+                    mFfmpegUseMediaCodecDecode.mVideoWrapper.size = size;
+                    mFfmpegUseMediaCodecDecode.mVideoWrapper.sampleTime = presentationTimeUs;
+                    mFfmpegUseMediaCodecDecode.feedInputBufferAndDrainOutputBuffer(
+                            mFfmpegUseMediaCodecDecode.mVideoWrapper);
+                    break;
+                default:
+                    break;
+
+            }
+        }
     }
 
     // 供jni层调用(不要改动方法名称,如改动了,jni层也要改动)
@@ -175,7 +210,6 @@ public class FFMPEG {
         MLog.i(TAG, "write()" +
                 " offsetInBytes: " + offsetInBytes +
                 " sizeInBytes: " + sizeInBytes);*/
-
         if (mAudioTrack != null
                 && mAudioTrack.getState() == AudioTrack.STATE_INITIALIZED) {
             mAudioTrack.write(audioData, offsetInBytes, sizeInBytes);

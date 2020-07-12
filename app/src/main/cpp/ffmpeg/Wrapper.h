@@ -111,6 +111,10 @@ struct Wrapper {
     // 编码器(没用到,因为是播放,所以不需要编码)
     AVCodec *encoderAVCodec = NULL;
 
+    bool useMediaCodec = false;
+    const AVBitStreamFilter *avBitStreamFilter = nullptr;
+    AVBSFContext *avbsfContext = nullptr;
+
     unsigned char *outBuffer1 = NULL;
     unsigned char *outBuffer2 = NULL;
     unsigned char *outBuffer3 = NULL;
@@ -213,6 +217,8 @@ struct VideoWrapper {
     size_t dstArea = 0;
     // 使用到sws_scale函数时需要定义这些变量
     int srcLineSize[4] = {0}, dstLineSize[4] = {0};
+
+    AVCodecParserContext *avCodecParserContext = NULL;
 };
 
 #endif //USEFRAGMENTS_WRAPPER_H

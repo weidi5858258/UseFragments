@@ -186,7 +186,7 @@ public class SimpleVideoPlayer {
     public VideoWrapper mVideoWrapper;
     private int use_mode = FFMPEG.USE_MODE_MEDIA;
 
-    private static class SimpleWrapper {
+    public static class SimpleWrapper {
         public String mime = null;
         public MediaCodec decoderMediaCodec = null;
         public MediaFormat decoderMediaFormat = null;
@@ -307,7 +307,7 @@ public class SimpleVideoPlayer {
         }
     }
 
-    private static class VideoWrapper extends SimpleWrapper {
+    public static class VideoWrapper extends SimpleWrapper {
         public Surface mSurface = null;
         public int width = 0;
         public int height = 0;
@@ -2012,11 +2012,11 @@ public class SimpleVideoPlayer {
             try {
                 // 房间号
                 int roomIndex = wrapper.decoderMediaCodec.dequeueOutputBuffer(roomInfo, TIME_OUT);
-                /*if (wrapper.type == TYPE_AUDIO) {
+                if (wrapper.type == TYPE_AUDIO) {
                     MLog.d(TAG, "drainOutputBuffer() Audio roomIndex: " + roomIndex);
                 } else {
                     MLog.w(TAG, "drainOutputBuffer() Video roomIndex: " + roomIndex);
-                }*/
+                }
                 switch (roomIndex) {
                     case MediaCodec.INFO_TRY_AGAIN_LATER:
                         // 像音频,第一个输出日志
@@ -2153,7 +2153,7 @@ public class SimpleVideoPlayer {
         return true;
     }
 
-    private boolean feedInputBufferAndDrainOutputBuffer(SimpleWrapper wrapper) {
+    public boolean feedInputBufferAndDrainOutputBuffer(SimpleWrapper wrapper) {
         if (!wrapper.isHandling) {
             return false;
         }

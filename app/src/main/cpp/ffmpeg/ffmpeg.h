@@ -11,7 +11,8 @@ enum {
     USE_MODE_ONLY_AUDIO = 3,
     USE_MODE_AUDIO_VIDEO = 4,
     USE_MODE_AAC_H264 = 5,
-    USE_MODE_MEDIA_4K = 6
+    USE_MODE_MEDIA_4K = 6,
+    USE_MODE_MEDIA_MEDIACODEC = 7
 };
 
 enum {
@@ -75,5 +76,10 @@ void onProgressUpdated(long seconds);
 void onError(int error, char *errorInfo);
 
 void onInfo(char *info);
+
+void feedInputBufferAndDrainOutputBuffer(int type,
+                                         unsigned char *encodedData,
+                                         int size,
+                                         long long presentationTimeUs);
 
 #endif //USEFRAGMENTS_FFMPEG_H
