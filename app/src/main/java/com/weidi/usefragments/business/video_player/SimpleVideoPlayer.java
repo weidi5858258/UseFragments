@@ -2012,11 +2012,11 @@ public class SimpleVideoPlayer {
             try {
                 // 房间号
                 int roomIndex = wrapper.decoderMediaCodec.dequeueOutputBuffer(roomInfo, TIME_OUT);
-                if (wrapper.type == TYPE_AUDIO) {
+                /*if (wrapper.type == TYPE_AUDIO) {
                     MLog.d(TAG, "drainOutputBuffer() Audio roomIndex: " + roomIndex);
                 } else {
                     MLog.w(TAG, "drainOutputBuffer() Video roomIndex: " + roomIndex);
-                }
+                }*/
                 switch (roomIndex) {
                     case MediaCodec.INFO_TRY_AGAIN_LATER:
                         // 像音频,第一个输出日志

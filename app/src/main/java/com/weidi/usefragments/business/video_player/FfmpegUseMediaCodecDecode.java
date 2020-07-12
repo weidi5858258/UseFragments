@@ -26,6 +26,7 @@ import com.weidi.threadpool.ThreadPool;
 import com.weidi.usefragments.media.MediaUtils;
 import com.weidi.usefragments.tool.AACPlayer;
 import com.weidi.usefragments.tool.Callback;
+import com.weidi.usefragments.tool.JniObject;
 import com.weidi.usefragments.tool.MLog;
 
 import java.io.File;
@@ -51,18 +52,8 @@ public class FfmpegUseMediaCodecDecode {
 
     private static final String TAG =
             "player_alexander";
-    private static final boolean DEBUG = true;
 
-    public static final int MAX_CACHE_AUDIO_COUNT = 600;// 5000
-    public static final int MAX_CACHE_VIDEO_COUNT = 60;
-
-    private static final int START_CACHE_COUNT_HTTP = 30;// 3000
-    private static final int START_CACHE_COUNT_LOCAL = 30;
-
-    // 只是设置为默认值
-    // 音频一帧的大小不能超过这个值,不然出错(如果设成1024 * 1024会有杂音,不能过大,调查了好久才发现跟这个有关)
     private static final int AUDIO_FRAME_MAX_LENGTH = 1024 * 100;// 102400
-    // 视频一帧的大小不能超过这个值,不然出错
     private static final int VIDEO_FRAME_MAX_LENGTH = 1024 * 1024 * 5;// 5242880
 
     public static final int TYPE_AUDIO = 0x0001;
@@ -74,12 +65,12 @@ public class FfmpegUseMediaCodecDecode {
     private String mPath = null;
     private MediaExtractor extractor = null;
 
-
     private Callback mCallback = null;
     private Surface mSurface = null;
 
     public AudioWrapper mAudioWrapper;
     public VideoWrapper mVideoWrapper;
+    private FFMPEG mFFMPEG;
 
     public static class SimpleWrapper {
         public String mime = null;
@@ -213,43 +204,6 @@ public class FfmpegUseMediaCodecDecode {
         mCallback = callback;
     }
 
-    public long mProgressUs = -1;
-
-    // 返回"微秒"
-    public long getCurrentPosition() {
-        return mAudioWrapper.presentationTimeUs;
-    }
-
-    public long getDurationUs() {
-        return mAudioWrapper.durationUs;
-    }
-
-    public void play() {
-    }
-
-    public void pause() {
-    }
-
-    public void release() {
-        internalRelease();
-        //mThreadHandler.removeMessages(MSG_RELEASE);
-        //mThreadHandler.sendEmptyMessage(MSG_RELEASE);
-    }
-
-    public boolean isPlaying() {
-        return mAudioWrapper.isStarted
-                && !mAudioWrapper.isPausedForUser
-                && !mAudioWrapper.isPausedForCache
-                && mVideoWrapper.isStarted
-                && !mVideoWrapper.isPausedForUser
-                && !mVideoWrapper.isPausedForCache;
-    }
-
-    public boolean isRunning() {
-        return mAudioWrapper.isHandling
-                || mVideoWrapper.isHandling;
-    }
-
     public boolean initPlayer() {
         return internalPrepare() && prepareAudio() && prepareVideo();
     }
@@ -267,6 +221,22 @@ public class FfmpegUseMediaCodecDecode {
         } else {
             mAudioWrapper.mAudioTrack.setStereoVolume(volume, volume);
         }
+    }
+
+    public void release() {
+        MLog.i(TAG, "release() start");
+        //notifyVideoEndOfStream();
+        //notifyAudioEndOfStream();
+        mVideoWrapper.isHandling = false;
+        mVideoWrapper.isPausedForUser = false;
+        mVideoWrapper.isPausedForCache = false;
+        mVideoWrapper.isPausedForSeek = false;
+
+        mAudioWrapper.isHandling = false;
+        mAudioWrapper.isPausedForUser = false;
+        mAudioWrapper.isPausedForCache = false;
+        mAudioWrapper.isPausedForSeek = false;
+        MLog.i(TAG, "release() end");
     }
 
     private boolean prepareAudio() {
@@ -371,7 +341,6 @@ public class FfmpegUseMediaCodecDecode {
                 extractor.release();
                 extractor = null;
             }
-            internalRelease();
             if (mCallback != null) {
                 mCallback.onError(Callback.ERROR_FFMPEG_INIT, errorInfo);
             }
@@ -436,6 +405,7 @@ public class FfmpegUseMediaCodecDecode {
         }
         MLog.w(TAG, "prepareVideo() video decoderMediaFormat: " +
                 mVideoWrapper.decoderMediaFormat.toString());
+
         /***
          BITRATE_MODE_CQ:  表示完全不控制码率，尽最大可能保证图像质量
          BITRATE_MODE_CBR: 表示编码器会尽量把输出码率控制为设定值
@@ -525,7 +495,6 @@ public class FfmpegUseMediaCodecDecode {
                 extractor.release();
                 extractor = null;
             }
-            internalRelease();
             if (mCallback != null) {
                 mCallback.onError(Callback.ERROR_FFMPEG_INIT, errorInfo);
             }
@@ -581,14 +550,13 @@ public class FfmpegUseMediaCodecDecode {
             mCallback.onReady();
         }
 
+        if (mFFMPEG == null) {
+            mFFMPEG = FFMPEG.getDefault();
+        }
         mAudioWrapper = new AudioWrapper(TYPE_AUDIO);
         mVideoWrapper = new VideoWrapper(TYPE_VIDEO);
         mAudioWrapper.clear();
         mVideoWrapper.clear();
-        preElapsedTime = null;
-        curElapsedTime = null;
-        runCounts = 0;
-        Arrays.fill(timeDiff, 0);
         mAudioWrapper.isHandling = true;
         mVideoWrapper.isHandling = true;
 
@@ -601,7 +569,6 @@ public class FfmpegUseMediaCodecDecode {
                 extractor.release();
                 extractor = null;
             }
-            internalRelease();
             if (mCallback != null) {
                 mCallback.onError(
                         Callback.ERROR_FFMPEG_INIT, "setDataSource() occurs error");
@@ -633,7 +600,6 @@ public class FfmpegUseMediaCodecDecode {
                 extractor.release();
                 extractor = null;
             }
-            internalRelease();
             if (mCallback != null) {
                 mCallback.onError(
                         Callback.ERROR_FFMPEG_INIT, "audio and video aren't find");
@@ -646,48 +612,210 @@ public class FfmpegUseMediaCodecDecode {
         return true;
     }
 
-    private void internalRelease() {
-        MLog.i(TAG, "internalRelease() start");
-        //notifyAudioEndOfStream();
-        //notifyVideoEndOfStream();
-        mAudioWrapper.isPausedForSeek = false;
-        mVideoWrapper.isPausedForSeek = false;
-        mAudioWrapper.isHandling = false;
-        mAudioWrapper.isPausedForUser = false;
-        mAudioWrapper.isPausedForCache = false;
-        mVideoWrapper.isHandling = false;
-        mVideoWrapper.isPausedForUser = false;
-        mVideoWrapper.isPausedForCache = false;
-        MLog.i(TAG, "internalRelease() end");
-    }
+    private static final int AV_CODEC_ID_HEVC = 173;
+    private static final int AV_CODEC_ID_H264 = 27;
+    private static final int AV_CODEC_ID_MPEG4 = 12;
+    private static final int AV_CODEC_ID_VP8 = 139;
+    private static final int AV_CODEC_ID_VP9 = 167;
+    private static final int AV_CODEC_ID_MPEG2VIDEO = 2;
 
-    private String preElapsedTime = null;
-    private String curElapsedTime = null;
+    /***
+     MediaFormat.MIMETYPE_VIDEO_HEVC
+     video/hevc
+     {track-id=1, level=65536, mime=video/hevc, profile=1, language=und, display-width=3840,
+     durationUs=20000400, display-height=2160, width=3840, max-input-size=1086672, frame-rate=60,
+     height=2160, csd-0=java.nio.HeapByteBuffer[pos=0 lim=88 cap=88]}
+     csd-0: {0, 0, 0, 1, 64, 1, 12, 1, -1, -1, 1, 96, 0, 0, 3, 0, -112, 0, 0, 3, 0, 0, 3, 0,
+     -103, -107, -104, 9, 0, 0, 0, 1, 66, 1, 1, 1, 96, 0, 0, 3, 0, -112, 0, 0, 3, 0, 0, 3, 0,
+     -103, -96, 1, -32, 32, 2, 28, 89, 101, 102, -110, 76, -82, 106, 4, 36, 4, 8, 0, 0, 31, 64,
+     0, 7, 83, 0, 64, 0, 0, 0, 1, 68, 1, -63, 114, -76, 98, 64, 0}
+
+     MediaFormat.MIMETYPE_VIDEO_AVC
+     video/avc
+     {track-id=1, level=2048, mime=video/avc, profile=8, language=und, display-width=1920,
+     csd-1=java.nio.HeapByteBuffer[pos=0 lim=8 cap=8], durationUs=585966666, display-height=1080,
+     width=1920, max-input-size=173638, frame-rate=30, height=1080, csd-0=java.nio
+     .HeapByteBuffer[pos=0 lim=34 cap=34]}
+     csd-0: {0, 0, 0, 1, 103, 100, 0, 40, -84, -47, 0, 120, 2, 39, -27, -64, 90, -128, -128,
+     -125, 32, 0, 0, 3, 0, 32, 0, 0, 7, -127, -29, 6, 34, 64}
+     csd-1: {0, 0, 0, 1, 104, -21, -113, 44}
+
+     MediaFormat.MIMETYPE_VIDEO_MPEG4
+     video/mp4v-es
+     {max-bitrate=800000, track-id=1, level=4, mime=video/mp4v-es, profile=1, language=und,
+     display-width=640, durationUs=69200000, display-height=480, width=640, max-input-size=25046,
+     frame-rate=25, height=480, csd-0=java.nio.HeapByteBuffer[pos=0 lim=45 cap=45]}
+     csd-0: {0, 0, 1, -80, 1, 0, 0, 1, -75, -119, 19, 0, 0, 1, 0, 0, 0, 1, 32, 0, -60, -115,
+     -120, 0, -51, 20, 4, 60, 20, 99, 0, 0, 1, -78, 76, 97, 118, 99, 53, 50, 46, 49, 53, 46, 48}
+
+     MediaFormat.MIMETYPE_VIDEO_VP8
+     video/x-vnd.on2.vp8
+     {track-id=1, durationUs=52069000, display-height=1080, mime=video/x-vnd.on2.vp8, width=1920,
+     frame-rate=30, height=1080, display-width=1920}
+
+     MediaFormat.MIMETYPE_VIDEO_VP9
+     video/x-vnd.on2.vp9
+     {color-transfer=3, track-id=1, durationUs=328983000, display-height=2160, mime=video/x-vnd
+     .on2.vp9, width=3840, color-range=2, color-standard=1, frame-rate=24, height=2160,
+     display-width=3840}
+
+     MediaFormat.MIMETYPE_VIDEO_MPEG2
+     video/mpeg2
+     {track-id=1, mime=video/mpeg2, width=1920, height=1080, csd-0=java.nio.HeapByteBuffer[pos=0
+     lim=22 cap=22]}
+     csd-0: {0, 0, 1, -77, 120, 4, 56, 53, -1, -1, -32, 24, 0, 0, 1, -75, 20, 74, 0, 1, 0, 0}
+
+
+
+     */
+    public boolean initMediaCodec(Message msg) {
+        JniObject jniObject = (JniObject) msg.obj;
+        int mimeType = jniObject.valueInt;
+        Object[] valueObjectArray = jniObject.valueObjectArray;
+        if (valueObjectArray.length < 3) {
+            return false;
+        }
+
+        MLog.w(TAG, "initMediaCodec() start");
+        MLog.w(TAG, "initMediaCodec()    mimeType: " + mimeType);
+        String mime = null;
+        switch (mimeType) {
+            case AV_CODEC_ID_HEVC:
+                mime = MediaFormat.MIMETYPE_VIDEO_HEVC;
+                break;
+            case AV_CODEC_ID_H264:
+                mime = MediaFormat.MIMETYPE_VIDEO_AVC;
+                break;
+            case AV_CODEC_ID_MPEG4:
+                mime = MediaFormat.MIMETYPE_VIDEO_MPEG4;
+                break;
+            case AV_CODEC_ID_VP8:
+                mime = MediaFormat.MIMETYPE_VIDEO_VP8;
+                break;
+            case AV_CODEC_ID_VP9:
+                mime = MediaFormat.MIMETYPE_VIDEO_VP9;
+                break;
+            case AV_CODEC_ID_MPEG2VIDEO:
+                mime = MediaFormat.MIMETYPE_VIDEO_MPEG2;
+                break;
+            default:
+                break;
+        }
+        if (TextUtils.isEmpty(mime) || mSurface == null) {
+            MLog.e(TAG, "initMediaCodec() TextUtils.isEmpty(mime) || mSurface == null");
+            return false;
+        }
+        MLog.w(TAG, "initMediaCodec() video  mime: " + mime);
+
+        if (mVideoWrapper != null) {
+            MediaUtils.releaseMediaCodec(mVideoWrapper.decoderMediaCodec);
+        }
+
+        if (mFFMPEG == null) {
+            mFFMPEG = FFMPEG.getDefault();
+        }
+        mAudioWrapper = new AudioWrapper(TYPE_AUDIO);
+        mVideoWrapper = new VideoWrapper(TYPE_VIDEO);
+        mAudioWrapper.clear();
+        mVideoWrapper.clear();
+        mAudioWrapper.isHandling = true;
+        mVideoWrapper.isHandling = true;
+
+        int[] parameters = (int[]) valueObjectArray[0];
+        mVideoWrapper.width = parameters[0];
+        mVideoWrapper.height = parameters[1];
+        MediaFormat mediaFormat = MediaUtils.getVideoDecoderMediaFormat(
+                parameters[0], parameters[1]);
+
+        Object object1 = valueObjectArray[1];
+        Object object2 = valueObjectArray[2];
+        byte[] csd0 = null;
+        byte[] csd1 = null;
+        if (object1 != null && object2 != null) {
+            csd0 = (byte[]) object1;
+            csd1 = (byte[]) object2;
+            mediaFormat.setByteBuffer("csd-0", ByteBuffer.wrap(csd0));
+            mediaFormat.setByteBuffer("csd-1", ByteBuffer.wrap(csd1));
+        } else if (object1 != null && object2 == null) {
+            csd0 = (byte[]) object1;
+            mediaFormat.setByteBuffer("csd-0", ByteBuffer.wrap(csd0));
+        } else if (object1 == null && object2 == null) {
+
+        }
+
+        mediaFormat.setString(MediaFormat.KEY_MIME, mime);
+        mediaFormat.setInteger(MediaFormat.KEY_BITRATE_MODE,
+                MediaCodecInfo.EncoderCapabilities.BITRATE_MODE_CQ);
+        mediaFormat.setInteger(MediaFormat.KEY_COLOR_FORMAT,
+                MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420Flexible);
+        // 设置帧率
+        // mediaFormat.setInteger(MediaFormat.KEY_FRAME_RATE, argus[2]);
+        // 设置比特率
+        // mediaFormat.setInteger(MediaFormat.KEY_BIT_RATE, argus[3]);
+        mVideoWrapper.mime = mime;
+        mVideoWrapper.decoderMediaFormat = mediaFormat;
+        mVideoWrapper.mSurface = mSurface;
+
+        mVideoWrapper.decoderMediaCodec =
+                MediaUtils.getVideoDecoderMediaCodec(
+                        mVideoWrapper.mime,
+                        mVideoWrapper.decoderMediaFormat,
+                        mVideoWrapper.mSurface);
+        mVideoWrapper.render = true;
+        if (mVideoWrapper.decoderMediaCodec == null) {
+            MLog.e(TAG, "initMediaCodec() mVideoWrapper.decoderMediaCodec is null");
+        }
+
+        if (mVideoWrapper.decoderMediaFormat.containsKey("csd-0")) {
+            ByteBuffer buffer = mVideoWrapper.decoderMediaFormat.getByteBuffer("csd-0");
+            byte[] csd_0 = new byte[buffer.limit()];
+            buffer.get(csd_0);
+            StringBuilder sb = new StringBuilder();
+            sb.append("{");
+            int count = csd_0.length;
+            for (int i = 0; i < count; i++) {
+                sb.append(csd_0[i]);
+                if (i <= count - 2) {
+                    sb.append(", ");
+                }
+            }
+            sb.append("}");
+            MLog.w(TAG, "initMediaCodec() video csd-0: " + sb.toString());
+        }
+        if (mVideoWrapper.decoderMediaFormat.containsKey("csd-1")) {
+            ByteBuffer buffer = mVideoWrapper.decoderMediaFormat.getByteBuffer("csd-1");
+            byte[] csd_1 = new byte[buffer.limit()];
+            buffer.get(csd_1);
+            StringBuilder sb = new StringBuilder();
+            sb.append("{");
+            int count = csd_1.length;
+            for (int i = 0; i < count; i++) {
+                sb.append(csd_1[i]);
+                if (i <= count - 2) {
+                    sb.append(", ");
+                }
+            }
+            sb.append("}");
+            MLog.w(TAG, "initMediaCodec() video csd-1: " + sb.toString());
+        }
+
+        MLog.w(TAG, "initMediaCodec() end");
+        return true;
+    }
 
     public boolean feedInputBufferAndDrainOutputBuffer(SimpleWrapper wrapper) {
         if (!wrapper.isHandling) {
+            handleVideoOutputBuffer(-1, null, null, 0);
             return false;
         }
 
-        boolean feedInputBufferResult = false;
-        boolean drainOutputBufferResult = false;
-        try {
-            // Input Data
-            feedInputBufferResult = feedInputBuffer(
-                    wrapper.decoderMediaCodec,
-                    wrapper.data,
-                    0,
-                    wrapper.size,
-                    wrapper.sampleTime);
-
-            // Output Data
-            drainOutputBufferResult = drainOutputBuffer(wrapper);
-        } catch (Exception e) {
-            e.printStackTrace();
-            return false;
-        }
-
-        return feedInputBufferResult && drainOutputBufferResult;
+        return feedInputBuffer(wrapper.decoderMediaCodec,
+                wrapper.data,
+                0,
+                wrapper.size,
+                wrapper.sampleTime)
+                &&
+                drainOutputBuffer(wrapper);
     }
 
     /***
@@ -699,7 +827,7 @@ public class FfmpegUseMediaCodecDecode {
      * @param presentationTimeUs
      * @return
      */
-    private static boolean feedInputBuffer(
+    private boolean feedInputBuffer(
             MediaCodec codec,
             byte[] data,
             int offset,
@@ -742,8 +870,10 @@ public class FfmpegUseMediaCodecDecode {
         } catch (MediaCodec.CryptoException
                 | IllegalStateException
                 | NullPointerException e) {
-            MLog.e(TAG, "feedInputBuffer() Input occur exception: " + e);
             e.printStackTrace();
+            MLog.e(TAG, "feedInputBuffer() Input occur exception: " + e);
+            handleVideoOutputBuffer(-1, null, null, 0);
+            MediaUtils.releaseMediaCodec(codec);
             return false;
         }
 
@@ -758,10 +888,13 @@ public class FfmpegUseMediaCodecDecode {
     private boolean drainOutputBuffer(SimpleWrapper wrapper) {
         // 房间信息
         MediaCodec.BufferInfo roomInfo = new MediaCodec.BufferInfo();
+        ByteBuffer room = null;
         for (; ; ) {
             if (!wrapper.isHandling) {
+                handleVideoOutputBuffer(-1, null, null, 0);
                 return false;
             }
+
             try {
                 // 房间号
                 int roomIndex = wrapper.decoderMediaCodec.dequeueOutputBuffer(roomInfo, TIME_OUT);
@@ -811,39 +944,6 @@ public class FfmpegUseMediaCodecDecode {
                     break;
                 }
 
-                /*if (wrapper.type == TYPE_AUDIO) {
-                } else {
-                    // https://www.polarxiong
-                    .com/archives/Android-YUV_420_888%E7%BC%96%E7%A0%81Image%E8%BD%AC%E6%8D%A2%E4
-                    %B8%BAI420%E5%92%8CNV21%E6%A0%BC%E5%BC%8Fbyte%E6%95%B0%E7%BB%84.html
-                    Image image = wrapper.decoderMediaCodec.getOutputImage(roomIndex);
-                    MLog.w(TAG, "drainOutputBuffer() " +
-                            "image format: " + image.getFormat());
-                    if (outputImageFileType != -1) {
-                        String fileName;
-                        switch (outputImageFileType) {
-                            case FILE_TypeI420:
-                                fileName = OUTPUT_DIR +
-                                        String.format("frame_%05d_I420_%dx%d.yuv",
-                                                outputFrameCount, width, height);
-                                dumpFile(fileName, getDataFromImage(image, COLOR_FormatI420));
-                                break;
-                            case FILE_TypeNV21:
-                                fileName = OUTPUT_DIR +
-                                        String.format("frame_%05d_NV21_%dx%d.yuv",
-                                                outputFrameCount, width, height);
-                                dumpFile(fileName, getDataFromImage(image, COLOR_FormatNV21));
-                                break;
-                            case FILE_TypeJPEG:
-                                fileName = OUTPUT_DIR +
-                                        String.format("frame_%05d.jpg", outputFrameCount);
-                                compressToJpeg(fileName, image);
-                                break;
-                        }
-                    }
-                }*/
-
-                ByteBuffer room = null;
                 // 根据房间号找到房间
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
                     room = wrapper.decoderMediaCodec.getOutputBuffer(roomIndex);
@@ -893,12 +993,14 @@ public class FfmpegUseMediaCodecDecode {
             } catch (IllegalStateException
                     | IllegalArgumentException
                     | NullPointerException e) {
+                e.printStackTrace();
                 if (wrapper.type == TYPE_AUDIO) {
                     MLog.e(TAG, "drainOutputBuffer() Audio Output occur exception: " + e);
                 } else {
                     MLog.e(TAG, "drainOutputBuffer() Video Output occur exception: " + e);
+                    handleVideoOutputBuffer(-1, room, roomInfo, 0);
+                    MediaUtils.releaseMediaCodec(wrapper.decoderMediaCodec);
                 }
-                e.printStackTrace();
                 return false;
             }
         }// for(;;) end
@@ -1064,128 +1166,32 @@ public class FfmpegUseMediaCodecDecode {
 
     private int handleAudioOutputBuffer(int roomIndex, ByteBuffer room,
                                         MediaCodec.BufferInfo roomInfo, int roomSize) {
-        mAudioWrapper.presentationTimeUs = roomInfo.presentationTimeUs;
-
-        curElapsedTime = DateUtils.formatElapsedTime(
-                (mAudioWrapper.sampleTime / 1000) / 1000);
-        if (mCallback != null
-                // 防止重复更新
-                && !TextUtils.equals(curElapsedTime, preElapsedTime)) {
-            mCallback.onProgressUpdated(mAudioWrapper.sampleTime / 1000000);
-            preElapsedTime = curElapsedTime;
-            //MLog.d(TAG, "handleData() curElapsedTime: " + curElapsedTime);
-        }
-
-        // 输出音频
-        if (mAudioWrapper.isHandling
-                && mAudioWrapper.mAudioTrack != null
-                && mAudioWrapper.mAudioTrack.getState() == AudioTrack.STATE_INITIALIZED) {
-            byte[] audioData = new byte[roomSize];
-            room.get(audioData, 0, audioData.length);
-            mAudioWrapper.mAudioTrack.write(audioData, roomInfo.offset, audioData.length);
-            //mAudioWrapper.mAudioTrack.write(audioData, 0, audioData.length);
-        }
-
         return 0;
     }
 
-    //private boolean mIsSeeked = false;
-    //private int mCountWithSeek = 0;
-    private long prePresentationTimeUs;
-    private static final int RUN_COUNTS = 100;
-    private int[] timeDiff = new int[RUN_COUNTS];
-    private int TIME_DIFFERENCE = 150;
-    private int runCounts = 0;
-    private int averageTimeDiff = 0;
+    private JniObject mJniObject = new JniObject();
+    //private int[] valueIntArray = new int[2];
+    //private Object[] valueObjectArray = new Object[2];
 
     // 最最最关键的一步
     private int handleVideoOutputBuffer(int roomIndex, ByteBuffer room,
                                         MediaCodec.BufferInfo roomInfo, int roomSize) {
-        mVideoWrapper.presentationTimeUs = roomInfo.presentationTimeUs;
-        MLog.w(TAG, "handleVideoOutputBuffer() video presentationTimeUs: " +
-                mVideoWrapper.presentationTimeUs);
-        MLog.d(TAG, "handleVideoOutputBuffer() audio presentationTimeUs: " +
-                mAudioWrapper.presentationTimeUs);
+        if (mFFMPEG != null) {
+            return Integer.parseInt(
+                    mFFMPEG.onTransact(
+                            FFMPEG.DO_SOMETHING_CODE_handleVideoOutputBuffer, mJniObject));
 
-        if (mVideoWrapper.presentationTimeUs > 0
-                && mAudioWrapper.presentationTimeUs > 0) {
-            int diffTime =
-                    (int) ((mVideoWrapper.presentationTimeUs - mAudioWrapper.presentationTimeUs) / 1000);
-            if (runCounts < RUN_COUNTS) {
-                if (diffTime > 0) {
-                    timeDiff[runCounts++] = diffTime;
-                }
-            } else if (runCounts == RUN_COUNTS) {
-                runCounts++;
-                int totleTimeDiff = 0;
-                for (int i = 0; i < RUN_COUNTS; i++) {
-                    totleTimeDiff += timeDiff[i];
-                }
-                averageTimeDiff = totleTimeDiff / RUN_COUNTS;
-                // 希望得到一个好的TIME_DIFFERENCE值
-                hope_to_get_a_good_result();
-
-            }
-            if (diffTime < 0) {
-                return 0;
-            }
-            /*if (diffTime > averageTimeDiff) {
-                mVideoWrapper.presentationTimeUs =
-                        mAudioWrapper.presentationTimeUs + averageTimeDiff * 1000;
-            }*/
-            while (diffTime > TIME_DIFFERENCE) {
-                if (!mVideoWrapper.isHandling
-                        || !mAudioWrapper.isHandling
-                        || mVideoWrapper.isPausedForUser
-                        || mAudioWrapper.isPausedForUser
-                        || mVideoWrapper.isPausedForCache
-                        || mAudioWrapper.isPausedForCache
-                        || mVideoWrapper.isPausedForSeek
-                        || mAudioWrapper.isPausedForSeek) {
-                    return 0;
-                }
-
-                SystemClock.sleep(1);
-                diffTime =
-                        (int) ((mVideoWrapper.presentationTimeUs - mAudioWrapper.presentationTimeUs) / 1000);
-            }
+            /*valueIntArray[0] = roomIndex;
+            valueIntArray[1] = roomSize;
+            valueObjectArray[0] = room;
+            valueObjectArray[1] = roomInfo;
+            mJniObject.valueIntArray = valueIntArray;
+            mJniObject.valueObjectArray = valueObjectArray;
+            return Integer.parseInt(
+                    mFFMPEG.onTransact(
+                            FFMPEG.DO_SOMETHING_CODE_handleVideoOutputBuffer, mJniObject));*/
         }
-
-        SystemClock.sleep(11);
-
         return 0;
-    }
-
-    private void hope_to_get_a_good_result() {
-        MLog.w(TAG, "handleVideoOutputBuffer() averageTimeDiff: " + averageTimeDiff);
-        if (averageTimeDiff > 1000) {
-            TIME_DIFFERENCE = 1000;
-        } else if (averageTimeDiff > 900 && averageTimeDiff <= 1000) {
-            TIME_DIFFERENCE = 900;
-        } else if (averageTimeDiff > 800 && averageTimeDiff <= 900) {
-            TIME_DIFFERENCE = 800;
-        } else if (averageTimeDiff > 700 && averageTimeDiff <= 800) {
-            TIME_DIFFERENCE = 700;
-        } else if (averageTimeDiff > 600 && averageTimeDiff <= 700) {
-            TIME_DIFFERENCE = 600;
-        } else if (averageTimeDiff > 500 && averageTimeDiff <= 600) {
-            TIME_DIFFERENCE = 500;
-        } else if (averageTimeDiff > 400 && averageTimeDiff <= 500) {
-            TIME_DIFFERENCE = 400;
-        } else if (averageTimeDiff > 300 && averageTimeDiff <= 400) {
-            TIME_DIFFERENCE = 300;
-        } else if (averageTimeDiff > 200 && averageTimeDiff <= 300) {
-            TIME_DIFFERENCE = 200;
-        } else if (averageTimeDiff > 100 && averageTimeDiff <= 200) {
-            TIME_DIFFERENCE = 100;
-        } else if (averageTimeDiff <= 100) {
-            TIME_DIFFERENCE = 50;
-        }
-
-        MLog.w(TAG, "handleVideoOutputBuffer() TIME_DIFFERENCE: " + TIME_DIFFERENCE);
-        if (mCallback != null) {
-            mCallback.onInfo(String.valueOf(TIME_DIFFERENCE));
-        }
     }
 
     private void notifyAudioEndOfStream() {

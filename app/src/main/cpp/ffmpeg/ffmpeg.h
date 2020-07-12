@@ -38,14 +38,26 @@ enum {
     DO_SOMETHING_CODE_download = 1118,
     DO_SOMETHING_CODE_closeJni = 1119,
     DO_SOMETHING_CODE_videoHandleRender = 1120,
+    DO_SOMETHING_CODE_handleVideoOutputBuffer = 1121,
 };
 
 enum {
     MSG_ON_TRANSACT_VIDEO_PRODUCER = 0x1001,
     MSG_ON_TRANSACT_VIDEO_CONSUMER = 0x1002,
     MSG_ON_TRANSACT_AUDIO_PRODUCER = 0x1003,
-    MSG_ON_TRANSACT_AUDIO_CONSUMER = 0x1004
+    MSG_ON_TRANSACT_AUDIO_CONSUMER = 0x1004,
+    MSG_ON_TRANSACT_INIT_VIDEO_MEDIACODEC = 0x1005,
 };
+
+void initMediaCodec(int mimeType,
+                         int *parameters, int parameterSize,
+                         unsigned char *csd0, int csd0Size,
+                         unsigned char *csd1, int csd1Size);
+
+void feedInputBufferAndDrainOutputBuffer(int type,
+                                         unsigned char *encodedData,
+                                         int size,
+                                         long long presentationTimeUs);
 
 void createAudioTrack(int sampleRateInHz,
                       int channelCount,
@@ -77,9 +89,5 @@ void onError(int error, char *errorInfo);
 
 void onInfo(char *info);
 
-void feedInputBufferAndDrainOutputBuffer(int type,
-                                         unsigned char *encodedData,
-                                         int size,
-                                         long long presentationTimeUs);
 
 #endif //USEFRAGMENTS_FFMPEG_H

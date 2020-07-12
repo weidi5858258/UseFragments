@@ -119,6 +119,7 @@ public class FFMPEG {
     public static final int DO_SOMETHING_CODE_download = 1118;
     public static final int DO_SOMETHING_CODE_closeJni = 1119;
     public static final int DO_SOMETHING_CODE_videoHandleRender = 1120;
+    public static final int DO_SOMETHING_CODE_handleVideoOutputBuffer = 1121;
 
     public void releaseAll() {
         if (mFfmpegUseMediaCodecDecode != null) {
@@ -138,19 +139,19 @@ public class FFMPEG {
             int type, byte[] data, int size, long presentationTimeUs) {
         if (mFfmpegUseMediaCodecDecode != null) {
             switch (type) {
-                case FfmpegUseMediaCodecDecode.TYPE_AUDIO:
-                    mFfmpegUseMediaCodecDecode.mAudioWrapper.data = data;
-                    mFfmpegUseMediaCodecDecode.mAudioWrapper.size = size;
-                    mFfmpegUseMediaCodecDecode.mAudioWrapper.sampleTime = presentationTimeUs;
-                    mFfmpegUseMediaCodecDecode.feedInputBufferAndDrainOutputBuffer(
-                            mFfmpegUseMediaCodecDecode.mAudioWrapper);
-                    break;
                 case FfmpegUseMediaCodecDecode.TYPE_VIDEO:
                     mFfmpegUseMediaCodecDecode.mVideoWrapper.data = data;
                     mFfmpegUseMediaCodecDecode.mVideoWrapper.size = size;
                     mFfmpegUseMediaCodecDecode.mVideoWrapper.sampleTime = presentationTimeUs;
                     mFfmpegUseMediaCodecDecode.feedInputBufferAndDrainOutputBuffer(
                             mFfmpegUseMediaCodecDecode.mVideoWrapper);
+                    break;
+                case FfmpegUseMediaCodecDecode.TYPE_AUDIO:
+                    mFfmpegUseMediaCodecDecode.mAudioWrapper.data = data;
+                    mFfmpegUseMediaCodecDecode.mAudioWrapper.size = size;
+                    mFfmpegUseMediaCodecDecode.mAudioWrapper.sampleTime = presentationTimeUs;
+                    mFfmpegUseMediaCodecDecode.feedInputBufferAndDrainOutputBuffer(
+                            mFfmpegUseMediaCodecDecode.mAudioWrapper);
                     break;
                 default:
                     break;

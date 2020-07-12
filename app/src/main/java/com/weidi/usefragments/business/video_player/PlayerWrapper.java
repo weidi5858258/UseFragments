@@ -555,6 +555,11 @@ public class PlayerWrapper {
             case Callback.MSG_ON_TRANSACT_AUDIO_CONSUMER:// 消费者
                 mAudioProgressBar.setProgress(((JniObject) msg.obj).valueInt);
                 break;
+            case Callback.MSG_ON_TRANSACT_INIT_VIDEO_MEDIACODEC:
+                if (mFfmpegUseMediaCodecDecode != null) {
+                    mFfmpegUseMediaCodecDecode.initMediaCodec(msg);
+                }
+                break;
             case Callback.MSG_ON_TRANSACT_READY:
                 MLog.d(TAG, "Callback.MSG_ON_TRANSACT_READY");
                 onReady();
@@ -858,6 +863,7 @@ public class PlayerWrapper {
         mFFMPEGPlayer.setHandler(mUiHandler);
         mSimpleVideoPlayer.setHandler(mUiHandler);
         mSimpleVideoPlayer.setCallback(mFFMPEGPlayer.mCallback);
+        mFfmpegUseMediaCodecDecode.setSurface(mSurfaceHolder.getSurface());
         mFfmpegUseMediaCodecDecode.setCallback(mFFMPEGPlayer.mCallback);
 
         // 开启线程初始化ffmpeg
@@ -933,8 +939,9 @@ public class PlayerWrapper {
                         if (TextUtils.isEmpty(mType)
                                 || mType.startsWith("video/")) {
                             mFFMPEGPlayer.onTransact(DO_SOMETHING_CODE_setMode,
-                                    // USE_MODE_MEDIA_4K
-                                    JniObject.obtain().writeInt(FFMPEG.USE_MODE_MEDIA));
+                                    // USE_MODE_MEDIA_4K USE_MODE_MEDIA_MEDIACODEC
+                                    JniObject.obtain().writeInt(
+                                            FFMPEG.USE_MODE_MEDIA_MEDIACODEC));
                         } else if (mType.startsWith("audio/")) {
                             mFFMPEGPlayer.onTransact(DO_SOMETHING_CODE_setMode,
                                     JniObject.obtain().writeInt(USE_MODE_ONLY_AUDIO));
@@ -952,15 +959,6 @@ public class PlayerWrapper {
                                     JniObject.obtain().writeLong(position));
                         }
                     }
-
-                    // Test
-                    mFfmpegUseMediaCodecDecode.setDataSource(mPath);
-                    mFfmpegUseMediaCodecDecode.setSurface(mSurfaceHolder.getSurface());
-                    if (!mFfmpegUseMediaCodecDecode.initPlayer()) {
-                        return;
-                    }
-                    mFFMPEGPlayer.onTransact(DO_SOMETHING_CODE_setMode,
-                            JniObject.obtain().writeInt(FFMPEG.USE_MODE_MEDIA_MEDIACODEC));
                 } else {
                     if (mPath.endsWith(".m4s")) {
                         mFFMPEGPlayer.onTransact(DO_SOMETHING_CODE_setMode,

@@ -154,6 +154,106 @@ bool getEnv(JNIEnv **env) {
     return isAttached;
 }
 
+void initMediaCodec(int mimeType,
+                    int *parameters, int parameterSize,
+                    unsigned char *csd0, int csd0Size,
+                    unsigned char *csd1, int csd1Size) {
+    JNIEnv *jniEnv;
+    bool isAttached = getEnv(&jniEnv);
+    if (jniEnv != nullptr
+        && callback_jobject != nullptr
+        && callback.onTransactMethodID != nullptr) {
+        // Object[3]
+        jsize length = 3;
+        jclass elementClass = jniEnv->FindClass("java/lang/Object");
+        jobject initialElement = nullptr;
+        jobjectArray objectsData = jniEnv->NewObjectArray(length, elementClass, initialElement);
+
+        // int[]保存各种int值,创建MediaFormat时要用
+        jintArray parasData = jniEnv->NewIntArray(parameterSize);
+        jniEnv->SetIntArrayRegion(
+                parasData, 0, parameterSize, reinterpret_cast<const jint *>(parameters));
+        jniEnv->SetObjectArrayElement(objectsData, 0, (jobject) parasData);
+
+        jbyteArray csd0Data = nullptr;
+        jbyteArray csd1Data = nullptr;
+        if (csd0 != nullptr && csd1 != nullptr) {
+            csd0Data = jniEnv->NewByteArray(csd0Size);
+            csd1Data = jniEnv->NewByteArray(csd1Size);
+            jniEnv->SetByteArrayRegion(
+                    csd0Data, 0, csd0Size, reinterpret_cast<const jbyte *>(csd0));
+            jniEnv->SetByteArrayRegion(
+                    csd1Data, 0, csd1Size, reinterpret_cast<const jbyte *>(csd1));
+            jniEnv->SetObjectArrayElement(objectsData, 1, (jobject) csd0Data);
+            jniEnv->SetObjectArrayElement(objectsData, 2, (jobject) csd1Data);
+        } else if (csd0 != nullptr && csd1 == nullptr) {
+            csd0Data = jniEnv->NewByteArray(csd0Size);
+            jniEnv->SetByteArrayRegion(
+                    csd0Data, 0, csd0Size, reinterpret_cast<const jbyte *>(csd0));
+            jniEnv->SetObjectArrayElement(objectsData, 1, (jobject) csd0Data);
+            jniEnv->SetObjectArrayElement(objectsData, 2, nullptr);
+        } else if (csd0 == nullptr && csd1 == nullptr) {
+            jniEnv->SetObjectArrayElement(objectsData, 1, nullptr);
+            jniEnv->SetObjectArrayElement(objectsData, 2, nullptr);
+        }
+
+        jobject jniObject = jniEnv->AllocObject(jniObject_jclass);
+        jfieldID valueObjectArray_jfieldID = jniEnv->GetFieldID(
+                jniObject_jclass, "valueObjectArray", "[Ljava/lang/Object;");
+        jfieldID valueInt_jfieldID = jniEnv->GetFieldID(
+                jniObject_jclass, "valueInt", "I");
+        jniEnv->SetObjectField(jniObject, valueObjectArray_jfieldID, objectsData);
+        jniEnv->SetIntField(jniObject, valueInt_jfieldID, mimeType);
+        jniEnv->CallIntMethod(
+                callback_jobject,
+                callback.onTransactMethodID,
+                MSG_ON_TRANSACT_INIT_VIDEO_MEDIACODEC,
+                jniObject);
+
+        jniEnv->DeleteLocalRef(parasData);
+        parasData = nullptr;
+        if (csd0Data != nullptr) {
+            jniEnv->DeleteLocalRef(csd0Data);
+            csd0Data = nullptr;
+        }
+        if (csd0Data != nullptr) {
+            jniEnv->DeleteLocalRef(csd1Data);
+            csd1Data = nullptr;
+        }
+        jniEnv->DeleteLocalRef(objectsData);
+        objectsData = nullptr;
+        jniEnv->DeleteLocalRef(jniObject);
+        jniObject = nullptr;
+        jniEnv->DeleteLocalRef(elementClass);
+        elementClass = nullptr;
+    }
+    if (isAttached) {
+        gJavaVm->DetachCurrentThread();
+    }
+}
+
+void feedInputBufferAndDrainOutputBuffer(int type,
+                                         unsigned char *encodedData,
+                                         int size,
+                                         long long presentationTimeUs) {
+    JNIEnv *bufferEnv;
+    bool audioIsAttached = getEnv(&bufferEnv);
+    if (bufferEnv != nullptr
+        && ffmpegJavaObject != nullptr
+        && feedInputBufferAndDrainOutputBufferMethodID != nullptr) {
+        jbyteArray data = bufferEnv->NewByteArray(size);
+        bufferEnv->SetByteArrayRegion(
+                data, 0, size, reinterpret_cast<const jbyte *>(encodedData));
+        bufferEnv->CallVoidMethod(ffmpegJavaObject,
+                                  feedInputBufferAndDrainOutputBufferMethodID,
+                                  (jint) type, data, (jint) size, (jlong) presentationTimeUs);
+        bufferEnv->DeleteLocalRef(data);
+    }
+    if (audioIsAttached) {
+        gJavaVm->DetachCurrentThread();
+    }
+}
+
 void createAudioTrack(int sampleRateInHz,
                       int channelCount,
                       int audioFormat) {
@@ -199,28 +299,6 @@ void write(unsigned char *pcmData,
 
         // 释放局部引用,对应NewByteArray
         audioEnv->DeleteLocalRef(audioData);
-    }
-    if (audioIsAttached) {
-        gJavaVm->DetachCurrentThread();
-    }
-}
-
-void feedInputBufferAndDrainOutputBuffer(int type,
-                                         unsigned char *encodedData,
-                                         int size,
-                                         long long presentationTimeUs) {
-    JNIEnv *bufferEnv;
-    bool audioIsAttached = getEnv(&bufferEnv);
-    if (bufferEnv != nullptr
-        && ffmpegJavaObject != nullptr
-        && feedInputBufferAndDrainOutputBufferMethodID != nullptr) {
-        jbyteArray data = bufferEnv->NewByteArray(size);
-        bufferEnv->SetByteArrayRegion(
-                data, 0, size, reinterpret_cast<const jbyte *>(encodedData));
-        bufferEnv->CallVoidMethod(ffmpegJavaObject,
-                                  feedInputBufferAndDrainOutputBufferMethodID,
-                                  (jint) type, data, (jint) size, (jlong) presentationTimeUs);
-        bufferEnv->DeleteLocalRef(data);
     }
     if (audioIsAttached) {
         gJavaVm->DetachCurrentThread();
@@ -1129,6 +1207,9 @@ static jint onTransact_isPausedForUser(JNIEnv *env, jobject thiz,
         case USE_MODE_MEDIA_4K: {
             return (jboolean) alexander_media_4k::isPausedForUser();
         }
+        case USE_MODE_MEDIA_MEDIACODEC: {
+            return (jboolean) alexander_media_mediacodec::isPausedForUser();
+        }
         default:
             break;
     }
@@ -1163,6 +1244,10 @@ static jint onTransact_stepAdd(JNIEnv *env, jobject thiz,
         }
         case USE_MODE_MEDIA_4K: {
             alexander_media_4k::stepAdd((int64_t) addStep);
+            break;
+        }
+        case USE_MODE_MEDIA_MEDIACODEC: {
+            alexander_media_mediacodec::stepAdd((int64_t) addStep);
             break;
         }
         default:
@@ -1201,6 +1286,10 @@ static jint onTransact_stepSubtract(JNIEnv *env, jobject thiz,
             alexander_media_4k::stepSubtract((int64_t) subtractStep);
             break;
         }
+        case USE_MODE_MEDIA_MEDIACODEC: {
+            alexander_media_mediacodec::stepSubtract((int64_t) subtractStep);
+            break;
+        }
         default:
             break;
     }
@@ -1230,6 +1319,9 @@ static jint onTransact_seekTo(JNIEnv *env, jobject thiz,
         }
         case USE_MODE_MEDIA_4K: {
             return (jint) alexander_media_4k::seekTo((int64_t) timestamp);
+        }
+        case USE_MODE_MEDIA_MEDIACODEC: {
+            return (jint) alexander_media_mediacodec::seekTo((int64_t) timestamp);
         }
         default:
             break;
@@ -1312,7 +1404,10 @@ Java_com_weidi_usefragments_business_video_1player_FFMPEG_onTransact(JNIEnv *env
                                                                      jint code,
                                                                      jobject jniObject) {
     // TODO: implement onTransact()
-    LOGI("onTransact() code: %d\n", code);
+    if (code != DO_SOMETHING_CODE_handleVideoOutputBuffer) {
+        LOGI("onTransact() code: %d\n", code);
+    }
+    const char ret[] = "0";
     switch (code) {
         case DO_SOMETHING_CODE_init:
             return env->NewStringUTF(
@@ -1332,15 +1427,16 @@ Java_com_weidi_usefragments_business_video_1player_FFMPEG_onTransact(JNIEnv *env
 
         case DO_SOMETHING_CODE_readData:
             onTransact_readData(env, thiz, code, jniObject);
-            return env->NewStringUTF("0");
+            return env->NewStringUTF(ret);
 
         case DO_SOMETHING_CODE_audioHandleData:
             onTransact_audioHandleData(env, thiz, code, jniObject);
-            return env->NewStringUTF("0");
+            return env->NewStringUTF(ret);
 
         case DO_SOMETHING_CODE_videoHandleData:
             onTransact_videoHandleData(env, thiz, code, jniObject);
-            return env->NewStringUTF("0");
+
+            return env->NewStringUTF(ret);
 
         case DO_SOMETHING_CODE_play:
             return env->NewStringUTF(
@@ -1391,11 +1487,15 @@ Java_com_weidi_usefragments_business_video_1player_FFMPEG_onTransact(JNIEnv *env
                     std::to_string(onTransact_download(env, thiz, code, jniObject)).c_str());
 
         case DO_SOMETHING_CODE_closeJni:
-            return env->NewStringUTF("0");
+            return env->NewStringUTF(ret);
 
         case DO_SOMETHING_CODE_videoHandleRender:
             onTransact_videoHandleRender(env, thiz, code, jniObject);
-            return env->NewStringUTF("0");
+            return env->NewStringUTF(ret);
+
+        case DO_SOMETHING_CODE_handleVideoOutputBuffer:
+            return env->NewStringUTF(
+                    std::to_string(alexander_media_mediacodec::handleVideoOutputBuffer()).c_str());
 
         default:
             break;
