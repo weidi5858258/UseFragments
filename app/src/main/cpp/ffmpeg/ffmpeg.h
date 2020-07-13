@@ -50,9 +50,9 @@ enum {
 };
 
 void initMediaCodec(int mimeType,
-                         int *parameters, int parameterSize,
-                         unsigned char *csd0, int csd0Size,
-                         unsigned char *csd1, int csd1Size);
+                    long long *parameters, int parameterSize,
+                    unsigned char *csd0, int csd0Size,
+                    unsigned char *csd1, int csd1Size);
 
 void feedInputBufferAndDrainOutputBuffer(int type,
                                          unsigned char *encodedData,

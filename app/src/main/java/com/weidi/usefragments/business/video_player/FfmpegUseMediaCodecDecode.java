@@ -68,9 +68,9 @@ public class FfmpegUseMediaCodecDecode {
     private Callback mCallback = null;
     private Surface mSurface = null;
 
-    public AudioWrapper mAudioWrapper;
-    public VideoWrapper mVideoWrapper;
-    private FFMPEG mFFMPEG;
+    public AudioWrapper mAudioWrapper = null;
+    public VideoWrapper mVideoWrapper = null;
+    private FFMPEG mFFMPEG = null;
 
     public static class SimpleWrapper {
         public String mime = null;
@@ -225,7 +225,7 @@ public class FfmpegUseMediaCodecDecode {
 
     public void release() {
         MLog.i(TAG, "release() start");
-        //notifyVideoEndOfStream();
+        notifyVideoEndOfStream();
         //notifyAudioEndOfStream();
         mVideoWrapper.isHandling = false;
         mVideoWrapper.isPausedForUser = false;
@@ -707,7 +707,8 @@ public class FfmpegUseMediaCodecDecode {
         }
         MLog.w(TAG, "initMediaCodec() video  mime: " + mime);
 
-        if (mVideoWrapper != null) {
+        if (mVideoWrapper != null && mVideoWrapper.decoderMediaCodec != null) {
+            mVideoWrapper.decoderMediaCodec.flush();
             MediaUtils.releaseMediaCodec(mVideoWrapper.decoderMediaCodec);
         }
 
@@ -721,11 +722,15 @@ public class FfmpegUseMediaCodecDecode {
         mAudioWrapper.isHandling = true;
         mVideoWrapper.isHandling = true;
 
-        int[] parameters = (int[]) valueObjectArray[0];
-        mVideoWrapper.width = parameters[0];
-        mVideoWrapper.height = parameters[1];
+        long[] parameters = (long[]) valueObjectArray[0];
+        mVideoWrapper.width = (int) parameters[0];
+        mVideoWrapper.height = (int) parameters[1];
+        // 单位: 秒
+        int duration = (int) parameters[2];
+        int frameRate = (int) parameters[3];
+        long bit_rate = parameters[4];
         MediaFormat mediaFormat = MediaUtils.getVideoDecoderMediaFormat(
-                parameters[0], parameters[1]);
+                mVideoWrapper.width, mVideoWrapper.height);
 
         Object object1 = valueObjectArray[1];
         Object object2 = valueObjectArray[2];
@@ -744,14 +749,20 @@ public class FfmpegUseMediaCodecDecode {
         }
 
         mediaFormat.setString(MediaFormat.KEY_MIME, mime);
+        if (duration > 0) {
+            mediaFormat.setLong(MediaFormat.KEY_DURATION, duration * 1000000L);
+        } else {
+            // 随便设置了一个数
+            mediaFormat.setLong(MediaFormat.KEY_DURATION, -9223372036854L);
+        }
+        // 设置帧率
+        mediaFormat.setInteger(MediaFormat.KEY_FRAME_RATE, frameRate);
+        // 设置比特率
+        mediaFormat.setLong(MediaFormat.KEY_BIT_RATE, bit_rate);
         mediaFormat.setInteger(MediaFormat.KEY_BITRATE_MODE,
                 MediaCodecInfo.EncoderCapabilities.BITRATE_MODE_CQ);
         mediaFormat.setInteger(MediaFormat.KEY_COLOR_FORMAT,
                 MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420Flexible);
-        // 设置帧率
-        // mediaFormat.setInteger(MediaFormat.KEY_FRAME_RATE, argus[2]);
-        // 设置比特率
-        // mediaFormat.setInteger(MediaFormat.KEY_BIT_RATE, argus[3]);
         mVideoWrapper.mime = mime;
         mVideoWrapper.decoderMediaFormat = mediaFormat;
         mVideoWrapper.mSurface = mSurface;
@@ -766,6 +777,7 @@ public class FfmpegUseMediaCodecDecode {
             MLog.e(TAG, "initMediaCodec() mVideoWrapper.decoderMediaCodec is null");
         }
 
+        mVideoWrapper.decoderMediaCodec.flush();
         if (mVideoWrapper.decoderMediaFormat.containsKey("csd-0")) {
             ByteBuffer buffer = mVideoWrapper.decoderMediaFormat.getByteBuffer("csd-0");
             byte[] csd_0 = new byte[buffer.limit()];
@@ -1142,26 +1154,17 @@ public class FfmpegUseMediaCodecDecode {
                     && oldObject instanceof Map) {
                 Map<String, Object> newMap = (Map) newObject;
                 Map<String, Object> oldMap = (Map) oldObject;
+                String mime = (String) oldMap.get("mime");
                 for (Map.Entry<String, Object> entry : newMap.entrySet()) {
                     oldMap.put(entry.getKey(), entry.getValue());
                 }
+                oldMap.put("mime-old", mime);
             }
-            MLog.w(TAG, "handleVideoOutputFormat() newMediaFormat: " +
+            MLog.w(TAG, "handleVideoOutputFormat() newMediaFormat: \n" +
                     mVideoWrapper.decoderMediaFormat);
         } catch (Exception e) {
             e.printStackTrace();
         }
-
-        mVideoWrapper.isStarted = true;
-        // 如果是视频先走到这里,那么等待音频的开始
-        /*while (!mAudioWrapper.isStarted) {
-            if (!mVideoWrapper.isHandling) {
-                return;
-            }
-            SystemClock.sleep(10);
-        }*/
-
-        MLog.w(TAG, "handleVideoOutputFormat() 画面马上输出......");
     }
 
     private int handleAudioOutputBuffer(int roomIndex, ByteBuffer room,

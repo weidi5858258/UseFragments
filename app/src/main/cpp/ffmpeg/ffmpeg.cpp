@@ -155,7 +155,7 @@ bool getEnv(JNIEnv **env) {
 }
 
 void initMediaCodec(int mimeType,
-                    int *parameters, int parameterSize,
+                    long long *parameters, int parameterSize,
                     unsigned char *csd0, int csd0Size,
                     unsigned char *csd1, int csd1Size) {
     JNIEnv *jniEnv;
@@ -170,9 +170,9 @@ void initMediaCodec(int mimeType,
         jobjectArray objectsData = jniEnv->NewObjectArray(length, elementClass, initialElement);
 
         // int[]保存各种int值,创建MediaFormat时要用
-        jintArray parasData = jniEnv->NewIntArray(parameterSize);
-        jniEnv->SetIntArrayRegion(
-                parasData, 0, parameterSize, reinterpret_cast<const jint *>(parameters));
+        jlongArray parasData = jniEnv->NewLongArray(parameterSize);
+        jniEnv->SetLongArrayRegion(
+                parasData, 0, parameterSize, reinterpret_cast<const jlong *>(parameters));
         jniEnv->SetObjectArrayElement(objectsData, 0, (jobject) parasData);
 
         jbyteArray csd0Data = nullptr;
