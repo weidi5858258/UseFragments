@@ -1520,7 +1520,8 @@ namespace alexander_media_mediacodec {
                 break;
         }
 
-        initAudioMediaCodec();
+        audioWrapper->father->useMediaCodec = false;
+        //initAudioMediaCodec();
 
         LOGD("%s\n", "createSwrContent() createAudioTrack start");
         createAudioTrack(audioWrapper->dstSampleRate,
@@ -2218,6 +2219,8 @@ namespace alexander_media_mediacodec {
         return nullptr;
     }
 
+    static double add_time_step = 0.200000;
+
     /***
      frameRate: 50 averageTimeDiff: 0.085061  TIME_DIFFERENCE: 0.135061
      音频快于视频
@@ -2227,27 +2230,71 @@ namespace alexander_media_mediacodec {
              frameRate, averageTimeDiff);
 
         if (averageTimeDiff > 1.000000) {
-            TIME_DIFFERENCE = 0.900000;
+            if (audioWrapper->father->useMediaCodec) {
+                TIME_DIFFERENCE += add_time_step;
+            } else {
+                TIME_DIFFERENCE = 0.900000;
+            }
         } else if (averageTimeDiff > 0.900000 && averageTimeDiff < 1.000000) {
-            TIME_DIFFERENCE = 0.800000;
+            if (audioWrapper->father->useMediaCodec) {
+                TIME_DIFFERENCE += add_time_step;
+            } else {
+                TIME_DIFFERENCE = 0.800000;
+            }
         } else if (averageTimeDiff > 0.800000 && averageTimeDiff < 0.900000) {
-            TIME_DIFFERENCE = 0.700000;
+            if (audioWrapper->father->useMediaCodec) {
+                TIME_DIFFERENCE += add_time_step;
+            } else {
+                TIME_DIFFERENCE = 0.700000;
+            }
         } else if (averageTimeDiff > 0.700000 && averageTimeDiff < 0.800000) {
-            TIME_DIFFERENCE = 0.600000;
+            if (audioWrapper->father->useMediaCodec) {
+                TIME_DIFFERENCE += add_time_step;
+            } else {
+                TIME_DIFFERENCE = 0.600000;
+            }
         } else if (averageTimeDiff > 0.600000 && averageTimeDiff < 0.700000) {
-            TIME_DIFFERENCE = 0.500000;
+            if (audioWrapper->father->useMediaCodec) {
+                TIME_DIFFERENCE += add_time_step;
+            } else {
+                TIME_DIFFERENCE = 0.500000;
+            }
         } else if (averageTimeDiff > 0.500000 && averageTimeDiff < 0.600000) {
-            TIME_DIFFERENCE = 0.400000;
+            if (audioWrapper->father->useMediaCodec) {
+                TIME_DIFFERENCE += add_time_step;
+            } else {
+                TIME_DIFFERENCE = 0.400000;
+            }
         } else if (averageTimeDiff > 0.400000 && averageTimeDiff < 0.500000) {
-            TIME_DIFFERENCE = 0.300000;//
+            if (audioWrapper->father->useMediaCodec) {
+                TIME_DIFFERENCE += add_time_step;
+            } else {
+                TIME_DIFFERENCE = 0.300000;
+            }
         } else if (averageTimeDiff > 0.300000 && averageTimeDiff < 0.400000) {
-            TIME_DIFFERENCE = 0.200000;//
+            if (audioWrapper->father->useMediaCodec) {
+                TIME_DIFFERENCE += add_time_step;
+            } else {
+                TIME_DIFFERENCE = 0.200000;
+            }
         } else if (averageTimeDiff > 0.200000 && averageTimeDiff < 0.300000) {
-            TIME_DIFFERENCE = 0.100000;
+            if (audioWrapper->father->useMediaCodec) {
+                TIME_DIFFERENCE += add_time_step;
+            } else {
+                TIME_DIFFERENCE = 0.100000;
+            }
         } else if (averageTimeDiff > 0.100000 && averageTimeDiff < 0.200000) {
-            TIME_DIFFERENCE = averageTimeDiff;
+            if (audioWrapper->father->useMediaCodec) {
+                TIME_DIFFERENCE += add_time_step;
+            } else {
+                TIME_DIFFERENCE = averageTimeDiff;
+            }
         } else if (averageTimeDiff < 0.100000) {
-            TIME_DIFFERENCE = averageTimeDiff + 0.050000;
+            if (audioWrapper->father->useMediaCodec) {
+                TIME_DIFFERENCE += add_time_step;
+            } else {
+                TIME_DIFFERENCE = averageTimeDiff + 0.050000;
+            }
         }
         // 3840 2160
         /***
@@ -2256,12 +2303,16 @@ namespace alexander_media_mediacodec {
          0.216413 0.266579 0.317310
          */
         if (TIME_DIFFERENCE < 0.100000) {
-            TIME_DIFFERENCE = 0.100000;
+            if (audioWrapper->father->useMediaCodec) {
+                TIME_DIFFERENCE += add_time_step;
+            } else {
+                TIME_DIFFERENCE = 0.100000;
+            }
         }
         if (frameRate >= 45
             && videoWrapper->srcWidth >= 3840
             && videoWrapper->srcHeight >= 2160) {
-            TIME_DIFFERENCE += 0.200000;
+            TIME_DIFFERENCE += add_time_step;
         }
         LOGI("hope_to_get_a_good_result()               TIME_DIFFERENCE: %lf\n", TIME_DIFFERENCE);
         char info[50];

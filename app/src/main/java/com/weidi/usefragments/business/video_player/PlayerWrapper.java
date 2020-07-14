@@ -2293,8 +2293,8 @@ public class PlayerWrapper {
             case KeyEvent.KEYCODE_MEDIA_PLAY:// 126
             case KeyEvent.KEYCODE_MEDIA_PAUSE:// 127
                 // 单击
-                MLog.d(TAG, "clickOne()");
-                clickOne();
+                //MLog.d(TAG, "clickOne()");
+                //clickOne();
                 break;
             default:
                 break;
