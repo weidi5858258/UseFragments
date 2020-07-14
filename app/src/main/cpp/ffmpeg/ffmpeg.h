@@ -38,7 +38,8 @@ enum {
     DO_SOMETHING_CODE_download = 1118,
     DO_SOMETHING_CODE_closeJni = 1119,
     DO_SOMETHING_CODE_videoHandleRender = 1120,
-    DO_SOMETHING_CODE_handleVideoOutputBuffer = 1121,
+    DO_SOMETHING_CODE_handleAudioOutputBuffer = 1121,
+    DO_SOMETHING_CODE_handleVideoOutputBuffer = 1122,
 };
 
 enum {
@@ -49,12 +50,13 @@ enum {
     MSG_ON_TRANSACT_INIT_VIDEO_MEDIACODEC = 0x1005,
 };
 
-void initMediaCodec(int mimeType,
+bool initMediaCodec(int type,
+                    int mimeType,
                     long long *parameters, int parameterSize,
                     unsigned char *csd0, int csd0Size,
                     unsigned char *csd1, int csd1Size);
 
-void feedInputBufferAndDrainOutputBuffer(int type,
+bool feedInputBufferAndDrainOutputBuffer(int type,
                                          unsigned char *encodedData,
                                          int size,
                                          long long presentationTimeUs);

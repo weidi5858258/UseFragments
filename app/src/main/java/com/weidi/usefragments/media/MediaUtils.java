@@ -946,13 +946,13 @@ public class MediaUtils {
      */
     // 下面的参数为了得到默认的AudioRecord对象和AudioTrack对象而定义的
     // 兼容所有Android设备
-    public static final int sampleRateInHz = 44100;
+    public static int sampleRateInHz = 44100;
     // 下面两个是对应关系,只是方法所需要的参数不一样而已
-    public static final int channelCount = 2;
+    public static int channelCount = 2;
     // 立体声(AudioFormat.CHANNEL_IN_STEREO = AudioFormat.CHANNEL_OUT_STEREO)
     private static final int channelConfig = AudioFormat.CHANNEL_IN_STEREO;
     // 采样精度,数据位宽(兼容所有Android设备)
-    private static final int audioFormat = AudioFormat.ENCODING_PCM_16BIT;
+    public static int audioFormat = AudioFormat.ENCODING_PCM_16BIT;
     // AudioRecord(录音)
     private static final int audioSource = MediaRecorder.AudioSource.MIC;
     // AudioTrack(播放)

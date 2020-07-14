@@ -2227,9 +2227,11 @@ public class SimpleVideoPlayer {
                     && oldObject instanceof Map) {
                 Map<String, Object> newMap = (Map) newObject;
                 Map<String, Object> oldMap = (Map) oldObject;
+                String mime = (String) oldMap.get("mime");
                 for (Map.Entry<String, Object> entry : newMap.entrySet()) {
                     oldMap.put(entry.getKey(), entry.getValue());
                 }
+                oldMap.put("mime-old", mime);
             }
             MLog.d(TAG, "handleAudioOutputFormat() newMediaFormat: " +
                     mAudioWrapper.decoderMediaFormat);

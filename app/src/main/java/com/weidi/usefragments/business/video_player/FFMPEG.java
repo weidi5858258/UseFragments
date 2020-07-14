@@ -119,7 +119,8 @@ public class FFMPEG {
     public static final int DO_SOMETHING_CODE_download = 1118;
     public static final int DO_SOMETHING_CODE_closeJni = 1119;
     public static final int DO_SOMETHING_CODE_videoHandleRender = 1120;
-    public static final int DO_SOMETHING_CODE_handleVideoOutputBuffer = 1121;
+    public static final int DO_SOMETHING_CODE_handleAudioOutputBuffer = 1121;
+    public static final int DO_SOMETHING_CODE_handleVideoOutputBuffer = 1122;
 
     public void releaseAll() {
         if (mFfmpegUseMediaCodecDecode != null) {
@@ -135,29 +136,44 @@ public class FFMPEG {
         mFfmpegUseMediaCodecDecode = decode;
     }
 
-    private void feedInputBufferAndDrainOutputBuffer(
+    // 供jni层调用
+    private boolean initMediaCodec(int type, JniObject jniObject) {
+        if (mFfmpegUseMediaCodecDecode != null) {
+            switch (type) {
+                case FfmpegUseMediaCodecDecode.TYPE_AUDIO:
+                    return mFfmpegUseMediaCodecDecode.initAudioMediaCodec(jniObject);
+                case FfmpegUseMediaCodecDecode.TYPE_VIDEO:
+                    return mFfmpegUseMediaCodecDecode.initVideoMediaCodec(jniObject);
+                default:
+                    break;
+            }
+        }
+        return false;
+    }
+
+    // 供jni层调用
+    private boolean feedInputBufferAndDrainOutputBuffer(
             int type, byte[] data, int size, long presentationTimeUs) {
         if (mFfmpegUseMediaCodecDecode != null) {
             switch (type) {
-                case FfmpegUseMediaCodecDecode.TYPE_VIDEO:
-                    mFfmpegUseMediaCodecDecode.mVideoWrapper.data = data;
-                    mFfmpegUseMediaCodecDecode.mVideoWrapper.size = size;
-                    mFfmpegUseMediaCodecDecode.mVideoWrapper.sampleTime = presentationTimeUs;
-                    mFfmpegUseMediaCodecDecode.feedInputBufferAndDrainOutputBuffer(
-                            mFfmpegUseMediaCodecDecode.mVideoWrapper);
-                    break;
                 case FfmpegUseMediaCodecDecode.TYPE_AUDIO:
                     mFfmpegUseMediaCodecDecode.mAudioWrapper.data = data;
                     mFfmpegUseMediaCodecDecode.mAudioWrapper.size = size;
                     mFfmpegUseMediaCodecDecode.mAudioWrapper.sampleTime = presentationTimeUs;
-                    mFfmpegUseMediaCodecDecode.feedInputBufferAndDrainOutputBuffer(
+                    return mFfmpegUseMediaCodecDecode.feedInputBufferAndDrainOutputBuffer(
                             mFfmpegUseMediaCodecDecode.mAudioWrapper);
-                    break;
+                case FfmpegUseMediaCodecDecode.TYPE_VIDEO:
+                    mFfmpegUseMediaCodecDecode.mVideoWrapper.data = data;
+                    mFfmpegUseMediaCodecDecode.mVideoWrapper.size = size;
+                    mFfmpegUseMediaCodecDecode.mVideoWrapper.sampleTime = presentationTimeUs;
+                    return mFfmpegUseMediaCodecDecode.feedInputBufferAndDrainOutputBuffer(
+                            mFfmpegUseMediaCodecDecode.mVideoWrapper);
                 default:
                     break;
 
             }
         }
+        return false;
     }
 
     // 供jni层调用(不要改动方法名称,如改动了,jni层也要改动)

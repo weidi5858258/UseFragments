@@ -171,35 +171,52 @@ namespace alexander_only_audio {
         // 获取音频解码器
         // 先通过AVCodecParameters找到AVCodec
         AVCodecID codecID = audioWrapper->father->avCodecParameters->codec_id;
-        // audio是没有下面这些东西的
+        LOGD("findAndOpenAVCodecForAudio() codecID: %d\n", codecID);
         switch (codecID) {
-            case AV_CODEC_ID_HEVC: {
-                LOGD("findAndOpenAVCodecForAudio() hevc_mediacodec\n");
-                // 硬解码265
-                audioWrapper->father->decoderAVCodec = avcodec_find_decoder_by_name(
-                        "hevc_mediacodec");
+            case AV_CODEC_ID_MP2: {// 86016
+                LOGD("findAndOpenAVCodecForAudio() AV_CODEC_ID_MP2\n");
                 break;
             }
-            case AV_CODEC_ID_H264: {
-                LOGD("findAndOpenAVCodecForAudio() h264_mediacodec\n");
-                // 硬解码264
-                audioWrapper->father->decoderAVCodec = avcodec_find_decoder_by_name(
-                        "h264_mediacodec");
+            case AV_CODEC_ID_MP3: {// 86017
+                LOGD("findAndOpenAVCodecForAudio() AV_CODEC_ID_MP3\n");
                 break;
             }
-            case AV_CODEC_ID_MPEG4: {
-                LOGD("findAndOpenAVCodecForAudio() mpeg4_mediacodec\n");
-                // 硬解码mpeg4
-                audioWrapper->father->decoderAVCodec = avcodec_find_decoder_by_name(
-                        "mpeg4_mediacodec");
+            case AV_CODEC_ID_AAC: {// 86018
+                LOGD("findAndOpenAVCodecForAudio() AV_CODEC_ID_AAC\n");
+                // audioWrapper->father->useMediaCodec = true;
+                // audioWrapper->father->avBitStreamFilter = av_bsf_get_by_name("aac_adtstoasc");
                 break;
             }
-            default: {
-                LOGD("findAndOpenAVCodecForAudio() codecID\n");
-                // 软解
-                // audioWrapper->father->decoderAVCodec = avcodec_find_decoder(codecID);
+            case AV_CODEC_ID_AC3: {// 86019
+                LOGD("findAndOpenAVCodecForAudio() AV_CODEC_ID_AC3\n");
                 break;
             }
+            case AV_CODEC_ID_VORBIS: {// 86021
+                LOGD("findAndOpenAVCodecForAudio() AV_CODEC_ID_VORBIS\n");
+                break;
+            }
+            case AV_CODEC_ID_FLAC: {// 86028
+                LOGD("findAndOpenAVCodecForAudio() AV_CODEC_ID_FLAC\n");
+                break;
+            }
+            case AV_CODEC_ID_QCELP: {// 86040
+                LOGD("findAndOpenAVCodecForAudio() AV_CODEC_ID_QCELP\n");
+                break;
+            }
+            case AV_CODEC_ID_EAC3: {// 86056
+                LOGD("findAndOpenAVCodecForAudio() AV_CODEC_ID_EAC3\n");
+                break;
+            }
+            case AV_CODEC_ID_AAC_LATM: {// 86065
+                LOGD("findAndOpenAVCodecForAudio() AV_CODEC_ID_AAC_LATM\n");
+                break;
+            }
+            case AV_CODEC_ID_OPUS: {// 86076
+                LOGD("findAndOpenAVCodecForAudio() AV_CODEC_ID_OPUS\n");
+                break;
+            }
+            default:
+                break;
         }
         audioWrapper->father->decoderAVCodec = avcodec_find_decoder(codecID);
         if (audioWrapper->father->decoderAVCodec != NULL) {

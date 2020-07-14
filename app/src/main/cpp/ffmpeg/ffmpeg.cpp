@@ -75,8 +75,9 @@ static JavaVM *gJavaVm = nullptr;
 
 // 下面的jobject,jmethodID按照java的反射过程去理解,套路(jni层调用java层方法)跟反射是一样的
 // java层FFMPEG对象
-jmethodID feedInputBufferAndDrainOutputBufferMethodID = nullptr;
 jobject ffmpegJavaObject = nullptr;
+jmethodID initMediaCodecMethodID = nullptr;
+jmethodID feedInputBufferAndDrainOutputBufferMethodID = nullptr;
 jmethodID createAudioTrackMethodID = nullptr;
 jmethodID writeMethodID = nullptr;
 jmethodID sleepMethodID = nullptr;
@@ -154,88 +155,104 @@ bool getEnv(JNIEnv **env) {
     return isAttached;
 }
 
-void initMediaCodec(int mimeType,
+bool initMediaCodecImpl(JNIEnv *jniEnv, int type, int mimeType,
+                        long long *parameters, int parameterSize,
+                        unsigned char *csd0, int csd0Size,
+                        unsigned char *csd1, int csd1Size) {
+    bool initRet = false;
+    // 创建装3个对象的Object[]
+    jsize length = 3;
+    jclass elementClass = jniEnv->FindClass("java/lang/Object");
+    jobject initialElement = nullptr;
+    jobjectArray objectsData = jniEnv->NewObjectArray(length, elementClass, initialElement);
+
+    // int[]保存各种int值,创建MediaFormat时要用
+    jlongArray parasData = jniEnv->NewLongArray(parameterSize);
+    jniEnv->SetLongArrayRegion(
+            parasData, 0, parameterSize, reinterpret_cast<const jlong *>(parameters));
+    jniEnv->SetObjectArrayElement(objectsData, 0, (jobject) parasData);
+
+    jbyteArray csd0Data = nullptr;
+    jbyteArray csd1Data = nullptr;
+    if (csd0 != nullptr && csd1 != nullptr) {
+        csd0Data = jniEnv->NewByteArray(csd0Size);
+        csd1Data = jniEnv->NewByteArray(csd1Size);
+        jniEnv->SetByteArrayRegion(
+                csd0Data, 0, csd0Size, reinterpret_cast<const jbyte *>(csd0));
+        jniEnv->SetByteArrayRegion(
+                csd1Data, 0, csd1Size, reinterpret_cast<const jbyte *>(csd1));
+        jniEnv->SetObjectArrayElement(objectsData, 1, (jobject) csd0Data);
+        jniEnv->SetObjectArrayElement(objectsData, 2, (jobject) csd1Data);
+    } else if (csd0 != nullptr && csd1 == nullptr) {
+        csd0Data = jniEnv->NewByteArray(csd0Size);
+        jniEnv->SetByteArrayRegion(
+                csd0Data, 0, csd0Size, reinterpret_cast<const jbyte *>(csd0));
+        jniEnv->SetObjectArrayElement(objectsData, 1, (jobject) csd0Data);
+        jniEnv->SetObjectArrayElement(objectsData, 2, nullptr);
+    } else if (csd0 == nullptr && csd1 == nullptr) {
+        jniEnv->SetObjectArrayElement(objectsData, 1, nullptr);
+        jniEnv->SetObjectArrayElement(objectsData, 2, nullptr);
+    }
+
+    jobject jniObject = jniEnv->AllocObject(jniObject_jclass);
+    jfieldID valueInt_jfieldID = jniEnv->GetFieldID(
+            jniObject_jclass, "valueInt", "I");
+    jfieldID valueObjectArray_jfieldID = jniEnv->GetFieldID(
+            jniObject_jclass, "valueObjectArray", "[Ljava/lang/Object;");
+    // valueInt = mimeType
+    jniEnv->SetIntField(jniObject, valueInt_jfieldID, mimeType);
+    // valueObjectArray = objectsData
+    jniEnv->SetObjectField(jniObject, valueObjectArray_jfieldID, objectsData);
+
+    initRet = jniEnv->CallBooleanMethod(ffmpegJavaObject, initMediaCodecMethodID, type, jniObject);
+
+    jniEnv->DeleteLocalRef(parasData);
+    parasData = nullptr;
+    if (csd0Data != nullptr) {
+        jniEnv->DeleteLocalRef(csd0Data);
+        csd0Data = nullptr;
+    }
+    if (csd1Data != nullptr) {
+        jniEnv->DeleteLocalRef(csd1Data);
+        csd1Data = nullptr;
+    }
+    jniEnv->DeleteLocalRef(objectsData);
+    objectsData = nullptr;
+    jniEnv->DeleteLocalRef(jniObject);
+    jniObject = nullptr;
+    jniEnv->DeleteLocalRef(elementClass);
+    elementClass = nullptr;
+
+    return initRet;
+}
+
+bool initMediaCodec(int type,
+                    int mimeType,
                     long long *parameters, int parameterSize,
                     unsigned char *csd0, int csd0Size,
                     unsigned char *csd1, int csd1Size) {
+    bool initRet = false;
     JNIEnv *jniEnv;
     bool isAttached = getEnv(&jniEnv);
     if (jniEnv != nullptr
-        && callback_jobject != nullptr
-        && callback.onTransactMethodID != nullptr) {
-        // Object[3]
-        jsize length = 3;
-        jclass elementClass = jniEnv->FindClass("java/lang/Object");
-        jobject initialElement = nullptr;
-        jobjectArray objectsData = jniEnv->NewObjectArray(length, elementClass, initialElement);
-
-        // int[]保存各种int值,创建MediaFormat时要用
-        jlongArray parasData = jniEnv->NewLongArray(parameterSize);
-        jniEnv->SetLongArrayRegion(
-                parasData, 0, parameterSize, reinterpret_cast<const jlong *>(parameters));
-        jniEnv->SetObjectArrayElement(objectsData, 0, (jobject) parasData);
-
-        jbyteArray csd0Data = nullptr;
-        jbyteArray csd1Data = nullptr;
-        if (csd0 != nullptr && csd1 != nullptr) {
-            csd0Data = jniEnv->NewByteArray(csd0Size);
-            csd1Data = jniEnv->NewByteArray(csd1Size);
-            jniEnv->SetByteArrayRegion(
-                    csd0Data, 0, csd0Size, reinterpret_cast<const jbyte *>(csd0));
-            jniEnv->SetByteArrayRegion(
-                    csd1Data, 0, csd1Size, reinterpret_cast<const jbyte *>(csd1));
-            jniEnv->SetObjectArrayElement(objectsData, 1, (jobject) csd0Data);
-            jniEnv->SetObjectArrayElement(objectsData, 2, (jobject) csd1Data);
-        } else if (csd0 != nullptr && csd1 == nullptr) {
-            csd0Data = jniEnv->NewByteArray(csd0Size);
-            jniEnv->SetByteArrayRegion(
-                    csd0Data, 0, csd0Size, reinterpret_cast<const jbyte *>(csd0));
-            jniEnv->SetObjectArrayElement(objectsData, 1, (jobject) csd0Data);
-            jniEnv->SetObjectArrayElement(objectsData, 2, nullptr);
-        } else if (csd0 == nullptr && csd1 == nullptr) {
-            jniEnv->SetObjectArrayElement(objectsData, 1, nullptr);
-            jniEnv->SetObjectArrayElement(objectsData, 2, nullptr);
-        }
-
-        jobject jniObject = jniEnv->AllocObject(jniObject_jclass);
-        jfieldID valueObjectArray_jfieldID = jniEnv->GetFieldID(
-                jniObject_jclass, "valueObjectArray", "[Ljava/lang/Object;");
-        jfieldID valueInt_jfieldID = jniEnv->GetFieldID(
-                jniObject_jclass, "valueInt", "I");
-        jniEnv->SetObjectField(jniObject, valueObjectArray_jfieldID, objectsData);
-        jniEnv->SetIntField(jniObject, valueInt_jfieldID, mimeType);
-        jniEnv->CallIntMethod(
-                callback_jobject,
-                callback.onTransactMethodID,
-                MSG_ON_TRANSACT_INIT_VIDEO_MEDIACODEC,
-                jniObject);
-
-        jniEnv->DeleteLocalRef(parasData);
-        parasData = nullptr;
-        if (csd0Data != nullptr) {
-            jniEnv->DeleteLocalRef(csd0Data);
-            csd0Data = nullptr;
-        }
-        if (csd0Data != nullptr) {
-            jniEnv->DeleteLocalRef(csd1Data);
-            csd1Data = nullptr;
-        }
-        jniEnv->DeleteLocalRef(objectsData);
-        objectsData = nullptr;
-        jniEnv->DeleteLocalRef(jniObject);
-        jniObject = nullptr;
-        jniEnv->DeleteLocalRef(elementClass);
-        elementClass = nullptr;
+        && ffmpegJavaObject != nullptr
+        && initMediaCodecMethodID != nullptr) {
+        initRet = initMediaCodecImpl(jniEnv, type, mimeType,
+                                     parameters, parameterSize,
+                                     csd0, csd0Size,
+                                     csd1, csd1Size);
     }
     if (isAttached) {
         gJavaVm->DetachCurrentThread();
     }
+    return initRet;
 }
 
-void feedInputBufferAndDrainOutputBuffer(int type,
+bool feedInputBufferAndDrainOutputBuffer(int type,
                                          unsigned char *encodedData,
                                          int size,
                                          long long presentationTimeUs) {
+    bool feedAndDrainRet = false;
     JNIEnv *bufferEnv;
     bool audioIsAttached = getEnv(&bufferEnv);
     if (bufferEnv != nullptr
@@ -244,14 +261,16 @@ void feedInputBufferAndDrainOutputBuffer(int type,
         jbyteArray data = bufferEnv->NewByteArray(size);
         bufferEnv->SetByteArrayRegion(
                 data, 0, size, reinterpret_cast<const jbyte *>(encodedData));
-        bufferEnv->CallVoidMethod(ffmpegJavaObject,
-                                  feedInputBufferAndDrainOutputBufferMethodID,
-                                  (jint) type, data, (jint) size, (jlong) presentationTimeUs);
+        feedAndDrainRet = bufferEnv->CallBooleanMethod(ffmpegJavaObject,
+                                                       feedInputBufferAndDrainOutputBufferMethodID,
+                                                       (jint) type, data, (jint) size,
+                                                       (jlong) presentationTimeUs);
         bufferEnv->DeleteLocalRef(data);
     }
     if (audioIsAttached) {
         gJavaVm->DetachCurrentThread();
     }
+    return feedAndDrainRet;
 }
 
 void createAudioTrack(int sampleRateInHz,
@@ -596,15 +615,17 @@ static jint onTransact_init(JNIEnv *env, jobject ffmpegObject,
     //jclass FFMPEGClass = env->FindClass("com/weidi/usefragments/business/video_player/FFMPEG");
     //CHECK(FFMPEGClass != nullptr);
     // 第三个参数: 括号中是java端方法的参数签名,括号后面是java端方法的返回值签名(V表示void)
+    initMediaCodecMethodID = env->GetMethodID(
+            FFMPEGClass, "initMediaCodec", "(ILcom/weidi/usefragments/tool/JniObject;)Z");
+    //FFMPEGClass, "initMediaCodec", "(ILcom/weidi/usefragments/tool/JniObject;)B");
     feedInputBufferAndDrainOutputBufferMethodID = env->GetMethodID(
-            FFMPEGClass, "feedInputBufferAndDrainOutputBuffer", "(I[BIJ)V");
+            FFMPEGClass, "feedInputBufferAndDrainOutputBuffer", "(I[BIJ)Z");
     createAudioTrackMethodID = env->GetMethodID(
             FFMPEGClass, "createAudioTrack", "(III)V");
     writeMethodID = env->GetMethodID(
             FFMPEGClass, "write", "([BII)V");
     sleepMethodID = env->GetMethodID(
             FFMPEGClass, "sleep", "(J)V");
-
 
     if (videoProducerObject) {
         env->DeleteGlobalRef(videoProducerObject);
@@ -1404,7 +1425,8 @@ Java_com_weidi_usefragments_business_video_1player_FFMPEG_onTransact(JNIEnv *env
                                                                      jint code,
                                                                      jobject jniObject) {
     // TODO: implement onTransact()
-    if (code != DO_SOMETHING_CODE_handleVideoOutputBuffer) {
+    if (code != DO_SOMETHING_CODE_handleAudioOutputBuffer
+        && code != DO_SOMETHING_CODE_handleVideoOutputBuffer) {
         LOGI("onTransact() code: %d\n", code);
     }
     const char ret[] = "0";
@@ -1492,6 +1514,10 @@ Java_com_weidi_usefragments_business_video_1player_FFMPEG_onTransact(JNIEnv *env
         case DO_SOMETHING_CODE_videoHandleRender:
             onTransact_videoHandleRender(env, thiz, code, jniObject);
             return env->NewStringUTF(ret);
+
+        case DO_SOMETHING_CODE_handleAudioOutputBuffer:
+            return env->NewStringUTF(
+                    std::to_string(alexander_media_mediacodec::handleAudioOutputBuffer()).c_str());
 
         case DO_SOMETHING_CODE_handleVideoOutputBuffer:
             return env->NewStringUTF(

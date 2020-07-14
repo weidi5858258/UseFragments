@@ -557,7 +557,7 @@ public class PlayerWrapper {
                 break;
             case Callback.MSG_ON_TRANSACT_INIT_VIDEO_MEDIACODEC:
                 if (mFfmpegUseMediaCodecDecode != null) {
-                    mFfmpegUseMediaCodecDecode.initMediaCodec(msg);
+                    mFfmpegUseMediaCodecDecode.initVideoMediaCodec(msg);
                 }
                 break;
             case Callback.MSG_ON_TRANSACT_READY:
@@ -622,6 +622,8 @@ public class PlayerWrapper {
                         clickFour();
                         break;
                     case 5:
+                        MLog.d(TAG, "clickFive()");
+                        clickFive();
                         break;
                     case 6:
                         break;
@@ -2115,6 +2117,21 @@ public class PlayerWrapper {
         }
     }
 
+    private void clickFive() {
+        if (mFFMPEGPlayer != null) {
+            if (!Boolean.parseBoolean(mFFMPEGPlayer.onTransact(
+                    DO_SOMETHING_CODE_isRunning, null))) {
+                return;
+            }
+        }
+
+        if (TextUtils.equals(whatPlayer, PLAYER_MEDIACODEC)) {
+            mSimpleVideoPlayer.release();
+        } else {
+            mFFMPEGPlayer.releaseAll();
+        }
+    }
+
     private boolean isPhoneDevice() {
         boolean isPhoneDevice = true;
         UiModeManager uiModeManager =
@@ -2246,7 +2263,7 @@ public class PlayerWrapper {
         return c / k == 0 ? true : false;
     }
 
-    private static final int NEED_CLICK_COUNTS = 4;
+    private static final int NEED_CLICK_COUNTS = 5;
     private int clickCounts = 0;
 
     public Object onEvent(int what, Object[] objArray) {
