@@ -1299,7 +1299,8 @@ namespace alexander_media_mediacodec {
                 LOGW("findAndOpenAVCodecForVideo() vp9_mediacodec\n");
                 videoWrapper->father->useMediaCodec = true;
                 videoWrapper->father->avBitStreamFilter =
-                        av_bsf_get_by_name("vp9_superframe");
+                        // vp9_superframe vp9_raw_reorder vp9_superframe_split null
+                        av_bsf_get_by_name("null");
                 // 硬解码vp9
                 /*videoWrapper->father->decoderAVCodec = avcodec_find_decoder_by_name(
                         "vp9_mediacodec");*/
@@ -2032,7 +2033,7 @@ namespace alexander_media_mediacodec {
                     continue;
                 }
                 // 有些直播节目会这样
-                if (mediaDuration < 0 && readFrame == AVERROR_EOF) {
+                if (mediaDuration <= 0 && readFrame == AVERROR_EOF) {
                     // LOGF("readData() readFrame  : %d\n", readFrame);
                     videoSleep(10);
                     continue;

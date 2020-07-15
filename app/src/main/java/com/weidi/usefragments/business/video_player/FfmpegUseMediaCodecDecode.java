@@ -1438,6 +1438,23 @@ public class FfmpegUseMediaCodecDecode {
                 MediaCodecInfo.EncoderCapabilities.BITRATE_MODE_CQ);
         mediaFormat.setInteger(MediaFormat.KEY_COLOR_FORMAT,
                 MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420Flexible);
+
+        // {color-transfer=3, max-height=2160, max-width=3840, mime=video/x-vnd.on2.vp9,
+        // width=3840, color-range=2, priority=0, rotation-degrees=0,
+        // color-standard=1, max-input-size=3110400, height=2160}
+        /*mediaFormat = new MediaFormat();
+        mediaFormat.setInteger("color-transfer",3);
+        mediaFormat.setInteger("max-height",2160);
+        mediaFormat.setInteger("max-width",3840);
+        mediaFormat.setString("mime","video/x-vnd.on2.vp9");
+        mediaFormat.setInteger("width",3840);
+        mediaFormat.setInteger("color-range",2);
+        mediaFormat.setInteger("priority",0);
+        mediaFormat.setInteger("rotation-degrees",0);
+        mediaFormat.setInteger("color-standard",1);
+        mediaFormat.setInteger("max-input-size",3110400);
+        mediaFormat.setInteger("height",2160);
+        mVideoWrapper.mime = "video/x-vnd.on2.vp9";*/
         mVideoWrapper.mime = videoMime;
         mVideoWrapper.decoderMediaFormat = mediaFormat;
         mVideoWrapper.mSurface = mSurface;
