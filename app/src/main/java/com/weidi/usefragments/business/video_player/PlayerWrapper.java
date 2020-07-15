@@ -116,6 +116,7 @@ public class PlayerWrapper {
     private FFMPEG mFFMPEGPlayer;
     private SimpleVideoPlayer mSimpleVideoPlayer;
     private FfmpegUseMediaCodecDecode mFfmpegUseMediaCodecDecode;
+    private GetMediaFormat mGetMediaFormat;
     private String mPath;
     // 有些mp3文件含有video,因此播放失败
     private String mType;
@@ -400,6 +401,11 @@ public class PlayerWrapper {
         }
         mFfmpegUseMediaCodecDecode.setContext(mContext);
         mFFMPEGPlayer.setFfmpegUseMediaCodecDecode(mFfmpegUseMediaCodecDecode);
+        if (mGetMediaFormat == null) {
+            mGetMediaFormat = new GetMediaFormat();
+        }
+        mGetMediaFormat.setPlayerWrapper(this);
+        mFfmpegUseMediaCodecDecode.setGetMediaFormat(mGetMediaFormat);
 
         mUiHandler = new Handler(Looper.getMainLooper()) {
             @Override
@@ -532,6 +538,7 @@ public class PlayerWrapper {
     }
 
     public void onRelease() {
+        mGetMediaFormat.release();
         if (mFFMPEGPlayer != null) {
             mFFMPEGPlayer.releaseAll();
         }
@@ -849,6 +856,23 @@ public class PlayerWrapper {
             default:
                 break;
         }
+    }
+
+    public void startForGetMediaFormat() {
+        mGetMediaFormat.mVideoMediaFormat = null;
+        mGetMediaFormat.mAudioMediaFormat = null;
+        /*if (!mPath.endsWith(".m4s")
+                && !mPath.endsWith(".h264")
+                && !mPath.endsWith(".aac")) {
+            mGetMediaFormat.release();
+            mGetMediaFormat.setContext(mContext);
+            mGetMediaFormat.setDataSource(mPath);
+            mGetMediaFormat.start();
+        } else {
+            startPlayback();
+        }*/
+
+        startPlayback();
     }
 
     public void startPlayback() {
@@ -1662,7 +1686,8 @@ public class PlayerWrapper {
             mHasError = false;
             MLog.d(TAG, "onFinished() restart playback");
             // 重新开始播放
-            startPlayback();
+            // startPlayback();
+            startForGetMediaFormat();
         } else {
             MyToast.show("Safe Exit");
             if (mIsTesting) {
@@ -1713,12 +1738,14 @@ public class PlayerWrapper {
                 if (TextUtils.isEmpty(mType)
                         || mType.startsWith("video/")) {
                     if (mCouldPlaybackPathList.contains(mPath)) {
-                        startPlayback();
+                        // startPlayback();
+                        startForGetMediaFormat();
                         break;
                     } else {
                         String path = mSP.getString(PLAYBACK_ADDRESS, null);
                         if (TextUtils.equals(path, mPath)) {
-                            startPlayback();
+                            // startPlayback();
+                            startForGetMediaFormat();
                             break;
                         }
                     }
@@ -1829,7 +1856,8 @@ public class PlayerWrapper {
                 SurfaceHolder holder) {
             MLog.d(TAG, "surfaceCreated()");
 
-            startPlayback();
+            // startPlayback();
+            startForGetMediaFormat();
         }
 
         @Override

@@ -1,0 +1,25 @@
+-- Merging decision tree log ---
+manifest
+ADDED from /Users/alexander/mydev/workspace_android/UseFragments/library/dash/src/main/AndroidManifest.xml:17:1-64
+INJECTED from /Users/alexander/mydev/workspace_android/UseFragments/library/dash/src/main/AndroidManifest.xml:17:1-64
+INJECTED from /Users/alexander/mydev/workspace_android/UseFragments/library/dash/src/main/AndroidManifest.xml:17:1-64
+	package
+		ADDED from /Users/alexander/mydev/workspace_android/UseFragments/library/dash/src/main/AndroidManifest.xml:17:11-62
+		INJECTED from /Users/alexander/mydev/workspace_android/UseFragments/library/dash/src/main/AndroidManifest.xml
+		INJECTED from /Users/alexander/mydev/workspace_android/UseFragments/library/dash/src/main/AndroidManifest.xml
+	xmlns:android
+		ADDED from /Users/alexander/mydev/workspace_android/UseFragments/library/dash/src/main/AndroidManifest.xml:17:1-64
+uses-sdk
+INJECTED from /Users/alexander/mydev/workspace_android/UseFragments/library/dash/src/main/AndroidManifest.xml reason: use-sdk injection requested
+INJECTED from /Users/alexander/mydev/workspace_android/UseFragments/library/dash/src/main/AndroidManifest.xml
+INJECTED from /Users/alexander/mydev/workspace_android/UseFragments/library/dash/src/main/AndroidManifest.xml
+INJECTED from /Users/alexander/mydev/workspace_android/UseFragments/library/dash/src/main/AndroidManifest.xml
+INJECTED from /Users/alexander/mydev/workspace_android/UseFragments/library/dash/src/main/AndroidManifest.xml
+	android:targetSdkVersion
+		INJECTED from /Users/alexander/mydev/workspace_android/UseFragments/library/dash/src/main/AndroidManifest.xml
+		ADDED from /Users/alexander/mydev/workspace_android/UseFragments/library/dash/src/main/AndroidManifest.xml
+		INJECTED from /Users/alexander/mydev/workspace_android/UseFragments/library/dash/src/main/AndroidManifest.xml
+	android:minSdkVersion
+		INJECTED from /Users/alexander/mydev/workspace_android/UseFragments/library/dash/src/main/AndroidManifest.xml
+		ADDED from /Users/alexander/mydev/workspace_android/UseFragments/library/dash/src/main/AndroidManifest.xml
+		INJECTED from /Users/alexander/mydev/workspace_android/UseFragments/library/dash/src/main/AndroidManifest.xml

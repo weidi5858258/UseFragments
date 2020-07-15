@@ -408,7 +408,8 @@ public class PlayerService extends Service {
         if (!TextUtils.equals(mCurPath, mPrePath)) {
             MLog.i(TAG, "needToPlaybackOtherVideo() mPrePath: " + mPrePath);
             MLog.i(TAG, "needToPlaybackOtherVideo() mCurPath: " + mCurPath);
-            mPlayerWrapper.startPlayback();
+            // mPlayerWrapper.startPlayback();
+            mPlayerWrapper.startForGetMediaFormat();
             mPrePath = mCurPath.substring(0);
             return true;
         }

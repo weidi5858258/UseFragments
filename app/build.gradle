@@ -50,16 +50,16 @@ android {
             keyPassword 'android'
             storePassword 'android'
 //            storeFile file('D:\\Tools\\weidi_keystore\\debug.keystore')
-            storeFile file('/root/mydev/workspace_github/myfiles/android/weidi_keystore/debug.keystore')
-//            storeFile file('/Users/alexander/mydev/workspace_github/myfiles/android/weidi_keystore/debug.keystore')
+//            storeFile file('/root/mydev/workspace_github/myfiles/android/weidi_keystore/debug.keystore')
+            storeFile file('/Users/alexander/mydev/workspace_github/myfiles/android/weidi_keystore/debug.keystore')
         }
         release {
             keyAlias 'weidi'
             keyPassword 'android'
             storePassword 'android'
 //            storeFile file('D:\\Tools\\weidi_keystore\\debug.keystore')
-            storeFile file('/root/mydev/workspace_github/myfiles/android/weidi_keystore/debug.keystore')
-//            storeFile file('/Users/alexander/mydev/workspace_github/myfiles/android/weidi_keystore/debug.keystore')
+//            storeFile file('/root/mydev/workspace_github/myfiles/android/weidi_keystore/debug.keystore')
+            storeFile file('/Users/alexander/mydev/workspace_github/myfiles/android/weidi_keystore/debug.keystore')
         }
     }
     buildTypes {
@@ -82,6 +82,9 @@ dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
 
     implementation project(':library:core')
+    implementation project(':library:dash')
+    implementation project(':library:hls')
+    implementation project(':library:smoothstreaming')
     implementation project(":weidi_library")
 
     implementation 'com.fanjun:keeplive:1.1.20'

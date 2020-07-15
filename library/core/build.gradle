@@ -65,6 +65,10 @@ dependencies {
     testImplementation 'org.mockito:mockito-core:' + mockitoVersion
     testImplementation 'org.robolectric:robolectric:' + robolectricVersion
     //testImplementation project(modulePrefix + 'testutils')
+
+//    implementation project(':library:dash')
+//    implementation project(':library:hls')
+//    implementation project(':library:smoothstreaming')
 }
 
 ext {
