@@ -1,12 +1,21 @@
 package com.weidi.usefragments;
 
 import android.content.Context;
+import android.net.Uri;
 import android.os.AsyncTask;
 
+import com.google.android.exoplayer2.C;
+import com.google.android.exoplayer2.C.ContentType;
 import com.google.android.exoplayer2.DefaultRenderersFactory;
 import com.google.android.exoplayer2.RenderersFactory;
 import com.google.android.exoplayer2.database.DatabaseProvider;
 import com.google.android.exoplayer2.database.ExoDatabaseProvider;
+import com.google.android.exoplayer2.drm.DrmSessionManager;
+import com.google.android.exoplayer2.source.MediaSource;
+import com.google.android.exoplayer2.source.ProgressiveMediaSource;
+import com.google.android.exoplayer2.source.dash.DashMediaSource;
+import com.google.android.exoplayer2.source.hls.HlsMediaSource;
+import com.google.android.exoplayer2.source.smoothstreaming.SsMediaSource;
 import com.google.android.exoplayer2.upstream.DataSource;
 import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory;
 import com.google.android.exoplayer2.upstream.DefaultHttpDataSourceFactory;
@@ -128,7 +137,7 @@ public class MyApplication extends WeidiApplication {
 
     public boolean useExtensionRenderers() {
         //return "withExtensions".equals(BuildConfig.FLAVOR);
-        return false;
+        return true;
     }
 
     public RenderersFactory buildRenderersFactory(boolean preferExtensionRenderer) {
@@ -143,7 +152,33 @@ public class MyApplication extends WeidiApplication {
                 .setExtensionRendererMode(extensionRendererMode);
     }
 
-    protected static CacheDataSourceFactory buildReadOnlyCacheDataSource(
+    public MediaSource createLeafMediaSource(
+            Uri uri, String extension, DrmSessionManager<?> drmSessionManager) {
+        DataSource.Factory dataSourceFactory = buildDataSourceFactory();
+        @ContentType int type = Util.inferContentType(uri, extension);
+        switch (type) {
+            case C.TYPE_DASH:
+                return new DashMediaSource.Factory(dataSourceFactory)
+                        .setDrmSessionManager(drmSessionManager)
+                        .createMediaSource(uri);
+            case C.TYPE_SS:
+                return new SsMediaSource.Factory(dataSourceFactory)
+                        .setDrmSessionManager(drmSessionManager)
+                        .createMediaSource(uri);
+            case C.TYPE_HLS:
+                return new HlsMediaSource.Factory(dataSourceFactory)
+                        .setDrmSessionManager(drmSessionManager)
+                        .createMediaSource(uri);
+            case C.TYPE_OTHER:
+                return new ProgressiveMediaSource.Factory(dataSourceFactory)
+                        .setDrmSessionManager(drmSessionManager)
+                        .createMediaSource(uri);
+            default:
+                throw new IllegalStateException("Unsupported type: " + type);
+        }
+    }
+
+    private static CacheDataSourceFactory buildReadOnlyCacheDataSource(
             DataSource.Factory upstreamFactory, Cache cache) {
         return new CacheDataSourceFactory(
                 cache,
@@ -154,7 +189,7 @@ public class MyApplication extends WeidiApplication {
                 /* eventListener= */ null);
     }
 
-    protected synchronized Cache getDownloadCache() {
+    private synchronized Cache getDownloadCache() {
         if (downloadCache == null) {
             File downloadContentDirectory = new File(getDownloadDirectory(), DOWNLOAD_CONTENT_DIRECTORY);
             downloadCache =

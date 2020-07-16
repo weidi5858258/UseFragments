@@ -22,6 +22,8 @@ public class ObjectHelper {
     }
 
     public interface MediaFormatCallback {
+        void setStreamCount(int count);
+
         void onCreated(MediaFormat mediaFormat);
     }
 
@@ -29,6 +31,12 @@ public class ObjectHelper {
 
     public void setMediaFormatCallback(MediaFormatCallback callback) {
         mCallback = callback;
+    }
+
+    public void setStreamCount(int count) {
+        if (mCallback != null) {
+            mCallback.setStreamCount(count);
+        }
     }
 
     public void setMediaFormat(MediaFormat mediaFormat) {

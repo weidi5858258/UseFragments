@@ -40,6 +40,9 @@ import java.util.Map;
 
 import static com.weidi.usefragments.business.video_player.FFMPEG.USE_MODE_ONLY_VIDEO;
 import static com.weidi.usefragments.business.video_player.PlayerWrapper.PLAYBACK_IS_MUTE;
+import static com.weidi.usefragments.business.video_player.PlayerWrapper.PLAYBACK_USE_PLAYER;
+import static com.weidi.usefragments.business.video_player.PlayerWrapper.PLAYER_FFMPEG;
+import static com.weidi.usefragments.business.video_player.PlayerWrapper.PLAYER_FFMPEG_MEDIACODEC;
 import static com.weidi.usefragments.service.DownloadFileService.PREFERENCES_NAME;
 
 /***
@@ -187,7 +190,9 @@ public class FfmpegUseMediaCodecDecode {
     }
 
     public FfmpegUseMediaCodecDecode() {
-
+        if (mFFMPEG == null) {
+            mFFMPEG = FFMPEG.getDefault();
+        }
     }
 
     public void setContext(Context context) {
@@ -749,14 +754,30 @@ public class FfmpegUseMediaCodecDecode {
 
      */
     public boolean initAudioMediaCodec(JniObject jniObject) {
+        if (mContext != null) {
+            SharedPreferences sp =
+                    mContext.getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE);
+            String whatPlayer = sp.getString(PLAYBACK_USE_PLAYER, PLAYER_FFMPEG);
+            if (!TextUtils.equals(whatPlayer, PLAYER_FFMPEG_MEDIACODEC)) {
+                return false;
+            }
+        }
+        MLog.d(TAG, "initAudioMediaCodec() start");
         String audioMime = null;
         MediaFormat mediaFormat = null;
         if (mGetMediaFormat != null
                 && mGetMediaFormat.mAudioMediaFormat != null) {
-            audioMime = mGetMediaFormat.mAudioMediaFormat.getString(MediaFormat.KEY_MIME);
+            int channel_count =
+                    mGetMediaFormat.mAudioMediaFormat.getInteger(MediaFormat.KEY_CHANNEL_COUNT);
+            if (channel_count > 2) {
+                return false;
+            }
             mediaFormat = mGetMediaFormat.mAudioMediaFormat;
+            audioMime = mediaFormat.getString(MediaFormat.KEY_MIME);
             MLog.d(TAG, "initAudioMediaCodec() audio GetMediaFormat");
         } else {
+            // region
+
             if (jniObject == null
                     || jniObject.valueObjectArray == null
                     || jniObject.valueObjectArray.length < 3) {
@@ -887,34 +908,33 @@ public class FfmpegUseMediaCodecDecode {
                 // 随便设置了一个数
                 mediaFormat.setLong(MediaFormat.KEY_DURATION, -9223372036854L);
             }
+
+            // endregion
         }
 
         if (mAudioWrapper != null && mAudioWrapper.decoderMediaCodec != null) {
             // mAudioWrapper.decoderMediaCodec.flush();
-            MediaUtils.releaseMediaCodec(mAudioWrapper.decoderMediaCodec);
+            MLog.d(TAG, "initAudioMediaCodec() audio clear");
+            mAudioWrapper.clear();
+            mAudioWrapper = null;
         }
 
-        if (mFFMPEG == null) {
-            mFFMPEG = FFMPEG.getDefault();
-        }
         mAudioWrapper = new AudioWrapper(TYPE_AUDIO);
-        mAudioWrapper.clear();
         mAudioWrapper.isHandling = true;
-
+        mAudioWrapper.render = false;
         mAudioWrapper.mime = audioMime;
         mAudioWrapper.decoderMediaFormat = mediaFormat;
-
         mAudioWrapper.decoderMediaCodec =
                 MediaUtils.getAudioDecoderMediaCodec(
                         mAudioWrapper.mime,
                         mAudioWrapper.decoderMediaFormat);
-        mAudioWrapper.render = false;
+        MLog.e(TAG, "initAudioMediaCodec() audio decoderMediaCodec: " +
+                mAudioWrapper.decoderMediaCodec);
         if (mAudioWrapper.decoderMediaCodec == null) {
-            MLog.e(TAG, "initAudioMediaCodec() mAudioWrapper.decoderMediaCodec is null");
             return false;
         }
 
-        mAudioWrapper.decoderMediaCodec.flush();
+        //mAudioWrapper.decoderMediaCodec.flush();
         if (mAudioWrapper.decoderMediaFormat.containsKey("csd-0")) {
             ByteBuffer buffer = mAudioWrapper.decoderMediaFormat.getByteBuffer("csd-0");
             byte[] csd_0 = new byte[buffer.limit()];
@@ -953,14 +973,25 @@ public class FfmpegUseMediaCodecDecode {
     }
 
     public boolean initVideoMediaCodec(JniObject jniObject) {
+        if (mContext != null) {
+            SharedPreferences sp =
+                    mContext.getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE);
+            String whatPlayer = sp.getString(PLAYBACK_USE_PLAYER, PLAYER_FFMPEG);
+            if (!TextUtils.equals(whatPlayer, PLAYER_FFMPEG_MEDIACODEC)) {
+                return false;
+            }
+        }
+        MLog.w(TAG, "initVideoMediaCodec() start");
         String videoMime = null;
         MediaFormat mediaFormat = null;
         if (mGetMediaFormat != null
                 && mGetMediaFormat.mVideoMediaFormat != null) {
-            videoMime = mGetMediaFormat.mVideoMediaFormat.getString(MediaFormat.KEY_MIME);
             mediaFormat = mGetMediaFormat.mVideoMediaFormat;
+            videoMime = mediaFormat.getString(MediaFormat.KEY_MIME);
             MLog.w(TAG, "initVideoMediaCodec() video GetMediaFormat");
         } else {
+            // region
+
             if (jniObject == null
                     || jniObject.valueObjectArray == null
                     || jniObject.valueObjectArray.length < 3) {
@@ -1001,11 +1032,6 @@ public class FfmpegUseMediaCodecDecode {
                 return false;
             }
             MLog.w(TAG, "initVideoMediaCodec() video  mime: " + videoMime);
-
-            if (mVideoWrapper != null && mVideoWrapper.decoderMediaCodec != null) {
-                // mVideoWrapper.decoderMediaCodec.flush();
-                MediaUtils.releaseMediaCodec(mVideoWrapper.decoderMediaCodec);
-            }
 
             long[] parameters = (long[]) valueObjectArray[0];
             int width = (int) parameters[0];
@@ -1092,31 +1118,35 @@ public class FfmpegUseMediaCodecDecode {
                     MediaCodecInfo.EncoderCapabilities.BITRATE_MODE_CQ);
             mediaFormat.setInteger(MediaFormat.KEY_COLOR_FORMAT,
                     MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420Flexible);
+
+            // endregion
         }
 
-        if (mFFMPEG == null) {
-            mFFMPEG = FFMPEG.getDefault();
+        if (mVideoWrapper != null && mVideoWrapper.decoderMediaCodec != null) {
+            // mVideoWrapper.decoderMediaCodec.flush();
+            MLog.w(TAG, "initVideoMediaCodec() video clear");
+            mVideoWrapper.clear();
+            mVideoWrapper = null;
         }
+
         mVideoWrapper = new VideoWrapper(TYPE_VIDEO);
-        mVideoWrapper.clear();
         mVideoWrapper.isHandling = true;
-
         mVideoWrapper.mime = videoMime;
         mVideoWrapper.decoderMediaFormat = mediaFormat;
         mVideoWrapper.mSurface = mSurface;
-
+        mVideoWrapper.render = true;
         mVideoWrapper.decoderMediaCodec =
                 MediaUtils.getVideoDecoderMediaCodec(
                         mVideoWrapper.mime,
                         mVideoWrapper.decoderMediaFormat,
                         mVideoWrapper.mSurface);
-        mVideoWrapper.render = true;
+        MLog.w(TAG, "initVideoMediaCodec() video decoderMediaCodec: " +
+                mVideoWrapper.decoderMediaCodec);
         if (mVideoWrapper.decoderMediaCodec == null) {
-            MLog.e(TAG, "initVideoMediaCodec() mVideoWrapper.decoderMediaCodec is null");
             return false;
         }
 
-        mVideoWrapper.decoderMediaCodec.flush();
+        //mVideoWrapper.decoderMediaCodec.flush();
         if (mVideoWrapper.decoderMediaFormat.containsKey("csd-0")) {
             ByteBuffer buffer = mVideoWrapper.decoderMediaFormat.getByteBuffer("csd-0");
             byte[] csd_0 = new byte[buffer.limit()];
@@ -1304,6 +1334,7 @@ public class FfmpegUseMediaCodecDecode {
     public boolean feedInputBufferAndDrainOutputBuffer(SimpleWrapper wrapper) {
         if (!wrapper.isHandling) {
             handleVideoOutputBuffer(-1, null, null, 0);
+            MediaUtils.releaseMediaCodec(wrapper.decoderMediaCodec);
             return false;
         }
 
@@ -1396,6 +1427,7 @@ public class FfmpegUseMediaCodecDecode {
         for (; ; ) {
             if (!wrapper.isHandling) {
                 handleVideoOutputBuffer(-1, null, null, 0);
+                MediaUtils.releaseMediaCodec(wrapper.decoderMediaCodec);
                 return false;
             }
 
@@ -1503,8 +1535,8 @@ public class FfmpegUseMediaCodecDecode {
                 } else {
                     MLog.e(TAG, "drainOutputBuffer() Video Output occur exception: " + e);
                     handleVideoOutputBuffer(-1, room, roomInfo, 0);
-                    MediaUtils.releaseMediaCodec(wrapper.decoderMediaCodec);
                 }
+                MediaUtils.releaseMediaCodec(wrapper.decoderMediaCodec);
                 return false;
             }
         }// for(;;) end

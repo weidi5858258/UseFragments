@@ -1060,6 +1060,8 @@ namespace alexander_media_mediacodec {
         switch (codecID) {
             case AV_CODEC_ID_MP2: {// 86016
                 LOGD("findAndOpenAVCodecForAudio() AV_CODEC_ID_MP2\n");
+                audioWrapper->father->useMediaCodec = true;
+                audioWrapper->father->avBitStreamFilter = av_bsf_get_by_name("null");
                 break;
             }
             case AV_CODEC_ID_MP3: {// 86017
@@ -1094,6 +1096,8 @@ namespace alexander_media_mediacodec {
             }
             case AV_CODEC_ID_QCELP: {// 86040
                 LOGD("findAndOpenAVCodecForAudio() AV_CODEC_ID_QCELP\n");
+                audioWrapper->father->useMediaCodec = true;
+                audioWrapper->father->avBitStreamFilter = av_bsf_get_by_name("null");
                 break;
             }
             case AV_CODEC_ID_EAC3: {// 86056
@@ -1105,11 +1109,13 @@ namespace alexander_media_mediacodec {
             case AV_CODEC_ID_AAC_LATM: {// 86065
                 LOGD("findAndOpenAVCodecForAudio() AV_CODEC_ID_AAC_LATM\n");
                 audioWrapper->father->useMediaCodec = true;
-                audioWrapper->father->avBitStreamFilter = av_bsf_get_by_name("aac_adtstoasc");
+                audioWrapper->father->avBitStreamFilter = av_bsf_get_by_name("null");
                 break;
             }
             case AV_CODEC_ID_OPUS: {// 86076
                 LOGD("findAndOpenAVCodecForAudio() AV_CODEC_ID_OPUS\n");
+                audioWrapper->father->useMediaCodec = true;
+                audioWrapper->father->avBitStreamFilter = av_bsf_get_by_name("null");
                 break;
             }
             default: {
@@ -1241,12 +1247,12 @@ namespace alexander_media_mediacodec {
         vp9_superframe_split
          */
         // 第一种方式
-        void *state = nullptr;
+        /*void *state = nullptr;
         const AVBitStreamFilter *avBitStreamFilter = nullptr;
         while ((avBitStreamFilter = av_bsf_next(&state))) {
             LOGI("findAndOpenAVCodecForVideo() avBitStreamFilter->name: %s\n",
                  avBitStreamFilter->name);
-        }
+        }*/
         // 第二种方式
         //avBitStreamFilter = av_bsf_get_by_name("hevc_mp4toannexb");
 
@@ -1262,6 +1268,7 @@ namespace alexander_media_mediacodec {
                 LOGW("findAndOpenAVCodecForVideo() hevc_mediacodec\n");
                 videoWrapper->father->useMediaCodec = true;
                 videoWrapper->father->avBitStreamFilter =
+                        //av_bsf_get_by_name("null");
                         av_bsf_get_by_name("hevc_mp4toannexb");
                 // 硬解码265
                 /*videoWrapper->father->decoderAVCodec = avcodec_find_decoder_by_name(
@@ -1290,6 +1297,8 @@ namespace alexander_media_mediacodec {
             }
             case AV_CODEC_ID_VP8: {// 139
                 LOGW("findAndOpenAVCodecForVideo() vp8_mediacodec\n");
+                videoWrapper->father->useMediaCodec = true;
+                videoWrapper->father->avBitStreamFilter = av_bsf_get_by_name("null");
                 // 硬解码vp8
                 /*videoWrapper->father->decoderAVCodec = avcodec_find_decoder_by_name(
                         "vp8_mediacodec");*/
@@ -1306,13 +1315,12 @@ namespace alexander_media_mediacodec {
                         "vp9_mediacodec");*/
                 break;
             }
-                /*case AV_CODEC_ID_MPEG1VIDEO: {// 1
-                    LOGW("findAndOpenAVCodecForVideo() mpeg1_mediacodec\n");
-                    videoWrapper->father->useMediaCodec = true;
-                    videoWrapper->father->avBitStreamFilter =
-                            av_bsf_get_by_name("mpeg2_metadata");
-                    break;
-                }*/
+            case AV_CODEC_ID_MPEG1VIDEO: {// 1
+                LOGW("findAndOpenAVCodecForVideo() mpeg1_mediacodec\n");
+                videoWrapper->father->useMediaCodec = true;
+                videoWrapper->father->avBitStreamFilter = av_bsf_get_by_name("null");
+                break;
+            }
             case AV_CODEC_ID_MPEG2VIDEO: {// 2
                 LOGW("findAndOpenAVCodecForVideo() mpeg2_mediacodec\n");
                 videoWrapper->father->useMediaCodec = true;
@@ -1521,8 +1529,8 @@ namespace alexander_media_mediacodec {
                 break;
         }
 
-        audioWrapper->father->useMediaCodec = false;
-        //initAudioMediaCodec();
+        //audioWrapper->father->useMediaCodec = false;
+        initAudioMediaCodec();
 
         LOGD("%s\n", "createSwrContent() createAudioTrack start");
         createAudioTrack(audioWrapper->dstSampleRate,
@@ -2232,67 +2240,67 @@ namespace alexander_media_mediacodec {
 
         if (averageTimeDiff > 1.000000) {
             if (audioWrapper->father->useMediaCodec) {
-                TIME_DIFFERENCE += add_time_step;
+                TIME_DIFFERENCE = averageTimeDiff + add_time_step;
             } else {
                 TIME_DIFFERENCE = 0.900000;
             }
         } else if (averageTimeDiff > 0.900000 && averageTimeDiff < 1.000000) {
             if (audioWrapper->father->useMediaCodec) {
-                TIME_DIFFERENCE += add_time_step;
+                TIME_DIFFERENCE = averageTimeDiff + add_time_step;
             } else {
                 TIME_DIFFERENCE = 0.800000;
             }
         } else if (averageTimeDiff > 0.800000 && averageTimeDiff < 0.900000) {
             if (audioWrapper->father->useMediaCodec) {
-                TIME_DIFFERENCE += add_time_step;
+                TIME_DIFFERENCE = averageTimeDiff + add_time_step;
             } else {
                 TIME_DIFFERENCE = 0.700000;
             }
         } else if (averageTimeDiff > 0.700000 && averageTimeDiff < 0.800000) {
             if (audioWrapper->father->useMediaCodec) {
-                TIME_DIFFERENCE += add_time_step;
+                TIME_DIFFERENCE = averageTimeDiff + add_time_step;
             } else {
                 TIME_DIFFERENCE = 0.600000;
             }
         } else if (averageTimeDiff > 0.600000 && averageTimeDiff < 0.700000) {
             if (audioWrapper->father->useMediaCodec) {
-                TIME_DIFFERENCE += add_time_step;
+                TIME_DIFFERENCE = averageTimeDiff + add_time_step;
             } else {
                 TIME_DIFFERENCE = 0.500000;
             }
         } else if (averageTimeDiff > 0.500000 && averageTimeDiff < 0.600000) {
             if (audioWrapper->father->useMediaCodec) {
-                TIME_DIFFERENCE += add_time_step;
+                TIME_DIFFERENCE = averageTimeDiff + add_time_step;
             } else {
                 TIME_DIFFERENCE = 0.400000;
             }
         } else if (averageTimeDiff > 0.400000 && averageTimeDiff < 0.500000) {
             if (audioWrapper->father->useMediaCodec) {
-                TIME_DIFFERENCE += add_time_step;
+                TIME_DIFFERENCE = averageTimeDiff + add_time_step;
             } else {
                 TIME_DIFFERENCE = 0.300000;
             }
         } else if (averageTimeDiff > 0.300000 && averageTimeDiff < 0.400000) {
             if (audioWrapper->father->useMediaCodec) {
-                TIME_DIFFERENCE += add_time_step;
+                TIME_DIFFERENCE = averageTimeDiff + add_time_step;
             } else {
                 TIME_DIFFERENCE = 0.200000;
             }
         } else if (averageTimeDiff > 0.200000 && averageTimeDiff < 0.300000) {
             if (audioWrapper->father->useMediaCodec) {
-                TIME_DIFFERENCE += add_time_step;
+                TIME_DIFFERENCE = averageTimeDiff + add_time_step;
             } else {
                 TIME_DIFFERENCE = 0.100000;
             }
         } else if (averageTimeDiff > 0.100000 && averageTimeDiff < 0.200000) {
             if (audioWrapper->father->useMediaCodec) {
-                TIME_DIFFERENCE += add_time_step;
+                TIME_DIFFERENCE = averageTimeDiff + add_time_step;
             } else {
                 TIME_DIFFERENCE = averageTimeDiff;
             }
         } else if (averageTimeDiff < 0.100000) {
             if (audioWrapper->father->useMediaCodec) {
-                TIME_DIFFERENCE += add_time_step;
+                TIME_DIFFERENCE = averageTimeDiff + add_time_step;
             } else {
                 TIME_DIFFERENCE = averageTimeDiff + 0.050000;
             }
@@ -2305,7 +2313,7 @@ namespace alexander_media_mediacodec {
          */
         if (TIME_DIFFERENCE < 0.100000) {
             if (audioWrapper->father->useMediaCodec) {
-                TIME_DIFFERENCE += add_time_step;
+                TIME_DIFFERENCE = averageTimeDiff + add_time_step;
             } else {
                 TIME_DIFFERENCE = 0.100000;
             }
@@ -2313,7 +2321,11 @@ namespace alexander_media_mediacodec {
         if (frameRate >= 45
             && videoWrapper->srcWidth >= 3840
             && videoWrapper->srcHeight >= 2160) {
-            TIME_DIFFERENCE += add_time_step;
+            if (audioWrapper->father->useMediaCodec) {
+                TIME_DIFFERENCE += 0.100000;
+            } else {
+                TIME_DIFFERENCE += add_time_step;
+            }
         }
         LOGI("hope_to_get_a_good_result()               TIME_DIFFERENCE: %lf\n", TIME_DIFFERENCE);
         char info[50];

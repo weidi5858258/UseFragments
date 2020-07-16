@@ -42,7 +42,6 @@ import java.util.Locale;
 import java.util.Map;
 
 
-
 /***
  mimeType是已知的,都是通过mimeType去得到各种对象
 
@@ -319,8 +318,7 @@ public class MediaUtils {
      * 解码器
      * "OMX.google.aac.decoder"
      */
-    public static
-    MediaCodecInfo[] findAllEncodersByMime(String mime) {
+    public static MediaCodecInfo[] findAllEncodersByMime(String mime) {
         // MediaCodecList.REGULAR_CODECS
         // MediaCodecList.ALL_CODECS
         MediaCodecList codecList = new MediaCodecList(MediaCodecList.ALL_CODECS);
@@ -358,8 +356,7 @@ public class MediaUtils {
         return mediaCodecInfos.toArray(new MediaCodecInfo[mediaCodecInfos.size()]);
     }
 
-    public static
-    MediaCodecInfo[] findAllDecodersByMime(String mime) {
+    public static MediaCodecInfo[] findAllDecodersByMime(String mime) {
         MediaCodecList codecList = new MediaCodecList(MediaCodecList.ALL_CODECS);
         List<MediaCodecInfo> mediaCodecInfos = new ArrayList<MediaCodecInfo>();
         for (MediaCodecInfo mediaCodecInfo : codecList.getCodecInfos()) {
@@ -756,13 +753,13 @@ public class MediaUtils {
                 continue;
             }
             try {
-                decoder = MediaCodec.createByCodecName(mediaCodecInfo.getName());
-                decoder.configure(mediaFormat, surface, null, 0);
-                decoder.start();
                 if (DEBUG)
                     MLog.d(TAG, "getVideoDecoderMediaCodec() " +
                             "MediaCodec create success mime: " + mime +
                             " codecName: " + mediaCodecInfo.getName());
+                decoder = MediaCodec.createByCodecName(mediaCodecInfo.getName());
+                decoder.configure(mediaFormat, surface, null, 0);
+                decoder.start();
                 break;
             } catch (NullPointerException
                     | IllegalArgumentException
@@ -793,13 +790,13 @@ public class MediaUtils {
                 continue;
             }
             try {
-                decoder = MediaCodec.createByCodecName(mediaCodecInfo.getName());
-                decoder.configure(mediaFormat, null, null, 0);
-                decoder.start();
                 if (DEBUG)
                     MLog.d(TAG, "getAudioDecoderMediaCodec() " +
                             "MediaCodec create success mime: " + mime +
                             " codecName: " + mediaCodecInfo.getName());
+                decoder = MediaCodec.createByCodecName(mediaCodecInfo.getName());
+                decoder.configure(mediaFormat, null, null, 0);
+                decoder.start();
                 break;
             } catch (NullPointerException
                     | IllegalArgumentException

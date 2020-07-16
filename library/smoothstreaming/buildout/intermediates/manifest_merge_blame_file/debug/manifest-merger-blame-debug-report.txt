@@ -19,8 +19,8 @@
 19
 20    <uses-sdk
 21        android:minSdkVersion="16"
-21-->/Users/alexander/mydev/workspace_android/UseFragments/library/smoothstreaming/src/main/AndroidManifest.xml
+21-->/root/mydev/workspace_android/UseFragments/library/smoothstreaming/src/main/AndroidManifest.xml
 22        android:targetSdkVersion="28" />
-22-->/Users/alexander/mydev/workspace_android/UseFragments/library/smoothstreaming/src/main/AndroidManifest.xml
+22-->/root/mydev/workspace_android/UseFragments/library/smoothstreaming/src/main/AndroidManifest.xml
 23
 24</manifest>

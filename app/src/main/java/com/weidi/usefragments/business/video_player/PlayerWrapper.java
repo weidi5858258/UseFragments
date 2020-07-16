@@ -192,6 +192,7 @@ public class PlayerWrapper {
     public static final String PLAYBACK_USE_PLAYER = "playback_use_player";
     public static final String PLAYER_FFMPEG = "player_ffmpeg";
     public static final String PLAYER_MEDIACODEC = "player_mediacodec";
+    public static final String PLAYER_FFMPEG_MEDIACODEC = "player_ffmpeg_mediacodec";
     private String whatPlayer = PLAYER_FFMPEG;
 
     // 第一个存储视频地址,第二个存储标题
@@ -538,7 +539,6 @@ public class PlayerWrapper {
     }
 
     public void onRelease() {
-        mGetMediaFormat.release();
         if (mFFMPEGPlayer != null) {
             mFFMPEGPlayer.releaseAll();
         }
@@ -861,24 +861,25 @@ public class PlayerWrapper {
     public void startForGetMediaFormat() {
         mGetMediaFormat.mVideoMediaFormat = null;
         mGetMediaFormat.mAudioMediaFormat = null;
-        /*if (!mPath.endsWith(".m4s")
+        whatPlayer = mSP.getString(PLAYBACK_USE_PLAYER, PLAYER_FFMPEG);
+        if (!mPath.endsWith(".m4s")
                 && !mPath.endsWith(".h264")
-                && !mPath.endsWith(".aac")) {
-            mGetMediaFormat.release();
-            mGetMediaFormat.setContext(mContext);
-            mGetMediaFormat.setDataSource(mPath);
-            mGetMediaFormat.start();
-        } else {
-            startPlayback();
-        }*/
+                && !mPath.endsWith(".aac")
+                && (TextUtils.isEmpty(mType)
+                || mType.startsWith("video/"))) {
+            if (TextUtils.equals(whatPlayer, PLAYER_FFMPEG_MEDIACODEC)) {
+                mGetMediaFormat.setContext(mContext);
+                mGetMediaFormat.setDataSource(mPath);
+                mGetMediaFormat.start();
+                return;
+            }
+        }
 
         startPlayback();
     }
 
     public void startPlayback() {
         MLog.d(TAG, "startPlayback() start");
-
-        whatPlayer = mSP.getString(PLAYBACK_USE_PLAYER, PLAYER_FFMPEG);
 
         if (mSurfaceHolder == null) {
             mSurfaceHolder = mSurfaceView.getHolder();
@@ -1873,6 +1874,7 @@ public class PlayerWrapper {
             if (TextUtils.equals(whatPlayer, PLAYER_MEDIACODEC)) {
                 mSimpleVideoPlayer.release();
             } else {
+                mGetMediaFormat.release(false);
                 mFFMPEGPlayer.releaseAll();
             }
         }

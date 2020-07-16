@@ -25,6 +25,7 @@ import android.util.Pair;
 import androidx.annotation.Nullable;
 import com.google.android.exoplayer2.DefaultMediaClock.PlaybackParameterListener;
 import com.google.android.exoplayer2.Player.DiscontinuityReason;
+import com.google.android.exoplayer2.audio.MediaCodecAudioRenderer;
 import com.google.android.exoplayer2.source.MediaPeriod;
 import com.google.android.exoplayer2.source.MediaSource;
 import com.google.android.exoplayer2.source.MediaSource.MediaPeriodId;
@@ -41,6 +42,8 @@ import com.google.android.exoplayer2.util.HandlerWrapper;
 import com.google.android.exoplayer2.util.Log;
 import com.google.android.exoplayer2.util.TraceUtil;
 import com.google.android.exoplayer2.util.Util;
+import com.google.android.exoplayer2.video.MediaCodecVideoRenderer;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -378,6 +381,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
       }
       maybeNotifyPlaybackInfoChanged();
     } catch (ExoPlaybackException e) {
+      ObjectHelper.getDefault().setMediaFormat(null);
       Log.e(TAG, getExoPlaybackExceptionMessage(e), e);
       stopInternal(
           /* forceResetRenderers= */ true,
@@ -386,6 +390,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
       playbackInfo = playbackInfo.copyWithPlaybackError(e);
       maybeNotifyPlaybackInfoChanged();
     } catch (IOException e) {
+      ObjectHelper.getDefault().setMediaFormat(null);
       Log.e(TAG, "Source error", e);
       stopInternal(
           /* forceResetRenderers= */ false,
@@ -394,6 +399,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
       playbackInfo = playbackInfo.copyWithPlaybackError(ExoPlaybackException.createForSource(e));
       maybeNotifyPlaybackInfoChanged();
     } catch (RuntimeException | OutOfMemoryError e) {
+      ObjectHelper.getDefault().setMediaFormat(null);
       Log.e(TAG, "Internal runtime error", e);
       ExoPlaybackException error =
           e instanceof OutOfMemoryError
@@ -1855,6 +1861,20 @@ import java.util.concurrent.atomic.AtomicBoolean;
       if (trackSelectorResult.isRendererEnabled(i)) {
         enableRenderer(i, rendererWasEnabledFlags[i], enabledRendererCount++);
       }
+    }
+
+    if (enabledRenderers != null) {
+      int count = 0;
+      int length = enabledRenderers.length;
+      for (int i = 0; i < length; i++) {
+        Renderer renderer = enabledRenderers[i];
+        if (renderer instanceof MediaCodecVideoRenderer) {
+          count++;
+        } else if (renderer instanceof MediaCodecAudioRenderer) {
+          count++;
+        }
+      }
+      ObjectHelper.getDefault().setStreamCount(count);
     }
   }
 
