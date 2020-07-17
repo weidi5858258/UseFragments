@@ -94,6 +94,8 @@ jfieldID valueDouble_jfieldID = nullptr;
 jfieldID valueChar_jfieldID = nullptr;
 jfieldID valueShort_jfieldID = nullptr;
 jfieldID valueStringArray_jfieldID = nullptr;
+jfieldID valueIntArray_jfieldID = nullptr;
+jfieldID valueObjectArray_jfieldID = nullptr;
 
 jobject videoProducerObject = nullptr;
 jobject videoConsumerObject = nullptr;
@@ -663,6 +665,10 @@ static jint onTransact_init(JNIEnv *env, jobject ffmpegObject,
     valueObject_jfieldID = env->GetFieldID(jniObject_jclass, "valueObject", "Ljava/lang/Object;");
     valueStringArray_jfieldID = env->GetFieldID(
             jniObject_jclass, "valueStringArray", "[Ljava/lang/String;");
+    valueIntArray_jfieldID = env->GetFieldID(
+            jniObject_jclass, "valueIntArray", "[I");
+    valueObjectArray_jfieldID = env->GetFieldID(
+            jniObject_jclass, "valueObjectArray", "[Ljava/lang/Object;");
 
     jobject jni_object;
     jfieldID fieldID;
@@ -991,6 +997,45 @@ static jint onTransact_videoHandleRender(JNIEnv *env, jobject thiz,
             break;
     }
     return (jint) 0;
+}
+
+static jint onTransact_handleOutputBuffer(JNIEnv *env, jobject thiz,
+                                          jint code, jobject jniObject) {
+    jint handleRet = 0;
+    jobject intArrayObject = env->GetObjectField(jniObject, valueIntArray_jfieldID);
+    jobject objectArrayObject = env->GetObjectField(jniObject, valueObjectArray_jfieldID);
+    if (intArrayObject != nullptr && objectArrayObject != nullptr) {
+        jint *intArray = reinterpret_cast<jint *>(env->GetIntArrayElements(
+                static_cast<jintArray>(intArrayObject), nullptr));
+        jobjectArray objectArray = reinterpret_cast<jobjectArray>(objectArrayObject);
+
+        int roomIndex = intArray[0];
+        int roomSize = intArray[1];
+
+        // ByteBuffer room
+        jobject element0 = static_cast<jobject>(env->GetObjectArrayElement(objectArray, 0));
+        // MediaCodec.BufferInfo roomInfo
+        jobject element1 = static_cast<jobject>(env->GetObjectArrayElement(objectArray, 1));
+
+        switch (code) {
+            case DO_SOMETHING_CODE_handleAudioOutputBuffer:
+                handleRet = alexander_media_mediacodec::handleAudioOutputBuffer(roomIndex);
+                break;
+            case DO_SOMETHING_CODE_handleVideoOutputBuffer:
+                handleRet = alexander_media_mediacodec::handleVideoOutputBuffer(roomIndex);
+                break;
+            default:
+                break;
+        }
+
+        // release
+        env->DeleteLocalRef(element0);
+        env->DeleteLocalRef(element1);
+        env->DeleteLocalRef(intArrayObject);
+        env->DeleteLocalRef(objectArrayObject);
+    }
+
+    return handleRet;
 }
 
 static jint onTransact_play(JNIEnv *env, jobject thiz,
@@ -1516,12 +1561,10 @@ Java_com_weidi_usefragments_business_video_1player_FFMPEG_onTransact(JNIEnv *env
             return env->NewStringUTF(ret);
 
         case DO_SOMETHING_CODE_handleAudioOutputBuffer:
-            return env->NewStringUTF(
-                    std::to_string(alexander_media_mediacodec::handleAudioOutputBuffer()).c_str());
-
         case DO_SOMETHING_CODE_handleVideoOutputBuffer:
             return env->NewStringUTF(
-                    std::to_string(alexander_media_mediacodec::handleVideoOutputBuffer()).c_str());
+                    std::to_string(
+                            onTransact_handleOutputBuffer(env, thiz, code, jniObject)).c_str());
 
         default:
             break;

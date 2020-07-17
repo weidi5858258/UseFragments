@@ -11,34 +11,24 @@ import android.media.MediaCodecInfo;
 import android.media.MediaExtractor;
 import android.media.MediaFormat;
 import android.os.Build;
-import android.os.Handler;
-import android.os.HandlerThread;
-import android.os.Looper;
 import android.os.Message;
-import android.os.SystemClock;
 import android.text.TextUtils;
 import android.text.format.DateUtils;
-import android.util.Log;
-import android.view.KeyEvent;
 import android.view.Surface;
 
-import com.weidi.threadpool.ThreadPool;
 import com.weidi.usefragments.media.MediaUtils;
 import com.weidi.usefragments.tool.AACPlayer;
 import com.weidi.usefragments.tool.Callback;
 import com.weidi.usefragments.tool.JniObject;
 import com.weidi.usefragments.tool.MLog;
 
-import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
-import static com.weidi.usefragments.business.video_player.FFMPEG.USE_MODE_ONLY_VIDEO;
 import static com.weidi.usefragments.business.video_player.PlayerWrapper.PLAYBACK_IS_MUTE;
 import static com.weidi.usefragments.business.video_player.PlayerWrapper.PLAYBACK_USE_PLAYER;
 import static com.weidi.usefragments.business.video_player.PlayerWrapper.PLAYER_FFMPEG;
@@ -748,10 +738,6 @@ public class FfmpegUseMediaCodecDecode {
      csd-1: {0, 0, 0, 1, 104, -6, -116, -14, 60}
      {sample-rate=48000, pcm-encoding=2, track-id=2, durationUs=5617728000, mime=audio/raw,
      channel-count=2, language=new, mime-old=audio/ac3, max-input-size=1556}
-
-
-
-
      */
     public boolean initAudioMediaCodec(JniObject jniObject) {
         if (mContext != null) {
@@ -767,11 +753,6 @@ public class FfmpegUseMediaCodecDecode {
         MediaFormat mediaFormat = null;
         if (mGetMediaFormat != null
                 && mGetMediaFormat.mAudioMediaFormat != null) {
-            int channel_count =
-                    mGetMediaFormat.mAudioMediaFormat.getInteger(MediaFormat.KEY_CHANNEL_COUNT);
-            if (channel_count > 2) {
-                return false;
-            }
             mediaFormat = mGetMediaFormat.mAudioMediaFormat;
             audioMime = mediaFormat.getString(MediaFormat.KEY_MIME);
             MLog.d(TAG, "initAudioMediaCodec() audio GetMediaFormat");
@@ -1333,7 +1314,11 @@ public class FfmpegUseMediaCodecDecode {
 
     public boolean feedInputBufferAndDrainOutputBuffer(SimpleWrapper wrapper) {
         if (!wrapper.isHandling) {
-            handleVideoOutputBuffer(-1, null, null, 0);
+            if (wrapper.type == TYPE_AUDIO) {
+                handleAudioOutputBuffer(-1, null, null, -1);
+            } else {
+                handleVideoOutputBuffer(-1, null, null, -1);
+            }
             MediaUtils.releaseMediaCodec(wrapper.decoderMediaCodec);
             return false;
         }
@@ -1404,9 +1389,10 @@ public class FfmpegUseMediaCodecDecode {
             e.printStackTrace();
             if (wrapper.type == TYPE_AUDIO) {
                 MLog.e(TAG, "feedInputBuffer() Audio Output occur exception: " + e);
+                handleAudioOutputBuffer(-1, null, null, -1);
             } else {
                 MLog.e(TAG, "feedInputBuffer() Video Output occur exception: " + e);
-                handleVideoOutputBuffer(-1, null, null, 0);
+                handleVideoOutputBuffer(-1, null, null, -1);
             }
             MediaUtils.releaseMediaCodec(codec);
             return false;
@@ -1426,7 +1412,11 @@ public class FfmpegUseMediaCodecDecode {
         ByteBuffer room = null;
         for (; ; ) {
             if (!wrapper.isHandling) {
-                handleVideoOutputBuffer(-1, null, null, 0);
+                if (wrapper.type == TYPE_AUDIO) {
+                    handleAudioOutputBuffer(-1, null, null, -1);
+                } else {
+                    handleVideoOutputBuffer(-1, null, null, -1);
+                }
                 MediaUtils.releaseMediaCodec(wrapper.decoderMediaCodec);
                 return false;
             }
@@ -1532,9 +1522,10 @@ public class FfmpegUseMediaCodecDecode {
                 e.printStackTrace();
                 if (wrapper.type == TYPE_AUDIO) {
                     MLog.e(TAG, "drainOutputBuffer() Audio Output occur exception: " + e);
+                    handleAudioOutputBuffer(-1, room, roomInfo, -1);
                 } else {
                     MLog.e(TAG, "drainOutputBuffer() Video Output occur exception: " + e);
-                    handleVideoOutputBuffer(-1, room, roomInfo, 0);
+                    handleVideoOutputBuffer(-1, room, roomInfo, -1);
                 }
                 MediaUtils.releaseMediaCodec(wrapper.decoderMediaCodec);
                 return false;
@@ -1579,9 +1570,7 @@ public class FfmpegUseMediaCodecDecode {
             e.printStackTrace();
         }
 
-        if (mAudioWrapper.mAudioTrack != null) {
-            mAudioWrapper.mAudioTrack.release();
-        }
+        MediaUtils.releaseAudioTrack(mAudioWrapper.mAudioTrack);
 
         // 创建AudioTrack
         // 1.
@@ -1626,6 +1615,8 @@ public class FfmpegUseMediaCodecDecode {
         } else {
             MLog.e(TAG, "handleAudioOutputFormat() AudioTrack is null");
             mAudioWrapper.isHandling = false;
+            handleAudioOutputBuffer(-1, null, null, -1);
+            return;
         }
 
         mAudioWrapper.decoderMediaFormat.setInteger(MediaFormat.KEY_IS_ADTS, 1);
@@ -1679,16 +1670,37 @@ public class FfmpegUseMediaCodecDecode {
         }
     }
 
+    private JniObject mAudioJniObject = new JniObject();
+    private int[] audioValueIntArray = new int[2];
+    private Object[] audioValueObjectArray = new Object[2];
+
+    private JniObject mVideoJniObject = new JniObject();
+    private int[] videoValueIntArray = new int[2];
+    private Object[] videoValueObjectArray = new Object[2];
+
     private int handleAudioOutputBuffer(int roomIndex, ByteBuffer room,
                                         MediaCodec.BufferInfo roomInfo, int roomSize) {
+        if (mFFMPEG != null) {
+            /*Integer.parseInt(
+                    mFFMPEG.onTransact(
+                            FFMPEG.DO_SOMETHING_CODE_handleAudioOutputBuffer,
+                            mAudioJniObject));*/
+
+            audioValueIntArray[0] = roomIndex;
+            audioValueIntArray[1] = roomSize;
+            audioValueObjectArray[0] = room;
+            audioValueObjectArray[1] = roomInfo;
+            mAudioJniObject.valueIntArray = audioValueIntArray;
+            mAudioJniObject.valueObjectArray = audioValueObjectArray;
+            Integer.parseInt(
+                    mFFMPEG.onTransact(
+                            FFMPEG.DO_SOMETHING_CODE_handleAudioOutputBuffer, mAudioJniObject));
+
+        }
         if (mAudioWrapper.isHandling
                 && mAudioWrapper.mAudioTrack != null
-                && mAudioWrapper.mAudioTrack.getState() == AudioTrack.STATE_INITIALIZED) {
-            if (mFFMPEG != null) {
-                Integer.parseInt(
-                        mFFMPEG.onTransact(
-                                FFMPEG.DO_SOMETHING_CODE_handleAudioOutputBuffer, mJniObject));
-            }
+                && mAudioWrapper.mAudioTrack.getState() == AudioTrack.STATE_INITIALIZED
+                && roomSize > 0) {
             byte[] audioData = new byte[roomSize];
             room.get(audioData, 0, audioData.length);
             mAudioWrapper.mAudioTrack.write(audioData, roomInfo.offset, audioData.length);
@@ -1696,27 +1708,23 @@ public class FfmpegUseMediaCodecDecode {
         return 0;
     }
 
-    private JniObject mJniObject = new JniObject();
-    //private int[] valueIntArray = new int[2];
-    //private Object[] valueObjectArray = new Object[2];
-
     // 最最最关键的一步
     private int handleVideoOutputBuffer(int roomIndex, ByteBuffer room,
                                         MediaCodec.BufferInfo roomInfo, int roomSize) {
         if (mFFMPEG != null) {
-            return Integer.parseInt(
-                    mFFMPEG.onTransact(
-                            FFMPEG.DO_SOMETHING_CODE_handleVideoOutputBuffer, mJniObject));
-
-            /*valueIntArray[0] = roomIndex;
-            valueIntArray[1] = roomSize;
-            valueObjectArray[0] = room;
-            valueObjectArray[1] = roomInfo;
-            mJniObject.valueIntArray = valueIntArray;
-            mJniObject.valueObjectArray = valueObjectArray;
-            return Integer.parseInt(
+            /*return Integer.parseInt(
                     mFFMPEG.onTransact(
                             FFMPEG.DO_SOMETHING_CODE_handleVideoOutputBuffer, mJniObject));*/
+
+            videoValueIntArray[0] = roomIndex;
+            videoValueIntArray[1] = roomSize;
+            videoValueObjectArray[0] = room;
+            videoValueObjectArray[1] = roomInfo;
+            mVideoJniObject.valueIntArray = videoValueIntArray;
+            mVideoJniObject.valueObjectArray = videoValueObjectArray;
+            return Integer.parseInt(
+                    mFFMPEG.onTransact(
+                            FFMPEG.DO_SOMETHING_CODE_handleVideoOutputBuffer, mVideoJniObject));
         }
         return 0;
     }

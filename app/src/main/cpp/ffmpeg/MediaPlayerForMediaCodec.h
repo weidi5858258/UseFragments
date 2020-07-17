@@ -31,9 +31,9 @@ namespace alexander_media_mediacodec {
 
     void *handleData(void *opaque);
 
-    int handleAudioOutputBuffer();
+    int handleAudioOutputBuffer(int roomIndex);
 
-    int handleVideoOutputBuffer();
+    int handleVideoOutputBuffer(int roomIndex);
 
     void initAV();
 

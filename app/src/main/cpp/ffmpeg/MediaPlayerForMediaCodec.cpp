@@ -2348,7 +2348,9 @@ namespace alexander_media_mediacodec {
     }
 
     int handleAudioDataImpl(AVStream *stream, AVFrame *decodedAVFrame) {
-        if (stream == nullptr || decodedAVFrame == nullptr) {
+        if (stream == nullptr
+            || decodedAVFrame == nullptr
+            || decodedAVFrame->data == nullptr) {
             return 0;
         }
 
@@ -2449,7 +2451,9 @@ namespace alexander_media_mediacodec {
     }
 
     int handleVideoDataImpl(AVStream *stream, AVFrame *decodedAVFrame) {
-        if (stream == nullptr || decodedAVFrame == nullptr) {
+        if (stream == nullptr
+            || decodedAVFrame == nullptr
+            || decodedAVFrame->data == nullptr) {
             return 0;
         }
 
@@ -2597,7 +2601,11 @@ namespace alexander_media_mediacodec {
         //LOGW("handleVideoDataImpl() ANativeWindow_unlockAndPost 2\n");
     }
 
-    int handleAudioOutputBuffer() {
+    int handleAudioOutputBuffer(int roomIndex) {
+        if (roomIndex < 0) {
+            audioWrapper->father->useMediaCodec = false;
+            return 0;
+        }
         audioWrapper->father->isStarted = true;
         if (videoWrapper->father->streamIndex != -1) {
             while (!videoWrapper->father->isStarted) {
@@ -2633,7 +2641,11 @@ namespace alexander_media_mediacodec {
         return 0;
     }
 
-    int handleVideoOutputBuffer() {
+    int handleVideoOutputBuffer(int roomIndex) {
+        if (roomIndex < 0) {
+            videoWrapper->father->useMediaCodec = false;
+            return 0;
+        }
         videoWrapper->father->isStarted = true;
         if (audioWrapper->father->streamIndex != -1) {
             while (!audioWrapper->father->isStarted) {
@@ -3230,41 +3242,37 @@ namespace alexander_media_mediacodec {
                 break;
             }
 
-            if (!wrapper->allowDecode) {
+            if (!wrapper->allowDecode || copyAVPacket == nullptr) {
                 continue;
             }
 
             if (wrapper->type == TYPE_AUDIO) {
                 if (wrapper->useMediaCodec) {
-                    if (copyAVPacket != nullptr) {
-                        audioPts = copyAVPacket->pts * av_q2d(stream->time_base);
-                        feedAndDrainRet = feedInputBufferAndDrainOutputBuffer(
-                                0x0001,
-                                copyAVPacket->data,
-                                copyAVPacket->size,
-                                (long long) copyAVPacket->pts);
-                        av_packet_unref(copyAVPacket);
-                        if (!feedAndDrainRet) {
-                            wrapper->useMediaCodec = false;
-                        }
+                    audioPts = copyAVPacket->pts * av_q2d(stream->time_base);
+                    feedAndDrainRet = feedInputBufferAndDrainOutputBuffer(
+                            0x0001,
+                            copyAVPacket->data,
+                            copyAVPacket->size,
+                            (long long) copyAVPacket->pts);
+                    av_packet_unref(copyAVPacket);
+                    if (!feedAndDrainRet) {
+                        wrapper->useMediaCodec = false;
                     }
                     continue;
                 }
             } else {
                 if (wrapper->useMediaCodec) {
-                    if (copyAVPacket != nullptr) {
-                        isVideoRendering = true;
-                        videoPts = copyAVPacket->pts * av_q2d(stream->time_base);
-                        feedAndDrainRet = feedInputBufferAndDrainOutputBuffer(
-                                0x0002,
-                                copyAVPacket->data,
-                                copyAVPacket->size,
-                                (long long) copyAVPacket->pts);
-                        av_packet_unref(copyAVPacket);
-                        isVideoRendering = false;
-                        if (!feedAndDrainRet) {
-                            wrapper->useMediaCodec = false;
-                        }
+                    isVideoRendering = true;
+                    videoPts = copyAVPacket->pts * av_q2d(stream->time_base);
+                    feedAndDrainRet = feedInputBufferAndDrainOutputBuffer(
+                            0x0002,
+                            copyAVPacket->data,
+                            copyAVPacket->size,
+                            (long long) copyAVPacket->pts);
+                    av_packet_unref(copyAVPacket);
+                    isVideoRendering = false;
+                    if (!feedAndDrainRet) {
+                        wrapper->useMediaCodec = false;
                     }
                     continue;
                 }

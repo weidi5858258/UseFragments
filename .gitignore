@@ -8,7 +8,11 @@ app/.cxx
 app/.externalNativeBuild
 app/build
 app/buildout
+library/core/build
 library/core/buildout
+library/dash/buildout
+library/hls/buildout
+library/smoothstreaming/buildout
 build
 gradle
 weidi_library
