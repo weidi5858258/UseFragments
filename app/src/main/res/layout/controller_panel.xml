@@ -127,11 +127,10 @@
             android:layout_marginStart="@dimen/dimen_230_dp"
             android:contentDescription="download"
             android:gravity="center"
-            android:background="@color/burlywood"
+            android:background="@android:color/transparent"
             android:textSize="24sp"
-            android:text="1"
-            android:visibility="visible" />
-        <!--android:src="@drawable/download1"-->
+            android:text="" />
+        <!--android:src="@drawable/download1" @color/burlywood-->
 
         <ImageButton
             android:id="@+id/volume_normal"

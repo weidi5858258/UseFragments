@@ -239,7 +239,8 @@ public class FFMPEG {
     }
 
     public void setVolume(float volume) {
-        if (mAudioTrack == null) {
+        if (mAudioTrack == null
+                || mAudioTrack.getState() == AudioTrack.STATE_UNINITIALIZED) {
             return;
         }
         if (volume < 0 || volume > 1.0f) {

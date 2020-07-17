@@ -123,7 +123,10 @@
             android:layout_height="@dimen/dimen_40_dp"
             android:contentDescription="download"
             android:layout_marginStart="@dimen/dimen_470_dp"
-            android:visibility="gone"/>
+            android:gravity="center"
+            android:background="@android:color/transparent"
+            android:textSize="24sp"
+            android:text="" />
             <!--android:src="@drawable/download1"-->
 
         <ImageButton

@@ -2131,6 +2131,10 @@ namespace alexander_media_mediacodec {
                 LOGI("read a key frame");
             }*/
 
+            if (srcAVPacket->data == nullptr) {
+                continue;
+            }
+
             if (srcAVPacket->stream_index == audioWrapper->father->streamIndex) {
                 if (audioWrapper->father->isReading) {
                     if (needToDownload && isInitSuccess) {
@@ -2342,7 +2346,7 @@ namespace alexander_media_mediacodec {
             sprintf(info + 21, "%s", " [A]");
         } else if (!videoWrapper->father->useMediaCodec
                    && !audioWrapper->father->useMediaCodec) {
-            sprintf(info + 21, "%s", " [ ]");
+            sprintf(info + 21, "%s", " []");
         }
         onInfo(info);
     }

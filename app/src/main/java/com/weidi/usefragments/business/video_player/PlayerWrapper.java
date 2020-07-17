@@ -886,12 +886,15 @@ public class PlayerWrapper {
         }
         // 这里也要写
         mSurfaceHolder.setFormat(PixelFormat.RGBA_8888);
-        // 底层有关参数的设置
-        mFFMPEGPlayer.setHandler(mUiHandler);
-        mSimpleVideoPlayer.setHandler(mUiHandler);
-        mSimpleVideoPlayer.setCallback(mFFMPEGPlayer.mCallback);
-        mFfmpegUseMediaCodecDecode.setSurface(mSurfaceHolder.getSurface());
-        mFfmpegUseMediaCodecDecode.setCallback(mFFMPEGPlayer.mCallback);
+        if (TextUtils.equals(whatPlayer, PLAYER_MEDIACODEC)) {
+            mSimpleVideoPlayer.setHandler(mUiHandler);
+            mSimpleVideoPlayer.setCallback(mFFMPEGPlayer.mCallback);
+        } else {
+            // 底层有关参数的设置
+            mFFMPEGPlayer.setHandler(mUiHandler);
+            mFfmpegUseMediaCodecDecode.setSurface(mSurfaceHolder.getSurface());
+            mFfmpegUseMediaCodecDecode.setCallback(mFFMPEGPlayer.mCallback);
+        }
 
         // 开启线程初始化ffmpeg
         ThreadPool.getFixedThreadPool().execute(new Runnable() {
@@ -954,7 +957,6 @@ public class PlayerWrapper {
                     return;
                 }
 
-                sendEmptyMessage(DO_SOMETHING_CODE_init);
                 if (!mIsSeparatedAudioVideo) {
                     if (TextUtils.equals(whatPlayer, PLAYER_MEDIACODEC)) {
                         mSimpleVideoPlayer.setDataSource(mPath);
@@ -963,6 +965,7 @@ public class PlayerWrapper {
                             return;
                         }
                     } else {
+                        sendEmptyMessage(DO_SOMETHING_CODE_init);
                         if (TextUtils.isEmpty(mType)
                                 || mType.startsWith("video/")) {
                             mFFMPEGPlayer.onTransact(DO_SOMETHING_CODE_setMode,
@@ -971,7 +974,7 @@ public class PlayerWrapper {
                                             FFMPEG.USE_MODE_MEDIA_MEDIACODEC));
                         } else if (mType.startsWith("audio/")) {
                             mFFMPEGPlayer.onTransact(DO_SOMETHING_CODE_setMode,
-                                    JniObject.obtain().writeInt(USE_MODE_ONLY_AUDIO));
+                                    JniObject.obtain().writeInt(FFMPEG.USE_MODE_ONLY_AUDIO));
                         }
                     }
 
@@ -987,6 +990,7 @@ public class PlayerWrapper {
                         }
                     }
                 } else {
+                    // [.m4s] or [.h264 and aac]
                     if (mPath.endsWith(".m4s")) {
                         mFFMPEGPlayer.onTransact(DO_SOMETHING_CODE_setMode,
                                 JniObject.obtain().writeInt(USE_MODE_AUDIO_VIDEO));
@@ -1987,6 +1991,7 @@ public class PlayerWrapper {
                         mSimpleVideoPlayer.setVolume(VOLUME_MUTE);
                     } else {
                         mFFMPEGPlayer.setVolume(VOLUME_MUTE);
+                        mFfmpegUseMediaCodecDecode.setVolume(VOLUME_MUTE);
                     }
                     mSP.edit().putBoolean(PLAYBACK_IS_MUTE, true).commit();
                     break;
@@ -1997,6 +2002,7 @@ public class PlayerWrapper {
                         mSimpleVideoPlayer.setVolume(VOLUME_NORMAL);
                     } else {
                         mFFMPEGPlayer.setVolume(VOLUME_NORMAL);
+                        mFfmpegUseMediaCodecDecode.setVolume(VOLUME_NORMAL);
                     }
                     mSP.edit().putBoolean(PLAYBACK_IS_MUTE, false).commit();
                     break;
