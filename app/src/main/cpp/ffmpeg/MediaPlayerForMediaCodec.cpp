@@ -2421,9 +2421,9 @@ namespace alexander_media_mediacodec {
             //double audioPos = decodedAVFrame->pkt_pos * av_q2d(stream->time_base);
             //LOGD("handleVideoDataImpl() audioPts: %lf\n", audioPts);
             //LOGD("handleVideoDataImpl() audioPos: %lf\n", audioPos);
-            /*if (mediaDuration < 0 && preAudioPts > 0 && preAudioPts > audioPts) {
+            if (mediaDuration < 0 && preAudioPts > 0 && preAudioPts > audioPts) {
                 return 0;
-            }*/
+            }
             preAudioPts = audioPts;
             //LOGD("handleVideoDataImpl() audioPts: %lf\n", audioPts);
 
@@ -2510,9 +2510,9 @@ namespace alexander_media_mediacodec {
          音频需要正常播放才是好的体验
          */
         videoPts = decodedAVFrame->pts * av_q2d(stream->time_base);
-        /*if (mediaDuration < 0 && preVideoPts > 0 && preVideoPts > videoPts) {
+        if (mediaDuration < 0 && preVideoPts > 0 && preVideoPts > videoPts) {
             return 0;
-        }*/
+        }
         //LOGW("handleVideoDataImpl() videoPts: %lf\n", videoPts);
         //LOGD("handleVideoDataImpl() audioPts: %lf\n", audioPts);
 
@@ -2656,6 +2656,11 @@ namespace alexander_media_mediacodec {
             onPlayed();
         }
 
+        if (mediaDuration < 0 && preAudioPts > 0 && preAudioPts > audioPts) {
+            return 0;
+        }
+        preAudioPts = audioPts;
+
         if (mediaDuration > 0) {
             curProgress = (long long) audioPts;// 秒
             if (curProgress > preProgress
@@ -2697,6 +2702,10 @@ namespace alexander_media_mediacodec {
 
         // LOGW("handleVideoDataImpl() videoPts: %lf\n", videoPts);
         // LOGD("handleVideoDataImpl() audioPts: %lf\n", audioPts);
+
+        if (mediaDuration < 0 && preVideoPts > 0 && preVideoPts > videoPts) {
+            return 0;
+        }
 
         double tempTimeDifference = 0.0;
         if (videoPts > 0 && audioPts > 0) {
@@ -2775,11 +2784,11 @@ namespace alexander_media_mediacodec {
                     }
                 }
             }
-            preVideoPts = videoPts;
         } else if (videoWrapper->father->streamIndex != -1
                    && audioWrapper->father->streamIndex == -1) {
             videoSleep(11);
         }
+        preVideoPts = videoPts;
 
         ////////////////////////////////////////////////////////
 
