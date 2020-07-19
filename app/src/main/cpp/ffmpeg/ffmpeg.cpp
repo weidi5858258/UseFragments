@@ -169,10 +169,15 @@ bool initMediaCodecImpl(JNIEnv *jniEnv, int type, int mimeType,
     jobjectArray objectsData = jniEnv->NewObjectArray(length, elementClass, initialElement);
 
     // int[]保存各种int值,创建MediaFormat时要用
-    jlongArray parasData = jniEnv->NewLongArray(parameterSize);
-    jniEnv->SetLongArrayRegion(
-            parasData, 0, parameterSize, reinterpret_cast<const jlong *>(parameters));
-    jniEnv->SetObjectArrayElement(objectsData, 0, (jobject) parasData);
+    jlongArray parasData = nullptr;
+    if (parameters != nullptr) {
+        parasData = jniEnv->NewLongArray(parameterSize);
+        jniEnv->SetLongArrayRegion(
+                parasData, 0, parameterSize, reinterpret_cast<const jlong *>(parameters));
+        jniEnv->SetObjectArrayElement(objectsData, 0, (jobject) parasData);
+    } else {
+        jniEnv->SetObjectArrayElement(objectsData, 0, nullptr);
+    }
 
     jbyteArray csd0Data = nullptr;
     jbyteArray csd1Data = nullptr;
@@ -1464,6 +1469,110 @@ static jint onTransact_closeJni(JNIEnv *env, jobject thiz,
 
 /////////////////////////////////////////////////////////////////////////
 
+char *getStrFromDO_SOMETHING_CODE(DO_SOMETHING_CODE code) {
+    char info[50] = {0};
+    switch (code) {
+        case DO_SOMETHING_CODE_init:
+            strncpy(info, "DO_SOMETHING_CODE_init",
+                    strlen("DO_SOMETHING_CODE_init"));
+            break;
+        case DO_SOMETHING_CODE_setMode:
+            strncpy(info, "DO_SOMETHING_CODE_setMode",
+                    strlen("DO_SOMETHING_CODE_setMode"));
+            break;
+        case DO_SOMETHING_CODE_setSurface:
+            strncpy(info, "DO_SOMETHING_CODE_setSurface",
+                    strlen("DO_SOMETHING_CODE_setSurface"));
+            break;
+        case DO_SOMETHING_CODE_initPlayer:
+            strncpy(info, "DO_SOMETHING_CODE_initPlayer",
+                    strlen("DO_SOMETHING_CODE_initPlayer"));
+            break;
+        case DO_SOMETHING_CODE_readData:
+            strncpy(info, "DO_SOMETHING_CODE_readData",
+                    strlen("DO_SOMETHING_CODE_readData"));
+            break;
+        case DO_SOMETHING_CODE_audioHandleData:
+            strncpy(info, "DO_SOMETHING_CODE_audioHandleData",
+                    strlen("DO_SOMETHING_CODE_audioHandleData"));
+            break;
+        case DO_SOMETHING_CODE_videoHandleData:
+            strncpy(info, "DO_SOMETHING_CODE_videoHandleData",
+                    strlen("DO_SOMETHING_CODE_videoHandleData"));
+            break;
+        case DO_SOMETHING_CODE_play:
+            strncpy(info, "DO_SOMETHING_CODE_play",
+                    strlen("DO_SOMETHING_CODE_play"));
+            break;
+        case DO_SOMETHING_CODE_pause:
+            strncpy(info, "DO_SOMETHING_CODE_pause",
+                    strlen("DO_SOMETHING_CODE_pause"));
+            break;
+        case DO_SOMETHING_CODE_stop:
+            strncpy(info, "DO_SOMETHING_CODE_stop",
+                    strlen("DO_SOMETHING_CODE_stop"));
+            break;
+        case DO_SOMETHING_CODE_release:
+            strncpy(info, "DO_SOMETHING_CODE_release",
+                    strlen("DO_SOMETHING_CODE_release"));
+            break;
+        case DO_SOMETHING_CODE_isRunning:
+            strncpy(info, "DO_SOMETHING_CODE_isRunning",
+                    strlen("DO_SOMETHING_CODE_isRunning"));
+            break;
+        case DO_SOMETHING_CODE_isPlaying:
+            strncpy(info, "DO_SOMETHING_CODE_isPlaying",
+                    strlen("DO_SOMETHING_CODE_isPlaying"));
+            break;
+        case DO_SOMETHING_CODE_isPausedForUser:
+            strncpy(info, "DO_SOMETHING_CODE_isPausedForUser",
+                    strlen("DO_SOMETHING_CODE_isPausedForUser"));
+            break;
+        case DO_SOMETHING_CODE_stepAdd:
+            strncpy(info, "DO_SOMETHING_CODE_stepAdd",
+                    strlen("DO_SOMETHING_CODE_stepAdd"));
+            break;
+        case DO_SOMETHING_CODE_stepSubtract:
+            strncpy(info, "DO_SOMETHING_CODE_stepSubtract",
+                    strlen("DO_SOMETHING_CODE_stepSubtract"));
+            break;
+        case DO_SOMETHING_CODE_seekTo:
+            strncpy(info, "DO_SOMETHING_CODE_seekTo",
+                    strlen("DO_SOMETHING_CODE_seekTo"));
+            break;
+        case DO_SOMETHING_CODE_getDuration:
+            strncpy(info, "DO_SOMETHING_CODE_getDuration",
+                    strlen("DO_SOMETHING_CODE_getDuration"));
+            break;
+        case DO_SOMETHING_CODE_download:
+            strncpy(info, "DO_SOMETHING_CODE_download",
+                    strlen("DO_SOMETHING_CODE_download"));
+            break;
+        case DO_SOMETHING_CODE_closeJni:
+            strncpy(info, "DO_SOMETHING_CODE_closeJni",
+                    strlen("DO_SOMETHING_CODE_closeJni"));
+            break;
+        case DO_SOMETHING_CODE_videoHandleRender:
+            strncpy(info, "DO_SOMETHING_CODE_videoHandleRender",
+                    strlen("DO_SOMETHING_CODE_videoHandleRender"));
+            break;
+        case DO_SOMETHING_CODE_handleAudioOutputBuffer:
+            strncpy(info, "DO_SOMETHING_CODE_handleAudioOutputBuffer",
+                    strlen("DO_SOMETHING_CODE_handleAudioOutputBuffer"));
+            break;
+        case DO_SOMETHING_CODE_handleVideoOutputBuffer:
+            strncpy(info, "DO_SOMETHING_CODE_handleVideoOutputBuffer",
+                    strlen("DO_SOMETHING_CODE_handleVideoOutputBuffer"));
+            break;
+        default:
+            strncpy(info, "DO_SOMETHING_CODE_nothing",
+                    strlen("DO_SOMETHING_CODE_nothing"));
+            break;
+    }
+
+    return info;
+}
+
 extern "C"
 JNIEXPORT jstring JNICALL
 Java_com_weidi_usefragments_business_video_1player_FFMPEG_onTransact(JNIEnv *env, jobject thiz,
@@ -1472,7 +1581,8 @@ Java_com_weidi_usefragments_business_video_1player_FFMPEG_onTransact(JNIEnv *env
     // TODO: implement onTransact()
     if (code != DO_SOMETHING_CODE_handleAudioOutputBuffer
         && code != DO_SOMETHING_CODE_handleVideoOutputBuffer) {
-        LOGI("onTransact() code: %d\n", code);
+        LOGI("onTransact() %s\n",
+             getStrFromDO_SOMETHING_CODE(static_cast<DO_SOMETHING_CODE>(code)));
     }
     const char ret[] = "0";
     switch (code) {

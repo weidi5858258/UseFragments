@@ -1288,8 +1288,14 @@ public class MediaUtils {
         boolean isInputPcm = isEncodingLinearPcm(audioFormat);
         int channelConfig = getChannelConfig(channelCount, isInputPcm);
         //int channelConfig = decideChannelConfig(channelCount, false, "");
+        if (channelCount == 6) {
+            channelConfig = 12;
+        }
         int bufferSizeInBytes = getMinBufferSize(
                 sampleRateInHz, channelConfig, audioFormat);
+        if (channelCount == 6) {
+            channelConfig = 252;
+        }
         MLog.d(TAG, "createAudioTrack(...)     channelConfig: " + channelConfig);
         MLog.d(TAG, "createAudioTrack(...) bufferSizeInBytes: " + bufferSizeInBytes);
         if (bufferSizeInBytes <= 0) {
@@ -1297,8 +1303,8 @@ public class MediaUtils {
                 MLog.e(TAG, String.format(Locale.US,
                         "Bad arguments: getMinBufferSize(%d, %d, %d)",
                         sampleRateInHz, channelConfig, audioFormat));
-            // return null;
-            bufferSizeInBytes = 4096;
+            return null;
+            // bufferSizeInBytes = 4096;
         }
 
         bufferSizeInBytes *= 2;
@@ -1996,7 +2002,7 @@ public class MediaUtils {
                 return AudioFormat.CHANNEL_OUT_QUAD
                         | AudioFormat.CHANNEL_OUT_FRONT_CENTER;
             case 6:
-                return AudioFormat.CHANNEL_OUT_5POINT1;
+                return AudioFormat.CHANNEL_OUT_5POINT1;// 252
             case 7:
                 return AudioFormat.CHANNEL_OUT_5POINT1
                         | AudioFormat.CHANNEL_OUT_BACK_CENTER;

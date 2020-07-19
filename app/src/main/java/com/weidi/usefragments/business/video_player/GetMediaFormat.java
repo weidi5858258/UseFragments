@@ -40,11 +40,9 @@ public class GetMediaFormat {
 
     //private volatile static GetMediaFormat sGetMediaFormat = null;
     private SimpleExoPlayer player;
-    private MediaSource mediaSource;
 
     private Handler mUiHandler;
     private Context mContext;
-    private String mPath;
 
     private PlayerWrapper mPlayerWrapper;
 
@@ -65,33 +63,30 @@ public class GetMediaFormat {
     }*/
 
     public GetMediaFormat() {
-
+        mUiHandler = new Handler(Looper.getMainLooper());
     }
 
     public void setContext(Context context) {
         mContext = context;
     }
 
-    public void setDataSource(String path) {
-        mPath = path;
-    }
-
     public void setPlayerWrapper(PlayerWrapper playerWrapper) {
         mPlayerWrapper = playerWrapper;
     }
 
-    public void start() {
-        if (TextUtils.isEmpty(mPath)
+    public synchronized void start(String path) {
+        if (TextUtils.isEmpty(path)
                 || player != null) {
+            release(false);
             return;
         }
         MLog.i(TAG, "start() begin");
         mStreamCount = 0;
         mVideoMediaFormat = null;
         mAudioMediaFormat = null;
-        mUiHandler = new Handler(Looper.getMainLooper());
         ObjectHelper.getDefault().setMediaFormatCallback(mCallback);
         Uri uri = null;
+
         /*uri = Uri.parse("/storage/2430-1702/BaiduNetdisk/video/痞子英雄2-黎明升起.mp4");
         uri = Uri.parse("/storage/2430-1702/BaiduNetdisk/video/AQUAMAN_Trailer_3840_2160_4K.webm");
         uri = Uri.parse("/storage/1532-48AD/Videos/Movies/AQUAMAN_Trailer_3840_2160_4K.webm");
@@ -102,15 +97,15 @@ public class GetMediaFormat {
         uri = Uri.parse("/storage/37C8-3904/myfiles/video/AQUAMAN_Trailer_3840_2160_4K.webm");
         uri = Uri.parse("/storage/37C8-3904/sample_kingsman.mp4");*/
 
-        uri = Uri.parse(mPath);
+        uri = Uri.parse(path);
         MediaSource mediaSources =
                 ((MyApplication) mContext.getApplicationContext())
                         .createLeafMediaSource(uri, null, null);
-        mediaSource = new MergingMediaSource(mediaSources);
+        MediaSource mediaSource = new MergingMediaSource(mediaSources);
         RenderersFactory renderersFactory =
                 ((MyApplication) mContext.getApplicationContext())
                         .buildRenderersFactory(false);
-        player = new SimpleExoPlayer.Builder(/* context= */ mContext, renderersFactory).build();
+        player = new SimpleExoPlayer.Builder(mContext, renderersFactory).build();
         player.prepare(mediaSource, true, false);
         MLog.i(TAG, "start() end");
     }
@@ -123,17 +118,12 @@ public class GetMediaFormat {
                     if (player != null) {
                         player.release();
                         player = null;
-                        mediaSource = null;
                         if (mPlayerWrapper != null && needToPlayback) {
                             mPlayerWrapper.startPlayback();
                         }
                     }
                 }
             });
-            /*synchronized (GetMediaFormat.class) {
-                if (player != null) {
-                }
-            }*/
         }
     }
 
@@ -145,12 +135,12 @@ public class GetMediaFormat {
                 public void setStreamCount(int count) {
                     mSCount = 0;
                     mStreamCount = count;
-                    MLog.i(TAG, "setStreamCount() mStreamCount: " + mStreamCount);
+                    MLog.i(TAG, "MediaFormatCallback mStreamCount: " + mStreamCount);
                 }
 
                 @Override
                 public void onCreated(MediaFormat mediaFormat) {
-                    MLog.i(TAG, "onCreated()       mediaFormat: \n" + mediaFormat);
+                    MLog.i(TAG, "MediaFormatCallback  mediaFormat: \n" + mediaFormat);
                     if (player == null) {
                         return;
                     }

@@ -327,22 +327,6 @@ public class PlayerWrapper {
         }
     }
 
-    public void setPlayer(String player) {
-        whatPlayer = PLAYER_FFMPEG;
-        if (!TextUtils.isEmpty(player)) {
-            switch (player) {
-                case PLAYER_FFMPEG:
-                    whatPlayer = PLAYER_FFMPEG;
-                    break;
-                case PLAYER_MEDIACODEC:
-                    whatPlayer = PLAYER_MEDIACODEC;
-                    break;
-                default:
-                    break;
-            }
-        }
-    }
-
     /*if (newPath.startsWith("http://")
             || newPath.startsWith("https://")
             || newPath.startsWith("rtmp://")
@@ -405,6 +389,7 @@ public class PlayerWrapper {
         if (mGetMediaFormat == null) {
             mGetMediaFormat = new GetMediaFormat();
         }
+        mGetMediaFormat.setContext(mContext);
         mGetMediaFormat.setPlayerWrapper(this);
         mFfmpegUseMediaCodecDecode.setGetMediaFormat(mGetMediaFormat);
 
@@ -861,16 +846,14 @@ public class PlayerWrapper {
     public void startForGetMediaFormat() {
         mGetMediaFormat.mVideoMediaFormat = null;
         mGetMediaFormat.mAudioMediaFormat = null;
-        whatPlayer = mSP.getString(PLAYBACK_USE_PLAYER, PLAYER_FFMPEG);
+        whatPlayer = mSP.getString(PLAYBACK_USE_PLAYER, PLAYER_FFMPEG_MEDIACODEC);
         if (!mPath.endsWith(".m4s")
                 && !mPath.endsWith(".h264")
                 && !mPath.endsWith(".aac")
                 && (TextUtils.isEmpty(mType)
                 || mType.startsWith("video/"))) {
             if (TextUtils.equals(whatPlayer, PLAYER_FFMPEG_MEDIACODEC)) {
-                mGetMediaFormat.setContext(mContext);
-                mGetMediaFormat.setDataSource(mPath);
-                mGetMediaFormat.start();
+                mGetMediaFormat.start(mPath);
                 return;
             }
         }
@@ -886,6 +869,7 @@ public class PlayerWrapper {
         }
         // 这里也要写
         mSurfaceHolder.setFormat(PixelFormat.RGBA_8888);
+
         if (TextUtils.equals(whatPlayer, PLAYER_MEDIACODEC)) {
             mSimpleVideoPlayer.setHandler(mUiHandler);
             mSimpleVideoPlayer.setCallback(mFFMPEGPlayer.mCallback);

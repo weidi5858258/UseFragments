@@ -743,7 +743,7 @@ public class FfmpegUseMediaCodecDecode {
         if (mContext != null) {
             SharedPreferences sp =
                     mContext.getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE);
-            String whatPlayer = sp.getString(PLAYBACK_USE_PLAYER, PLAYER_FFMPEG);
+            String whatPlayer = sp.getString(PLAYBACK_USE_PLAYER, PLAYER_FFMPEG_MEDIACODEC);
             if (!TextUtils.equals(whatPlayer, PLAYER_FFMPEG_MEDIACODEC)) {
                 return false;
             }
@@ -769,7 +769,6 @@ public class FfmpegUseMediaCodecDecode {
             int audioMimeType = jniObject.valueInt;
             Object[] valueObjectArray = jniObject.valueObjectArray;
 
-            MLog.d(TAG, "initAudioMediaCodec() start");
             MLog.d(TAG, "initAudioMediaCodec()    mimeType: " + audioMimeType);
             switch (audioMimeType) {
                 /*case AV_CODEC_ID_MP2: {// 86016
@@ -957,7 +956,7 @@ public class FfmpegUseMediaCodecDecode {
         if (mContext != null) {
             SharedPreferences sp =
                     mContext.getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE);
-            String whatPlayer = sp.getString(PLAYBACK_USE_PLAYER, PLAYER_FFMPEG);
+            String whatPlayer = sp.getString(PLAYBACK_USE_PLAYER, PLAYER_FFMPEG_MEDIACODEC);
             if (!TextUtils.equals(whatPlayer, PLAYER_FFMPEG_MEDIACODEC)) {
                 return false;
             }
@@ -983,7 +982,6 @@ public class FfmpegUseMediaCodecDecode {
             int videoMimeType = jniObject.valueInt;
             Object[] valueObjectArray = jniObject.valueObjectArray;
 
-            MLog.w(TAG, "initVideoMediaCodec() start");
             MLog.w(TAG, "initVideoMediaCodec()    mimeType: " + videoMimeType);
             switch (videoMimeType) {
                 case AV_CODEC_ID_HEVC:
@@ -1558,6 +1556,9 @@ public class FfmpegUseMediaCodecDecode {
                     && oldObject instanceof Map) {
                 Map<String, Object> newMap = (Map) newObject;
                 Map<String, Object> oldMap = (Map) oldObject;
+                if (oldMap.containsKey("mime-old")) {
+                    return;
+                }
                 String mime = (String) oldMap.get("mime");
                 for (Map.Entry<String, Object> entry : newMap.entrySet()) {
                     oldMap.put(entry.getKey(), entry.getValue());
@@ -1657,6 +1658,9 @@ public class FfmpegUseMediaCodecDecode {
                     && oldObject instanceof Map) {
                 Map<String, Object> newMap = (Map) newObject;
                 Map<String, Object> oldMap = (Map) oldObject;
+                if (oldMap.containsKey("mime-old")) {
+                    return;
+                }
                 String mime = (String) oldMap.get("mime");
                 for (Map.Entry<String, Object> entry : newMap.entrySet()) {
                     oldMap.put(entry.getKey(), entry.getValue());

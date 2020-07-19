@@ -15,7 +15,7 @@ enum {
     USE_MODE_MEDIA_MEDIACODEC = 7
 };
 
-enum {
+enum DO_SOMETHING_CODE {
     DO_SOMETHING_CODE_init = 1099,
     DO_SOMETHING_CODE_setMode = 1100,
     //DO_SOMETHING_CODE_setCallback = 1101,
