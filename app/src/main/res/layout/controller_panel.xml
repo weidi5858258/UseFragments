@@ -129,7 +129,8 @@
             android:gravity="center"
             android:background="@android:color/transparent"
             android:textSize="24sp"
-            android:text="" />
+            android:text=""
+            android:visibility="gone" />
         <!--android:src="@drawable/download1" @color/burlywood-->
 
         <ImageButton

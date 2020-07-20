@@ -2526,12 +2526,14 @@ namespace alexander_media_mediacodec {
                 runCounts++;
                 double totleTimeDiff = 0;
                 for (int i = 0; i < RUN_COUNTS; i++) {
-                    if (videoWrapper->father->isPausedForSeek
+                    /*if (videoWrapper->father->isPausedForUser
+                        || videoWrapper->father->isPausedForCache
+                        || videoWrapper->father->isPausedForSeek
                         || !audioWrapper->father->isHandling
                         || !videoWrapper->father->isHandling) {
                         LOGI("handleVideoDataImpl() RUN_COUNTS return\n");
                         return 0;
-                    }
+                    }*/
                     totleTimeDiff += timeDiff[i];
                 }
                 averageTimeDiff = totleTimeDiff / RUN_COUNTS;
@@ -2718,12 +2720,14 @@ namespace alexander_media_mediacodec {
                 runCounts++;
                 double totleTimeDiff = 0;
                 for (int i = 0; i < RUN_COUNTS; i++) {
-                    if (videoWrapper->father->isPausedForSeek
+                    /*if (videoWrapper->father->isPausedForUser
+                        || videoWrapper->father->isPausedForCache
+                        || videoWrapper->father->isPausedForSeek
                         || !audioWrapper->father->isHandling
                         || !videoWrapper->father->isHandling) {
                         LOGI("handleVideoOutputBuffer() RUN_COUNTS return\n");
                         return 0;
-                    }
+                    }*/
                     totleTimeDiff += timeDiff[i];
                 }
                 averageTimeDiff = totleTimeDiff / RUN_COUNTS;
@@ -4050,6 +4054,7 @@ namespace alexander_media_mediacodec {
             audioWrapper->father->isHandleList1Full = false;
             notifyToRead(audioWrapper->father);
             notifyToHandle(audioWrapper->father);
+            notifyToRead();
         }
 
         if (videoWrapper != nullptr
@@ -4065,9 +4070,9 @@ namespace alexander_media_mediacodec {
             videoWrapper->father->isHandleList1Full = false;
             notifyToRead(videoWrapper->father);
             notifyToHandle(videoWrapper->father);
+            notifyToRead();
         }
 
-        notifyToRead();
         LOGI("stop() end\n");
 
         return 0;
