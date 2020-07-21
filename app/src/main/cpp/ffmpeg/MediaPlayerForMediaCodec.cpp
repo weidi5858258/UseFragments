@@ -259,11 +259,7 @@ namespace alexander_media_mediacodec {
     static int64_t startReadTime = -1;
     static int64_t endReadTime = -1;
 
-    static int64_t startVideoLockedTime = -1;
-    static int64_t endVideoLockedTime = -1;
-
     static int frameRate = 0;
-    static bool isVideoLocked = false;
 
     static int videoMimeType = -1;
     static int audioMimeType = -1;
@@ -456,12 +452,9 @@ namespace alexander_media_mediacodec {
         startReadTime = -1;
         endReadTime = -1;
         mediaDuration = -1;
-        startVideoLockedTime = -1;
-        endVideoLockedTime = -1;
         frameRate = 0;
 
         isReading = false;
-        isVideoLocked = false;
         isVideoHandling = false;
         isVideoRendering = false;
         isInterrupted = false;
@@ -1302,7 +1295,8 @@ namespace alexander_media_mediacodec {
             case AV_CODEC_ID_VP8: {// 139
                 LOGW("findAndOpenAVCodecForVideo() vp8_mediacodec\n");
                 videoWrapper->father->useMediaCodec = true;
-                videoWrapper->father->avBitStreamFilter = av_bsf_get_by_name("null");
+                videoWrapper->father->avBitStreamFilter =
+                        av_bsf_get_by_name("null");
                 // 硬解码vp8
                 /*videoWrapper->father->decoderAVCodec = avcodec_find_decoder_by_name(
                         "vp8_mediacodec");*/
@@ -1322,7 +1316,8 @@ namespace alexander_media_mediacodec {
             case AV_CODEC_ID_MPEG1VIDEO: {// 1
                 LOGW("findAndOpenAVCodecForVideo() mpeg1_mediacodec\n");
                 videoWrapper->father->useMediaCodec = true;
-                videoWrapper->father->avBitStreamFilter = av_bsf_get_by_name("null");
+                videoWrapper->father->avBitStreamFilter =
+                        av_bsf_get_by_name("null");
                 break;
             }
             case AV_CODEC_ID_MPEG2VIDEO: {// 2
@@ -1334,7 +1329,8 @@ namespace alexander_media_mediacodec {
             }
             default: {
                 videoWrapper->father->useMediaCodec = true;
-                videoWrapper->father->avBitStreamFilter = av_bsf_get_by_name("null");
+                videoWrapper->father->avBitStreamFilter =
+                        av_bsf_get_by_name("null");
                 // LOGW("findAndOpenAVCodecForVideo() codecID\n");
                 // 软解
                 // videoWrapper->father->decoderAVCodec = avcodec_find_decoder(codecID);
@@ -1535,8 +1531,8 @@ namespace alexander_media_mediacodec {
                 break;
         }
 
-        //audioWrapper->father->useMediaCodec = false;
-        initAudioMediaCodec();
+        audioWrapper->father->useMediaCodec = false;
+        //initAudioMediaCodec();
 
         LOGD("%s\n", "createSwrContent() createAudioTrack start");
         createAudioTrack(audioWrapper->dstSampleRate,
@@ -2382,90 +2378,80 @@ namespace alexander_media_mediacodec {
                 (const uint8_t **) decodedAVFrame->data,
                 // 一个通道中可用的输入采样数量
                 decodedAVFrame->nb_samples);
-        if (ret >= 0) {
-            audioWrapper->father->isStarted = true;
-            if (videoWrapper->father->streamIndex != -1) {
-                while (!videoWrapper->father->isStarted) {
-                    if (audioWrapper->father->isPausedForUser
-                        || audioWrapper->father->isPausedForCache
-                        || audioWrapper->father->isPausedForSeek
-                        || !videoWrapper->father->isHandling
-                        || !audioWrapper->father->isHandling) {
-                        return 0;
-                    }
-                    av_usleep(1000);
-                }
-            }
-            if (runOneTime) {
-                runOneTime = false;
-                if (videoWrapper->father->streamIndex != -1) {
-                    LOGD("handleAudioDataImpl() 音视频已经准备好,开始播放!!!\n");
-                } else {
-                    LOGD("handleAudioDataImpl() 音频已经准备好,开始播放!!!\n");
-                }
-                // 回调(通知到java层)
-                onPlayed();
-            }
 
-            ////////////////////////////////////////////////////////////////////
-
-            /***
-             audioPts: 0.000000
-             audioPos: 93.456848
-             audioPts: 0.023220
-             audioPos: 93.465261
-             audioPts: 0.046440
-             audioPos: 94.134739
-             */
-            audioPts = decodedAVFrame->pts * av_q2d(stream->time_base);
-            //double audioPos = decodedAVFrame->pkt_pos * av_q2d(stream->time_base);
-            //LOGD("handleVideoDataImpl() audioPts: %lf\n", audioPts);
-            //LOGD("handleVideoDataImpl() audioPos: %lf\n", audioPos);
-            if (mediaDuration < 0 && preAudioPts > 0 && preAudioPts > audioPts) {
-                return 0;
-            }
-            preAudioPts = audioPts;
-            //LOGD("handleVideoDataImpl() audioPts: %lf\n", audioPts);
-
-            // endVideoLockedTime = av_gettime_relative();
-            /*if (!isLocal
-                && mediaDuration < 0
-                && startVideoLockedTime > 0
-                && endVideoLockedTime > 0
-                && (endVideoLockedTime - startVideoLockedTime) > 10000000) {
-                // 说明video已经在ANativeWindow中被block住了
-                LOGE("handleAudioDataImpl() video已经在ANativeWindow中被锁住了\n");
-                //isVideoLocked = true;
-                //stop();
-            }*/
-
-            // 有时长时才更新时间进度
-            if (mediaDuration > 0) {
-                curProgress = (long long) audioPts;// 秒
-                if (curProgress > preProgress
-                    && curProgress <= mediaDuration) {
-                    preProgress = curProgress;
-                    onProgressUpdated(curProgress);
-                }
-            }
-
-            ////////////////////////////////////////////////////////////////////
-
-            // 获取给定音频参数所需的缓冲区大小
-            int out_buffer_size = av_samples_get_buffer_size(
-                    nullptr,
-                    // 输出的声道个数
-                    audioWrapper->dstNbChannels,
-                    // 一个通道中音频采样数量
-                    decodedAVFrame->nb_samples,
-                    // 输出采样格式16bit
-                    audioWrapper->dstAVSampleFormat,
-                    // 缓冲区大小对齐（0 = 默认值,1 = 不对齐）
-                    1);
-            write(audioWrapper->father->outBuffer1, 0, out_buffer_size);
-        } else {
-            LOGE("audio 转换时出错 %d", ret);
+        if (ret < 0) {
+            LOGE("handleAudioDataImpl() swr_convert failure: %d", ret);
+            return ret;
         }
+
+        audioWrapper->father->isStarted = true;
+        if (videoWrapper->father->streamIndex != -1) {
+            while (!videoWrapper->father->isStarted) {
+                if (audioWrapper->father->isPausedForUser
+                    || audioWrapper->father->isPausedForCache
+                    || audioWrapper->father->isPausedForSeek
+                    || !videoWrapper->father->isHandling
+                    || !audioWrapper->father->isHandling) {
+                    return 0;
+                }
+                av_usleep(1000);
+            }
+        }
+        if (runOneTime) {
+            runOneTime = false;
+            if (videoWrapper->father->streamIndex != -1) {
+                LOGD("handleAudioDataImpl() 音视频已经准备好,开始播放!!!\n");
+            } else {
+                LOGD("handleAudioDataImpl() 音频已经准备好,开始播放!!!\n");
+            }
+            // 回调(通知到java层)
+            onPlayed();
+        }
+
+        ////////////////////////////////////////////////////////////////////
+
+        /***
+         audioPts: 0.000000
+         audioPos: 93.456848
+         audioPts: 0.023220
+         audioPos: 93.465261
+         audioPts: 0.046440
+         audioPos: 94.134739
+         */
+        audioPts = decodedAVFrame->pts * av_q2d(stream->time_base);
+        //double audioPos = decodedAVFrame->pkt_pos * av_q2d(stream->time_base);
+        //LOGD("handleVideoDataImpl() audioPts: %lf\n", audioPts);
+        //LOGD("handleVideoDataImpl() audioPos: %lf\n", audioPos);
+        if (mediaDuration < 0 && preAudioPts > 0 && preAudioPts > audioPts) {
+            return 0;
+        }
+        preAudioPts = audioPts;
+
+        // 有时长时才更新时间进度
+        if (mediaDuration > 0) {
+            curProgress = (long long) audioPts;// 秒
+            if (curProgress > preProgress
+                && curProgress <= mediaDuration) {
+                preProgress = curProgress;
+                onProgressUpdated(curProgress);
+            }
+        }
+
+        ////////////////////////////////////////////////////////////////////
+
+        // 获取给定音频参数所需的缓冲区大小
+        int out_buffer_size = av_samples_get_buffer_size(
+                nullptr,
+                // 输出的声道个数
+                audioWrapper->dstNbChannels,
+                // 一个通道中音频采样数量
+                decodedAVFrame->nb_samples,
+                // 输出采样格式16bit
+                audioWrapper->dstAVSampleFormat,
+                // 缓冲区大小对齐（0 = 默认值,1 = 不对齐）
+                1);
+        write(audioWrapper->father->outBuffer1, 0, out_buffer_size);
+
         return ret;
     }
 
@@ -2852,10 +2838,6 @@ namespace alexander_media_mediacodec {
             closeOther();
             // 必须保证每次退出都要执行到
             onFinished();
-            /*if (isVideoLocked) {
-                // throw exception
-                audioWrapper->father->isStarted = false;
-            }*/
             LOGF("%s\n", "Safe Exit");
         } else {
             LOGW("handleDataClose() for (;;) video end\n");

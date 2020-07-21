@@ -206,7 +206,8 @@ public class FfmpegUseMediaCodecDecode {
     }
 
     public void setVolume(float volume) {
-        if (mAudioWrapper.mAudioTrack == null
+        if (mAudioWrapper == null
+                || mAudioWrapper.mAudioTrack == null
                 || mAudioWrapper.mAudioTrack.getState() == AudioTrack.STATE_UNINITIALIZED) {
             return;
         }
