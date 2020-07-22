@@ -40,14 +40,10 @@ public class GetMediaFormat {
 
     //private volatile static GetMediaFormat sGetMediaFormat = null;
     private SimpleExoPlayer player;
-
     private Handler mUiHandler;
     private Context mContext;
-
     private PlayerWrapper mPlayerWrapper;
-
     private int mStreamCount = 0;
-
     public MediaFormat mVideoMediaFormat = null;
     public MediaFormat mAudioMediaFormat = null;
 
@@ -110,7 +106,7 @@ public class GetMediaFormat {
         MLog.i(TAG, "start() end");
     }
 
-    public void release(boolean needToPlayback) {
+    public synchronized void release(boolean needToPlayback) {
         if (player != null) {
             mUiHandler.post(new Runnable() {
                 @Override

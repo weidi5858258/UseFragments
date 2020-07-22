@@ -548,9 +548,9 @@ public class PlayerWrapper {
                 mAudioProgressBar.setProgress(((JniObject) msg.obj).valueInt);
                 break;
             case Callback.MSG_ON_TRANSACT_INIT_VIDEO_MEDIACODEC:
-                if (mFfmpegUseMediaCodecDecode != null) {
+                /*if (mFfmpegUseMediaCodecDecode != null) {
                     mFfmpegUseMediaCodecDecode.initVideoMediaCodec(msg);
-                }
+                }*/
                 break;
             case Callback.MSG_ON_TRANSACT_READY:
                 MLog.d(TAG, "Callback.MSG_ON_TRANSACT_READY");
@@ -853,6 +853,7 @@ public class PlayerWrapper {
                 && (TextUtils.isEmpty(mType)
                 || mType.startsWith("video/"))) {
             if (TextUtils.equals(whatPlayer, PLAYER_FFMPEG_MEDIACODEC)) {
+                onReady();
                 mGetMediaFormat.start(mPath);
                 return;
             }

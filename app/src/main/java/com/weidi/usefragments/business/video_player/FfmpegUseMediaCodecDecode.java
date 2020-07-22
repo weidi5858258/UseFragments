@@ -750,8 +750,8 @@ public class FfmpegUseMediaCodecDecode {
             }
         }
         MLog.d(TAG, "initAudioMediaCodec() start");
-        String audioMime = null;
         MediaFormat mediaFormat = null;
+        String audioMime = null;
         if (mGetMediaFormat != null
                 && mGetMediaFormat.mAudioMediaFormat != null) {
             mediaFormat = mGetMediaFormat.mAudioMediaFormat;
@@ -905,17 +905,17 @@ public class FfmpegUseMediaCodecDecode {
         mAudioWrapper.render = false;
         mAudioWrapper.mime = audioMime;
         mAudioWrapper.decoderMediaFormat = mediaFormat;
+        MLog.d(TAG, "initAudioMediaCodec() create MediaCodec start");
         mAudioWrapper.decoderMediaCodec =
                 MediaUtils.getAudioDecoderMediaCodec(
                         mAudioWrapper.mime,
                         mAudioWrapper.decoderMediaFormat);
-        MLog.e(TAG, "initAudioMediaCodec() audio decoderMediaCodec: " +
-                mAudioWrapper.decoderMediaCodec);
+        MLog.d(TAG, "initAudioMediaCodec() create MediaCodec end");
         if (mAudioWrapper.decoderMediaCodec == null) {
             return false;
         }
 
-        //mAudioWrapper.decoderMediaCodec.flush();
+        // mAudioWrapper.decoderMediaCodec.flush();
         if (mAudioWrapper.decoderMediaFormat.containsKey("csd-0")) {
             ByteBuffer buffer = mAudioWrapper.decoderMediaFormat.getByteBuffer("csd-0");
             byte[] csd_0 = new byte[buffer.limit()];
@@ -963,8 +963,8 @@ public class FfmpegUseMediaCodecDecode {
             }
         }
         MLog.w(TAG, "initVideoMediaCodec() start");
-        String videoMime = null;
         MediaFormat mediaFormat = null;
+        String videoMime = null;
         if (mGetMediaFormat != null
                 && mGetMediaFormat.mVideoMediaFormat != null) {
             mediaFormat = mGetMediaFormat.mVideoMediaFormat;
@@ -1111,22 +1111,22 @@ public class FfmpegUseMediaCodecDecode {
 
         mVideoWrapper = new VideoWrapper(TYPE_VIDEO);
         mVideoWrapper.isHandling = true;
+        mVideoWrapper.render = true;
         mVideoWrapper.mime = videoMime;
         mVideoWrapper.decoderMediaFormat = mediaFormat;
         mVideoWrapper.mSurface = mSurface;
-        mVideoWrapper.render = true;
+        MLog.w(TAG, "initVideoMediaCodec() create MediaCodec start");
         mVideoWrapper.decoderMediaCodec =
                 MediaUtils.getVideoDecoderMediaCodec(
                         mVideoWrapper.mime,
                         mVideoWrapper.decoderMediaFormat,
                         mVideoWrapper.mSurface);
-        MLog.w(TAG, "initVideoMediaCodec() video decoderMediaCodec: " +
-                mVideoWrapper.decoderMediaCodec);
+        MLog.w(TAG, "initVideoMediaCodec() create MediaCodec end");
         if (mVideoWrapper.decoderMediaCodec == null) {
             return false;
         }
 
-        //mVideoWrapper.decoderMediaCodec.flush();
+        // mVideoWrapper.decoderMediaCodec.flush();
         if (mVideoWrapper.decoderMediaFormat.containsKey("csd-0")) {
             ByteBuffer buffer = mVideoWrapper.decoderMediaFormat.getByteBuffer("csd-0");
             byte[] csd_0 = new byte[buffer.limit()];
@@ -1161,153 +1161,6 @@ public class FfmpegUseMediaCodecDecode {
         }
 
         MLog.w(TAG, "initVideoMediaCodec() end");
-        return true;
-    }
-
-    public boolean initVideoMediaCodec(Message msg) {
-        JniObject jniObject = (JniObject) msg.obj;
-        int videoMimeType = jniObject.valueInt;
-        Object[] valueObjectArray = jniObject.valueObjectArray;
-        if (valueObjectArray.length < 3) {
-            return false;
-        }
-
-        MLog.w(TAG, "initMediaCodec() start");
-        MLog.w(TAG, "initMediaCodec()    mimeType: " + videoMimeType);
-        String videoMime = null;
-        switch (videoMimeType) {
-            case AV_CODEC_ID_HEVC:
-                videoMime = MediaFormat.MIMETYPE_VIDEO_HEVC;
-                break;
-            case AV_CODEC_ID_H264:
-                videoMime = MediaFormat.MIMETYPE_VIDEO_AVC;
-                break;
-            case AV_CODEC_ID_MPEG4:
-                videoMime = MediaFormat.MIMETYPE_VIDEO_MPEG4;
-                break;
-            case AV_CODEC_ID_VP8:
-                videoMime = MediaFormat.MIMETYPE_VIDEO_VP8;
-                break;
-            case AV_CODEC_ID_VP9:
-                videoMime = MediaFormat.MIMETYPE_VIDEO_VP9;
-                break;
-            case AV_CODEC_ID_MPEG2VIDEO:
-                videoMime = MediaFormat.MIMETYPE_VIDEO_MPEG2;
-                break;
-            default:
-                break;
-        }
-        if (TextUtils.isEmpty(videoMime) || mSurface == null) {
-            MLog.e(TAG, "initMediaCodec() TextUtils.isEmpty(mime) || mSurface == null");
-            return false;
-        }
-        MLog.w(TAG, "initMediaCodec() video  mime: " + videoMime);
-
-        if (mVideoWrapper != null && mVideoWrapper.decoderMediaCodec != null) {
-            mVideoWrapper.decoderMediaCodec.flush();
-            MediaUtils.releaseMediaCodec(mVideoWrapper.decoderMediaCodec);
-        }
-
-        if (mFFMPEG == null) {
-            mFFMPEG = FFMPEG.getDefault();
-        }
-        mAudioWrapper = new AudioWrapper(TYPE_AUDIO);
-        mVideoWrapper = new VideoWrapper(TYPE_VIDEO);
-        mAudioWrapper.clear();
-        mVideoWrapper.clear();
-        mAudioWrapper.isHandling = true;
-        mVideoWrapper.isHandling = true;
-
-        long[] parameters = (long[]) valueObjectArray[0];
-        mVideoWrapper.width = (int) parameters[0];
-        mVideoWrapper.height = (int) parameters[1];
-        // 单位: 秒
-        int duration = (int) parameters[2];
-        int frameRate = (int) parameters[3];
-        long bit_rate = parameters[4];
-        MediaFormat mediaFormat = MediaUtils.getVideoDecoderMediaFormat(
-                mVideoWrapper.width, mVideoWrapper.height);
-
-        Object object1 = valueObjectArray[1];
-        Object object2 = valueObjectArray[2];
-        byte[] csd0 = null;
-        byte[] csd1 = null;
-        if (object1 != null && object2 != null) {
-            csd0 = (byte[]) object1;
-            csd1 = (byte[]) object2;
-            mediaFormat.setByteBuffer("csd-0", ByteBuffer.wrap(csd0));
-            mediaFormat.setByteBuffer("csd-1", ByteBuffer.wrap(csd1));
-        } else if (object1 != null && object2 == null) {
-            csd0 = (byte[]) object1;
-            mediaFormat.setByteBuffer("csd-0", ByteBuffer.wrap(csd0));
-        } else if (object1 == null && object2 == null) {
-
-        }
-
-        mediaFormat.setString(MediaFormat.KEY_MIME, videoMime);
-        if (duration > 0) {
-            mediaFormat.setLong(MediaFormat.KEY_DURATION, duration * 1000000L);
-        } else {
-            // 随便设置了一个数
-            mediaFormat.setLong(MediaFormat.KEY_DURATION, -9223372036854L);
-        }
-        // 设置帧率
-        mediaFormat.setInteger(MediaFormat.KEY_FRAME_RATE, frameRate);
-        // 设置比特率
-        mediaFormat.setLong(MediaFormat.KEY_BIT_RATE, bit_rate);
-        mediaFormat.setInteger(MediaFormat.KEY_BITRATE_MODE,
-                MediaCodecInfo.EncoderCapabilities.BITRATE_MODE_CQ);
-        mediaFormat.setInteger(MediaFormat.KEY_COLOR_FORMAT,
-                MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420Flexible);
-        mVideoWrapper.mime = videoMime;
-        mVideoWrapper.decoderMediaFormat = mediaFormat;
-        mVideoWrapper.mSurface = mSurface;
-
-        mVideoWrapper.decoderMediaCodec =
-                MediaUtils.getVideoDecoderMediaCodec(
-                        mVideoWrapper.mime,
-                        mVideoWrapper.decoderMediaFormat,
-                        mVideoWrapper.mSurface);
-        mVideoWrapper.render = true;
-        if (mVideoWrapper.decoderMediaCodec == null) {
-            MLog.e(TAG, "initMediaCodec() mVideoWrapper.decoderMediaCodec is null");
-        }
-
-        mVideoWrapper.decoderMediaCodec.flush();
-        if (mVideoWrapper.decoderMediaFormat.containsKey("csd-0")) {
-            ByteBuffer buffer = mVideoWrapper.decoderMediaFormat.getByteBuffer("csd-0");
-            byte[] csd_0 = new byte[buffer.limit()];
-            buffer.get(csd_0);
-            StringBuilder sb = new StringBuilder();
-            sb.append("{");
-            int count = csd_0.length;
-            for (int i = 0; i < count; i++) {
-                sb.append(csd_0[i]);
-                if (i <= count - 2) {
-                    sb.append(", ");
-                }
-            }
-            sb.append("}");
-            MLog.w(TAG, "initMediaCodec() video csd-0: " + sb.toString());
-        }
-        if (mVideoWrapper.decoderMediaFormat.containsKey("csd-1")) {
-            ByteBuffer buffer = mVideoWrapper.decoderMediaFormat.getByteBuffer("csd-1");
-            byte[] csd_1 = new byte[buffer.limit()];
-            buffer.get(csd_1);
-            StringBuilder sb = new StringBuilder();
-            sb.append("{");
-            int count = csd_1.length;
-            for (int i = 0; i < count; i++) {
-                sb.append(csd_1[i]);
-                if (i <= count - 2) {
-                    sb.append(", ");
-                }
-            }
-            sb.append("}");
-            MLog.w(TAG, "initMediaCodec() video csd-1: " + sb.toString());
-        }
-
-        MLog.w(TAG, "initMediaCodec() end");
         return true;
     }
 
@@ -1675,10 +1528,11 @@ public class FfmpegUseMediaCodecDecode {
         }
     }
 
+    // audio
     private JniObject mAudioJniObject = new JniObject();
     private int[] audioValueIntArray = new int[2];
     private Object[] audioValueObjectArray = new Object[2];
-
+    // video
     private JniObject mVideoJniObject = new JniObject();
     private int[] videoValueIntArray = new int[2];
     private Object[] videoValueObjectArray = new Object[2];
@@ -1700,7 +1554,6 @@ public class FfmpegUseMediaCodecDecode {
             Integer.parseInt(
                     mFFMPEG.onTransact(
                             FFMPEG.DO_SOMETHING_CODE_handleAudioOutputBuffer, mAudioJniObject));
-
         }
         if (mAudioWrapper.isHandling
                 && mAudioWrapper.mAudioTrack != null

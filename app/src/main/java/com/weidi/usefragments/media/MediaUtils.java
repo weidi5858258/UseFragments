@@ -746,6 +746,11 @@ public class MediaUtils {
 
     public static MediaCodec getVideoDecoderMediaCodec(
             String mime, MediaFormat mediaFormat, Surface surface) {
+        if (TextUtils.isEmpty(mime)
+                || mediaFormat == null
+                || surface == null) {
+            return null;
+        }
         MediaCodec decoder = null;
         MediaCodecInfo[] mediaCodecInfos = findAllDecodersByMime(mime);
         for (MediaCodecInfo mediaCodecInfo : mediaCodecInfos) {
@@ -783,6 +788,10 @@ public class MediaUtils {
     }
 
     public static MediaCodec getAudioDecoderMediaCodec(String mime, MediaFormat mediaFormat) {
+        if (TextUtils.isEmpty(mime)
+                || mediaFormat == null) {
+            return null;
+        }
         MediaCodec decoder = null;
         MediaCodecInfo[] mediaCodecInfos = findAllDecodersByMime(mime);
         for (MediaCodecInfo mediaCodecInfo : mediaCodecInfos) {
