@@ -68,7 +68,7 @@ import androidx.core.content.ContextCompat;
 import androidx.legacy.app.FragmentCompat;
 
 /***
-
+  使用的这个
  */
 public class Camera2Fragment extends BaseFragment {
 
@@ -413,7 +413,7 @@ public class Camera2Fragment extends BaseFragment {
      2160P(4K) 3840*2160
      1440P(HD)
      1080P(HD) 1920*1080
-     720P(HD) 1280*720
+     720P (HD) 1280*720
      480P
      360P
      240P

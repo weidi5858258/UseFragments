@@ -2052,6 +2052,7 @@ namespace alexander_media_mediacodec {
                     continue;
                 }
 
+                // -101
                 // AVERROR_HTTP_FORBIDDEN -858797304
                 // readData() AVERROR_EOF readFrame: -12 (Cannot allocate memory)
                 // readData() AVERROR_EOF readFrame: -1094995529
@@ -3240,8 +3241,11 @@ namespace alexander_media_mediacodec {
                     notifyToHandle(audioWrapper->father);
                 }
 
-                // 开始播放
-                onPlayed();
+                if (!audioWrapper->father->isPausedForUser
+                    && !videoWrapper->father->isPausedForUser) {
+                    // 开始播放
+                    onPlayed();
+                }
 
                 LOGI("***************************************************\n");
                 if (wrapper->type == TYPE_AUDIO) {
@@ -3312,6 +3316,9 @@ namespace alexander_media_mediacodec {
                     isVideoRendering = false;
                     if (!feedAndDrainRet) {
                         wrapper->useMediaCodec = false;
+                        seekTo(curProgress);
+                        av_usleep(1000 * 1000);
+                        LOGE("handleData() video feedInputBufferAndDrainOutputBuffer failure\n");
                     }
                     continue;
                 }
@@ -4056,7 +4063,6 @@ namespace alexander_media_mediacodec {
         }
 
         LOGI("stop() end\n");
-
         return 0;
     }
 
@@ -4069,23 +4075,23 @@ namespace alexander_media_mediacodec {
     bool isRunning() {
         bool audioRunning = false;
         bool videoRunning = false;
-        if (audioWrapper->father->streamIndex != -1) {
-            if (audioWrapper != nullptr
-                && audioWrapper->father != nullptr) {
+        if (audioWrapper != nullptr
+            && audioWrapper->father != nullptr) {
+            if (audioWrapper->father->streamIndex != -1) {
                 audioRunning = audioWrapper->father->isStarted
                                && audioWrapper->father->isHandling;
+            } else {
+                audioRunning = true;
             }
-        } else {
-            audioRunning = true;
         }
-        if (videoWrapper->father->streamIndex != -1) {
-            if (videoWrapper != nullptr
-                && videoWrapper->father != nullptr) {
+        if (videoWrapper != nullptr
+            && videoWrapper->father != nullptr) {
+            if (videoWrapper->father->streamIndex != -1) {
                 videoRunning = videoWrapper->father->isStarted
                                && videoWrapper->father->isHandling;
+            } else {
+                videoRunning = true;
             }
-        } else {
-            videoRunning = true;
         }
         return audioRunning && videoRunning;
     }
@@ -4094,27 +4100,27 @@ namespace alexander_media_mediacodec {
     bool isPlaying() {
         bool audioPlaying = false;
         bool videoPlaying = false;
-        if (audioWrapper->father->streamIndex != -1) {
-            if (audioWrapper != nullptr
-                && audioWrapper->father != nullptr) {
+        if (audioWrapper != nullptr
+            && audioWrapper->father != nullptr) {
+            if (audioWrapper->father->streamIndex != -1) {
                 audioPlaying = audioWrapper->father->isStarted
                                && audioWrapper->father->isHandling
                                && !audioWrapper->father->isPausedForUser
                                && !audioWrapper->father->isPausedForCache;
+            } else {
+                audioPlaying = true;
             }
-        } else {
-            audioPlaying = true;
         }
-        if (videoWrapper->father->streamIndex != -1) {
-            if (videoWrapper != nullptr
-                && videoWrapper->father != nullptr) {
+        if (videoWrapper != nullptr
+            && videoWrapper->father != nullptr) {
+            if (videoWrapper->father->streamIndex != -1) {
                 videoPlaying = videoWrapper->father->isStarted
                                && videoWrapper->father->isHandling
                                && !videoWrapper->father->isPausedForUser
                                && !videoWrapper->father->isPausedForCache;
+            } else {
+                videoPlaying = true;
             }
-        } else {
-            videoPlaying = true;
         }
         return audioPlaying && videoPlaying;
     }
@@ -4122,27 +4128,27 @@ namespace alexander_media_mediacodec {
     bool isPausedForUser() {
         bool audioPlaying = false;
         bool videoPlaying = false;
-        if (audioWrapper->father->streamIndex != -1) {
-            if (audioWrapper != nullptr
-                && audioWrapper->father != nullptr) {
+        if (audioWrapper != nullptr
+            && audioWrapper->father != nullptr) {
+            if (audioWrapper->father->streamIndex != -1) {
                 audioPlaying = audioWrapper->father->isStarted
                                && audioWrapper->father->isHandling
                                && audioWrapper->father->isPausedForUser
                                && videoWrapper->father->isPausedForCache;
+            } else {
+                audioPlaying = true;
             }
-        } else {
-            audioPlaying = true;
         }
-        if (videoWrapper->father->streamIndex != -1) {
-            if (videoWrapper != nullptr
-                && videoWrapper->father != nullptr) {
+        if (videoWrapper != nullptr
+            && videoWrapper->father != nullptr) {
+            if (videoWrapper->father->streamIndex != -1) {
                 videoPlaying = videoWrapper->father->isStarted
                                && videoWrapper->father->isHandling
                                && videoWrapper->father->isPausedForUser
                                && videoWrapper->father->isPausedForCache;
+            } else {
+                videoPlaying = true;
             }
-        } else {
-            videoPlaying = true;
         }
         return audioPlaying && videoPlaying;
     }

@@ -31,8 +31,6 @@ import com.weidi.usefragments.business.media.AudioFragment;
 import com.weidi.usefragments.business.media.Camera2Fragment;
 import com.weidi.usefragments.business.media.CameraPreviewFragment;
 import com.weidi.usefragments.business.media.DecodeAudioFragment;
-import com.weidi.usefragments.business.media.DecodePlayFragment;
-import com.weidi.usefragments.business.media.DecodeVideoFragment;
 import com.weidi.usefragments.business.media.RecordScreenFragment;
 import com.weidi.usefragments.business.media.ThrowingScreenFragment;
 import com.weidi.usefragments.business.media.VideoLiveBroadcastingFragment;
@@ -142,12 +140,6 @@ public class MainActivity1 extends BaseActivity
                 FragOperManager.POP_BACK_STACK);
         sFragmentBackTypeSMap.put(
                 DecodeAudioFragment.class.getSimpleName(),
-                FragOperManager.POP_BACK_STACK);
-        sFragmentBackTypeSMap.put(
-                DecodePlayFragment.class.getSimpleName(),
-                FragOperManager.POP_BACK_STACK);
-        sFragmentBackTypeSMap.put(
-                DecodeVideoFragment.class.getSimpleName(),
                 FragOperManager.POP_BACK_STACK);
         sFragmentBackTypeSMap.put(
                 RecordScreenFragment.class.getSimpleName(),
@@ -710,11 +702,6 @@ public class MainActivity1 extends BaseActivity
         /*if (mSimpleVideoPlayer != null) {
             return mSimpleVideoPlayer.onKeyDown(keyCode, event);
         }*/
-        if (mBaseFragment != null
-                && mBaseFragment instanceof DecodeVideoFragment) {
-            DecodeVideoFragment decodeVideoFragment = (DecodeVideoFragment) mBaseFragment;
-            return decodeVideoFragment.onKeyDown(keyCode, event);
-        }
         return super.onKeyDown(keyCode, event);
     }
 

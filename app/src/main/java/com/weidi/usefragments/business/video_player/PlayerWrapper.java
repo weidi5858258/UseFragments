@@ -1933,6 +1933,7 @@ public class PlayerWrapper {
                                     DO_SOMETHING_CODE_isPlaying, null))) {
                                 mPlayIB.setVisibility(View.VISIBLE);
                                 mPauseIB.setVisibility(View.GONE);
+                                mLoadingView.setVisibility(View.GONE);
                                 sendEmptyMessage(DO_SOMETHING_CODE_play);
                             }
                         }
@@ -2044,6 +2045,7 @@ public class PlayerWrapper {
         } else {
             mPlayIB.setVisibility(View.VISIBLE);
             mPauseIB.setVisibility(View.GONE);
+            mLoadingView.setVisibility(View.GONE);
             sendEmptyMessage(DO_SOMETHING_CODE_play);
         }
     }
@@ -2065,6 +2067,17 @@ public class PlayerWrapper {
                 return;
             }
         }
+
+        /***
+         缓冲过程中,按三下进行暂停,继续缓冲.
+         */
+        mPlayIB.setVisibility(View.GONE);
+        mPauseIB.setVisibility(View.VISIBLE);
+        if (!mIsLocal) {
+            mLoadingView.setVisibility(View.VISIBLE);
+        }
+        sendEmptyMessage(DO_SOMETHING_CODE_pause);
+        MyToast.show("pause");
     }
 
     private boolean handleLandscapeScreenFlag = false;
