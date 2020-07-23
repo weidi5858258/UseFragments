@@ -437,7 +437,7 @@ public class ThrowingScreenFragment extends BaseFragment {
                 // mThreadHandler.sendEmptyMessage(STOP_RECORD_SCREEN);
                 break;
             case R.id.jump_btn:
-                FragOperManager.getInstance().enter3(new DecodePlayFragment());
+                //FragOperManager.getInstance().enter3(new DecodePlayFragment());
                 break;
         }
     }

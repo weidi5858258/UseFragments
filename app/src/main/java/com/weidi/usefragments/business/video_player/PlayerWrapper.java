@@ -660,14 +660,14 @@ public class PlayerWrapper {
                             sendEmptyMessage(DO_SOMETHING_CODE_videoHandleData);
                         }
                     });
-                    ThreadPool.getFixedThreadPool().execute(new Runnable() {
+                    /*ThreadPool.getFixedThreadPool().execute(new Runnable() {
                         @Override
                         public void run() {
                             MLog.d(TAG, "DO_SOMETHING_CODE_videoHandleRender start");
                             sendEmptyMessage(DO_SOMETHING_CODE_videoHandleRender);
                             MLog.d(TAG, "DO_SOMETHING_CODE_videoHandleRender end");
                         }
-                    });
+                    });*/
 
                     if (mIsSeparatedAudioVideo) {
                         ThreadPool.getFixedThreadPool().execute(new Runnable() {
