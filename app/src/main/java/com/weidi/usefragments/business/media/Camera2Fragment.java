@@ -29,6 +29,9 @@ import android.hardware.camera2.TotalCaptureResult;
 import android.hardware.camera2.params.StreamConfigurationMap;
 import android.media.Image;
 import android.media.ImageReader;
+import android.media.MediaCodec;
+import android.media.MediaCodecInfo;
+import android.media.MediaFormat;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
@@ -36,14 +39,17 @@ import android.os.HandlerThread;
 
 //import android.support.v13.app.FragmentCompat;
 //import android.support.v4.content.ContextCompat;
+import android.text.TextUtils;
 import android.util.Log;
 import android.util.Size;
 import android.util.SparseIntArray;
+import android.view.Display;
 import android.view.LayoutInflater;
 import android.view.Surface;
 import android.view.TextureView;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.WindowManager;
 import android.widget.Toast;
 
 import com.weidi.usefragments.R;
@@ -68,7 +74,7 @@ import androidx.core.content.ContextCompat;
 import androidx.legacy.app.FragmentCompat;
 
 /***
-  使用的这个
+ 使用的这个
  */
 public class Camera2Fragment extends BaseFragment {
 
@@ -554,6 +560,7 @@ public class Camera2Fragment extends BaseFragment {
 
         @Override
         public void onOpened(CameraDevice cameraDevice) {
+            // 打开摄像头
             // This method is called when the camera is opened.  We start camera preview here.
             mCameraOpenCloseLock.release();
             mCameraDevice = cameraDevice;
@@ -603,15 +610,25 @@ public class Camera2Fragment extends BaseFragment {
     /**
      * This a callback object for the {@link ImageReader}. "onImageAvailable" will be called when a
      * still image is ready to be saved.
+     * <p>
+     * ImageReader的回调函数, 其中的onImageAvailable会以一定频率（由EXECUTION_FREQUENCY和相机帧率决定）
+     * 识别从预览中传回的图像，并在透明的SurfaceView中画框
+     * 这个回调频率和预览刷新的帧率是一样的，帧率太快这里可能会造成crash
+     * <p>
+     * 回调函数中能得到的是Image对象，由于用于物体识别的函数参数需要的是cv::Mat的对象，
+     * 所以我必须将YUV_420_888格式的图像转为cv::Mat，
+     * 这部分没有学过，但运气很好找到了GitHub上的一个开源算法，
+     * 很好用：GitHub-quickbirdstudios / yuvToMat
      */
     private final ImageReader.OnImageAvailableListener mOnImageAvailableListener
             = new ImageReader.OnImageAvailableListener() {
-
         @Override
         public void onImageAvailable(ImageReader reader) {
+            MLog.d(TAG, "onImageAvailable()");
+            // 在子线程执行,防止预览界面卡顿
             // 当图片可得到的时候获取图片并保存
-            mBackgroundHandler.post(new Camera2Fragment.ImageSaver(reader.acquireNextImage(),
-                    mFile));
+            mBackgroundHandler.post(
+                    new ImageSaver(reader, mFile));
         }
 
     };
@@ -836,21 +853,44 @@ public class Camera2Fragment extends BaseFragment {
      * @param height The height of available size for camera preview
      */
     private void setupCameraOutputs(int width, int height) {
-        if (DEBUG)
-            MLog.d(TAG, "setupCameraOutputs()" +
-                    " width: " + width +
-                    " height: " + height);
+        MLog.d(TAG, "setupCameraOutputs()" +
+                " width: " + width +
+                " height: " + height);
 
         Activity activity = getActivity();
-        CameraManager manager = (CameraManager) activity.getSystemService(Context.CAMERA_SERVICE);
+        CameraManager manager =
+                (CameraManager) activity.getSystemService(Context.CAMERA_SERVICE);
+        Point displaySize = new Point();
+        activity.getWindowManager().getDefaultDisplay().getSize(displaySize);
+        int rotatedPreviewWidth = width;
+        int rotatedPreviewHeight = height;
+        int screenWidth = displaySize.x;
+        int screenHeight = displaySize.y;
+        // screenWidth: 720 screenHeight: 1280
+        MLog.d(TAG, "setupCameraOutputs()" +
+                " screenWidth: " + screenWidth +
+                " screenHeight: " + screenHeight);
+
         try {
             for (String cameraId : manager.getCameraIdList()) {
-                if (DEBUG)
-                    MLog.d(TAG, "setupCameraOutputs()" +
-                            " cameraId: " + cameraId);
+                MLog.d(TAG, "setupCameraOutputs()" +
+                        " cameraId: " + cameraId);
+                if (TextUtils.isEmpty(cameraId)) {
+                    continue;
+                }
 
+                mCameraId = cameraId;
+
+                //获取某个相机(摄像头特性)
                 CameraCharacteristics characteristics
                         = manager.getCameraCharacteristics(cameraId);
+
+                // 检查支持
+                int deviceLevel = characteristics.get(
+                        CameraCharacteristics.INFO_SUPPORTED_HARDWARE_LEVEL);
+                if (deviceLevel == CameraCharacteristics.INFO_SUPPORTED_HARDWARE_LEVEL_LEGACY) {
+
+                }
 
                 // We don't use a front facing camera in this sample.
                 Integer facing = characteristics.get(CameraCharacteristics.LENS_FACING);
@@ -858,6 +898,7 @@ public class Camera2Fragment extends BaseFragment {
                     continue;
                 }
 
+                // 获取StreamConfigurationMap，它是管理摄像头支持的所有输出格式和尺寸
                 StreamConfigurationMap map = characteristics.get(
                         CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
                 if (map == null) {
@@ -868,20 +909,34 @@ public class Camera2Fragment extends BaseFragment {
                 // For still image captures, we use the largest available size.
                 Size largest = Collections.max(
                         Arrays.asList(map.getOutputSizes(ImageFormat.JPEG)),
-                        new Camera2Fragment.CompareSizesByArea());
-                if (DEBUG)
-                    // largest.getWidth(): 3264 largest.getHeight(): 2448
-                    MLog.d(TAG, "setupCameraOutputs() " + printThis() +
-                            " largest.getWidth(): " + largest.getWidth() +
-                            " largest.getHeight(): " + largest.getHeight());
-                mImageReader = ImageReader.newInstance(
+                        //Arrays.asList(map.getOutputSizes(TextureView.class)),// 不能这样使用
+                        new CompareSizesByArea());
+                // ImageFormat.JPEG        largest.getWidth(): 3264 largest.getHeight(): 2448
+                // ImageFormat.YV12        largest.getWidth(): 960  largest.getHeight(): 720
+                // ImageFormat.YUV_420_888 largest.getWidth(): 960  largest.getHeight(): 720
+                MLog.d(TAG, "setupCameraOutputs() " + printThis() +
+                        " largest.getWidth(): " + largest.getWidth() +
+                        " largest.getHeight(): " + largest.getHeight());
+
+                /***
+                 * 实时帧数据获取类
+                 * 由于获取实时帧所以选用YV12或者YUV_420_888两个格式，暂时不采用JPEG格式
+                 * 在真机显示的过程中,不同的数据格式所设置的width和height需要注意，否侧视频会很卡顿
+                 * YV12:width 720， height 960
+                 * YUV_420_888：width 720， height 960
+                 * JPEG:获取帧数据不能用 ImageFormat.JPEG 格式，否则你会发现预览非常卡的，
+                 * 因为渲染 JPEG 数据量过大，导致掉帧，所以预览帧请使用其他编码格式
+                 *
+                 * 输入相机的尺寸必须是相机支持的尺寸，这样画面才能不失真，TextureView输入相机的尺寸也是这个
+                 */
+                /*mImageReader = ImageReader.newInstance(
                         largest.getWidth(),
                         largest.getHeight(),
-                        ImageFormat.JPEG,
-                        /*maxImages*/2);
+                        ImageFormat.YUV_420_888,
+                        *//*maxImages*//*5);// ImageFormat.JPEG, 2
                 mImageReader.setOnImageAvailableListener(
                         mOnImageAvailableListener,
-                        mBackgroundHandler);
+                        mBackgroundHandler);*/
 
                 // Find out if we need to swap dimension to get the preview size relative to sensor
                 // coordinate.
@@ -889,10 +944,9 @@ public class Camera2Fragment extends BaseFragment {
                 // noinspection ConstantConditions
                 mSensorOrientation = characteristics.get(
                         CameraCharacteristics.SENSOR_ORIENTATION);
-                if (DEBUG)
-                    MLog.d(TAG, "setupCameraOutputs() " + printThis() +
-                            " displayRotation: " + displayRotation +
-                            " mSensorOrientation: " + mSensorOrientation);
+                MLog.d(TAG, "setupCameraOutputs() " + printThis() +
+                        " displayRotation: " + displayRotation +
+                        " mSensorOrientation: " + mSensorOrientation);
                 boolean swappedDimensions = false;
                 switch (displayRotation) {
                     // 竖屏
@@ -911,33 +965,22 @@ public class Camera2Fragment extends BaseFragment {
                         break;
                     default:
                         Log.e(TAG, "Display rotation is invalid: " + displayRotation);
+                        break;
                 }
-
-                Point displaySize = new Point();
-                activity.getWindowManager().getDefaultDisplay().getSize(displaySize);
-                int rotatedPreviewWidth = width;
-                int rotatedPreviewHeight = height;
-                int maxPreviewWidth = displaySize.x;
-                int maxPreviewHeight = displaySize.y;
-                if (DEBUG)
-                    // maxPreviewWidth: 720 maxPreviewHeight: 1280
-                    MLog.d(TAG, "setupCameraOutputs()" +
-                            " maxPreviewWidth: " + maxPreviewWidth +
-                            " maxPreviewHeight: " + maxPreviewHeight);
 
                 if (swappedDimensions) {
                     rotatedPreviewWidth = height;
                     rotatedPreviewHeight = width;
-                    maxPreviewWidth = displaySize.y;
-                    maxPreviewHeight = displaySize.x;
+                    screenWidth = displaySize.y;
+                    screenHeight = displaySize.x;
                 }
 
-                if (maxPreviewWidth > MAX_PREVIEW_WIDTH) {
-                    maxPreviewWidth = MAX_PREVIEW_WIDTH;
+                if (screenWidth > MAX_PREVIEW_WIDTH) {
+                    screenWidth = MAX_PREVIEW_WIDTH;
                 }
 
-                if (maxPreviewHeight > MAX_PREVIEW_HEIGHT) {
-                    maxPreviewHeight = MAX_PREVIEW_HEIGHT;
+                if (screenHeight > MAX_PREVIEW_HEIGHT) {
+                    screenHeight = MAX_PREVIEW_HEIGHT;
                 }
 
                 // Danger, W.R.! Attempting to use too large a preview size could  exceed the camera
@@ -947,14 +990,13 @@ public class Camera2Fragment extends BaseFragment {
                         map.getOutputSizes(SurfaceTexture.class),
                         rotatedPreviewWidth,
                         rotatedPreviewHeight,
-                        maxPreviewWidth,
-                        maxPreviewHeight,
+                        screenWidth,
+                        screenHeight,
                         largest);
-                if (DEBUG)
-                    // mPreviewSize.getWidth(): 960 mPreviewSize.getHeight(): 720
-                    MLog.d(TAG, "setupCameraOutputs()" +
-                            " mPreviewSize.getWidth(): " + mPreviewSize.getWidth() +
-                            " mPreviewSize.getHeight(): " + mPreviewSize.getHeight());
+                // mPreviewSize.getWidth(): 960 mPreviewSize.getHeight(): 720
+                MLog.d(TAG, "setupCameraOutputs()" +
+                        " mPreviewSize.getWidth(): " + mPreviewSize.getWidth() +
+                        " mPreviewSize.getHeight(): " + mPreviewSize.getHeight());
 
                 // We fit the aspect ratio of TextureView to the size of preview we picked.
                 int orientation = getResources().getConfiguration().orientation;
@@ -971,8 +1013,6 @@ public class Camera2Fragment extends BaseFragment {
                 Boolean available = characteristics.get(
                         CameraCharacteristics.FLASH_INFO_AVAILABLE);
                 mFlashSupported = available == null ? false : available;
-
-                mCameraId = cameraId;
                 return;
             }
         } catch (CameraAccessException e) {
@@ -989,15 +1029,16 @@ public class Camera2Fragment extends BaseFragment {
      * Opens the camera specified by {@link}.
      */
     private void openCamera(int width, int height) {
+        MLog.d(TAG, "openCamera()" + " width: " + width + " height: " + height);
         if (ContextCompat.checkSelfPermission(getActivity(), Manifest.permission.CAMERA)
                 != PackageManager.PERMISSION_GRANTED) {
             requestCameraPermission();
             return;
         }
 
-        MLog.d(TAG, "openCamera()" + " width: " + width + " height: " + height);
         setupCameraOutputs(width, height);
-        configureTransform(width, height);
+        // configureTransform(width, height);
+
         Activity activity = getActivity();
         CameraManager manager =
                 (CameraManager) activity.getSystemService(Context.CAMERA_SERVICE);
@@ -1007,6 +1048,10 @@ public class Camera2Fragment extends BaseFragment {
             }
             manager.openCamera(mCameraId, mStateCallback, mBackgroundHandler);
         } catch (CameraAccessException e) {
+            e.printStackTrace();
+        } catch (IllegalArgumentException e) {
+            e.printStackTrace();
+        } catch (SecurityException e) {
             e.printStackTrace();
         } catch (InterruptedException e) {
             throw new RuntimeException("Interrupted while trying to lock camera opening.", e);
@@ -1067,7 +1112,10 @@ public class Camera2Fragment extends BaseFragment {
     private void createCameraPreviewSession() {
         try {
             SurfaceTexture texture = mTextureView.getSurfaceTexture();
-            assert texture != null;
+            // assert texture != null;
+            if (texture == null || !mTextureView.isAvailable()) {
+                return;
+            }
 
             // We configure the size of default buffer to be the size of camera preview we want.
             texture.setDefaultBufferSize(
@@ -1086,12 +1134,14 @@ public class Camera2Fragment extends BaseFragment {
             mPreviewRequestBuilder = mCameraDevice.createCaptureRequest(
                     CameraDevice.TEMPLATE_PREVIEW);
             mPreviewRequestBuilder.addTarget(surface);
+            //设置实时帧数据接收
+            //mPreviewRequestBuilder.addTarget(mImageReader.getSurface());
 
             // Here, we create a CameraCaptureSession for camera preview.
             mCameraDevice.createCaptureSession(
-                    Arrays.asList(surface, mImageReader.getSurface()),
+                    //Arrays.asList(surface, mImageReader.getSurface()),
+                    Arrays.asList(surface),
                     new CameraCaptureSession.StateCallback() {
-
                         @Override
                         public void onConfigured(
                                 CameraCaptureSession cameraCaptureSession) {
@@ -1132,13 +1182,15 @@ public class Camera2Fragment extends BaseFragment {
                             showToast("Failed");
                         }
                     },
-                    null);
+                    mBackgroundHandler);
+            // null);
         } catch (CameraAccessException e) {
             e.printStackTrace();
         }
     }
 
     /**
+     * 如果视频显示需要角度旋转 用该函数进行角度转正
      * Configures the necessary {@link android.graphics.Matrix} transformation to `mTextureView`.
      * This method should be called after the camera preview size is determined in
      * setupCameraOutputs and also the size of `mTextureView` is fixed.
@@ -1399,23 +1451,34 @@ public class Camera2Fragment extends BaseFragment {
         /**
          * The JPEG image
          */
-        private final Image mImage;
+        private final ImageReader mReader;
         /**
          * The file we save the image into.
          */
         private final File mFile;
 
-        public ImageSaver(Image image, File file) {
-            mImage = image;
+        public ImageSaver(ImageReader reader, File file) {
+            mReader = reader;
             mFile = file;
             MLog.d(TAG, "ImageSaver(): " + mFile.getAbsolutePath());
         }
 
         @Override
         public void run() {
-            ByteBuffer buffer = mImage.getPlanes()[0].getBuffer();
-            byte[] bytes = new byte[buffer.remaining()];
+            if (mReader == null) {
+                return;
+            }
+            // 获取最近一帧图像
+            Image image = mReader.acquireLatestImage();
+            if (image == null) {
+                return;
+            }
+            ByteBuffer buffer = image.getPlanes()[0].getBuffer();
+            // buffer.capacity()
+            // buffer.remaining()
+            byte[] bytes = new byte[buffer.capacity()];
             buffer.get(bytes);
+            image.close();
             FileOutputStream output = null;
             try {
                 output = new FileOutputStream(mFile);
@@ -1423,7 +1486,6 @@ public class Camera2Fragment extends BaseFragment {
             } catch (IOException e) {
                 e.printStackTrace();
             } finally {
-                mImage.close();
                 if (null != output) {
                     try {
                         output.close();
@@ -1433,7 +1495,6 @@ public class Camera2Fragment extends BaseFragment {
                 }
             }
         }
-
     }
 
     /**
@@ -1510,6 +1571,79 @@ public class Camera2Fragment extends BaseFragment {
                                 }
                             })
                     .create();
+        }
+    }
+
+    // 获取camera最佳预览尺寸
+    //从底层拿camera支持的previewsize，完了和屏幕分辨率做差，diff最小的就是最佳预览分辨率
+    private void getPreviewSize(String mCameraId) {
+        CameraManager mCameraManager = null;
+        try {
+            int diffs = Integer.MAX_VALUE;
+            WindowManager windowManager =
+                    (WindowManager) getContext().getSystemService(Context.WINDOW_SERVICE);
+            Display display = windowManager.getDefaultDisplay();
+            Point screenResolution = new Point(display.getWidth(), display.getHeight());
+
+            CameraCharacteristics props =
+                    mCameraManager.getCameraCharacteristics(mCameraId);
+            StreamConfigurationMap configurationMap =
+                    props.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
+            Size[] availablePreviewSizes =
+                    configurationMap.getOutputSizes(SurfaceTexture.class);
+
+            int bestPreviewWidth = 0;
+            int bestPreviewHeight = 0;
+            for (Size previewSize : availablePreviewSizes) {
+                Log.v(TAG, " PreviewSizes = " + previewSize);
+                int mCameraPreviewWidth = previewSize.getWidth();
+                int mCameraPreviewHeight = previewSize.getHeight();
+                int newDiffs =
+                        Math.abs(mCameraPreviewWidth - screenResolution.x) +
+                                Math.abs(mCameraPreviewHeight - screenResolution.y);
+                Log.v(TAG, "newDiffs = " + newDiffs);
+
+                if (newDiffs == 0) {
+                    bestPreviewWidth = mCameraPreviewWidth;
+                    bestPreviewHeight = mCameraPreviewHeight;
+                    break;
+                }
+                if (diffs > newDiffs) {
+                    bestPreviewWidth = mCameraPreviewWidth;
+                    bestPreviewHeight = mCameraPreviewHeight;
+                    diffs = newDiffs;
+                }
+            }
+        } catch (CameraAccessException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void initMediaCodec() {
+        int width = 0;
+        int height = 0;
+        int frameRate = 0;
+        try {
+            MediaCodec mediaCodec = MediaCodec.createEncoderByType("video/avc");
+            //height和width一般都是照相机的height和width。
+            //TODO 因为获取到的视频帧数据是逆时针旋转了90度的，所以这里宽高需要对调
+            MediaFormat mediaFormat =
+                    MediaFormat.createVideoFormat("video/avc", height, width);
+            //描述平均位速率（以位/秒为单位）的键。 关联的值是一个整数
+            mediaFormat.setInteger(MediaFormat.KEY_BIT_RATE, width * height * 5);
+            //描述视频格式的帧速率（以帧/秒为单位）的键。帧率，一般在15至30之内，太小容易造成视频卡顿。
+            mediaFormat.setInteger(MediaFormat.KEY_FRAME_RATE, frameRate);
+            //色彩格式，具体查看相关API，不同设备支持的色彩格式不尽相同
+            mediaFormat.setInteger(MediaFormat.KEY_COLOR_FORMAT,
+                    MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420SemiPlanar);
+            //关键帧间隔时间，单位是秒
+            mediaFormat.setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, 1);
+            mediaCodec.configure(
+                    mediaFormat, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE);
+            //开始编码
+            mediaCodec.start();
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 
