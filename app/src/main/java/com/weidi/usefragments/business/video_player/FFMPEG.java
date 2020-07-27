@@ -2,7 +2,6 @@ package com.weidi.usefragments.business.video_player;
 
 import android.content.Context;
 import android.content.SharedPreferences;
-import android.media.AudioFormat;
 import android.media.AudioManager;
 import android.media.AudioTrack;
 import android.os.Build;
@@ -10,12 +9,13 @@ import android.os.Handler;
 import android.os.Message;
 import android.os.Parcel;
 import android.os.SystemClock;
-import android.view.Surface;
 
+import com.weidi.threadpool.ThreadPool;
 import com.weidi.usefragments.media.MediaUtils;
 import com.weidi.usefragments.tool.Callback;
 import com.weidi.usefragments.tool.JniObject;
 import com.weidi.usefragments.tool.MLog;
+import com.weidi.utils.MyToast;
 
 import static com.weidi.usefragments.business.video_player.PlayerWrapper.PLAYBACK_IS_MUTE;
 import static com.weidi.usefragments.service.DownloadFileService.PREFERENCES_NAME;
@@ -122,7 +122,16 @@ public class FFMPEG {
     public static final int DO_SOMETHING_CODE_handleAudioOutputBuffer = 1121;
     public static final int DO_SOMETHING_CODE_handleVideoOutputBuffer = 1122;
 
+    private byte[] eof = new byte[]{-1, -1, -1, -1, -1};
+
     public void releaseAll() {
+        ThreadPool.getFixedThreadPool().execute(new Runnable() {
+            @Override
+            public void run() {
+                AudioClient.getInstance().sendPcmData(eof, 0, 5);
+                AudioClient.getInstance().close();
+            }
+        });
         if (mFfmpegUseMediaCodecDecode != null) {
             mFfmpegUseMediaCodecDecode.release();
         }
@@ -176,6 +185,11 @@ public class FFMPEG {
         return false;
     }
 
+    // 给AudioServer使用
+    public int sampleRateInHz;
+    public int channelCount;
+    public int audioFormat;
+
     // 供jni层调用(不要改动方法名称,如改动了,jni层也要改动)
     private void createAudioTrack(int sampleRateInHz,
                                   int channelCount,
@@ -185,6 +199,14 @@ public class FFMPEG {
                 " sampleRateInHz: " + sampleRateInHz +
                 " channelCount: " + channelCount +
                 " audioFormat: " + audioFormat);
+        this.sampleRateInHz = sampleRateInHz;
+        this.channelCount = channelCount;
+        this.audioFormat = audioFormat;
+
+        if (AudioClient.getInstance().connect()) {
+            AudioClient.getInstance().startAudioServer();
+            AudioClient.getInstance().sendAudioTrackInfo(sampleRateInHz, channelCount, audioFormat);
+        }
 
         MediaUtils.releaseAudioTrack(mAudioTrack);
         MLog.i(TAG, "createAudioTrack() start");
@@ -227,6 +249,7 @@ public class FFMPEG {
         MLog.i(TAG, "write()" +
                 " offsetInBytes: " + offsetInBytes +
                 " sizeInBytes: " + sizeInBytes);*/
+        AudioClient.getInstance().sendPcmData(audioData, offsetInBytes, sizeInBytes);
         if (mAudioTrack != null
                 && mAudioTrack.getState() == AudioTrack.STATE_INITIALIZED) {
             mAudioTrack.write(audioData, offsetInBytes, sizeInBytes);

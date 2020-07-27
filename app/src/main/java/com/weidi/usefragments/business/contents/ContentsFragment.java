@@ -11,6 +11,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
+import android.os.SystemClock;
 import android.provider.MediaStore;
 
 
@@ -24,7 +25,11 @@ import android.widget.Toast;
 
 import com.weidi.eventbus.EventBusUtils;
 import com.weidi.recycler_view.VerticalLayoutManager;
+import com.weidi.threadpool.ThreadPool;
 import com.weidi.usefragments.R;
+import com.weidi.usefragments.business.video_player.AudioClient;
+import com.weidi.usefragments.business.video_player.AudioServer;
+import com.weidi.usefragments.business.video_player.FFMPEG;
 import com.weidi.usefragments.business.video_player.JniPlayerActivity;
 import com.weidi.usefragments.business.video_player.PlayerService;
 import com.weidi.usefragments.business.video_player.PlayerWrapper;
@@ -743,12 +748,32 @@ public class ContentsFragment extends BaseFragment {
             mPreferences.edit().putString(PLAYBACK_USE_PLAYER, PLAYER_MEDIACODEC).commit();
             mAddressET.setText("");
             MyToast.show(PLAYER_MEDIACODEC);
+        } else if (text.startsWith("server start")) {
+            mUiHandler.removeMessages(MSG_ON_SERVER_START);
+            mUiHandler.sendEmptyMessageDelayed(MSG_ON_SERVER_START, 500);
+        } else if (text.startsWith("server close")) {
+            mUiHandler.removeMessages(MSG_ON_SERVER_CLOSE);
+            mUiHandler.sendEmptyMessageDelayed(MSG_ON_SERVER_CLOSE, 500);
+        } else if (text.startsWith("client start")) {
+            mUiHandler.removeMessages(MSG_ON_CLIENT_START);
+            Message msg = mUiHandler.obtainMessage();
+            msg.what = MSG_ON_CLIENT_START;
+            msg.obj = text;
+            mUiHandler.sendMessageDelayed(msg, 500);
+        } else if (text.startsWith("client close")) {
+            mUiHandler.removeMessages(MSG_ON_CLIENT_CLOSE);
+            mUiHandler.sendEmptyMessageDelayed(MSG_ON_CLIENT_CLOSE, 500);
         }
     }
 
     private final int REQUEST_CODE_SELECT_VIDEO = 112;
 
     private static final int MSG_ON_PROGRESS_UPDATED = 1;
+    private static final int MSG_ON_SERVER_START = 5;
+    private static final int MSG_ON_SERVER_CLOSE = 6;
+    private static final int MSG_ON_CLIENT_START = 7;
+    private static final int MSG_ON_CLIENT_CLOSE = 8;
+
     private static final int MSG_ON_CLICK_PLAYBACK_BUTTOM = 2;
     private int mClickCount = 0;
 
@@ -815,6 +840,55 @@ public class ContentsFragment extends BaseFragment {
                             PlayerService.COMMAND_SHOW_WINDOW,
                             new Object[]{videoPlaybackPath, "video/"});
                 }
+                break;
+            case MSG_ON_SERVER_START:
+                ThreadPool.getFixedThreadPool().execute(new Runnable() {
+                    @Override
+                    public void run() {
+                        MyToast.show("server start");
+                        AudioServer.getInstance().sccept();
+                    }
+                });
+                break;
+            case MSG_ON_SERVER_CLOSE:
+                ThreadPool.getFixedThreadPool().execute(new Runnable() {
+                    @Override
+                    public void run() {
+                        MyToast.show("server close");
+                        AudioServer.getInstance().close();
+                    }
+                });
+                break;
+            case MSG_ON_CLIENT_START:
+                if (msg.obj == null) {
+                    return;
+                }
+                String text = (String) msg.obj;
+                String[] infos = text.split(" ");
+                AudioClient.getInstance().setIp(infos[2]);
+                MyToast.show(infos[2]);
+
+                ThreadPool.getFixedThreadPool().execute(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (AudioClient.getInstance().connect()) {
+                            AudioClient.getInstance().startAudioServer();
+                            AudioClient.getInstance().sendAudioTrackInfo(
+                                    FFMPEG.getDefault().sampleRateInHz,
+                                    FFMPEG.getDefault().channelCount,
+                                    FFMPEG.getDefault().audioFormat);
+                        }
+                    }
+                });
+                break;
+            case MSG_ON_CLIENT_CLOSE:
+                ThreadPool.getFixedThreadPool().execute(new Runnable() {
+                    @Override
+                    public void run() {
+                        MyToast.show("client close");
+                        AudioClient.getInstance().close();
+                    }
+                });
                 break;
             default:
                 break;
