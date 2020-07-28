@@ -965,6 +965,15 @@ public class FfmpegUseMediaCodecDecode {
         MLog.w(TAG, "initVideoMediaCodec() start");
         MediaFormat mediaFormat = null;
         String videoMime = null;
+        // http://112.17.40.12/PLTV/88888888/224/3221226758/1.m3u8
+        if (mGetMediaFormat != null
+                && mGetMediaFormat.mVideoMediaFormat != null) {
+            // mime=video/hevc
+            String mime = mGetMediaFormat.mVideoMediaFormat.getString(MediaFormat.KEY_MIME);
+            if (TextUtils.equals(mime, "video/hevc")) {
+                mGetMediaFormat.mVideoMediaFormat = null;
+            }
+        }
         if (mGetMediaFormat != null
                 && mGetMediaFormat.mVideoMediaFormat != null) {
             mediaFormat = mGetMediaFormat.mVideoMediaFormat;
@@ -1007,8 +1016,8 @@ public class FfmpegUseMediaCodecDecode {
                     break;
             }
             if (TextUtils.isEmpty(videoMime) || mSurface == null) {
-                MLog.e(TAG, "initVideoMediaCodec() TextUtils.isEmpty(videoMime) || mSurface == " +
-                        "null");
+                MLog.e(TAG, "initVideoMediaCodec() " +
+                        "TextUtils.isEmpty(videoMime) || mSurface == null");
                 return false;
             }
             MLog.w(TAG, "initVideoMediaCodec() video  mime: " + videoMime);
@@ -1031,9 +1040,9 @@ public class FfmpegUseMediaCodecDecode {
                 if (object1 != null && object2 == null) {
                     csd0 = (byte[]) object1;
                 } else {
-                    csd0 = new byte[]{0, 0, 0, 1, 64, 1, 12, 1, -1, -1, 1, 96, 0, 0, 3, 0, -112,
-                            0, 0
-                            , 3, 0, 0, 3, 0,
+                    csd0 = new byte[]{0, 0, 0, 1, 64, 1, 12, 1,
+                            -1, -1, 1, 96, 0, 0, 3, 0, -112,
+                            0, 0, 3, 0, 0, 3, 0,
                             -103, -107, -104, 9, 0, 0, 0, 1, 66, 1, 1, 1, 96, 0, 0, 3, 0, -112, 0
                             , 0,
                             3, 0, 0, 3, 0,
@@ -1048,9 +1057,10 @@ public class FfmpegUseMediaCodecDecode {
                     csd0 = (byte[]) object1;
                     csd1 = (byte[]) object2;
                     if (csd0.length == 0) {
-                        csd0 = new byte[]{0, 0, 0, 1, 103, 100, 0, 40, -84, -47, 0, 120, 2, 39, -27,
-                                -64, 90, -128, -128,
-                                -125, 32, 0, 0, 3, 0, 32, 0, 0, 7, -127, -29, 6, 34, 64};
+                        csd0 = new byte[]{0, 0, 0, 1, 103, 100, 0, 40, -84,
+                                -47, 0, 120, 2, 39, -27,
+                                -64, 90, -128, -128, -125, 32, 0, 0,
+                                3, 0, 32, 0, 0, 7, -127, -29, 6, 34, 64};
                     }
                     if (csd1.length == 0) {
                         csd1 = new byte[]{0, 0, 0, 1, 104, -21, -113, 44};
@@ -1076,9 +1086,8 @@ public class FfmpegUseMediaCodecDecode {
                 if (object1 != null && object2 == null) {
                     csd0 = (byte[]) object1;
                 } else {
-                    csd0 = new byte[]{0, 0, 1, -77, 120, 4, 56, 53, -1, -1, -32, 24, 0, 0, 1, -75
-                            , 20
-                            , 74, 0, 1, 0, 0};
+                    csd0 = new byte[]{0, 0, 1, -77, 120, 4, 56, 53, -1, -1,
+                            -32, 24, 0, 0, 1, -75, 20, 74, 0, 1, 0, 0};
                 }
                 mediaFormat.setByteBuffer("csd-0", ByteBuffer.wrap(csd0));
             }

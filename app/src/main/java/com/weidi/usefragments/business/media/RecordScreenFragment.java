@@ -297,8 +297,8 @@ public class RecordScreenFragment extends BaseFragment {
     /////////////////////////////////////////////////////////////////
 
     private static final String PATH =
-            "/storage/1532-48AD/Android/data/com.weidi.usefragments/files/Movies/";
-    //"/storage/2430-1702/Android/data/com.weidi.usefragments/files";
+            // "/storage/1532-48AD/Android/data/com.weidi.usefragments/files/Movies/";
+            "/storage/2430-1702/Android/data/com.weidi.usefragments/files/Movies/";
 
     private static final int REQUEST_CODE = 1000;
 
@@ -326,6 +326,8 @@ public class RecordScreenFragment extends BaseFragment {
     private Handler mUiHandler;
 
     // 竖屏时的分辨率
+    //private static final int mWidth = 1080;
+    //private static final int mHeight = 2244;
     private static final int mWidth = 720;
     private static final int mHeight = 1280;
     private Surface mSurface;
@@ -463,6 +465,7 @@ public class RecordScreenFragment extends BaseFragment {
             return;
         }
 
+        // MediaFormat
         mVideoEncoderMediaFormat = MediaUtils.getVideoEncoderMediaFormat(mWidth, mHeight);
         mAudioEncoderMediaFormat = MediaUtils.getAudioEncoderMediaFormat();
 
@@ -507,6 +510,7 @@ public class RecordScreenFragment extends BaseFragment {
      mSurface=Surface(name=com.android.systemui/com.android.systemui.media
      .MediaProjectionPermissionActivity)
      mSurface=Surface(name=com.weidi.usefragments/com.weidi.usefragments.MainActivity1)
+
      调用下面代码后的现象:
      弹出一个框,有两个按钮("取消"和"立即开始"),还有一个选择框("不再提示")
      1.只点击"立即开始"按钮

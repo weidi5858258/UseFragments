@@ -3,10 +3,7 @@ package com.weidi.usefragments.business.video_player;
 import android.text.TextUtils;
 import android.util.Log;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.net.Socket;
@@ -21,6 +18,7 @@ public class AudioClient {
     private Socket socket;
     private String ip;
     private OutputStream outputStream;
+    public static boolean mIsConnected = false;
 
     private AudioClient() {
     }
@@ -51,13 +49,16 @@ public class AudioClient {
         }
 
         try {
+            mIsConnected = false;
             socket = new Socket(ip, AudioServer.PORT);
             outputStream = socket.getOutputStream();
-        } catch (IOException e) {
+            mIsConnected = true;
+        } catch (Exception e) {
             e.printStackTrace();
             close();
             return false;
         }
+
         return true;
     }
 
@@ -72,8 +73,9 @@ public class AudioClient {
         try {
             outputStream.write(200);
             outputStream.flush();
-        } catch (IOException e) {
+        } catch (Exception e) {
             e.printStackTrace();
+            close();
         }
     }
 
@@ -123,7 +125,15 @@ public class AudioClient {
     }
 
     public synchronized void close() {
+        if (!mIsConnected
+                && socket == null
+                && outputStream == null) {
+            Log.d(TAG, "AudioClient close() return");
+            return;
+        }
+
         Log.i(TAG, "AudioClient close() start");
+        mIsConnected = false;
         if (outputStream != null) {
             try {
                 outputStream.close();

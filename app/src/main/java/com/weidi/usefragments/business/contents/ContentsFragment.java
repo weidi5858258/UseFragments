@@ -855,7 +855,7 @@ public class ContentsFragment extends BaseFragment {
                     @Override
                     public void run() {
                         MyToast.show("server close");
-                        AudioServer.getInstance().close();
+                        AudioServer.getInstance().close(false);
                     }
                 });
                 break;
@@ -865,21 +865,28 @@ public class ContentsFragment extends BaseFragment {
                 }
                 String text = (String) msg.obj;
                 String[] infos = text.split(" ");
-                AudioClient.getInstance().setIp(infos[2]);
-                MyToast.show(infos[2]);
+                if (infos.length >= 3 && !TextUtils.isEmpty(infos[2])) {
+                    AudioClient.getInstance().setIp(infos[2]);
+                    MyToast.show(infos[2]);
+                }
 
-                ThreadPool.getFixedThreadPool().execute(new Runnable() {
-                    @Override
-                    public void run() {
-                        if (AudioClient.getInstance().connect()) {
-                            AudioClient.getInstance().startAudioServer();
-                            AudioClient.getInstance().sendAudioTrackInfo(
-                                    FFMPEG.getDefault().sampleRateInHz,
-                                    FFMPEG.getDefault().channelCount,
-                                    FFMPEG.getDefault().audioFormat);
+                if (FFMPEG.getDefault().sampleRateInHz > 0
+                        && FFMPEG.getDefault().channelCount > 0
+                        && FFMPEG.getDefault().audioFormat > 0) {
+                    ThreadPool.getFixedThreadPool().execute(new Runnable() {
+                        @Override
+                        public void run() {
+                            if (AudioClient.getInstance().connect()) {
+                                MyToast.show("client start");
+                                AudioClient.getInstance().startAudioServer();
+                                AudioClient.getInstance().sendAudioTrackInfo(
+                                        FFMPEG.getDefault().sampleRateInHz,
+                                        FFMPEG.getDefault().channelCount,
+                                        FFMPEG.getDefault().audioFormat);
+                            }
                         }
-                    }
-                });
+                    });
+                }
                 break;
             case MSG_ON_CLIENT_CLOSE:
                 ThreadPool.getFixedThreadPool().execute(new Runnable() {

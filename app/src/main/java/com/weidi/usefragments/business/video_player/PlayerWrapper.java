@@ -877,6 +877,7 @@ public class PlayerWrapper {
         } else {
             // 底层有关参数的设置
             mFFMPEGPlayer.setHandler(mUiHandler);
+            mFfmpegUseMediaCodecDecode.setDataSource(mPath);
             mFfmpegUseMediaCodecDecode.setSurface(mSurfaceHolder.getSurface());
             mFfmpegUseMediaCodecDecode.setCallback(mFFMPEGPlayer.mCallback);
         }

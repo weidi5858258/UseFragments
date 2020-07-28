@@ -55,7 +55,49 @@ import java.util.Map;
  audio/raw
 
  video:
+ video/hevc
  video/avc
+
+ 在Android上硬编码视频码率远远高于软编码，原因是Android只支持H264 Baseline。
+ MP（Main Profile ）& HP（High Profile）可以大幅减少视频的码率
+ 要想使用MP要求Android系统版本在7.0及其以上
+ 在Android 7.0及其之后的系统中已经支持了MP和HP
+ High profile（HP）可以比Main profile（MP）节省10%的码流量，比MPEG-2 MP节省60%的码流量
+ H264 Profile
+ 简单理解就是H264有多个版本，版本越高编码效率和压缩率就越高，对应的版本是Profile。
+ 从低到高分别为：Baseline、Main、High
+
+ android平台下使用相机默认图像格式是NV21属于YUV420SP格式
+ YU12格式在android平台下也叫作I420格式
+ x264编码的输入数据为I420格式
+
+ 摄像头数据 ---> H264
+ NV21     ---> I420
+
+ 属于YUV420P格式的有 :YU12 YV12
+ 属于YUV420SP格式的有:NV21 NV12
+
+ YUV420P   : YYYYYYYY UUVV
+ YUV420SP  : YYYYYYYY UVUV
+
+ YU12(I420): YYYYYYYY UUVV    =>    YUV420P
+ YV12      : YYYYYYYY VVUU    =>    YUV420P
+
+ NV12      : YYYYYYYY UVUV    =>    YUV420SP
+ NV21      : YYYYYYYY VUVU    =>    YUV420SP
+
+ YUY2      : YUYV YUYV YUYV
+
+ YUV和RGB转换
+ Y      =  (0.257 * R) + (0.504 * G) + (0.098 * B) + 16
+ Cr = V =  (0.439 * R) - (0.368 * G) - (0.071 * B) + 128
+ Cb = U = -(0.148 * R) - (0.291 * G) + (0.439 * B) + 128
+
+ B = 1.164(Y - 16) + 2.018(U - 128)
+ G = 1.164(Y - 16) - 0.813(V - 128) - 0.391(U - 128)
+ R = 1.164(Y - 16) + 1.596(V - 128)
+
+ 手机端作为rtsp服务端，vlc作为客户端，通过rtp协议来传输视频流。这样做就省去了搭建流媒体服务的工作。
  */
 
 public class MediaUtils {
@@ -97,8 +139,6 @@ public class MediaUtils {
     // audio/mp4a-latm(AAC)
     public static final String AUDIO_MIME = MediaFormat.MIMETYPE_AUDIO_AAC;
     private static final int VIDEO_BIT_RATE = 64000;// 1200000 8000000 800000
-    // audio的有关参数定义在一起了(在下面)
-    // private static final int AUDIO_BIT_RATE = 64000;// 64kbps
     private static final int FRAME_RATE = 30;
     private static final int IFRAME_INTERVAL = 1;
     private static final int WIDTH = 1920;
@@ -832,32 +872,29 @@ public class MediaUtils {
         format.setInteger(MediaFormat.KEY_MAX_INPUT_SIZE, width * height);
         format.setInteger(MediaFormat.KEY_MAX_WIDTH, width);
         format.setInteger(MediaFormat.KEY_MAX_HEIGHT, height);
-        // 必须设置为COLOR_FormatSurface，因为是用surface作为输入源
-        format.setInteger(
-                MediaFormat.KEY_COLOR_FORMAT,
+        // 必须设置为COLOR_FormatSurface，因为是用Surface作为输入源
+        format.setInteger(MediaFormat.KEY_COLOR_FORMAT,
                 MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface);
         // 设置比特率
-        format.setInteger(
-                MediaFormat.KEY_BIT_RATE,
-                VIDEO_BIT_RATE);
+        format.setInteger(MediaFormat.KEY_BIT_RATE, VIDEO_BIT_RATE);
         /***
          BITRATE_MODE_CQ:  表示完全不控制码率，尽最大可能保证图像质量
          BITRATE_MODE_CBR: 表示编码器会尽量把输出码率控制为设定值
          BITRATE_MODE_VBR: 表示编码器会根据图像内容的复杂度（实际上是帧间变化量的大小）来动态调整输出码率，
          图像复杂则码率高，图像简单则码率低
          */
-        format.setInteger(
-                MediaFormat.KEY_BITRATE_MODE,
+        format.setInteger(MediaFormat.KEY_BITRATE_MODE,
                 MediaCodecInfo.EncoderCapabilities.BITRATE_MODE_CQ);
         // 设置帧率
-        format.setInteger(
-                MediaFormat.KEY_FRAME_RATE,
-                FRAME_RATE);
+        format.setInteger(MediaFormat.KEY_FRAME_RATE, FRAME_RATE);
         // 设置抽取关键帧的间隔，以s为单位，负数或者0表示不抽取关键帧
         // i-frame iinterval
         format.setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, IFRAME_INTERVAL);
-        if (DEBUG)
-            MLog.d(TAG, "getVideoEncoderMediaFormat() created video format: " + format);
+
+        // 不能设置
+        //format.setInteger(MediaFormat.KEY_PROFILE,
+        // MediaCodecInfo.CodecProfileLevel.AVCProfileHigh);
+        MLog.d(TAG, "getVideoEncoderMediaFormat() created video format: " + format);
 
         return format;
     }
@@ -886,8 +923,7 @@ public class MediaUtils {
         format.setInteger(
                 MediaFormat.KEY_MAX_INPUT_SIZE,
                 getMinBufferSize() * 2);
-        if (DEBUG)
-            MLog.d(TAG, "getAudioEncoderMediaFormat() created audio format: " + format);
+        MLog.d(TAG, "getAudioEncoderMediaFormat() created audio format: " + format);
         return format;
     }
 
@@ -2590,6 +2626,40 @@ public class MediaUtils {
             baos.write(buffer, 0, cur);
         }
         return baos.toByteArray();
+    }
+
+    public static byte[] NV21ToI420(byte[] data, int width, int height) {
+        byte[] ret = new byte[data.length];
+        int total = width * height;
+
+        ByteBuffer bufferY = ByteBuffer.wrap(ret, 0, total);
+        ByteBuffer bufferU = ByteBuffer.wrap(ret, total, total / 4);
+        ByteBuffer bufferV = ByteBuffer.wrap(ret, total + total / 4, total / 4);
+
+        bufferY.put(data, 0, total);
+        for (int i = total; i < data.length; i += 2) {
+            bufferV.put(data[i]);
+            bufferU.put(data[i + 1]);
+        }
+
+        return ret;
+    }
+
+    public static byte[] I420ToNV21(byte[] data, int width, int height) {
+        byte[] ret = new byte[data.length];
+        int total = width * height;
+
+        ByteBuffer bufferY = ByteBuffer.wrap(ret, 0, total);
+        ByteBuffer bufferV = ByteBuffer.wrap(ret, total, total / 4);
+        ByteBuffer bufferU = ByteBuffer.wrap(ret, total + total / 4, total / 4);
+
+        bufferY.put(data, 0, total);
+        for (int i = 0; i < total / 4; i += 1) {
+            bufferV.put(data[total + i]);
+            bufferU.put(data[i + total + total / 4]);
+        }
+
+        return ret;
     }
 
     private void prepareEncoder() throws IOException {

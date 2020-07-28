@@ -946,7 +946,7 @@ namespace alexander {
 #ifdef USE_VIDEO
                     if (videoWrapper != NULL && videoWrapper->father != NULL) {
                         while (videoWrapper->father->timestamp != -1) {
-                            audioSleep(1);
+                            // audioSleep(1);
                         }
                     }
 #endif
@@ -954,7 +954,7 @@ namespace alexander {
 #ifdef USE_AUDIO
                     if (audioWrapper != NULL && audioWrapper->father != NULL) {
                         while (audioWrapper->father->timestamp != -1) {
-                            videoSleep(1);
+                            //videoSleep(1);
                         }
                     }
 #endif
@@ -1388,7 +1388,7 @@ namespace alexander {
                                    && videoWrapper->father != NULL
                                    && !videoWrapper->father->isStarted) {
                                 // usleep(1000);
-                                audioSleep(1);
+                                // audioSleep(1);
                             }
                             audioTimeDifference =
                                     decodedAVFrame->pts * av_q2d(stream->time_base);

@@ -71,8 +71,9 @@ public class AudioServer {
             if (ret >= 0) {
                 recePcmData();
             }
-        } catch (IOException e) {
+        } catch (Exception e) {
             e.printStackTrace();
+            close(true);
         }
     }
 
@@ -82,6 +83,7 @@ public class AudioServer {
                 || inputStream == null
                 || !socket.isConnected()
                 || socket.isClosed()) {
+            Log.i(TAG, "AudioServer recePcmData() return");
             return;
         }
 
@@ -94,7 +96,7 @@ public class AudioServer {
             String info = bufferedReader.readLine();
             if (TextUtils.isEmpty(info)
                     || !info.contains(AUDIOTRACK_INFO_TAG)) {
-                close();
+                close(true);
                 return;
             }
 
@@ -114,14 +116,15 @@ public class AudioServer {
                     AudioTrack.MODE_STREAM);
             if (mAudioTrack == null
                     || mAudioTrack.getState() == AudioTrack.STATE_UNINITIALIZED) {
-                close();
+                Log.e(TAG, "AudioServer mAudioTrack is null");
+                close(true);
                 return;
             }
             mAudioTrack.play();
             Log.i(TAG, "AudioServer mAudioTrack.play()");
         } catch (Exception e) {
             e.printStackTrace();
-            close();
+            close(true);
             return;
         }
 
@@ -145,7 +148,7 @@ public class AudioServer {
                                 Log.e(TAG, "AudioServer readCount: " + readCount);
                                 break;
                             }
-                            if (++count <= 200) {
+                            if (++count <= 250) {
                                 continue;
                             }
                             write(pcmData, 0, readCount);
@@ -158,9 +161,9 @@ public class AudioServer {
                         Log.e(TAG, "AudioServer " + e.toString());
                         break;
                     }
-                }
+                }// while(...) end
 
-                close();
+                close(true);
             }
         }).start();
     }
@@ -169,7 +172,15 @@ public class AudioServer {
         mIsReading = isReading;
     }
 
-    public synchronized void close() {
+    public synchronized void close(boolean needToAccept) {
+        if (!mIsReading
+                && server == null
+                && socket == null
+                && inputStream == null) {
+            Log.d(TAG, "AudioServer close() return");
+            return;
+        }
+
         Log.i(TAG, "AudioServer close() start");
         mIsReading = false;
         MediaUtils.releaseAudioTrack(mAudioTrack);
@@ -209,13 +220,15 @@ public class AudioServer {
         }
         Log.i(TAG, "AudioServer close() end");
 
-        ThreadPool.getFixedThreadPool().execute(new Runnable() {
-            @Override
-            public void run() {
-                MyToast.show("AudioServer sccept");
-                sccept();
-            }
-        });
+        if (needToAccept) {
+            ThreadPool.getFixedThreadPool().execute(new Runnable() {
+                @Override
+                public void run() {
+                    MyToast.show("AudioServer sccept");
+                    sccept();
+                }
+            });
+        }
     }
 
     private void write(byte[] audioData, int offsetInBytes, int sizeInBytes) {

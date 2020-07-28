@@ -1131,7 +1131,7 @@ namespace alexander {
                    && videoWrapper->father != NULL
                    && !videoWrapper->father->isStarted) {
                 // usleep(1000);
-                audioSleep(1);
+                // audioSleep(1);
             }
             audioTimeDifference =
                     decodedAVFrame->pts * av_q2d(stream->time_base);

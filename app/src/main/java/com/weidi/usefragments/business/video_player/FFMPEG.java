@@ -125,13 +125,18 @@ public class FFMPEG {
     private byte[] eof = new byte[]{-1, -1, -1, -1, -1};
 
     public void releaseAll() {
-        ThreadPool.getFixedThreadPool().execute(new Runnable() {
-            @Override
-            public void run() {
-                AudioClient.getInstance().sendPcmData(eof, 0, 5);
-                AudioClient.getInstance().close();
-            }
-        });
+        sampleRateInHz = 0;
+        channelCount = 0;
+        audioFormat = 0;
+        if (AudioClient.mIsConnected) {
+            ThreadPool.getFixedThreadPool().execute(new Runnable() {
+                @Override
+                public void run() {
+                    AudioClient.getInstance().sendPcmData(eof, 0, 5);
+                    AudioClient.getInstance().close();
+                }
+            });
+        }
         if (mFfmpegUseMediaCodecDecode != null) {
             mFfmpegUseMediaCodecDecode.release();
         }
@@ -249,7 +254,9 @@ public class FFMPEG {
         MLog.i(TAG, "write()" +
                 " offsetInBytes: " + offsetInBytes +
                 " sizeInBytes: " + sizeInBytes);*/
-        AudioClient.getInstance().sendPcmData(audioData, offsetInBytes, sizeInBytes);
+        if (AudioClient.mIsConnected) {
+            AudioClient.getInstance().sendPcmData(audioData, offsetInBytes, sizeInBytes);
+        }
         if (mAudioTrack != null
                 && mAudioTrack.getState() == AudioTrack.STATE_INITIALIZED) {
             mAudioTrack.write(audioData, offsetInBytes, sizeInBytes);

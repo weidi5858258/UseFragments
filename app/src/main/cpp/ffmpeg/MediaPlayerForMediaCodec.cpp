@@ -3314,7 +3314,7 @@ namespace alexander_media_mediacodec {
                             (long long) copyAVPacket->pts);
                     av_packet_unref(copyAVPacket);
                     isVideoRendering = false;
-                    if (!feedAndDrainRet) {
+                    if (!feedAndDrainRet && wrapper->isHandling) {
                         wrapper->useMediaCodec = false;
                         seekTo(curProgress);
                         av_usleep(1000 * 1000);

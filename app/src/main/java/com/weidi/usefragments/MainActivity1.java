@@ -278,7 +278,7 @@ public class MainActivity1 extends BaseActivity
         Log.d(TAG, "onCreate() stringFromJNI(): " + stringFromJNI());
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             //test();
-            //test2();
+            test2();
         }
     }
 
@@ -858,6 +858,27 @@ public class MainActivity1 extends BaseActivity
             }
         }
 
+        // com.eg.android.AlipayGphone com.tencent.mm tv.danmaku.bili
+        // 判断当前APP是否有加入电池优化的白名单，如果没有，弹出加入电池优化的白名单的设置对话框。
+        /*hasIgnored = powerManager.isIgnoringBatteryOptimizations("tv.danmaku.bili");
+        if (!hasIgnored) {
+            Intent intent = new Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS);
+            intent.setData(Uri.parse("package:tv.danmaku.bili"));
+            startActivity(intent);
+        }*/
+    }
+
+    private void test2() {
+        /*Parcel data = Parcel.obtain();
+        Parcel reply = Parcel.obtain();
+        data.writeInt(100);
+        data.writeByte((byte) 10);
+        data.writeFloat(10.1f);
+        data.writeDouble(10.5);
+        data.writeLong(99999);
+        data.writeString("55555");
+        FFMPEG.getDefault().onTransact(-1000, data, reply);*/
+
         /***
          {@link android.os.Environment#DIRECTORY_MUSIC}
          {@link android.os.Environment#DIRECTORY_MOVIES}
@@ -993,27 +1014,6 @@ public class MainActivity1 extends BaseActivity
             MLog.i(TAG, "Environment.MEDIA_SHARED    : " + f.getAbsolutePath());
             MLog.i(TAG, "canWrite                    : " + f.canWrite());
         }
-
-        // com.eg.android.AlipayGphone com.tencent.mm tv.danmaku.bili
-        // 判断当前APP是否有加入电池优化的白名单，如果没有，弹出加入电池优化的白名单的设置对话框。
-        /*hasIgnored = powerManager.isIgnoringBatteryOptimizations("tv.danmaku.bili");
-        if (!hasIgnored) {
-            Intent intent = new Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS);
-            intent.setData(Uri.parse("package:tv.danmaku.bili"));
-            startActivity(intent);
-        }*/
-    }
-
-    private void test2() {
-        /*Parcel data = Parcel.obtain();
-        Parcel reply = Parcel.obtain();
-        data.writeInt(100);
-        data.writeByte((byte) 10);
-        data.writeFloat(10.1f);
-        data.writeDouble(10.5);
-        data.writeLong(99999);
-        data.writeString("55555");
-        FFMPEG.getDefault().onTransact(-1000, data, reply);*/
     }
 
 }
