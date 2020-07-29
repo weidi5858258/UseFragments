@@ -16,38 +16,60 @@ public class EDMediaCodec {
 
     private static final int TIME_OUT = 10000;
 
-    enum TYPE {
+    public enum TYPE {
         TYPE_VIDEO,
         TYPE_AUDIO,
         //TYPE_SUBTITLE
     }
 
+    public interface Callback {
+        void handleVideoOutputFormat(MediaFormat mediaFormat);
+
+        void handleAudioOutputFormat(MediaFormat mediaFormat);
+
+        int handleVideoOutputBuffer(int roomIndex, ByteBuffer room,
+                                    MediaCodec.BufferInfo roomInfo, int roomSize);
+
+        int handleAudioOutputBuffer(int roomIndex, ByteBuffer room,
+                                    MediaCodec.BufferInfo roomInfo, int roomSize);
+    }
+
+    /***
+     *
+     * @param callback
+     * @param type                   TYPE.TYPE_VIDEO or TYPE.TYPE_AUDIO
+     * @param codec                  编解码器
+     * @param data                   需要编解码的数据
+     * @param offset                 一般为0
+     * @param size                   编解码数据的大小
+     * @param presentationTimeUs     时间戳
+     * @param render                 TYPE.TYPE_AUDIO为false,TYPE.TYPE_VIDEO为true(录制屏幕时为false).
+     * @param needFeedInputBuffer    一般为true.
+     * @return
+     */
     public static boolean feedInputBufferAndDrainOutputBuffer(
+            Callback callback,
             TYPE type,
             MediaCodec codec,
             byte[] data,
             int offset,
             int size,
             long presentationTimeUs,
-            boolean render) {
-        /*if (!wrapper.isHandling) {
-            if (wrapper.type == TYPE_AUDIO) {
-                handleAudioOutputBuffer(-1, null, null, -1);
-            } else {
-                handleVideoOutputBuffer(-1, null, null, -1);
-            }
-            MediaUtils.releaseMediaCodec(wrapper.decoderMediaCodec);
-            return false;
-        }*/
-
-        return feedInputBuffer(type,
-                codec,
-                data,
-                offset,
-                size,
-                presentationTimeUs)
-                &&
-                drainOutputBuffer(type, codec, render);
+            boolean render,
+            boolean needFeedInputBuffer) {
+        if (needFeedInputBuffer) {
+            return feedInputBuffer(callback, type,
+                    codec,
+                    data,
+                    offset,
+                    size,
+                    presentationTimeUs)
+                    &&
+                    drainOutputBuffer(callback, type, codec, render);
+        } else {
+            // 录制屏幕时,video是没有Input过程的
+            return drainOutputBuffer(callback, type, codec, render);
+        }
     }
 
     /***
@@ -60,6 +82,7 @@ public class EDMediaCodec {
      * @return
      */
     private static boolean feedInputBuffer(
+            Callback callback,
             TYPE type,
             MediaCodec codec,
             byte[] data,
@@ -69,47 +92,50 @@ public class EDMediaCodec {
         try {
             // 拿到房间号
             int roomIndex = codec.dequeueInputBuffer(TIME_OUT);
-            if (roomIndex >= 0) {
-                ByteBuffer room = null;
-                // 根据房间号找到房间
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                    room = codec.getInputBuffer(roomIndex);
-                } else {
-                    room = codec.getInputBuffers()[roomIndex];
-                }
-                if (room == null) {
-                    return false;
-                }
-                // 入住之前打扫一下房间
-                room.clear();
-                // 入住
-                room.put(data, offset, size);
-                int flags = 0;
-                if (size <= 0) {
-                    presentationTimeUs = 0L;
-                    flags = MediaCodec.BUFFER_FLAG_END_OF_STREAM;
-                }
-                // 通知已经"入住"了,可以进行"编解码"的操作了
-                codec.queueInputBuffer(
-                        roomIndex,
-                        offset,
-                        size,
-                        presentationTimeUs,
-                        flags);
-                // reset
-                roomIndex = -1;
-                room = null;
+            if (roomIndex < 0) {
+                return true;
             }
+
+            ByteBuffer room = null;
+            // 根据房间号找到房间
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                room = codec.getInputBuffer(roomIndex);
+            } else {
+                room = codec.getInputBuffers()[roomIndex];
+            }
+            if (room == null) {
+                return false;
+            }
+            // 入住之前打扫一下房间
+            room.clear();
+            // 入住
+            room.put(data, offset, size);
+            int flags = 0;
+            if (size <= 0) {
+                presentationTimeUs = 0L;
+                flags = MediaCodec.BUFFER_FLAG_END_OF_STREAM;
+            }
+            // 通知已经"入住"了,可以进行"编解码"的操作了
+            codec.queueInputBuffer(
+                    roomIndex,
+                    offset,
+                    size,
+                    presentationTimeUs,
+                    flags);
+            // reset
+            roomIndex = -1;
+            room = null;
         } catch (MediaCodec.CryptoException
                 | IllegalStateException
+                | IllegalArgumentException
                 | NullPointerException e) {
             e.printStackTrace();
             if (type == TYPE.TYPE_AUDIO) {
                 MLog.e(TAG, "feedInputBuffer() Audio Output occur exception: " + e);
-                handleAudioOutputBuffer(-1, null, null, -1);
+                callback.handleAudioOutputBuffer(-1, null, null, -1);
             } else {
                 MLog.e(TAG, "feedInputBuffer() Video Output occur exception: " + e);
-                handleVideoOutputBuffer(-1, null, null, -1);
+                callback.handleVideoOutputBuffer(-1, null, null, -1);
             }
             MediaUtils.releaseMediaCodec(codec);
             return false;
@@ -122,21 +148,15 @@ public class EDMediaCodec {
      * 拿出数据(在底层已经经过编解码了)进行处理(如视频数据进行渲染,音频数据进行播放)
      * @return
      */
-    private static boolean drainOutputBuffer(TYPE type, MediaCodec codec, boolean render) {
+    private static boolean drainOutputBuffer(
+            Callback callback,
+            TYPE type,
+            MediaCodec codec,
+            boolean render) {
         // 房间信息
         MediaCodec.BufferInfo roomInfo = new MediaCodec.BufferInfo();
         ByteBuffer room = null;
         for (; ; ) {
-            /*if (!wrapper.isHandling) {
-                if (wrapper.type == TYPE_AUDIO) {
-                    handleAudioOutputBuffer(-1, null, null, -1);
-                } else {
-                    handleVideoOutputBuffer(-1, null, null, -1);
-                }
-                MediaUtils.releaseMediaCodec(wrapper.decoderMediaCodec);
-                return false;
-            }*/
-
             try {
                 // 房间号
                 int roomIndex = codec.dequeueOutputBuffer(roomInfo, TIME_OUT);
@@ -146,30 +166,23 @@ public class EDMediaCodec {
                     MLog.w(TAG, "drainOutputBuffer() Video roomIndex: " + roomIndex);
                 }*/
                 switch (roomIndex) {
-                    case MediaCodec.INFO_TRY_AGAIN_LATER:
-                        // 像音频,第一个输出日志
-                        /*if (type == TYPE.TYPE_AUDIO) {
-                            MLog.d(TAG, "drainOutputBuffer() " +
-                                    "Audio Output MediaCodec.INFO_TRY_AGAIN_LATER");
-                        } else {
-                            MLog.w(TAG, "drainOutputBuffer() " +
-                                    "Video Output MediaCodec.INFO_TRY_AGAIN_LATER");
-                        }*/
+                    case MediaCodec.INFO_TRY_AGAIN_LATER:// -1
+                        // 不断的调用,不要打印日志
                         break;
-                    case MediaCodec.INFO_OUTPUT_FORMAT_CHANGED:
+                    case MediaCodec.INFO_OUTPUT_FORMAT_CHANGED:// -2
                         // 像音频,第三个输出日志
                         // 一般一个视频各自调用一次
                         if (type == TYPE.TYPE_AUDIO) {
                             MLog.d(TAG, "drainOutputBuffer() " +
                                     "Audio Output MediaCodec.INFO_OUTPUT_FORMAT_CHANGED");
-                            handleAudioOutputFormat(codec.getOutputFormat());
+                            callback.handleAudioOutputFormat(codec.getOutputFormat());
                         } else {
                             MLog.w(TAG, "drainOutputBuffer() " +
                                     "Video Output MediaCodec.INFO_OUTPUT_FORMAT_CHANGED");
-                            handleVideoOutputFormat(codec.getOutputFormat());
+                            callback.handleVideoOutputFormat(codec.getOutputFormat());
                         }
                         break;
-                    case MediaCodec.INFO_OUTPUT_BUFFERS_CHANGED:
+                    case MediaCodec.INFO_OUTPUT_BUFFERS_CHANGED:// -3
                         // 像音频,第二个输出日志.视频好像没有这个输出日志
                         if (type == TYPE.TYPE_AUDIO) {
                             MLog.d(TAG, "drainOutputBuffer() " +
@@ -186,6 +199,29 @@ public class EDMediaCodec {
                     break;
                 }
 
+                if ((roomInfo.flags & MediaCodec.BUFFER_FLAG_CODEC_CONFIG) != 0) {// 2
+                    if (type == TYPE.TYPE_AUDIO) {
+                        MLog.d(TAG, "drainOutputBuffer() " +
+                                "Audio Output MediaCodec.BUFFER_FLAG_CODEC_CONFIG");
+                    } else {
+                        MLog.w(TAG, "drainOutputBuffer() " +
+                                "Video Output MediaCodec.BUFFER_FLAG_CODEC_CONFIG");
+                    }
+                    //codec.releaseOutputBuffer(roomIndex, render);
+                    //continue;
+                }
+                if ((roomInfo.flags & MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0) {// 4
+                    if (type == TYPE.TYPE_AUDIO) {
+                        MLog.d(TAG, "drainOutputBuffer() " +
+                                "Audio Output MediaCodec.BUFFER_FLAG_END_OF_STREAM");
+                    } else {
+                        MLog.w(TAG, "drainOutputBuffer() " +
+                                "Video Output MediaCodec.BUFFER_FLAG_END_OF_STREAM");
+                    }
+                    // 结束
+                    return false;
+                }
+
                 // 根据房间号找到房间
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
                     room = codec.getOutputBuffer(roomIndex);
@@ -200,48 +236,28 @@ public class EDMediaCodec {
                     room.position(roomInfo.offset);
                     room.limit(roomInfo.offset + roomSize);
                     if (type == TYPE.TYPE_AUDIO) {
-                        handleAudioOutputBuffer(roomIndex, room, roomInfo, roomSize);
+                        callback.handleAudioOutputBuffer(roomIndex, room, roomInfo, roomSize);
                     } else {
-                        handleVideoOutputBuffer(roomIndex, room, roomInfo, roomSize);
+                        callback.handleVideoOutputBuffer(roomIndex, room, roomInfo, roomSize);
                     }
                     room.clear();
                 } else {
                     // video
-                    handleVideoOutputBuffer(roomIndex, null, roomInfo, roomSize);
-                }
-
-                if ((roomInfo.flags & MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0) {
-                    if (type == TYPE.TYPE_AUDIO) {
-                        MLog.d(TAG, "drainOutputBuffer() " +
-                                "Audio Output MediaCodec.BUFFER_FLAG_END_OF_STREAM");
-                    } else {
-                        MLog.w(TAG, "drainOutputBuffer() " +
-                                "Video Output MediaCodec.BUFFER_FLAG_END_OF_STREAM");
-                    }
-                    // 结束
-                    return false;
-                }
-                if ((roomInfo.flags & MediaCodec.BUFFER_FLAG_CODEC_CONFIG) != 0) {
-                    if (type == TYPE.TYPE_AUDIO) {
-                        MLog.d(TAG, "drainOutputBuffer() " +
-                                "Audio Output MediaCodec.BUFFER_FLAG_CODEC_CONFIG");
-                    } else {
-                        MLog.w(TAG, "drainOutputBuffer() " +
-                                "Video Output MediaCodec.BUFFER_FLAG_CODEC_CONFIG");
-                    }
+                    callback.handleVideoOutputBuffer(roomIndex, null, roomInfo, roomSize);
                 }
 
                 codec.releaseOutputBuffer(roomIndex, render);
-            } catch (IllegalStateException
+            } catch (MediaCodec.CryptoException
+                    | IllegalStateException
                     | IllegalArgumentException
                     | NullPointerException e) {
                 e.printStackTrace();
                 if (type == TYPE.TYPE_AUDIO) {
                     MLog.e(TAG, "drainOutputBuffer() Audio Output occur exception: " + e);
-                    handleAudioOutputBuffer(-1, room, roomInfo, -1);
+                    callback.handleAudioOutputBuffer(-1, null, null, -1);
                 } else {
                     MLog.e(TAG, "drainOutputBuffer() Video Output occur exception: " + e);
-                    handleVideoOutputBuffer(-1, room, roomInfo, -1);
+                    callback.handleVideoOutputBuffer(-1, null, null, -1);
                 }
                 MediaUtils.releaseMediaCodec(codec);
                 return false;
@@ -251,7 +267,7 @@ public class EDMediaCodec {
         return true;
     }
 
-    private static void handleAudioOutputFormat(MediaFormat mediaFormat) {
+    /*private static void handleAudioOutputFormat(MediaFormat mediaFormat) {
 
     }
 
@@ -269,6 +285,6 @@ public class EDMediaCodec {
                                                MediaCodec.BufferInfo roomInfo, int roomSize) {
 
         return 0;
-    }
+    }*/
 
 }

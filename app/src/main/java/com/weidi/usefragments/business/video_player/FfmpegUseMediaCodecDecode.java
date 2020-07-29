@@ -1246,6 +1246,7 @@ public class FfmpegUseMediaCodecDecode {
             }
         } catch (MediaCodec.CryptoException
                 | IllegalStateException
+                | IllegalArgumentException
                 | NullPointerException e) {
             e.printStackTrace();
             if (wrapper.type == TYPE_AUDIO) {
@@ -1291,7 +1292,7 @@ public class FfmpegUseMediaCodecDecode {
                     MLog.w(TAG, "drainOutputBuffer() Video roomIndex: " + roomIndex);
                 }*/
                 switch (roomIndex) {
-                    case MediaCodec.INFO_TRY_AGAIN_LATER:
+                    case MediaCodec.INFO_TRY_AGAIN_LATER:// -1
                         // 像音频,第一个输出日志
                         /*if (wrapper.type == TYPE_AUDIO) {
                             MLog.d(TAG, "drainOutputBuffer() " +
@@ -1301,7 +1302,7 @@ public class FfmpegUseMediaCodecDecode {
                                     "Video Output MediaCodec.INFO_TRY_AGAIN_LATER");
                         }*/
                         break;
-                    case MediaCodec.INFO_OUTPUT_FORMAT_CHANGED:
+                    case MediaCodec.INFO_OUTPUT_FORMAT_CHANGED:// -2
                         // 像音频,第三个输出日志
                         // 一般一个视频各自调用一次
                         if (wrapper.type == TYPE_AUDIO) {
@@ -1314,7 +1315,7 @@ public class FfmpegUseMediaCodecDecode {
                             handleVideoOutputFormat();
                         }
                         break;
-                    case MediaCodec.INFO_OUTPUT_BUFFERS_CHANGED:
+                    case MediaCodec.INFO_OUTPUT_BUFFERS_CHANGED:// -3
                         // 像音频,第二个输出日志.视频好像没有这个输出日志
                         if (wrapper.type == TYPE_AUDIO) {
                             MLog.d(TAG, "drainOutputBuffer() " +
@@ -1329,6 +1330,27 @@ public class FfmpegUseMediaCodecDecode {
                 }
                 if (roomIndex < 0) {
                     break;
+                }
+
+                if ((roomInfo.flags & MediaCodec.BUFFER_FLAG_CODEC_CONFIG) != 0) {// 2
+                    if (wrapper.type == TYPE_AUDIO) {
+                        MLog.d(TAG, "drainOutputBuffer() " +
+                                "Audio Output MediaCodec.BUFFER_FLAG_CODEC_CONFIG");
+                    } else {
+                        MLog.w(TAG, "drainOutputBuffer() " +
+                                "Video Output MediaCodec.BUFFER_FLAG_CODEC_CONFIG");
+                    }
+                }
+                if ((roomInfo.flags & MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0) {// 4
+                    if (wrapper.type == TYPE_AUDIO) {
+                        MLog.d(TAG, "drainOutputBuffer() " +
+                                "Audio Output MediaCodec.BUFFER_FLAG_END_OF_STREAM");
+                    } else {
+                        MLog.w(TAG, "drainOutputBuffer() " +
+                                "Video Output MediaCodec.BUFFER_FLAG_END_OF_STREAM");
+                    }
+                    // 结束
+                    return false;
                 }
 
                 // 根据房间号找到房间
@@ -1355,29 +1377,9 @@ public class FfmpegUseMediaCodecDecode {
                     handleVideoOutputBuffer(roomIndex, null, roomInfo, roomSize);
                 }
 
-                if ((roomInfo.flags & MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0) {
-                    if (wrapper.type == TYPE_AUDIO) {
-                        MLog.d(TAG, "drainOutputBuffer() " +
-                                "Audio Output MediaCodec.BUFFER_FLAG_END_OF_STREAM");
-                    } else {
-                        MLog.w(TAG, "drainOutputBuffer() " +
-                                "Video Output MediaCodec.BUFFER_FLAG_END_OF_STREAM");
-                    }
-                    // 结束
-                    return false;
-                }
-                if ((roomInfo.flags & MediaCodec.BUFFER_FLAG_CODEC_CONFIG) != 0) {
-                    if (wrapper.type == TYPE_AUDIO) {
-                        MLog.d(TAG, "drainOutputBuffer() " +
-                                "Audio Output MediaCodec.BUFFER_FLAG_CODEC_CONFIG");
-                    } else {
-                        MLog.w(TAG, "drainOutputBuffer() " +
-                                "Video Output MediaCodec.BUFFER_FLAG_CODEC_CONFIG");
-                    }
-                }
-
                 wrapper.decoderMediaCodec.releaseOutputBuffer(roomIndex, wrapper.render);
-            } catch (IllegalStateException
+            } catch (MediaCodec.CryptoException
+                    | IllegalStateException
                     | IllegalArgumentException
                     | NullPointerException e) {
                 e.printStackTrace();

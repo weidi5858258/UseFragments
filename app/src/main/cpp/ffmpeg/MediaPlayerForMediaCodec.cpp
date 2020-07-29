@@ -1940,12 +1940,12 @@ namespace alexander_media_mediacodec {
             }
         } else if (wrapper->type == TYPE_VIDEO
                    && list2Size >= wrapper->list2LimitCounts) {
-            if (!isLocal) {
+            /*if (!isLocal) {
                 LOGI("readDataImpl() audio list1: %d\n", audioWrapper->father->list1->size());
                 LOGI("readDataImpl() video list1: %d\n", videoWrapper->father->list1->size());
                 LOGI("readDataImpl() audio list2: %d\n", audioWrapper->father->list2->size());
                 LOGI("readDataImpl() video list2: %d\n", videoWrapper->father->list2->size());
-            }
+            }*/
             if (audioWrapper->father->list2->size() > audioWrapper->father->list1LimitCounts) {
                 onLoadProgressUpdated(
                         MSG_ON_TRANSACT_AUDIO_PRODUCER, audioWrapper->father->list2->size());

@@ -863,6 +863,7 @@ public class MediaUtils {
     /***
      Encoder时可以自己作主指定mime得到MediaFormat对象
      这个方法是给录屏设置的参数
+     width和height是视频的尺寸，这个尺寸不能超过视频采集时采集到的尺寸，否则会直接crash
      * @param width
      * @param height
      * @return
@@ -873,10 +874,9 @@ public class MediaUtils {
         format.setInteger(MediaFormat.KEY_MAX_WIDTH, width);
         format.setInteger(MediaFormat.KEY_MAX_HEIGHT, height);
         // 必须设置为COLOR_FormatSurface，因为是用Surface作为输入源
+        // COLOR_FormatSurface这里表明数据将是一个graphicbuffer元数据
         format.setInteger(MediaFormat.KEY_COLOR_FORMAT,
                 MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface);
-        // 设置比特率
-        format.setInteger(MediaFormat.KEY_BIT_RATE, VIDEO_BIT_RATE);
         /***
          BITRATE_MODE_CQ:  表示完全不控制码率，尽最大可能保证图像质量
          BITRATE_MODE_CBR: 表示编码器会尽量把输出码率控制为设定值
@@ -885,6 +885,9 @@ public class MediaUtils {
          */
         format.setInteger(MediaFormat.KEY_BITRATE_MODE,
                 MediaCodecInfo.EncoderCapabilities.BITRATE_MODE_CQ);
+        // 设置比特率(码率)
+        format.setInteger(MediaFormat.KEY_BIT_RATE, width * height);
+        //format.setInteger(MediaFormat.KEY_BIT_RATE, VIDEO_BIT_RATE);
         // 设置帧率
         format.setInteger(MediaFormat.KEY_FRAME_RATE, FRAME_RATE);
         // 设置抽取关键帧的间隔，以s为单位，负数或者0表示不抽取关键帧
@@ -911,17 +914,13 @@ public class MediaUtils {
         // aac-profile=2, bitrate=176400, max-input-size=14208
         MediaFormat format = MediaFormat.createAudioFormat(
                 AUDIO_MIME, sampleRateInHz, channelCount);
-        format.setInteger(
-                MediaFormat.KEY_AAC_PROFILE,
+        format.setInteger(MediaFormat.KEY_AAC_PROFILE,
                 MediaCodecInfo.CodecProfileLevel.AACObjectLC);
-        format.setInteger(
-                MediaFormat.KEY_BIT_RATE,
+        format.setInteger(MediaFormat.KEY_BIT_RATE,
                 AUDIO_BIT_RATE);
-        format.setInteger(
-                MediaFormat.KEY_CHANNEL_MASK,
+        format.setInteger(MediaFormat.KEY_CHANNEL_MASK,
                 channelConfig);
-        format.setInteger(
-                MediaFormat.KEY_MAX_INPUT_SIZE,
+        format.setInteger(MediaFormat.KEY_MAX_INPUT_SIZE,
                 getMinBufferSize() * 2);
         MLog.d(TAG, "getAudioEncoderMediaFormat() created audio format: " + format);
         return format;
