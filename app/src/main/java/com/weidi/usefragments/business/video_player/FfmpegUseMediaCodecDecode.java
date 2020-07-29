@@ -1,6 +1,5 @@
 package com.weidi.usefragments.business.video_player;
 
-import android.annotation.TargetApi;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.media.AudioFormat;
@@ -8,21 +7,16 @@ import android.media.AudioManager;
 import android.media.AudioTrack;
 import android.media.MediaCodec;
 import android.media.MediaCodecInfo;
-import android.media.MediaExtractor;
 import android.media.MediaFormat;
 import android.os.Build;
-import android.os.Message;
 import android.text.TextUtils;
-import android.text.format.DateUtils;
 import android.view.Surface;
 
 import com.weidi.usefragments.media.MediaUtils;
 import com.weidi.usefragments.tool.AACPlayer;
-import com.weidi.usefragments.tool.Callback;
 import com.weidi.usefragments.tool.JniObject;
 import com.weidi.usefragments.tool.MLog;
 
-import java.io.IOException;
 import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -31,7 +25,6 @@ import java.util.Map;
 
 import static com.weidi.usefragments.business.video_player.PlayerWrapper.PLAYBACK_IS_MUTE;
 import static com.weidi.usefragments.business.video_player.PlayerWrapper.PLAYBACK_USE_PLAYER;
-import static com.weidi.usefragments.business.video_player.PlayerWrapper.PLAYER_FFMPEG;
 import static com.weidi.usefragments.business.video_player.PlayerWrapper.PLAYER_FFMPEG_MEDIACODEC;
 import static com.weidi.usefragments.service.DownloadFileService.PREFERENCES_NAME;
 
@@ -52,14 +45,9 @@ public class FfmpegUseMediaCodecDecode {
     // 不要修改值,如果要修改,MediaPlayerForMediaCodec.cpp中也要修改
     public static final int TYPE_AUDIO = 0x0001;
     public static final int TYPE_VIDEO = 0x0002;
-    private static final int TIME_OUT = 10000;
 
     // 为了注册广播
     private Context mContext = null;
-    private String mPath = null;
-    private MediaExtractor extractor = null;
-
-    private Callback mCallback = null;
     private Surface mSurface = null;
 
     public AudioWrapper mAudioWrapper = null;
@@ -189,20 +177,8 @@ public class FfmpegUseMediaCodecDecode {
         mContext = context;
     }
 
-    public void setDataSource(String path) {
-        mPath = path;
-    }
-
     public void setSurface(Surface surface) {
         mSurface = surface;
-    }
-
-    public void setCallback(Callback callback) {
-        mCallback = callback;
-    }
-
-    public boolean initPlayer() {
-        return internalPrepare() && prepareAudio() && prepareVideo();
     }
 
     public void setVolume(float volume) {
@@ -243,379 +219,6 @@ public class FfmpegUseMediaCodecDecode {
 
     public void setGetMediaFormat(GetMediaFormat getMediaFormat) {
         mGetMediaFormat = getMediaFormat;
-    }
-
-    private boolean prepareAudio() {
-        if (TextUtils.isEmpty(mAudioWrapper.mime)
-                && mAudioWrapper.trackIndex == -1
-                && mAudioWrapper.decoderMediaFormat == null) {
-            MLog.d(TAG, "prepareAudio() return");
-            return true;
-        }
-        // Audio
-        MLog.d(TAG, "prepareAudio() start");
-        MLog.d(TAG, "prepareAudio() audio decoderMediaFormat: " +
-                mAudioWrapper.decoderMediaFormat.toString());
-
-        /***
-         解码前
-         {
-         csd-0=java.nio.HeapByteBuffer[pos=0 lim=2 cap=2],
-         mime=audio/mp4a-latm, aac-profile=2, channel-count=2, track-id=2, bitrate=96000,
-         max-input-size=444, durationUs=10871488000,
-         sample-rate=48000, max-bitrate=96000
-         }
-         解码后
-         {pcm-encoding=2, mime=audio/raw, channel-count=2, sample-rate=48000}
-         */
-        // durationUs
-        if (mAudioWrapper.decoderMediaFormat.containsKey(MediaFormat.KEY_DURATION)) {
-            mAudioWrapper.durationUs =
-                    mAudioWrapper.decoderMediaFormat.getLong(MediaFormat.KEY_DURATION);
-            String durationTime = DateUtils.formatElapsedTime(
-                    (mAudioWrapper.durationUs / 1000) / 1000);
-            MLog.d(TAG, "prepareAudio()          audioDurationUs: " +
-                    mAudioWrapper.durationUs + " " + durationTime);
-            if (mAudioWrapper.durationUs > 0 || mVideoWrapper.durationUs > 0) {
-                mAudioWrapper.durationUs =
-                        (mAudioWrapper.durationUs > mVideoWrapper.durationUs)
-                                ?
-                                mAudioWrapper.durationUs
-                                :
-                                mVideoWrapper.durationUs;
-                mVideoWrapper.durationUs = mAudioWrapper.durationUs;
-            } else {
-                mVideoWrapper.durationUs = mAudioWrapper.durationUs = -1;
-            }
-        }
-        // max-input-size
-        if (!mAudioWrapper.decoderMediaFormat.containsKey(MediaFormat.KEY_MAX_INPUT_SIZE)) {
-            // 4K 8192
-            mAudioWrapper.decoderMediaFormat.setInteger(
-                    MediaFormat.KEY_MAX_INPUT_SIZE, AUDIO_FRAME_MAX_LENGTH);
-        }
-        mAudioWrapper.frameMaxLength =
-                mAudioWrapper.decoderMediaFormat.getInteger(MediaFormat.KEY_MAX_INPUT_SIZE);
-        MLog.d(TAG, "prepareAudio() audio     frameMaxLength: " +
-                mAudioWrapper.frameMaxLength);
-        String errorInfo = null;
-        // 创建音频解码器
-        try {
-            extractor.selectTrack(mAudioWrapper.trackIndex);
-            // audio/vorbis
-            MLog.d(TAG, "prepareAudio() audio mAudioWrapper.mime: " + mAudioWrapper.mime);
-            switch (mAudioWrapper.mime) {
-                case "audio/ac4":
-                    MediaCodecInfo mediaCodecInfo =
-                            MediaUtils.getDecoderMediaCodecInfo(mAudioWrapper.mime);
-                    String codecName = null;
-                    if (mediaCodecInfo != null) {
-                        codecName = mediaCodecInfo.getName();
-                    } else {
-                        codecName = "OMX.google.raw.decoder";
-                        mAudioWrapper.decoderMediaFormat.setString(
-                                MediaFormat.KEY_MIME, "audio/raw");
-                    }
-                    if (!TextUtils.isEmpty(codecName)) {
-                        MLog.d(TAG, "prepareAudio() audio          codecName: " + codecName);
-                        mAudioWrapper.decoderMediaCodec = MediaCodec.createByCodecName(codecName);
-                        mAudioWrapper.decoderMediaCodec.configure(
-                                mAudioWrapper.decoderMediaFormat, null, null, 0);
-                        mAudioWrapper.decoderMediaCodec.start();
-                    }
-                    break;
-                default:
-                    mAudioWrapper.decoderMediaCodec = MediaUtils.getAudioDecoderMediaCodec(
-                            mAudioWrapper.mime, mAudioWrapper.decoderMediaFormat);
-                    break;
-            }
-
-            mAudioWrapper.render = false;
-        } catch (MediaCodec.CryptoException
-                | IllegalStateException
-                | IllegalArgumentException
-                | IOException e) {
-            e.printStackTrace();
-            errorInfo = e.toString();
-            if (mAudioWrapper.decoderMediaCodec != null) {
-                mAudioWrapper.decoderMediaCodec.release();
-                mAudioWrapper.decoderMediaCodec = null;
-            }
-        }
-        if (mAudioWrapper.decoderMediaCodec == null) {
-            if (extractor != null) {
-                extractor.release();
-                extractor = null;
-            }
-            if (mCallback != null) {
-                mCallback.onError(Callback.ERROR_FFMPEG_INIT, errorInfo);
-            }
-            return false;
-        }
-
-        if (mAudioWrapper.decoderMediaFormat.containsKey("csd-0")) {
-            ByteBuffer buffer = mAudioWrapper.decoderMediaFormat.getByteBuffer("csd-0");
-            byte[] csd_0 = new byte[buffer.limit()];
-            buffer.get(csd_0);
-            StringBuilder sb = new StringBuilder();
-            sb.append("{");
-            int count = csd_0.length;
-            for (int i = 0; i < count; i++) {
-                sb.append(csd_0[i]);
-                if (i <= count - 2) {
-                    sb.append(", ");
-                }
-            }
-            sb.append("}");
-            MLog.d(TAG, "prepareAudio() audio              csd-0: " + sb.toString());
-        }
-        if (mAudioWrapper.decoderMediaFormat.containsKey("csd-1")) {
-            ByteBuffer buffer = mAudioWrapper.decoderMediaFormat.getByteBuffer("csd-1");
-            byte[] csd_1 = new byte[buffer.limit()];
-            buffer.get(csd_1);
-            StringBuilder sb = new StringBuilder();
-            sb.append("{");
-            int count = csd_1.length;
-            for (int i = 0; i < count; i++) {
-                sb.append(csd_1[i]);
-                if (i <= count - 2) {
-                    sb.append(", ");
-                }
-            }
-            sb.append("}");
-            MLog.d(TAG, "prepareAudio() audio              csd-1: " + sb.toString());
-        }
-        MLog.d(TAG, "prepareAudio() end");
-
-        return true;
-    }
-
-    private boolean prepareVideo() {
-        if (TextUtils.isEmpty(mVideoWrapper.mime)
-                && mVideoWrapper.trackIndex == -1
-                && mVideoWrapper.decoderMediaFormat == null) {
-            MLog.d(TAG, "prepareVideo() return");
-            return true;
-        }
-
-        // Video
-        MLog.w(TAG, "prepareVideo() start");
-        if (mSurface != null) {
-            mVideoWrapper.mSurface = mSurface;
-        } else {
-            MLog.e(TAG, "prepareVideo() mSurface is null");
-            if (mCallback != null) {
-                mCallback.onError(Callback.ERROR_FFMPEG_INIT, "Surface is null");
-            }
-            return false;
-        }
-        MLog.w(TAG, "prepareVideo() video decoderMediaFormat: " +
-                mVideoWrapper.decoderMediaFormat.toString());
-
-        /***
-         BITRATE_MODE_CQ:  表示完全不控制码率，尽最大可能保证图像质量
-         BITRATE_MODE_CBR: 表示编码器会尽量把输出码率控制为设定值
-         BITRATE_MODE_VBR: 表示编码器会根据图像内容的复杂度（实际上是帧间变化量的大小）来动态调整输出码率，
-         图像复杂则码率高，图像简单则码率低
-         */
-        mVideoWrapper.decoderMediaFormat.setInteger(MediaFormat.KEY_BITRATE_MODE,
-                MediaCodecInfo.EncoderCapabilities.BITRATE_MODE_CQ);
-        // https://www.polarxiong.com/archives/Android-MediaCodec%E8%A7%86%E9%A2%91%E6%96%87%E4
-        // %BB%B6%E7%A1%AC%E4%BB%B6%E8%A7%A3%E7%A0%81-%E9%AB%98%E6%95%88%E7%8E%87%E5%BE%97%E5%88
-        // %B0YUV%E6%A0%BC%E5%BC%8F%E5%B8%A7-%E5%BF%AB%E9%80%9F%E4%BF%9D%E5%AD%98JPEG%E5%9B%BE%E7
-        // %89%87-%E4%B8%8D%E4%BD%BF%E7%94%A8OpenGL.html
-        // 指定解码后的帧格式(解码器将编码的帧解码为这种指定的格式)
-        // COLOR_FormatYUV420Flexible是几乎所有解码器都支持的一种帧格式
-        // 经过这种格式的指定,解码视频后的帧格式可以很方便的转换成YUV420SemiPlanar(NV21)或YUV420Planar(I420)格式
-        mVideoWrapper.decoderMediaFormat.setInteger(MediaFormat.KEY_COLOR_FORMAT,
-                MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420Flexible);
-
-        /***
-         解码前
-         {
-         csd-0=java.nio.HeapByteBuffer[pos=0 lim=28 cap=28],
-         csd-1=java.nio.HeapByteBuffer[pos=0 lim=9 cap=9],
-         mime=video/avc, frame-rate=24, track-id=1, profile=8,
-         width=1280, height=720, max-input-size=243905, durationUs=10871402208,
-         bitrate-mode=0, level=512
-         }
-         解码后
-         {crop-top=0, crop-right=1279, color-format=19, height=720,
-         color-standard=1, crop-left=0, color-transfer=3, stride=1280,
-         mime=video/raw, slice-height=720, width=1280, color-range=2, crop-bottom=719}
-         */
-        // durationUs
-        if (mVideoWrapper.decoderMediaFormat.containsKey(MediaFormat.KEY_DURATION)) {
-            mVideoWrapper.durationUs =
-                    mVideoWrapper.decoderMediaFormat.getLong(MediaFormat.KEY_DURATION);
-            String durationTime = DateUtils.formatElapsedTime(
-                    (mVideoWrapper.durationUs / 1000) / 1000);
-            MLog.w(TAG, "prepareVideo()          videoDurationUs: " +
-                    mVideoWrapper.durationUs + " " + durationTime);
-            if (mAudioWrapper.durationUs > 0 || mVideoWrapper.durationUs > 0) {
-                mAudioWrapper.durationUs =
-                        (mAudioWrapper.durationUs > mVideoWrapper.durationUs)
-                                ?
-                                mAudioWrapper.durationUs
-                                :
-                                mVideoWrapper.durationUs;
-                mVideoWrapper.durationUs = mAudioWrapper.durationUs;
-            } else {
-                mVideoWrapper.durationUs = mAudioWrapper.durationUs = -1;
-            }
-        }
-        // max-input-size
-        if (!mVideoWrapper.decoderMediaFormat.containsKey(MediaFormat.KEY_MAX_INPUT_SIZE)) {
-            // 4K 3110400
-            mVideoWrapper.decoderMediaFormat.setInteger(
-                    MediaFormat.KEY_MAX_INPUT_SIZE, VIDEO_FRAME_MAX_LENGTH);
-        }
-        mVideoWrapper.frameMaxLength =
-                mVideoWrapper.decoderMediaFormat.getInteger(MediaFormat.KEY_MAX_INPUT_SIZE);
-        MLog.w(TAG, "prepareVideo() video     frameMaxLength: " +
-                mVideoWrapper.frameMaxLength);
-        String errorInfo = null;
-        // 创建视频解码器
-        try {
-            extractor.selectTrack(mVideoWrapper.trackIndex);
-            // video/x-vnd.on2.vp9
-            MLog.w(TAG, "prepareVideo() video mVideoWrapper.mime: " + mVideoWrapper.mime);
-            mVideoWrapper.decoderMediaCodec =
-                    MediaUtils.getVideoDecoderMediaCodec(
-                            mVideoWrapper.mime,
-                            mVideoWrapper.decoderMediaFormat,
-                            mVideoWrapper.mSurface);
-            mVideoWrapper.render = true;
-        } catch (MediaCodec.CryptoException
-                | IllegalStateException
-                | IllegalArgumentException e) {
-            e.printStackTrace();
-            errorInfo = e.toString();
-            if (mVideoWrapper.decoderMediaCodec != null) {
-                mVideoWrapper.decoderMediaCodec.release();
-                mVideoWrapper.decoderMediaCodec = null;
-            }
-        }
-        if (mVideoWrapper.decoderMediaCodec == null) {
-            if (extractor != null) {
-                extractor.release();
-                extractor = null;
-            }
-            if (mCallback != null) {
-                mCallback.onError(Callback.ERROR_FFMPEG_INIT, errorInfo);
-            }
-            return false;
-        }
-
-        if (mVideoWrapper.decoderMediaFormat.containsKey("csd-0")) {
-            ByteBuffer buffer = mVideoWrapper.decoderMediaFormat.getByteBuffer("csd-0");
-            byte[] csd_0 = new byte[buffer.limit()];
-            buffer.get(csd_0);
-            StringBuilder sb = new StringBuilder();
-            sb.append("{");
-            int count = csd_0.length;
-            for (int i = 0; i < count; i++) {
-                sb.append(csd_0[i]);
-                if (i <= count - 2) {
-                    sb.append(", ");
-                }
-            }
-            sb.append("}");
-            MLog.w(TAG, "prepareVideo() video              csd-0: " + sb.toString());
-        }
-        if (mVideoWrapper.decoderMediaFormat.containsKey("csd-1")) {
-            ByteBuffer buffer = mVideoWrapper.decoderMediaFormat.getByteBuffer("csd-1");
-            byte[] csd_1 = new byte[buffer.limit()];
-            buffer.get(csd_1);
-            StringBuilder sb = new StringBuilder();
-            sb.append("{");
-            int count = csd_1.length;
-            for (int i = 0; i < count; i++) {
-                sb.append(csd_1[i]);
-                if (i <= count - 2) {
-                    sb.append(", ");
-                }
-            }
-            sb.append("}");
-            MLog.w(TAG, "prepareVideo() video              csd-1: " + sb.toString());
-        }
-        MLog.w(TAG, "prepareVideo() end");
-
-        return true;
-    }
-
-    @TargetApi(Build.VERSION_CODES.M)
-    private boolean internalPrepare() {
-        if (TextUtils.isEmpty(mPath)) {
-            MLog.e(TAG, "internalPrepare() mPath is empty");
-            return false;
-        }
-        MLog.i(TAG, "internalPrepare() start");
-
-        if (mCallback != null) {
-            mCallback.onReady();
-        }
-
-        if (mFFMPEG == null) {
-            mFFMPEG = FFMPEG.getDefault();
-        }
-        mAudioWrapper = new AudioWrapper(TYPE_AUDIO);
-        mVideoWrapper = new VideoWrapper(TYPE_VIDEO);
-        mAudioWrapper.clear();
-        mVideoWrapper.clear();
-        mAudioWrapper.isHandling = true;
-        mVideoWrapper.isHandling = true;
-
-        extractor = new MediaExtractor();
-        try {
-            extractor.setDataSource(mPath);
-        } catch (IOException e) {
-            e.printStackTrace();
-            if (extractor != null) {
-                extractor.release();
-                extractor = null;
-            }
-            if (mCallback != null) {
-                mCallback.onError(
-                        Callback.ERROR_FFMPEG_INIT, "setDataSource() occurs error");
-            }
-            return false;
-        }
-
-        int trackCount = extractor.getTrackCount();
-        for (int i = 0; i < trackCount; i++) {
-            MediaFormat format = extractor.getTrackFormat(i);
-            String mime = format.getString(MediaFormat.KEY_MIME);
-            if (mime.startsWith("audio/")) {
-                mAudioWrapper.mime = mime;
-                mAudioWrapper.trackIndex = i;
-                mAudioWrapper.decoderMediaFormat = format;
-            } else if (mime.startsWith("video/")) {
-                mVideoWrapper.mime = mime;
-                mVideoWrapper.trackIndex = i;
-                mVideoWrapper.decoderMediaFormat = format;
-            }
-        }
-        if ((TextUtils.isEmpty(mAudioWrapper.mime)
-                && TextUtils.isEmpty(mVideoWrapper.mime))
-                || (mAudioWrapper.trackIndex == -1
-                && mVideoWrapper.trackIndex == -1)
-                || (mAudioWrapper.decoderMediaFormat == null
-                && mVideoWrapper.decoderMediaFormat == null)) {
-            if (extractor != null) {
-                extractor.release();
-                extractor = null;
-            }
-            if (mCallback != null) {
-                mCallback.onError(
-                        Callback.ERROR_FFMPEG_INIT, "audio and video aren't find");
-            }
-            return false;
-        }
-
-        MLog.i(TAG, "internalPrepare() end");
-
-        return true;
     }
 
     // video
@@ -1174,472 +777,226 @@ public class FfmpegUseMediaCodecDecode {
     }
 
     public boolean feedInputBufferAndDrainOutputBuffer(SimpleWrapper wrapper) {
-        if (!wrapper.isHandling) {
-            if (wrapper.type == TYPE_AUDIO) {
-                handleAudioOutputBuffer(-1, null, null, -1);
-            } else {
-                handleVideoOutputBuffer(-1, null, null, -1);
-            }
-            MediaUtils.releaseMediaCodec(wrapper.decoderMediaCodec);
-            return false;
-        }
-
-        return feedInputBuffer(wrapper,
+        return EDMediaCodec.feedInputBufferAndDrainOutputBuffer(
+                mCallback,
+                (wrapper.type == TYPE_AUDIO
+                        ? EDMediaCodec.TYPE.TYPE_AUDIO
+                        : EDMediaCodec.TYPE.TYPE_VIDEO),
                 wrapper.decoderMediaCodec,
                 wrapper.data,
                 0,
                 wrapper.size,
-                wrapper.sampleTime)
-                &&
-                drainOutputBuffer(wrapper);
+                wrapper.sampleTime,
+                wrapper.render,
+                true);
     }
 
-    /***
-     * 填充数据送到底层进行编解码
-     * @param codec
-     * @param data
-     * @param offset
-     * @param size
-     * @param presentationTimeUs
-     * @return
-     */
-    private boolean feedInputBuffer(
-            SimpleWrapper wrapper,
-            MediaCodec codec,
-            byte[] data,
-            int offset,
-            int size,
-            long presentationTimeUs) {
-        try {
-            // 拿到房间号
-            int roomIndex = codec.dequeueInputBuffer(TIME_OUT);
-            if (roomIndex >= 0) {
-                ByteBuffer room = null;
-                // 根据房间号找到房间
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                    room = codec.getInputBuffer(roomIndex);
-                } else {
-                    room = codec.getInputBuffers()[roomIndex];
-                }
-                if (room == null) {
-                    return false;
-                }
-                // 入住之前打扫一下房间
-                room.clear();
-                // 入住
-                room.put(data, offset, size);
-                int flags = 0;
-                if (size <= 0) {
-                    presentationTimeUs = 0L;
-                    flags = MediaCodec.BUFFER_FLAG_END_OF_STREAM;
-                }
-                // 通知已经"入住"了,可以进行"编解码"的操作了
-                codec.queueInputBuffer(
-                        roomIndex,
-                        offset,
-                        size,
-                        presentationTimeUs,
-                        flags);
-                // reset
-                roomIndex = -1;
-                room = null;
-            }
-        } catch (MediaCodec.CryptoException
-                | IllegalStateException
-                | IllegalArgumentException
-                | NullPointerException e) {
-            e.printStackTrace();
-            if (wrapper.type == TYPE_AUDIO) {
-                MLog.e(TAG, "feedInputBuffer() Audio Output occur exception: " + e);
-                handleAudioOutputBuffer(-1, null, null, -1);
-            } else {
-                MLog.e(TAG, "feedInputBuffer() Video Output occur exception: " + e);
-                handleVideoOutputBuffer(-1, null, null, -1);
-            }
-            MediaUtils.releaseMediaCodec(codec);
-            return false;
-        }
-
-        return true;
-    }
-
-    /***
-     * 拿出数据(在底层已经经过编解码了)进行处理(如视频数据进行渲染,音频数据进行播放)
-     * @param wrapper
-     * @return
-     */
-    private boolean drainOutputBuffer(SimpleWrapper wrapper) {
-        // 房间信息
-        MediaCodec.BufferInfo roomInfo = new MediaCodec.BufferInfo();
-        ByteBuffer room = null;
-        for (; ; ) {
-            if (!wrapper.isHandling) {
-                if (wrapper.type == TYPE_AUDIO) {
-                    handleAudioOutputBuffer(-1, null, null, -1);
-                } else {
-                    handleVideoOutputBuffer(-1, null, null, -1);
-                }
-                MediaUtils.releaseMediaCodec(wrapper.decoderMediaCodec);
-                return false;
-            }
-
-            try {
-                // 房间号
-                int roomIndex = wrapper.decoderMediaCodec.dequeueOutputBuffer(roomInfo, TIME_OUT);
-                /*if (wrapper.type == TYPE_AUDIO) {
-                    MLog.d(TAG, "drainOutputBuffer() Audio roomIndex: " + roomIndex);
-                } else {
-                    MLog.w(TAG, "drainOutputBuffer() Video roomIndex: " + roomIndex);
-                }*/
-                switch (roomIndex) {
-                    case MediaCodec.INFO_TRY_AGAIN_LATER:// -1
-                        // 像音频,第一个输出日志
-                        /*if (wrapper.type == TYPE_AUDIO) {
-                            MLog.d(TAG, "drainOutputBuffer() " +
-                                    "Audio Output MediaCodec.INFO_TRY_AGAIN_LATER");
-                        } else {
-                            MLog.w(TAG, "drainOutputBuffer() " +
-                                    "Video Output MediaCodec.INFO_TRY_AGAIN_LATER");
-                        }*/
-                        break;
-                    case MediaCodec.INFO_OUTPUT_FORMAT_CHANGED:// -2
-                        // 像音频,第三个输出日志
-                        // 一般一个视频各自调用一次
-                        if (wrapper.type == TYPE_AUDIO) {
-                            MLog.d(TAG, "drainOutputBuffer() " +
-                                    "Audio Output MediaCodec.INFO_OUTPUT_FORMAT_CHANGED");
-                            handleAudioOutputFormat();
-                        } else {
-                            MLog.w(TAG, "drainOutputBuffer() " +
-                                    "Video Output MediaCodec.INFO_OUTPUT_FORMAT_CHANGED");
-                            handleVideoOutputFormat();
-                        }
-                        break;
-                    case MediaCodec.INFO_OUTPUT_BUFFERS_CHANGED:// -3
-                        // 像音频,第二个输出日志.视频好像没有这个输出日志
-                        if (wrapper.type == TYPE_AUDIO) {
-                            MLog.d(TAG, "drainOutputBuffer() " +
-                                    "Audio Output MediaCodec.INFO_OUTPUT_BUFFERS_CHANGED");
-                        } else {
-                            MLog.w(TAG, "drainOutputBuffer() " +
-                                    "Video Output MediaCodec.INFO_OUTPUT_BUFFERS_CHANGED");
-                        }
-                        break;
-                    default:
-                        break;
-                }
-                if (roomIndex < 0) {
-                    break;
-                }
-
-                if ((roomInfo.flags & MediaCodec.BUFFER_FLAG_CODEC_CONFIG) != 0) {// 2
-                    if (wrapper.type == TYPE_AUDIO) {
-                        MLog.d(TAG, "drainOutputBuffer() " +
-                                "Audio Output MediaCodec.BUFFER_FLAG_CODEC_CONFIG");
-                    } else {
-                        MLog.w(TAG, "drainOutputBuffer() " +
-                                "Video Output MediaCodec.BUFFER_FLAG_CODEC_CONFIG");
-                    }
-                }
-                if ((roomInfo.flags & MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0) {// 4
-                    if (wrapper.type == TYPE_AUDIO) {
-                        MLog.d(TAG, "drainOutputBuffer() " +
-                                "Audio Output MediaCodec.BUFFER_FLAG_END_OF_STREAM");
-                    } else {
-                        MLog.w(TAG, "drainOutputBuffer() " +
-                                "Video Output MediaCodec.BUFFER_FLAG_END_OF_STREAM");
-                    }
-                    // 结束
-                    return false;
-                }
-
-                // 根据房间号找到房间
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                    room = wrapper.decoderMediaCodec.getOutputBuffer(roomIndex);
-                } else {
-                    room = wrapper.decoderMediaCodec.getOutputBuffers()[roomIndex];
-                }
-                // 房间大小
-                int roomSize = roomInfo.size;
-                // 不能根据room是否为null来判断是audio还是video(但我的三星Note2手机上是可以的)
-                if (room != null) {
-                    // audio
-                    room.position(roomInfo.offset);
-                    room.limit(roomInfo.offset + roomSize);
-                    if (wrapper.type == TYPE_AUDIO) {
-                        handleAudioOutputBuffer(roomIndex, room, roomInfo, roomSize);
-                    } else {
-                        handleVideoOutputBuffer(roomIndex, room, roomInfo, roomSize);
-                    }
-                    room.clear();
-                } else {
-                    // video
-                    handleVideoOutputBuffer(roomIndex, null, roomInfo, roomSize);
-                }
-
-                wrapper.decoderMediaCodec.releaseOutputBuffer(roomIndex, wrapper.render);
-            } catch (MediaCodec.CryptoException
-                    | IllegalStateException
-                    | IllegalArgumentException
-                    | NullPointerException e) {
-                e.printStackTrace();
-                if (wrapper.type == TYPE_AUDIO) {
-                    MLog.e(TAG, "drainOutputBuffer() Audio Output occur exception: " + e);
-                    handleAudioOutputBuffer(-1, room, roomInfo, -1);
-                } else {
-                    MLog.e(TAG, "drainOutputBuffer() Video Output occur exception: " + e);
-                    handleVideoOutputBuffer(-1, room, roomInfo, -1);
-                }
-                MediaUtils.releaseMediaCodec(wrapper.decoderMediaCodec);
-                return false;
-            }
-        }// for(;;) end
-
-        return true;
-    }
-
-    private void handleAudioOutputFormat() {
-        /***
-         解码前
-         {mime=audio/mp4a-latm, aac-profile=2, channel-count=2, track-id=2, bitrate=96000,
-         max-input-size=444, durationUs=10871488000,
-         csd-0=java.nio.HeapByteBuffer[pos=0 lim=2 cap=2],
-         sample-rate=48000, max-bitrate=96000}
-         解码后
-         {pcm-encoding=2, mime=audio/raw, channel-count=2, sample-rate=48000}
-         */
-        try {
-            MediaFormat newMediaFormat = mAudioWrapper.decoderMediaCodec.getOutputFormat();
-            Class clazz = Class.forName("android.media.MediaFormat");
-            Method method = clazz.getDeclaredMethod("getMap");
-            method.setAccessible(true);
-            Object newObject = method.invoke(newMediaFormat);
-            Object oldObject = method.invoke(mAudioWrapper.decoderMediaFormat);
-            if (newObject != null
-                    && newObject instanceof Map
-                    && oldObject != null
-                    && oldObject instanceof Map) {
-                Map<String, Object> newMap = (Map) newObject;
-                Map<String, Object> oldMap = (Map) oldObject;
-                if (oldMap.containsKey("mime-old")) {
-                    return;
-                }
-                String mime = (String) oldMap.get("mime");
-                for (Map.Entry<String, Object> entry : newMap.entrySet()) {
-                    oldMap.put(entry.getKey(), entry.getValue());
-                }
-                oldMap.put("mime-old", mime);
-            }
-            MLog.d(TAG, "handleAudioOutputFormat() newMediaFormat: \n" +
-                    mAudioWrapper.decoderMediaFormat);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-        MediaUtils.releaseAudioTrack(mAudioWrapper.mAudioTrack);
-
-        // 创建AudioTrack
-        // 1.
-        int sampleRateInHz =
-                mAudioWrapper.decoderMediaFormat.getInteger(MediaFormat.KEY_SAMPLE_RATE);
-        // 2.
-        int channelCount =
-                mAudioWrapper.decoderMediaFormat.getInteger(MediaFormat.KEY_CHANNEL_COUNT);
-        // 3.
-        int audioFormat = AudioFormat.ENCODING_PCM_16BIT;
-        if (mAudioWrapper.decoderMediaFormat.containsKey(MediaFormat.KEY_PCM_ENCODING)) {
-            // 关键参数(需要解码后才能知道)
-            audioFormat =
-                    mAudioWrapper.decoderMediaFormat.getInteger(MediaFormat.KEY_PCM_ENCODING);
-        }
-
-        // sampleRateInHz: 48000 channelCount: 2 audioFormat: 2
-        MLog.d(TAG, "handleAudioOutputFormat()" +
-                " sampleRateInHz: " + sampleRateInHz +
-                " channelCount: " + channelCount +
-                " audioFormat: " + audioFormat);
-
-        // create AudioTrack
-        mAudioWrapper.mAudioTrack = MediaUtils.createAudioTrack(
-                AudioManager.STREAM_MUSIC,
-                sampleRateInHz, channelCount, audioFormat,
-                AudioTrack.MODE_STREAM);
-        if (mAudioWrapper.mAudioTrack != null) {
-            if (mContext != null) {
-                SharedPreferences sp =
-                        mContext.getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE);
-                boolean isMute = sp.getBoolean(PLAYBACK_IS_MUTE, false);
-                if (!isMute) {
-                    setVolume(FFMPEG.VOLUME_NORMAL);
-                } else {
-                    setVolume(FFMPEG.VOLUME_MUTE);
-                }
-            } else {
-                setVolume(FFMPEG.VOLUME_NORMAL);
-            }
-            mAudioWrapper.mAudioTrack.play();
-        } else {
-            MLog.e(TAG, "handleAudioOutputFormat() AudioTrack is null");
-            mAudioWrapper.isHandling = false;
-            handleAudioOutputBuffer(-1, null, null, -1);
-            return;
-        }
-
-        mAudioWrapper.decoderMediaFormat.setInteger(MediaFormat.KEY_IS_ADTS, 1);
-        mAudioWrapper.decoderMediaFormat.setInteger(MediaFormat.KEY_PRIORITY, 0);
-        if (AACPlayer.sampleRateIndexMap.containsKey(sampleRateInHz)
-                && AACPlayer.channelConfigIndexMap.containsKey(channelCount)) {
-            List<byte[]> list = new ArrayList<>();
-            list.add(MediaUtils.buildAacAudioSpecificConfig(
-                    AACPlayer.sampleRateIndexMap.get(sampleRateInHz),
-                    AACPlayer.channelConfigIndexMap.get(channelCount)));
-            MediaUtils.setCsdBuffers(mAudioWrapper.decoderMediaFormat, list);
-        }
-    }
-
-    private void handleVideoOutputFormat() {
-        /***
-         解码前
-         {csd-1=java.nio.HeapByteBuffer[pos=0 lim=9 cap=9],
-         mime=video/avc, frame-rate=24, track-id=1, profile=8,
-         width=1280, height=720, max-input-size=243905, durationUs=10871402208,
-         csd-0=java.nio.HeapByteBuffer[pos=0 lim=28 cap=28],
-         bitrate-mode=0, level=512}
-         解码后
-         {crop-top=0, crop-right=1279, color-format=19, height=720,
-         color-standard=1, crop-left=0, color-transfer=3, stride=1280,
-         mime=video/raw, slice-height=720, width=1280, color-range=2, crop-bottom=719}
-         */
-        try {
-            MediaFormat newMediaFormat = mVideoWrapper.decoderMediaCodec.getOutputFormat();
-            Class clazz = Class.forName("android.media.MediaFormat");
-            Method method = clazz.getDeclaredMethod("getMap");
-            method.setAccessible(true);
-            Object newObject = method.invoke(newMediaFormat);
-            Object oldObject = method.invoke(mVideoWrapper.decoderMediaFormat);
-            if (newObject != null
-                    && newObject instanceof Map
-                    && oldObject != null
-                    && oldObject instanceof Map) {
-                Map<String, Object> newMap = (Map) newObject;
-                Map<String, Object> oldMap = (Map) oldObject;
-                if (oldMap.containsKey("mime-old")) {
-                    return;
-                }
-                String mime = (String) oldMap.get("mime");
-                for (Map.Entry<String, Object> entry : newMap.entrySet()) {
-                    oldMap.put(entry.getKey(), entry.getValue());
-                }
-                oldMap.put("mime-old", mime);
-            }
-            MLog.w(TAG, "handleVideoOutputFormat() newMediaFormat: \n" +
-                    mVideoWrapper.decoderMediaFormat);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
-    // audio
-    private JniObject mAudioJniObject = new JniObject();
-    private int[] audioValueIntArray = new int[2];
-    private Object[] audioValueObjectArray = new Object[2];
     // video
     private JniObject mVideoJniObject = new JniObject();
     private int[] videoValueIntArray = new int[2];
     private Object[] videoValueObjectArray = new Object[2];
+    // audio
+    private JniObject mAudioJniObject = new JniObject();
+    private int[] audioValueIntArray = new int[2];
+    private Object[] audioValueObjectArray = new Object[2];
 
-    private int handleAudioOutputBuffer(int roomIndex, ByteBuffer room,
-                                        MediaCodec.BufferInfo roomInfo, int roomSize) {
-        if (mFFMPEG != null) {
-            /*Integer.parseInt(
-                    mFFMPEG.onTransact(
-                            FFMPEG.DO_SOMETHING_CODE_handleAudioOutputBuffer,
-                            mAudioJniObject));*/
-
-            audioValueIntArray[0] = roomIndex;
-            audioValueIntArray[1] = roomSize;
-            audioValueObjectArray[0] = room;
-            audioValueObjectArray[1] = roomInfo;
-            mAudioJniObject.valueIntArray = audioValueIntArray;
-            mAudioJniObject.valueObjectArray = audioValueObjectArray;
-            Integer.parseInt(
-                    mFFMPEG.onTransact(
-                            FFMPEG.DO_SOMETHING_CODE_handleAudioOutputBuffer, mAudioJniObject));
-        }
-        if (mAudioWrapper.isHandling
-                && mAudioWrapper.mAudioTrack != null
-                && mAudioWrapper.mAudioTrack.getState() == AudioTrack.STATE_INITIALIZED
-                && roomSize > 0) {
-            byte[] audioData = new byte[roomSize];
-            room.get(audioData, 0, audioData.length);
-            mAudioWrapper.mAudioTrack.write(audioData, roomInfo.offset, audioData.length);
-        }
-        return 0;
-    }
-
-    // 最最最关键的一步
-    private int handleVideoOutputBuffer(int roomIndex, ByteBuffer room,
-                                        MediaCodec.BufferInfo roomInfo, int roomSize) {
-        if (mFFMPEG != null) {
-            /*return Integer.parseInt(
-                    mFFMPEG.onTransact(
-                            FFMPEG.DO_SOMETHING_CODE_handleVideoOutputBuffer, mJniObject));*/
-
-            videoValueIntArray[0] = roomIndex;
-            videoValueIntArray[1] = roomSize;
-            videoValueObjectArray[0] = room;
-            videoValueObjectArray[1] = roomInfo;
-            mVideoJniObject.valueIntArray = videoValueIntArray;
-            mVideoJniObject.valueObjectArray = videoValueObjectArray;
-            return Integer.parseInt(
-                    mFFMPEG.onTransact(
-                            FFMPEG.DO_SOMETHING_CODE_handleVideoOutputBuffer, mVideoJniObject));
-        }
-        return 0;
-    }
-
-    private void notifyAudioEndOfStream() {
-        if (mAudioWrapper == null
-                || mAudioWrapper.decoderMediaCodec == null) {
-            return;
+    private EDMediaCodec.Callback mCallback = new EDMediaCodec.Callback() {
+        @Override
+        public boolean isVideoFinished() {
+            return !mVideoWrapper.isHandling;
         }
 
-        MLog.d(TAG, "notifyAudioEndOfStream() start");
-        // audio end notify
-        int inputAudioBufferIndex = mAudioWrapper.decoderMediaCodec.dequeueInputBuffer(0);
-        while (inputAudioBufferIndex < 0) {
-            inputAudioBufferIndex = mAudioWrapper.decoderMediaCodec.dequeueInputBuffer(0);
-        }
-        long presentationTime = System.nanoTime() / 1000;
-        mAudioWrapper.decoderMediaCodec.queueInputBuffer(
-                inputAudioBufferIndex,
-                0,
-                0,
-                presentationTime,
-                MediaCodec.BUFFER_FLAG_END_OF_STREAM);
-        MLog.d(TAG, "notifyAudioEndOfStream() end");
-    }
-
-    private void notifyVideoEndOfStream() {
-        if (mVideoWrapper == null
-                || mVideoWrapper.decoderMediaCodec == null) {
-            return;
+        @Override
+        public boolean isAudioFinished() {
+            return !mAudioWrapper.isHandling;
         }
 
-        MLog.w(TAG, "notifyVideoEndOfStream() start");
-        // video end notify
-        int inputBufferIndex = mVideoWrapper.decoderMediaCodec.dequeueInputBuffer(0);
-        while (inputBufferIndex < 0) {
-            inputBufferIndex = mVideoWrapper.decoderMediaCodec.dequeueInputBuffer(0);
+        @Override
+        public void handleVideoOutputFormat(MediaFormat mediaFormat) {
+            /***
+             解码前
+             {csd-1=java.nio.HeapByteBuffer[pos=0 lim=9 cap=9],
+             mime=video/avc, frame-rate=24, track-id=1, profile=8,
+             width=1280, height=720, max-input-size=243905, durationUs=10871402208,
+             csd-0=java.nio.HeapByteBuffer[pos=0 lim=28 cap=28],
+             bitrate-mode=0, level=512}
+             解码后
+             {crop-top=0, crop-right=1279, color-format=19, height=720,
+             color-standard=1, crop-left=0, color-transfer=3, stride=1280,
+             mime=video/raw, slice-height=720, width=1280, color-range=2, crop-bottom=719}
+             */
+            try {
+                MediaFormat newMediaFormat = mediaFormat;
+                Class clazz = Class.forName("android.media.MediaFormat");
+                Method method = clazz.getDeclaredMethod("getMap");
+                method.setAccessible(true);
+                Object newObject = method.invoke(newMediaFormat);
+                Object oldObject = method.invoke(mVideoWrapper.decoderMediaFormat);
+                if (newObject != null
+                        && newObject instanceof Map
+                        && oldObject != null
+                        && oldObject instanceof Map) {
+                    Map<String, Object> newMap = (Map) newObject;
+                    Map<String, Object> oldMap = (Map) oldObject;
+                    if (oldMap.containsKey("mime-old")) {
+                        return;
+                    }
+                    String mime = (String) oldMap.get("mime");
+                    for (Map.Entry<String, Object> entry : newMap.entrySet()) {
+                        oldMap.put(entry.getKey(), entry.getValue());
+                    }
+                    oldMap.put("mime-old", mime);
+                }
+                MLog.w(TAG, "handleVideoOutputFormat() newMediaFormat: \n" +
+                        mVideoWrapper.decoderMediaFormat);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
-        long presentationTime = System.nanoTime() / 1000;
-        mVideoWrapper.decoderMediaCodec.queueInputBuffer(
-                inputBufferIndex,
-                0,
-                0,
-                presentationTime,
-                MediaCodec.BUFFER_FLAG_END_OF_STREAM);
-        MLog.w(TAG, "notifyVideoEndOfStream() end");
-    }
+
+        @Override
+        public void handleAudioOutputFormat(MediaFormat mediaFormat) {
+            /***
+             解码前
+             {mime=audio/mp4a-latm, aac-profile=2, channel-count=2, track-id=2, bitrate=96000,
+             max-input-size=444, durationUs=10871488000,
+             csd-0=java.nio.HeapByteBuffer[pos=0 lim=2 cap=2],
+             sample-rate=48000, max-bitrate=96000}
+             解码后
+             {pcm-encoding=2, mime=audio/raw, channel-count=2, sample-rate=48000}
+             */
+            try {
+                MediaFormat newMediaFormat = mediaFormat;
+                Class clazz = Class.forName("android.media.MediaFormat");
+                Method method = clazz.getDeclaredMethod("getMap");
+                method.setAccessible(true);
+                Object newObject = method.invoke(newMediaFormat);
+                Object oldObject = method.invoke(mAudioWrapper.decoderMediaFormat);
+                if (newObject != null
+                        && newObject instanceof Map
+                        && oldObject != null
+                        && oldObject instanceof Map) {
+                    Map<String, Object> newMap = (Map) newObject;
+                    Map<String, Object> oldMap = (Map) oldObject;
+                    if (oldMap.containsKey("mime-old")) {
+                        return;
+                    }
+                    String mime = (String) oldMap.get("mime");
+                    for (Map.Entry<String, Object> entry : newMap.entrySet()) {
+                        oldMap.put(entry.getKey(), entry.getValue());
+                    }
+                    oldMap.put("mime-old", mime);
+                }
+                MLog.d(TAG, "handleAudioOutputFormat() newMediaFormat: \n" +
+                        mAudioWrapper.decoderMediaFormat);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+
+            MediaUtils.releaseAudioTrack(mAudioWrapper.mAudioTrack);
+
+            // 创建AudioTrack
+            // 1.
+            int sampleRateInHz =
+                    mAudioWrapper.decoderMediaFormat.getInteger(MediaFormat.KEY_SAMPLE_RATE);
+            // 2.
+            int channelCount =
+                    mAudioWrapper.decoderMediaFormat.getInteger(MediaFormat.KEY_CHANNEL_COUNT);
+            // 3.
+            int audioFormat = AudioFormat.ENCODING_PCM_16BIT;
+            if (mAudioWrapper.decoderMediaFormat.containsKey(MediaFormat.KEY_PCM_ENCODING)) {
+                // 关键参数(需要解码后才能知道)
+                audioFormat =
+                        mAudioWrapper.decoderMediaFormat.getInteger(MediaFormat.KEY_PCM_ENCODING);
+            }
+
+            // sampleRateInHz: 48000 channelCount: 2 audioFormat: 2
+            MLog.d(TAG, "handleAudioOutputFormat()" +
+                    " sampleRateInHz: " + sampleRateInHz +
+                    " channelCount: " + channelCount +
+                    " audioFormat: " + audioFormat);
+
+            // create AudioTrack
+            mAudioWrapper.mAudioTrack = MediaUtils.createAudioTrack(
+                    AudioManager.STREAM_MUSIC,
+                    sampleRateInHz, channelCount, audioFormat,
+                    AudioTrack.MODE_STREAM);
+            if (mAudioWrapper.mAudioTrack != null) {
+                if (mContext != null) {
+                    SharedPreferences sp =
+                            mContext.getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE);
+                    boolean isMute = sp.getBoolean(PLAYBACK_IS_MUTE, false);
+                    if (!isMute) {
+                        setVolume(FFMPEG.VOLUME_NORMAL);
+                    } else {
+                        setVolume(FFMPEG.VOLUME_MUTE);
+                    }
+                } else {
+                    setVolume(FFMPEG.VOLUME_NORMAL);
+                }
+                mAudioWrapper.mAudioTrack.play();
+            } else {
+                MLog.e(TAG, "handleAudioOutputFormat() AudioTrack is null");
+                mAudioWrapper.isHandling = false;
+                handleAudioOutputBuffer(-1, null, null, -1);
+                return;
+            }
+
+            mAudioWrapper.decoderMediaFormat.setInteger(MediaFormat.KEY_IS_ADTS, 1);
+            mAudioWrapper.decoderMediaFormat.setInteger(MediaFormat.KEY_PRIORITY, 0);
+            if (AACPlayer.sampleRateIndexMap.containsKey(sampleRateInHz)
+                    && AACPlayer.channelConfigIndexMap.containsKey(channelCount)) {
+                List<byte[]> list = new ArrayList<>();
+                list.add(MediaUtils.buildAacAudioSpecificConfig(
+                        AACPlayer.sampleRateIndexMap.get(sampleRateInHz),
+                        AACPlayer.channelConfigIndexMap.get(channelCount)));
+                MediaUtils.setCsdBuffers(mAudioWrapper.decoderMediaFormat, list);
+            }
+        }
+
+        @Override
+        public int handleVideoOutputBuffer(int roomIndex, ByteBuffer room,
+                                           MediaCodec.BufferInfo roomInfo, int roomSize) {
+            if (mFFMPEG != null) {
+                videoValueIntArray[0] = roomIndex;
+                videoValueIntArray[1] = roomSize;
+                videoValueObjectArray[0] = room;
+                videoValueObjectArray[1] = roomInfo;
+                mVideoJniObject.valueIntArray = videoValueIntArray;
+                mVideoJniObject.valueObjectArray = videoValueObjectArray;
+                return Integer.parseInt(
+                        mFFMPEG.onTransact(
+                                FFMPEG.DO_SOMETHING_CODE_handleVideoOutputBuffer, mVideoJniObject));
+            }
+
+            return 0;
+        }
+
+        @Override
+        public int handleAudioOutputBuffer(int roomIndex, ByteBuffer room,
+                                           MediaCodec.BufferInfo roomInfo, int roomSize) {
+            if (mFFMPEG != null) {
+                audioValueIntArray[0] = roomIndex;
+                audioValueIntArray[1] = roomSize;
+                audioValueObjectArray[0] = room;
+                audioValueObjectArray[1] = roomInfo;
+                mAudioJniObject.valueIntArray = audioValueIntArray;
+                mAudioJniObject.valueObjectArray = audioValueObjectArray;
+                Integer.parseInt(
+                        mFFMPEG.onTransact(
+                                FFMPEG.DO_SOMETHING_CODE_handleAudioOutputBuffer, mAudioJniObject));
+            }
+            if (mAudioWrapper.isHandling
+                    && mAudioWrapper.mAudioTrack != null
+                    && mAudioWrapper.mAudioTrack.getState() == AudioTrack.STATE_INITIALIZED
+                    && roomSize > 0) {
+                byte[] audioData = new byte[roomSize];
+                room.get(audioData, 0, audioData.length);
+                mAudioWrapper.mAudioTrack.write(audioData, roomInfo.offset, audioData.length);
+            }
+
+            return 0;
+        }
+    };
 
 }

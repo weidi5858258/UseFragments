@@ -764,7 +764,6 @@ public class PlayerWrapper {
                         String path =
                                 "/storage/1532-48AD/Android/data/" +
                                         "com.weidi.usefragments/files/Movies/";
-                        StringBuilder sb = new StringBuilder();
                         String title;
                         if (mIsLocal) {
                             title = mPath.substring(
@@ -772,6 +771,7 @@ public class PlayerWrapper {
                         } else {
                             title = mContentsMap.get(mPath);
                         }
+                        StringBuilder sb = new StringBuilder();
                         if (TextUtils.isEmpty(title)) {
                             sb.append("media-");
                         } else {
@@ -877,9 +877,7 @@ public class PlayerWrapper {
         } else {
             // 底层有关参数的设置
             mFFMPEGPlayer.setHandler(mUiHandler);
-            mFfmpegUseMediaCodecDecode.setDataSource(mPath);
             mFfmpegUseMediaCodecDecode.setSurface(mSurfaceHolder.getSurface());
-            mFfmpegUseMediaCodecDecode.setCallback(mFFMPEGPlayer.mCallback);
         }
 
         // 开启线程初始化ffmpeg

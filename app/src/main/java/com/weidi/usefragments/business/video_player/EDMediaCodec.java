@@ -23,6 +23,10 @@ public class EDMediaCodec {
     }
 
     public interface Callback {
+        boolean isVideoFinished();
+
+        boolean isAudioFinished();
+
         void handleVideoOutputFormat(MediaFormat mediaFormat);
 
         void handleAudioOutputFormat(MediaFormat mediaFormat);
@@ -44,7 +48,7 @@ public class EDMediaCodec {
      * @param size                   编解码数据的大小
      * @param presentationTimeUs     时间戳
      * @param render                 TYPE.TYPE_AUDIO为false,TYPE.TYPE_VIDEO为true(录制屏幕时为false).
-     * @param needFeedInputBuffer    一般为true.
+     * @param needFeedInputBuffer    一般为true.为false时,data,offset,size和presentationTimeUs随便写
      * @return
      */
     public static boolean feedInputBufferAndDrainOutputBuffer(
@@ -157,6 +161,18 @@ public class EDMediaCodec {
         MediaCodec.BufferInfo roomInfo = new MediaCodec.BufferInfo();
         ByteBuffer room = null;
         for (; ; ) {
+            if (type == TYPE.TYPE_AUDIO) {
+                if (callback.isAudioFinished()) {
+                    callback.handleAudioOutputBuffer(-1, null, null, -1);
+                    break;
+                }
+            } else {
+                if (callback.isVideoFinished()) {
+                    callback.handleVideoOutputBuffer(-1, null, null, -1);
+                    break;
+                }
+            }
+
             try {
                 // 房间号
                 int roomIndex = codec.dequeueOutputBuffer(roomInfo, TIME_OUT);

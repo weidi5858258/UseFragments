@@ -864,6 +864,7 @@ public class MediaUtils {
      Encoder时可以自己作主指定mime得到MediaFormat对象
      这个方法是给录屏设置的参数
      width和height是视频的尺寸，这个尺寸不能超过视频采集时采集到的尺寸，否则会直接crash
+     width和height不能大于手机的宽高,大一个像素也不行.
      * @param width
      * @param height
      * @return
