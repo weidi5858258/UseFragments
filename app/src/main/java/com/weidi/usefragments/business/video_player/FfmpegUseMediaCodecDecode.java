@@ -598,6 +598,10 @@ public class FfmpegUseMediaCodecDecode {
         } else {
             // region
 
+            if (mSurface == null) {
+                MLog.e(TAG, "initVideoMediaCodec() mSurface is null");
+                return false;
+            }
             if (jniObject == null
                     || jniObject.valueObjectArray == null
                     || jniObject.valueObjectArray.length < 3) {
@@ -631,20 +635,37 @@ public class FfmpegUseMediaCodecDecode {
                 default:
                     break;
             }
-            if (TextUtils.isEmpty(videoMime) || mSurface == null) {
-                MLog.e(TAG, "initVideoMediaCodec() " +
-                        "TextUtils.isEmpty(videoMime) || mSurface == null");
+            if (TextUtils.isEmpty(videoMime)) {
+                MLog.e(TAG, "initVideoMediaCodec() TextUtils.isEmpty(videoMime)");
                 return false;
             }
 
             long[] parameters = (long[]) valueObjectArray[0];
+            // 视频宽
             int width = (int) parameters[0];
+            // 视频高
             int height = (int) parameters[1];
             // 单位: 秒
             int duration = (int) parameters[2];
+            // 帧率
             int frameRate = (int) parameters[3];
+            // 码率
             long bit_rate = parameters[4];
+
             mediaFormat = MediaUtils.getVideoDecoderMediaFormat(width, height);
+            mediaFormat.setString(MediaFormat.KEY_MIME, videoMime);
+            if (duration > 0) {
+                mediaFormat.setLong(MediaFormat.KEY_DURATION, duration * 1000000L);
+            } else {
+                // 随便设置了一个数
+                mediaFormat.setLong(MediaFormat.KEY_DURATION, -9223372036854L);
+            }
+            mediaFormat.setInteger(MediaFormat.KEY_FRAME_RATE, frameRate);
+            mediaFormat.setLong(MediaFormat.KEY_BIT_RATE, bit_rate);
+            mediaFormat.setInteger(MediaFormat.KEY_BITRATE_MODE,
+                    MediaCodecInfo.EncoderCapabilities.BITRATE_MODE_CQ);
+            mediaFormat.setInteger(MediaFormat.KEY_COLOR_FORMAT,
+                    MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420Flexible);
 
             Object object1 = valueObjectArray[1];
             Object object2 = valueObjectArray[2];
@@ -654,74 +675,84 @@ public class FfmpegUseMediaCodecDecode {
             if (TextUtils.equals(videoMime, MediaFormat.MIMETYPE_VIDEO_HEVC)) {// 1
                 if (object1 != null && object2 == null) {
                     csd0 = (byte[]) object1;
+                    mediaFormat.setByteBuffer("csd-0", ByteBuffer.wrap(csd0));
                 } else {
-                    csd0 = new byte[]{0, 0, 0, 1, 64, 1, 12, 1,
-                            -1, -1, 1, 96, 0, 0, 3, 0, -112,
-                            0, 0, 3, 0, 0, 3, 0,
-                            -103, -107, -104, 9, 0, 0, 0, 1, 66, 1, 1, 1, 96, 0, 0, 3, 0, -112, 0
-                            , 0,
-                            3, 0, 0, 3, 0,
-                            -103, -96, 1, -32, 32, 2, 28, 89, 101, 102, -110, 76, -82, 106, 4, 36
-                            , 4,
-                            8, 0, 0, 31, 64,
-                            0, 7, 83, 0, 64, 0, 0, 0, 1, 68, 1, -63, 114, -76, 98, 64, 0};
+                    if (mGetMediaFormat.mVideoMediaFormat != null
+                            && mGetMediaFormat.mVideoMediaFormat.containsKey("csd-0")) {
+                        mediaFormat.setByteBuffer("csd-0",
+                                mGetMediaFormat.mVideoMediaFormat.getByteBuffer("csd-0"));
+                    }
+                    if (mGetMediaFormat.mVideoMediaFormat != null
+                            && mGetMediaFormat.mVideoMediaFormat.containsKey("csd-1")) {
+                        mediaFormat.setByteBuffer("csd-1",
+                                mGetMediaFormat.mVideoMediaFormat.getByteBuffer("csd-1"));
+                    }
                 }
-                mediaFormat.setByteBuffer("csd-0", ByteBuffer.wrap(csd0));
             } else if (TextUtils.equals(videoMime, MediaFormat.MIMETYPE_VIDEO_AVC)) {// 2
                 if (object1 != null && object2 != null) {
                     csd0 = (byte[]) object1;
                     csd1 = (byte[]) object2;
-                    if (csd0.length == 0) {
-                        csd0 = new byte[]{0, 0, 0, 1, 103, 100, 0, 40, -84,
-                                -47, 0, 120, 2, 39, -27,
-                                -64, 90, -128, -128, -125, 32, 0, 0,
-                                3, 0, 32, 0, 0, 7, -127, -29, 6, 34, 64};
-                    }
-                    if (csd1.length == 0) {
-                        csd1 = new byte[]{0, 0, 0, 1, 104, -21, -113, 44};
-                    }
                     mediaFormat.setByteBuffer("csd-0", ByteBuffer.wrap(csd0));
                     mediaFormat.setByteBuffer("csd-1", ByteBuffer.wrap(csd1));
+                    if (csd0.length == 0
+                            && mGetMediaFormat.mVideoMediaFormat != null
+                            && mGetMediaFormat.mVideoMediaFormat.containsKey("csd-0")) {
+                        mediaFormat.setByteBuffer("csd-0",
+                                mGetMediaFormat.mVideoMediaFormat.getByteBuffer("csd-0"));
+                    }
+                    if (csd1.length == 0
+                            && mGetMediaFormat.mVideoMediaFormat != null
+                            && mGetMediaFormat.mVideoMediaFormat.containsKey("csd-1")) {
+                        mediaFormat.setByteBuffer("csd-1",
+                                mGetMediaFormat.mVideoMediaFormat.getByteBuffer("csd-1"));
+                    }
                 }
             } else if (TextUtils.equals(videoMime, MediaFormat.MIMETYPE_VIDEO_MPEG4)) {// 1
                 if (object1 != null && object2 == null) {
                     csd0 = (byte[]) object1;
+                    mediaFormat.setByteBuffer("csd-0", ByteBuffer.wrap(csd0));
                 } else {
-                    csd0 = new byte[]{0, 0, 1, -80, 1, 0, 0, 1, -75, -119, 19, 0, 0, 1, 0, 0, 0, 1,
-                            32, 0, -60, -115,
-                            -120, 0, -51, 20, 4, 60, 20, 99, 0, 0, 1, -78, 76, 97, 118, 99, 53, 50,
-                            46, 49, 53, 46, 48};
+                    if (mGetMediaFormat.mVideoMediaFormat != null
+                            && mGetMediaFormat.mVideoMediaFormat.containsKey("csd-0")) {
+                        mediaFormat.setByteBuffer("csd-0",
+                                mGetMediaFormat.mVideoMediaFormat.getByteBuffer("csd-0"));
+                    }
+                    if (mGetMediaFormat.mVideoMediaFormat != null
+                            && mGetMediaFormat.mVideoMediaFormat.containsKey("csd-1")) {
+                        mediaFormat.setByteBuffer("csd-1",
+                                mGetMediaFormat.mVideoMediaFormat.getByteBuffer("csd-1"));
+                    }
                 }
-                mediaFormat.setByteBuffer("csd-0", ByteBuffer.wrap(csd0));
-            } else if (TextUtils.equals(videoMime, MediaFormat.MIMETYPE_VIDEO_VP8)) {// 0
-
-            } else if (TextUtils.equals(videoMime, MediaFormat.MIMETYPE_VIDEO_VP9)) {// 0
-
+            } else if (TextUtils.equals(videoMime, MediaFormat.MIMETYPE_VIDEO_VP8)
+                    || TextUtils.equals(videoMime, MediaFormat.MIMETYPE_VIDEO_VP9)) {// 0
+                if (mGetMediaFormat.mVideoMediaFormat != null
+                        && mGetMediaFormat.mVideoMediaFormat.containsKey("csd-0")) {
+                    mediaFormat.setByteBuffer("csd-0",
+                            mGetMediaFormat.mVideoMediaFormat.getByteBuffer("csd-0"));
+                }
+                if (mGetMediaFormat.mVideoMediaFormat != null
+                        && mGetMediaFormat.mVideoMediaFormat.containsKey("csd-1")) {
+                    mediaFormat.setByteBuffer("csd-1",
+                            mGetMediaFormat.mVideoMediaFormat.getByteBuffer("csd-1"));
+                }
             } else if (TextUtils.equals(videoMime, MediaFormat.MIMETYPE_VIDEO_MPEG2)) {// 1
+                // {0, 0, 1, -77, 120, 4, 56, 53, -1, -1, -32, 24, 0, 0, 1, -75, 20, 74, 0, 1, 0, 0}
                 if (object1 != null && object2 == null) {
                     csd0 = (byte[]) object1;
+                    mediaFormat.setByteBuffer("csd-0", ByteBuffer.wrap(csd0));
                 } else {
-                    csd0 = new byte[]{0, 0, 1, -77, 120, 4, 56, 53, -1, -1,
-                            -32, 24, 0, 0, 1, -75, 20, 74, 0, 1, 0, 0};
+                    if (mGetMediaFormat.mVideoMediaFormat != null
+                            && mGetMediaFormat.mVideoMediaFormat.containsKey("csd-0")) {
+                        mediaFormat.setByteBuffer("csd-0",
+                                mGetMediaFormat.mVideoMediaFormat.getByteBuffer("csd-0"));
+                    }
+                    if (mGetMediaFormat.mVideoMediaFormat != null
+                            && mGetMediaFormat.mVideoMediaFormat.containsKey("csd-1")) {
+                        mediaFormat.setByteBuffer("csd-1",
+                                mGetMediaFormat.mVideoMediaFormat.getByteBuffer("csd-1"));
+                    }
                 }
-                mediaFormat.setByteBuffer("csd-0", ByteBuffer.wrap(csd0));
             }
-
-            mediaFormat.setString(MediaFormat.KEY_MIME, videoMime);
-            if (duration > 0) {
-                mediaFormat.setLong(MediaFormat.KEY_DURATION, duration * 1000000L);
-            } else {
-                // 随便设置了一个数
-                mediaFormat.setLong(MediaFormat.KEY_DURATION, -9223372036854L);
-            }
-            // 设置帧率
-            mediaFormat.setInteger(MediaFormat.KEY_FRAME_RATE, frameRate);
-            // 设置比特率
-            mediaFormat.setLong(MediaFormat.KEY_BIT_RATE, bit_rate);
-            mediaFormat.setInteger(MediaFormat.KEY_BITRATE_MODE,
-                    MediaCodecInfo.EncoderCapabilities.BITRATE_MODE_CQ);
-            mediaFormat.setInteger(MediaFormat.KEY_COLOR_FORMAT,
-                    MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420Flexible);
 
             // endregion
         }
@@ -729,7 +760,7 @@ public class FfmpegUseMediaCodecDecode {
         MLog.w(TAG, "initVideoMediaCodec() video  mime: " + videoMime);
         if (mVideoWrapper != null && mVideoWrapper.decoderMediaCodec != null) {
             // mVideoWrapper.decoderMediaCodec.flush();
-            MLog.w(TAG, "initVideoMediaCodec() video clear");
+            MLog.w(TAG, "initVideoMediaCodec() video  clear");
             mVideoWrapper.clear();
             mVideoWrapper = null;
         }
@@ -748,6 +779,7 @@ public class FfmpegUseMediaCodecDecode {
                         mVideoWrapper.mSurface);
         MLog.w(TAG, "initVideoMediaCodec() create MediaCodec end");
         if (mVideoWrapper.decoderMediaCodec == null) {
+            MLog.e(TAG, "initVideoMediaCodec() mVideoWrapper.decoderMediaCodec is null");
             return false;
         }
 

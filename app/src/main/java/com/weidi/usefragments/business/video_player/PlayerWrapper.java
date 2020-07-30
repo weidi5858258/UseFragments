@@ -854,7 +854,8 @@ public class PlayerWrapper {
         mGetMediaFormat.mVideoMediaFormat = null;
         mGetMediaFormat.mAudioMediaFormat = null;
         whatPlayer = mSP.getString(PLAYBACK_USE_PLAYER, PLAYER_FFMPEG_MEDIACODEC);
-        if (!mPath.endsWith(".m4s")
+        if (mIsLocal
+                && !mPath.endsWith(".m4s")
                 && !mPath.endsWith(".h264")
                 && !mPath.endsWith(".aac")
                 && (TextUtils.isEmpty(mType)
@@ -1795,7 +1796,7 @@ public class PlayerWrapper {
         }
 
         if (mMediaDuration > 0) {
-            if (mPresentationTime < mMediaDuration) {
+            if (mPresentationTime < (mMediaDuration - 5)) {
                 /*MLog.d(TAG, "Callback.MSG_ON_PROGRESS_UPDATED mPresentationTime: " +
                         mPresentationTime);*/
                 mPathTimeMap.put(mPath, mPresentationTime);
@@ -1803,7 +1804,9 @@ public class PlayerWrapper {
                     mPathTimeMap.remove(mPath);
                 }
             } else {
-                mPathTimeMap.remove(mPath);
+                if (mPathTimeMap.containsKey(mPath)) {
+                    mPathTimeMap.remove(mPath);
+                }
             }
             //MLog.d(TAG, "Callback.MSG_ON_PROGRESS_UPDATED "+mPathTimeMap.size());
         }
