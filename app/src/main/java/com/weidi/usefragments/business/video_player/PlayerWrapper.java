@@ -106,6 +106,12 @@ public class PlayerWrapper {
     // 显示控制面板(true表示显示,false表示隐藏)
     public static final String PLAYBACK_SHOW_CONTROLLERPANELLAYOUT =
             "playback_show_controllerpanellayout";
+    // 使用"use_exoplayer"和"use_ffmpeg"两个字符串.默认为"use_exoplayer"
+    // 当值为use_exoplayer时,表示在FfmpegUseMediaCodecDecode类中,
+    // MediaFormat的值由exoplayer去得到的.
+    // 另一个的意思是由底层传给java层一些参数然后创建MediaFormat
+    public static final String PLAYBACK_USE_EXOPLAYER_OR_FFMPEG =
+            "playback_use_exoplayer_or_ffmpeg";
 
     private HashMap<String, Long> mPathTimeMap = new HashMap<>();
     private ArrayList<String> mCouldPlaybackPathList = new ArrayList<>();
@@ -843,6 +849,7 @@ public class PlayerWrapper {
         }
     }
 
+    // @@@
     public void startForGetMediaFormat() {
         mGetMediaFormat.mVideoMediaFormat = null;
         mGetMediaFormat.mAudioMediaFormat = null;
@@ -852,7 +859,10 @@ public class PlayerWrapper {
                 && !mPath.endsWith(".aac")
                 && (TextUtils.isEmpty(mType)
                 || mType.startsWith("video/"))) {
-            if (TextUtils.equals(whatPlayer, PLAYER_FFMPEG_MEDIACODEC)) {
+            String use_mode = mSP.getString(
+                    PLAYBACK_USE_EXOPLAYER_OR_FFMPEG, "use_exoplayer");
+            if (TextUtils.equals(whatPlayer, PLAYER_FFMPEG_MEDIACODEC)
+                    && TextUtils.equals(use_mode, "use_exoplayer")) {
                 onReady();
                 mGetMediaFormat.start(mPath);
                 return;

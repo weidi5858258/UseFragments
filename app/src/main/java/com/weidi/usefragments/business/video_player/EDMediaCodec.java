@@ -84,6 +84,11 @@ public class EDMediaCodec {
      * @param size
      * @param presentationTimeUs
      * @return
+     *
+     如果第一次调用feedInputBuffer(...)方法,
+     执行dequeueInputBuffer(...)时就抛出java.lang.IllegalStateException异常
+     android.media.MediaCodec.native_dequeueInputBuffer(Native Method)
+     很可能是创建的MediaCodec有问题,这个又是MediaFormat引起的
      */
     private static boolean feedInputBuffer(
             Callback callback,
@@ -110,6 +115,7 @@ public class EDMediaCodec {
             if (room == null) {
                 return false;
             }
+
             // 入住之前打扫一下房间
             room.clear();
             // 入住
@@ -135,10 +141,10 @@ public class EDMediaCodec {
                 | NullPointerException e) {
             e.printStackTrace();
             if (type == TYPE.TYPE_AUDIO) {
-                MLog.e(TAG, "feedInputBuffer() Audio Output occur exception: " + e);
+                MLog.e(TAG, "feedInputBuffer() Audio Input occur exception: " + e);
                 callback.handleAudioOutputBuffer(-1, null, null, -1);
             } else {
-                MLog.e(TAG, "feedInputBuffer() Video Output occur exception: " + e);
+                MLog.e(TAG, "feedInputBuffer() Video Input occur exception: " + e);
                 callback.handleVideoOutputBuffer(-1, null, null, -1);
             }
             MediaUtils.releaseMediaCodec(codec);
@@ -282,25 +288,5 @@ public class EDMediaCodec {
 
         return true;
     }
-
-    /*private static void handleAudioOutputFormat(MediaFormat mediaFormat) {
-
-    }
-
-    private static void handleVideoOutputFormat(MediaFormat mediaFormat) {
-
-    }
-
-    private static int handleAudioOutputBuffer(int roomIndex, ByteBuffer room,
-                                               MediaCodec.BufferInfo roomInfo, int roomSize) {
-
-        return 0;
-    }
-
-    private static int handleVideoOutputBuffer(int roomIndex, ByteBuffer room,
-                                               MediaCodec.BufferInfo roomInfo, int roomSize) {
-
-        return 0;
-    }*/
 
 }

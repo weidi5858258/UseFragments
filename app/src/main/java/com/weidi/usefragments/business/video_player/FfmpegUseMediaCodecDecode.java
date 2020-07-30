@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 
 import static com.weidi.usefragments.business.video_player.PlayerWrapper.PLAYBACK_IS_MUTE;
+import static com.weidi.usefragments.business.video_player.PlayerWrapper.PLAYBACK_USE_EXOPLAYER_OR_FFMPEG;
 import static com.weidi.usefragments.business.video_player.PlayerWrapper.PLAYBACK_USE_PLAYER;
 import static com.weidi.usefragments.business.video_player.PlayerWrapper.PLAYER_FFMPEG_MEDIACODEC;
 import static com.weidi.usefragments.service.DownloadFileService.PREFERENCES_NAME;
@@ -557,6 +558,7 @@ public class FfmpegUseMediaCodecDecode {
     }
 
     public boolean initVideoMediaCodec(JniObject jniObject) {
+        boolean useExoPlayerForMediaFormat = true;
         if (mContext != null) {
             SharedPreferences sp =
                     mContext.getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE);
@@ -564,24 +566,35 @@ public class FfmpegUseMediaCodecDecode {
             if (!TextUtils.equals(whatPlayer, PLAYER_FFMPEG_MEDIACODEC)) {
                 return false;
             }
+
+            String use_mode = sp.getString(PLAYBACK_USE_EXOPLAYER_OR_FFMPEG, "use_exoplayer");
+            if (TextUtils.equals(use_mode, "use_ffmpeg")) {
+                useExoPlayerForMediaFormat = false;
+            }
         }
         MLog.w(TAG, "initVideoMediaCodec() start");
         MediaFormat mediaFormat = null;
         String videoMime = null;
-        // http://112.17.40.12/PLTV/88888888/224/3221226758/1.m3u8
         if (mGetMediaFormat != null
                 && mGetMediaFormat.mVideoMediaFormat != null) {
             // mime=video/hevc
-            String mime = mGetMediaFormat.mVideoMediaFormat.getString(MediaFormat.KEY_MIME);
-            if (TextUtils.equals(mime, "video/hevc")) {
-                mGetMediaFormat.mVideoMediaFormat = null;
+            videoMime = mGetMediaFormat.mVideoMediaFormat.getString(MediaFormat.KEY_MIME);
+            // http://112.17.40.12/PLTV/88888888/224/3221226758/1.m3u8
+            if (TextUtils.equals(videoMime, "video/hevc")
+                    || TextUtils.equals(videoMime, "video/avc")) {
+                useExoPlayerForMediaFormat = false;
             }
         }
-        if (mGetMediaFormat != null
+        if (useExoPlayerForMediaFormat
+                && mGetMediaFormat != null
                 && mGetMediaFormat.mVideoMediaFormat != null) {
             mediaFormat = mGetMediaFormat.mVideoMediaFormat;
             videoMime = mediaFormat.getString(MediaFormat.KEY_MIME);
             MLog.w(TAG, "initVideoMediaCodec() video GetMediaFormat");
+            if (mediaFormat.containsKey(MediaFormat.KEY_MAX_INPUT_SIZE)) {
+                int max_input_size = mediaFormat.getInteger(MediaFormat.KEY_MAX_INPUT_SIZE);
+                MLog.w(TAG, "initVideoMediaCodec() video max_input_size: " + max_input_size);
+            }
         } else {
             // region
 
@@ -623,7 +636,6 @@ public class FfmpegUseMediaCodecDecode {
                         "TextUtils.isEmpty(videoMime) || mSurface == null");
                 return false;
             }
-            MLog.w(TAG, "initVideoMediaCodec() video  mime: " + videoMime);
 
             long[] parameters = (long[]) valueObjectArray[0];
             int width = (int) parameters[0];
@@ -668,9 +680,9 @@ public class FfmpegUseMediaCodecDecode {
                     if (csd1.length == 0) {
                         csd1 = new byte[]{0, 0, 0, 1, 104, -21, -113, 44};
                     }
+                    mediaFormat.setByteBuffer("csd-0", ByteBuffer.wrap(csd0));
+                    mediaFormat.setByteBuffer("csd-1", ByteBuffer.wrap(csd1));
                 }
-                mediaFormat.setByteBuffer("csd-0", ByteBuffer.wrap(csd0));
-                mediaFormat.setByteBuffer("csd-1", ByteBuffer.wrap(csd1));
             } else if (TextUtils.equals(videoMime, MediaFormat.MIMETYPE_VIDEO_MPEG4)) {// 1
                 if (object1 != null && object2 == null) {
                     csd0 = (byte[]) object1;
@@ -714,6 +726,7 @@ public class FfmpegUseMediaCodecDecode {
             // endregion
         }
 
+        MLog.w(TAG, "initVideoMediaCodec() video  mime: " + videoMime);
         if (mVideoWrapper != null && mVideoWrapper.decoderMediaCodec != null) {
             // mVideoWrapper.decoderMediaCodec.flush();
             MLog.w(TAG, "initVideoMediaCodec() video clear");
@@ -824,6 +837,8 @@ public class FfmpegUseMediaCodecDecode {
              {crop-top=0, crop-right=1279, color-format=19, height=720,
              color-standard=1, crop-left=0, color-transfer=3, stride=1280,
              mime=video/raw, slice-height=720, width=1280, color-range=2, crop-bottom=719}
+
+             durationUs: 从Us到秒, 1 s = 1000 * 1000 Us
              */
             try {
                 MediaFormat newMediaFormat = mediaFormat;

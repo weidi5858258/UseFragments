@@ -416,21 +416,18 @@ public class RecordScreenFragment extends BaseFragment {
     }
 
     private void destroy() {
-        if (mMediaProjection != null) {
-            mMediaProjection.unregisterCallback(mMediaProjectionCallback);
-        }
         if (mHandlerThread != null) {
-            mHandlerThread.quit();
+            mHandlerThread.quitSafely();
         }
     }
 
     private void releaseAll() {
-        if (mMediaProjection != null) {
+        if (mMediaProjection != null
+                && mVirtualDisplay != null) {
             mMediaProjection.stop();
             mMediaProjection.unregisterCallback(mMediaProjectionCallback);
             mMediaProjection = null;
-        }
-        if (mVirtualDisplay != null) {
+
             mVirtualDisplay.release();
             mVirtualDisplay = null;
         }
@@ -461,6 +458,54 @@ public class RecordScreenFragment extends BaseFragment {
                 FragOperManager.getInstance().enter3(new A2Fragment());
                 break;
         }
+    }
+
+    /***
+     mSurface=Surface(name=Sys2003:com.android.systemui/com.android.systemui.media
+     .MediaProjectionPermissionActivity)
+     mSurface=Surface(name=com.android.systemui/com.android.systemui.media
+     .MediaProjectionPermissionActivity)
+     mSurface=Surface(name=com.weidi.usefragments/com.weidi.usefragments.MainActivity1)
+
+     调用下面代码后的现象:
+     弹出一个框,有两个按钮("取消"和"立即开始"),还有一个选择框("不再提示")
+     1.只点击"立即开始"按钮
+     那么会回调onActivityResult()方法.
+     由于没有选择"不再提示",因此下次调用下面代码时还会弹出框让用户进行确认
+     2.选择"不再提示",并点击"立即开始"按钮
+     那么会回调onActivityResult()方法.
+     由于选择过"不再提示",因此下次调用下面代码时不会再弹出框让用户进行确认
+     只会回调onActivityResult()方法.
+     3.只点击"取消"按钮
+     不会回调onActivityResult()方法.
+     下次调用下面代码时还会弹出框让用户进行确认
+     4.选择"不再提示",并点击"取消"按钮
+     不会回调onActivityResult()方法.
+     下次调用下面代码时还会弹出框让用户进行确认
+     */
+    private void requestPermission() {
+        if (mMediaProjectionManager != null) {
+            startActivityForResult(
+                    mMediaProjectionManager.createScreenCaptureIntent(),
+                    REQUEST_CODE);
+        }
+    }
+
+    private void activityResult(int requestCode, int resultCode, Intent data) {
+        // requestCode: 1000 resultCode: -1 data: Intent { (has extras) }
+        if (requestCode != REQUEST_CODE) {
+            return;
+        }
+
+        // MediaProjection对象是这样来的,所以要得到MediaProjection对象,必须同意权限
+        mMediaProjection =
+                mMediaProjectionManager.getMediaProjection(resultCode, data);
+        if (mMediaProjection == null) {
+            releaseAll();
+            return;
+        }
+
+        mThreadHandler.sendEmptyMessage(START_RECORD_SCREEN);
     }
 
     private void prepare() {
@@ -498,6 +543,8 @@ public class RecordScreenFragment extends BaseFragment {
 
         mIsVideoRecording = false;
         mIsAudioRecording = false;
+        mOutputVideoTrack = -1;
+        mOutputAudioTrack = -1;
 
         // AudioRecord
         mAudioRecord = MediaUtils.createAudioRecord();
@@ -549,37 +596,6 @@ public class RecordScreenFragment extends BaseFragment {
         for (MediaCodecInfo info : mediaCodecInfos) {
             MLog.d(TAG, "prepare() " + printThis() +
                     " " + info.getName());
-        }
-    }
-
-    /***
-     mSurface=Surface(name=Sys2003:com.android.systemui/com.android.systemui.media
-     .MediaProjectionPermissionActivity)
-     mSurface=Surface(name=com.android.systemui/com.android.systemui.media
-     .MediaProjectionPermissionActivity)
-     mSurface=Surface(name=com.weidi.usefragments/com.weidi.usefragments.MainActivity1)
-
-     调用下面代码后的现象:
-     弹出一个框,有两个按钮("取消"和"立即开始"),还有一个选择框("不再提示")
-     1.只点击"立即开始"按钮
-     那么会回调onActivityResult()方法.
-     由于没有选择"不再提示",因此下次调用下面代码时还会弹出框让用户进行确认
-     2.选择"不再提示",并点击"立即开始"按钮
-     那么会回调onActivityResult()方法.
-     由于选择过"不再提示",因此下次调用下面代码时不会再弹出框让用户进行确认
-     只会回调onActivityResult()方法.
-     3.只点击"取消"按钮
-     不会回调onActivityResult()方法.
-     下次调用下面代码时还会弹出框让用户进行确认
-     4.选择"不再提示",并点击"取消"按钮
-     不会回调onActivityResult()方法.
-     下次调用下面代码时还会弹出框让用户进行确认
-     */
-    private void requestPermission() {
-        if (mMediaProjectionManager != null) {
-            startActivityForResult(
-                    mMediaProjectionManager.createScreenCaptureIntent(),
-                    REQUEST_CODE);
         }
     }
 
@@ -639,10 +655,12 @@ public class RecordScreenFragment extends BaseFragment {
 
             // 相当于按了“Home”键
             getAttachedActivity().moveTaskToBack(true);
-        } else {
-            mThreadHandler.removeMessages(STOP_RECORD_SCREEN);
-            mThreadHandler.sendEmptyMessage(STOP_RECORD_SCREEN);
+
+            return;
         }
+
+        mThreadHandler.removeMessages(STOP_RECORD_SCREEN);
+        mThreadHandler.sendEmptyMessage(STOP_RECORD_SCREEN);
     }
 
     private synchronized void stopRecordScreen() {
@@ -654,8 +672,6 @@ public class RecordScreenFragment extends BaseFragment {
             MLog.d(TAG, "stopRecordScreen() start");
 
         mIsRecording = false;
-        mOutputVideoTrack = -1;
-        mOutputAudioTrack = -1;
 
         while (mIsVideoRecording || mIsAudioRecording) {
             SystemClock.sleep(10);
@@ -683,23 +699,6 @@ public class RecordScreenFragment extends BaseFragment {
                         MLog.d(TAG, "MediaProjection.Callback onStop() " + printThis());
                 }
             };
-
-    private void activityResult(int requestCode, int resultCode, Intent data) {
-        // requestCode: 1000 resultCode: -1 data: Intent { (has extras) }
-        if (requestCode != REQUEST_CODE) {
-            return;
-        }
-
-        // MediaProjection对象是这样来的,所以要得到MediaProjection对象,必须同意权限
-        mMediaProjection =
-                mMediaProjectionManager.getMediaProjection(resultCode, data);
-        if (mMediaProjection == null) {
-            releaseAll();
-            return;
-        }
-
-        mThreadHandler.sendEmptyMessage(START_RECORD_SCREEN);
-    }
 
     private void threadHandleMessage(Message msg) {
         if (msg == null) {
@@ -759,78 +758,6 @@ public class RecordScreenFragment extends BaseFragment {
                 presentationTime,
                 MediaCodec.BUFFER_FLAG_END_OF_STREAM);
     }
-
-    private EDMediaCodec.Callback mCallback = new EDMediaCodec.Callback() {
-        @Override
-        public boolean isVideoFinished() {
-            return !mIsRecording;
-        }
-
-        @Override
-        public boolean isAudioFinished() {
-            return !mIsRecording;
-        }
-
-        @Override
-        public synchronized void handleVideoOutputFormat(MediaFormat mediaFormat) {
-            mVideoEncoderMediaFormat = mediaFormat;
-            mOutputVideoTrack = mMediaMuxer.addTrack(mVideoEncoderMediaFormat);
-            MLog.d(TAG, "VideoEncoderThread Output mOutputVideoTrack: " +
-                    mOutputVideoTrack);
-            if (!mIsMuxerStarted
-                    && mOutputAudioTrack >= 0
-                    && mOutputVideoTrack >= 0) {
-                MLog.d(TAG, "VideoEncoderThread Output mMediaMuxer.start()");
-                mMediaMuxer.start();
-                mIsMuxerStarted = true;
-            }
-        }
-
-        @Override
-        public synchronized void handleAudioOutputFormat(MediaFormat mediaFormat) {
-            mAudioEncoderMediaFormat = mediaFormat;
-            mOutputAudioTrack =
-                    mMediaMuxer.addTrack(mAudioEncoderMediaFormat);
-            MLog.d(TAG, "AudioEncoderThread Output mOutputAudioTrack: " +
-                    mOutputAudioTrack);
-            if (!mIsMuxerStarted
-                    && mOutputAudioTrack >= 0
-                    && mOutputVideoTrack >= 0) {
-                MLog.d(TAG, "AudioEncoderThread Output mMediaMuxer.start()");
-                mMediaMuxer.start();
-                mIsMuxerStarted = true;
-            }
-        }
-
-        @Override
-        public int handleVideoOutputBuffer(int roomIndex, ByteBuffer room,
-                                           MediaCodec.BufferInfo roomInfo, int roomSize) {
-            if (mIsMuxerStarted
-                    && mOutputVideoTrack >= 0
-                    && room != null
-                    && roomInfo.size != 0) {
-                roomInfo.presentationTimeUs = System.nanoTime() / 1000;
-                // 把编码后的数据写进文件
-                mMediaMuxer.writeSampleData(mOutputVideoTrack, room, roomInfo);
-            }
-
-            return 0;
-        }
-
-        @Override
-        public int handleAudioOutputBuffer(int roomIndex, ByteBuffer room,
-                                           MediaCodec.BufferInfo roomInfo, int roomSize) {
-            if (mIsMuxerStarted
-                    && mOutputAudioTrack >= 0
-                    && room != null
-                    && roomInfo.size != 0) {
-                roomInfo.presentationTimeUs = System.nanoTime() / 1000;
-                mMediaMuxer.writeSampleData(mOutputAudioTrack, room, roomInfo);
-            }
-
-            return 0;
-        }
-    };
 
     private class VideoEncoderRunnable implements Runnable {
         @Override
@@ -926,5 +853,77 @@ public class RecordScreenFragment extends BaseFragment {
             MLog.d(TAG, "AudioEncoderThread end");
         }
     }
+
+    private EDMediaCodec.Callback mCallback = new EDMediaCodec.Callback() {
+        @Override
+        public boolean isVideoFinished() {
+            return !mIsRecording;
+        }
+
+        @Override
+        public boolean isAudioFinished() {
+            return !mIsRecording;
+        }
+
+        @Override
+        public synchronized void handleVideoOutputFormat(MediaFormat mediaFormat) {
+            mVideoEncoderMediaFormat = mediaFormat;
+            mOutputVideoTrack = mMediaMuxer.addTrack(mVideoEncoderMediaFormat);
+            MLog.d(TAG, "VideoEncoderThread Output mOutputVideoTrack: " +
+                    mOutputVideoTrack);
+            if (!mIsMuxerStarted
+                    && mOutputAudioTrack >= 0
+                    && mOutputVideoTrack >= 0) {
+                MLog.d(TAG, "VideoEncoderThread Output mMediaMuxer.start()");
+                mMediaMuxer.start();
+                mIsMuxerStarted = true;
+            }
+        }
+
+        @Override
+        public synchronized void handleAudioOutputFormat(MediaFormat mediaFormat) {
+            mAudioEncoderMediaFormat = mediaFormat;
+            mOutputAudioTrack =
+                    mMediaMuxer.addTrack(mAudioEncoderMediaFormat);
+            MLog.d(TAG, "AudioEncoderThread Output mOutputAudioTrack: " +
+                    mOutputAudioTrack);
+            if (!mIsMuxerStarted
+                    && mOutputAudioTrack >= 0
+                    && mOutputVideoTrack >= 0) {
+                MLog.d(TAG, "AudioEncoderThread Output mMediaMuxer.start()");
+                mMediaMuxer.start();
+                mIsMuxerStarted = true;
+            }
+        }
+
+        @Override
+        public int handleVideoOutputBuffer(int roomIndex, ByteBuffer room,
+                                           MediaCodec.BufferInfo roomInfo, int roomSize) {
+            if (mIsMuxerStarted
+                    && mOutputVideoTrack >= 0
+                    && room != null
+                    && roomInfo.size != 0) {
+                roomInfo.presentationTimeUs = System.nanoTime() / 1000;
+                // 把编码后的数据写进文件
+                mMediaMuxer.writeSampleData(mOutputVideoTrack, room, roomInfo);
+            }
+
+            return 0;
+        }
+
+        @Override
+        public int handleAudioOutputBuffer(int roomIndex, ByteBuffer room,
+                                           MediaCodec.BufferInfo roomInfo, int roomSize) {
+            if (mIsMuxerStarted
+                    && mOutputAudioTrack >= 0
+                    && room != null
+                    && roomInfo.size != 0) {
+                roomInfo.presentationTimeUs = System.nanoTime() / 1000;
+                mMediaMuxer.writeSampleData(mOutputAudioTrack, room, roomInfo);
+            }
+
+            return 0;
+        }
+    };
 
 }

@@ -47,6 +47,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 import static com.weidi.usefragments.business.video_player.PlayerWrapper.PLAYBACK_ADDRESS;
+import static com.weidi.usefragments.business.video_player.PlayerWrapper.PLAYBACK_USE_EXOPLAYER_OR_FFMPEG;
 import static com.weidi.usefragments.business.video_player.PlayerWrapper.PLAYBACK_USE_PLAYER;
 import static com.weidi.usefragments.business.video_player.PlayerWrapper.PLAYER_FFMPEG;
 import static com.weidi.usefragments.business.video_player.PlayerWrapper.PLAYER_MEDIACODEC;
@@ -736,16 +737,24 @@ public class ContentsFragment extends BaseFragment {
     }
 
     private void numberFormatException(String text) {
-        if (text.startsWith("player_fm")) {
+        if (text.startsWith("player_fm")) {// player_ffmpeg_mediacodec
             mPreferences.edit().putString(PLAYBACK_USE_PLAYER, PLAYER_FFMPEG_MEDIACODEC).commit();
             mAddressET.setText("");
             MyToast.show(PLAYER_FFMPEG_MEDIACODEC);
-        } else if (text.startsWith("player_f")) {
+        } else if (text.startsWith("player_ff")) {// player_ffmpeg
             mPreferences.edit().putString(PLAYBACK_USE_PLAYER, PLAYER_FFMPEG).commit();
             mAddressET.setText("");
             MyToast.show(PLAYER_FFMPEG);
-        } else if (text.startsWith("player_m")) {
+        } else if (text.startsWith("player_mc")) {// player_mediacodec
             mPreferences.edit().putString(PLAYBACK_USE_PLAYER, PLAYER_MEDIACODEC).commit();
+            mAddressET.setText("");
+            MyToast.show(PLAYER_MEDIACODEC);
+        } else if (text.startsWith("use_exo")) {// use_exoplayer
+            mPreferences.edit().putString(PLAYBACK_USE_EXOPLAYER_OR_FFMPEG, "use_exoplayer").commit();
+            mAddressET.setText("");
+            MyToast.show(PLAYER_MEDIACODEC);
+        } else if (text.startsWith("use_ff")) {// use_ffmpeg
+            mPreferences.edit().putString(PLAYBACK_USE_EXOPLAYER_OR_FFMPEG, "use_ffmpeg").commit();
             mAddressET.setText("");
             MyToast.show(PLAYER_MEDIACODEC);
         } else if (text.startsWith("server start")) {

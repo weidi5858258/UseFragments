@@ -205,6 +205,7 @@ pthread_join(videoHandleDataThread, nullptr);
 fps不大于30,kbps为0或者小于4000,最大分辨率为1080P
  */
 
+#include <stdlib.h>
 #include <string>
 #include "MediaPlayerForMediaCodec.h"
 
@@ -854,6 +855,7 @@ namespace alexander_media_mediacodec {
             case AV_CODEC_ID_HEVC:        // 173
             case AV_CODEC_ID_MPEG4:       // 12
             case AV_CODEC_ID_MPEG2VIDEO: {// 2
+                // 比较轻松,只有csd-0
                 initRet = initMediaCodec(0x0002, videoMimeType,
                                          parameters, parameterSize,
                                          extradata, extradata_size,
@@ -861,26 +863,46 @@ namespace alexander_media_mediacodec {
                 break;
             }
             case AV_CODEC_ID_H264: {// 27
+                /*for (int i = 0; i < extradata_size; i++) {
+                    LOGW("initVideoMediaCodec() video   extradataStr: %d\n", extradata[i]);
+                }*/
+
                 int startCodeSPSIndex = 0;
                 int startCodePPSIndex = 0;
                 int spsLength = 0;
                 int ppsLength = 0;
                 for (int i = 1; i < extradata_size; i++) {
+                    // 0x67 = 103
                     if (extradata[i] == 0x67 && extradata[i - 2] == 0) {
                         startCodeSPSIndex = i;
                         spsLength = extradata[i - 1];
                     }
+                    // 0x68 = 104
                     if (extradata[i] == 0x68 && extradata[i - 2] == 0) {
                         startCodePPSIndex = i;
                         ppsLength = extradata[i - 1];
                     }
                 }
+                // 0x00, 0x00, 0x00, 0x01
+                spsLength += 4;
+                ppsLength += 4;
                 uint8_t sps[spsLength];
                 uint8_t pps[ppsLength];
                 memset(sps, 0, spsLength);
                 memset(pps, 0, ppsLength);
+                sps[0] = pps[0] = 0x00;
+                sps[1] = pps[1] = 0x00;
+                sps[2] = pps[2] = 0x00;
+                sps[3] = pps[3] = 0x01;
+                memcpy(sps + 4, extradata + startCodeSPSIndex, spsLength - 4);
+                memcpy(pps + 4, extradata + startCodePPSIndex, ppsLength - 4);
+
+                /*uint8_t sps[spsLength];
+                uint8_t pps[ppsLength];
+                memset(sps, 0, spsLength);
+                memset(pps, 0, ppsLength);
                 memcpy(sps, extradata + startCodeSPSIndex, spsLength);
-                memcpy(pps, extradata + startCodePPSIndex, ppsLength);
+                memcpy(pps, extradata + startCodePPSIndex, ppsLength);*/
 
                 initRet = initMediaCodec(0x0002, videoMimeType,
                                          parameters, parameterSize,
