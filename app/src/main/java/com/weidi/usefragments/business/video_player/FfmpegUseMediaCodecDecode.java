@@ -577,7 +577,6 @@ public class FfmpegUseMediaCodecDecode {
         String videoMime = null;
         if (mGetMediaFormat != null
                 && mGetMediaFormat.mVideoMediaFormat != null) {
-            // mime=video/hevc
             videoMime = mGetMediaFormat.mVideoMediaFormat.getString(MediaFormat.KEY_MIME);
             // http://112.17.40.12/PLTV/88888888/224/3221226758/1.m3u8
             if (TextUtils.equals(videoMime, "video/hevc")
