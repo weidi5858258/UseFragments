@@ -7,6 +7,7 @@ import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.database.Cursor;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -380,15 +381,24 @@ public class ContentsFragment extends BaseFragment {
                 DownloadFileService.MSG_SET_CALLBACK,
                 new Object[]{mCallback});
 
-        /*SharedPreferences preferences =
-                getContext().getSharedPreferences(
-                        DownloadFileService.PREFERENCES_NAME, Context.MODE_PRIVATE);
-        String videoName = preferences.getString(DownloadFileService.VIDEO_NAME, "");
-        if (!TextUtils.isEmpty(videoName)) {
-            if (mAddressET != null) {
-                mAddressET.setText(videoName);
+        // 如果能使用硬件解码,那么给EditText设置一个背景色,至于为什么? 没有为什么!
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            mAddressET.setBackgroundColor(
+                    getContext().getColor(android.R.color.white));
+        }
+        object = EventBusUtils.post(
+                PlayerWrapper.class,
+                PlayerWrapper.EVENT_CODE_USE_MEDIACODEC,
+                null);
+        if (object != null && object instanceof String) {
+            String toastInfo = (String) object;
+            if (toastInfo.contains("V")) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                    mAddressET.setBackgroundColor(
+                            getContext().getColor(R.color.darksalmon));
+                }
             }
-        }*/
+        }
     }
 
     /***
@@ -914,6 +924,23 @@ public class ContentsFragment extends BaseFragment {
     private Object onEvent(int what, Object[] objArray) {
         Object result = null;
         switch (what) {
+            case PlayerWrapper.EVENT_CODE_USE_MEDIACODEC:
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                    mAddressET.setBackgroundColor(
+                            getContext().getColor(android.R.color.white));
+                }
+                if (objArray != null
+                        && objArray.length > 0
+                        && objArray[0] instanceof String) {
+                    String toastInfo = (String) objArray[0];
+                    if (toastInfo.contains("V")) {
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                            mAddressET.setBackgroundColor(
+                                    getContext().getColor(R.color.darksalmon));
+                        }
+                    }
+                }
+                break;
             default:
                 break;
         }

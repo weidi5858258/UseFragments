@@ -27,7 +27,6 @@ import com.google.android.exoplayer2.RenderersFactory;
 import com.google.android.exoplayer2.SimpleExoPlayer;
 import com.google.android.exoplayer2.source.MediaSource;
 import com.google.android.exoplayer2.source.MergingMediaSource;
-import com.google.android.exoplayer2.upstream.DataSource;
 import com.weidi.usefragments.MyApplication;
 import com.weidi.usefragments.tool.MLog;
 
@@ -44,8 +43,8 @@ public class GetMediaFormat {
     private Context mContext;
     private PlayerWrapper mPlayerWrapper;
     private int mStreamCount = 0;
-    public MediaFormat mVideoMediaFormat = null;
-    public MediaFormat mAudioMediaFormat = null;
+    public static MediaFormat sVideoMediaFormat = null;
+    public static MediaFormat sAudioMediaFormat = null;
 
     /*public static GetMediaFormat getDefault() {
         if (sGetMediaFormat == null) {
@@ -78,8 +77,8 @@ public class GetMediaFormat {
         }
         MLog.i(TAG, "start() begin");
         mStreamCount = 0;
-        mVideoMediaFormat = null;
-        mAudioMediaFormat = null;
+        sVideoMediaFormat = null;
+        sAudioMediaFormat = null;
         ObjectHelper.getDefault().setMediaFormatCallback(mCallback);
         Uri uri = null;
 
@@ -136,7 +135,11 @@ public class GetMediaFormat {
 
                 @Override
                 public void onCreated(MediaFormat mediaFormat) {
-                    MLog.i(TAG, "MediaFormatCallback  mediaFormat: \n" + mediaFormat);
+                    if (mediaFormat != null) {
+                        MLog.i(TAG, "MediaFormatCallback mediaFormat: \n" + mediaFormat);
+                    } else {
+                        MLog.e(TAG, "MediaFormatCallback mediaFormat is null");
+                    }
                     if (player == null) {
                         return;
                     }
@@ -150,9 +153,9 @@ public class GetMediaFormat {
                         return;
                     }
                     if (mime.startsWith("video/")) {
-                        mVideoMediaFormat = mediaFormat;
+                        sVideoMediaFormat = mediaFormat;
                     } else if (mime.startsWith("audio/")) {
-                        mAudioMediaFormat = mediaFormat;
+                        sAudioMediaFormat = mediaFormat;
                     }
                     if ((++mSCount) == mStreamCount) {
                         release(true);

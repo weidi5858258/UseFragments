@@ -381,6 +381,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
       }
       maybeNotifyPlaybackInfoChanged();
     } catch (ExoPlaybackException e) {
+      Log.e(TAG, "player_alexander ExoPlaybackException");
       ObjectHelper.getDefault().setMediaFormat(null);
       Log.e(TAG, getExoPlaybackExceptionMessage(e), e);
       stopInternal(
@@ -390,6 +391,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
       playbackInfo = playbackInfo.copyWithPlaybackError(e);
       maybeNotifyPlaybackInfoChanged();
     } catch (IOException e) {
+      Log.e(TAG, "player_alexander IOException");
       ObjectHelper.getDefault().setMediaFormat(null);
       Log.e(TAG, "Source error", e);
       stopInternal(
@@ -399,6 +401,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
       playbackInfo = playbackInfo.copyWithPlaybackError(ExoPlaybackException.createForSource(e));
       maybeNotifyPlaybackInfoChanged();
     } catch (RuntimeException | OutOfMemoryError e) {
+      Log.e(TAG, "player_alexander RuntimeException | OutOfMemoryError");
       ObjectHelper.getDefault().setMediaFormat(null);
       Log.e(TAG, "Internal runtime error", e);
       ExoPlaybackException error =

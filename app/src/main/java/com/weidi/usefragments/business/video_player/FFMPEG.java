@@ -15,7 +15,6 @@ import com.weidi.usefragments.media.MediaUtils;
 import com.weidi.usefragments.tool.Callback;
 import com.weidi.usefragments.tool.JniObject;
 import com.weidi.usefragments.tool.MLog;
-import com.weidi.utils.MyToast;
 
 import static com.weidi.usefragments.business.video_player.PlayerWrapper.PLAYBACK_IS_MUTE;
 import static com.weidi.usefragments.service.DownloadFileService.PREFERENCES_NAME;
@@ -138,7 +137,7 @@ public class FFMPEG {
             });
         }
         if (mFfmpegUseMediaCodecDecode != null) {
-            mFfmpegUseMediaCodecDecode.release();
+            mFfmpegUseMediaCodecDecode.destroy();
         }
         onTransact(DO_SOMETHING_CODE_release, null);
         MediaUtils.releaseAudioTrack(mAudioTrack);

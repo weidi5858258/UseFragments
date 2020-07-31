@@ -38,6 +38,8 @@ import com.weidi.eventbus.EventBusUtils;
 import com.weidi.threadpool.ThreadPool;
 import com.weidi.usefragments.R;
 import com.weidi.usefragments.business.contents.Contents;
+import com.weidi.usefragments.business.contents.ContentsFragment;
+import com.weidi.usefragments.service.DownloadFileService;
 import com.weidi.usefragments.tool.Callback;
 import com.weidi.usefragments.tool.JniObject;
 import com.weidi.usefragments.tool.MLog;
@@ -70,10 +72,8 @@ import static com.weidi.usefragments.business.video_player.FFMPEG.DO_SOMETHING_C
 import static com.weidi.usefragments.business.video_player.FFMPEG.DO_SOMETHING_CODE_stepAdd;
 import static com.weidi.usefragments.business.video_player.FFMPEG.DO_SOMETHING_CODE_stepSubtract;
 import static com.weidi.usefragments.business.video_player.FFMPEG.DO_SOMETHING_CODE_videoHandleData;
-import static com.weidi.usefragments.business.video_player.FFMPEG.DO_SOMETHING_CODE_videoHandleRender;
 import static com.weidi.usefragments.business.video_player.FFMPEG.USE_MODE_AAC_H264;
 import static com.weidi.usefragments.business.video_player.FFMPEG.USE_MODE_AUDIO_VIDEO;
-import static com.weidi.usefragments.business.video_player.FFMPEG.USE_MODE_ONLY_AUDIO;
 import static com.weidi.usefragments.business.video_player.FFMPEG.VOLUME_MUTE;
 import static com.weidi.usefragments.business.video_player.FFMPEG.VOLUME_NORMAL;
 import static com.weidi.usefragments.service.DownloadFileService.PREFERENCES_NAME;
@@ -397,7 +397,7 @@ public class PlayerWrapper {
         }
         mGetMediaFormat.setContext(mContext);
         mGetMediaFormat.setPlayerWrapper(this);
-        mFfmpegUseMediaCodecDecode.setGetMediaFormat(mGetMediaFormat);
+        //mFfmpegUseMediaCodecDecode.setGetMediaFormat(mGetMediaFormat);
 
         mUiHandler = new Handler(Looper.getMainLooper()) {
             @Override
@@ -585,9 +585,17 @@ public class PlayerWrapper {
                 onFinished();
                 break;
             case Callback.MSG_ON_TRANSACT_INFO:
-                MLog.d(TAG, "Callback.MSG_ON_TRANSACT_INFO");
                 if (msg.obj != null && msg.obj instanceof String) {
-                    MyToast.show((String) msg.obj);
+                    toastInfo = (String) msg.obj;
+                    MLog.d(TAG, "Callback.MSG_ON_TRANSACT_INFO " + toastInfo);
+                    MyToast.show(toastInfo);
+                    if (toastInfo.contains("[")
+                            && toastInfo.contains("]")) {
+                        EventBusUtils.post(
+                                ContentsFragment.class,
+                                EVENT_CODE_USE_MEDIACODEC,
+                                new Object[]{toastInfo});
+                    }
                 }
                 break;
             case Callback.MSG_ON_TRANSACT_ERROR:
@@ -602,6 +610,7 @@ public class PlayerWrapper {
                 if (clickCounts > NEED_CLICK_COUNTS) {
                     clickCounts = NEED_CLICK_COUNTS;
                 }
+
                 switch (clickCounts) {
                     case 1:
                         MLog.d(TAG, "clickOne()");
@@ -851,23 +860,17 @@ public class PlayerWrapper {
 
     // @@@
     public void startForGetMediaFormat() {
-        mGetMediaFormat.mVideoMediaFormat = null;
-        mGetMediaFormat.mAudioMediaFormat = null;
         whatPlayer = mSP.getString(PLAYBACK_USE_PLAYER, PLAYER_FFMPEG_MEDIACODEC);
-        if (mIsLocal
+        if (TextUtils.equals(whatPlayer, PLAYER_FFMPEG_MEDIACODEC)
                 && !mPath.endsWith(".m4s")
                 && !mPath.endsWith(".h264")
                 && !mPath.endsWith(".aac")
+                //&& mIsLocal
                 && (TextUtils.isEmpty(mType)
                 || mType.startsWith("video/"))) {
-            String use_mode = mSP.getString(
-                    PLAYBACK_USE_EXOPLAYER_OR_FFMPEG, "use_exoplayer");
-            if (TextUtils.equals(whatPlayer, PLAYER_FFMPEG_MEDIACODEC)
-                    && TextUtils.equals(use_mode, "use_exoplayer")) {
-                onReady();
-                mGetMediaFormat.start(mPath);
-                return;
-            }
+            onReady();
+            mGetMediaFormat.start(mPath);
+            return;
         }
 
         startPlayback();
@@ -1682,6 +1685,15 @@ public class PlayerWrapper {
     }
 
     private void onFinished() {
+        mFfmpegUseMediaCodecDecode.releaseMediaCodec();
+
+        // 改变EditText的背景色
+        toastInfo = null;
+        EventBusUtils.post(
+                ContentsFragment.class,
+                EVENT_CODE_USE_MEDIACODEC,
+                null);
+
         if (mHasError) {
             mHasError = false;
             MLog.d(TAG, "onFinished() restart playback");
@@ -2309,8 +2321,10 @@ public class PlayerWrapper {
         return c / k == 0 ? true : false;
     }
 
+    public static final int EVENT_CODE_USE_MEDIACODEC = 100;
     private static final int NEED_CLICK_COUNTS = 5;
     private int clickCounts = 0;
+    private String toastInfo;
 
     public Object onEvent(int what, Object[] objArray) {
         Object result = null;
@@ -2341,6 +2355,9 @@ public class PlayerWrapper {
                 // 单击
                 //MLog.d(TAG, "clickOne()");
                 //clickOne();
+                break;
+            case EVENT_CODE_USE_MEDIACODEC:
+                result = toastInfo;
                 break;
             default:
                 break;
