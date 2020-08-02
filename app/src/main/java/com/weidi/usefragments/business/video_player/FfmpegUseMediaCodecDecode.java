@@ -576,6 +576,7 @@ public class FfmpegUseMediaCodecDecode {
             // mVideoWrapper.decoderMediaCodec.flush();
             MLog.e(TAG, "initVideoMediaCodec() video  clear");
             mVideoWrapper.clear();
+            mVideoWrapper.decoderMediaCodec = null;
             mVideoWrapper = null;
         }
 
@@ -590,11 +591,33 @@ public class FfmpegUseMediaCodecDecode {
             return false;
         }
 
+        if (jniObject == null
+                || jniObject.valueObjectArray == null
+                || jniObject.valueObjectArray.length < 3) {
+            MLog.e(TAG, "initVideoMediaCodec() jniObject failure");
+            return false;
+        }
+        Object[] valueObjectArray = jniObject.valueObjectArray;
+        long[] parameters = (long[]) valueObjectArray[0];
+        // 视频宽
+        int width = (int) parameters[0];
+        // 视频高
+        int height = (int) parameters[1];
+        // 单位: 秒
+        int duration = (int) parameters[2];
+        // 帧率
+        int frame_rate = (int) parameters[3];
+        // 码率
+        long bitrate = parameters[4];
+
         if (mContext != null) {
             SharedPreferences sp =
                     mContext.getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE);
             String whatPlayer = sp.getString(PLAYBACK_USE_PLAYER, PLAYER_FFMPEG_MEDIACODEC);
-            if (!TextUtils.equals(whatPlayer, PLAYER_FFMPEG_MEDIACODEC)) {
+            if (!TextUtils.equals(whatPlayer, PLAYER_FFMPEG_MEDIACODEC)
+                    || (width < 1280 && height < 720
+                    && duration > 0 && duration <= 360
+                    && frame_rate <= 30)) {
                 return false;
             }
 
@@ -613,12 +636,6 @@ public class FfmpegUseMediaCodecDecode {
 
             if (mSurface == null) {
                 MLog.e(TAG, "initVideoMediaCodec() mSurface is null");
-                return false;
-            }
-            if (jniObject == null
-                    || jniObject.valueObjectArray == null
-                    || jniObject.valueObjectArray.length < 3) {
-                MLog.e(TAG, "initVideoMediaCodec() jniObject failure");
                 return false;
             }
 
@@ -654,19 +671,6 @@ public class FfmpegUseMediaCodecDecode {
                 return false;
             }
 
-            Object[] valueObjectArray = jniObject.valueObjectArray;
-            long[] parameters = (long[]) valueObjectArray[0];
-            // 视频宽
-            int width = (int) parameters[0];
-            // 视频高
-            int height = (int) parameters[1];
-            // 单位: 秒
-            int duration = (int) parameters[2];
-            // 帧率
-            int frameRate = (int) parameters[3];
-            // 码率
-            long bit_rate = parameters[4];
-
             mediaFormat = MediaUtils.getVideoDecoderMediaFormat(width, height);
             mediaFormat.setString(MediaFormat.KEY_MIME, videoMime);
             if (duration > 0) {
@@ -675,8 +679,8 @@ public class FfmpegUseMediaCodecDecode {
                 // 随便设置了一个数
                 mediaFormat.setLong(MediaFormat.KEY_DURATION, -9223372036854L);
             }
-            mediaFormat.setInteger(MediaFormat.KEY_FRAME_RATE, frameRate);
-            mediaFormat.setLong(MediaFormat.KEY_BIT_RATE, bit_rate);
+            mediaFormat.setInteger(MediaFormat.KEY_FRAME_RATE, frame_rate);
+            mediaFormat.setLong(MediaFormat.KEY_BIT_RATE, bitrate);
             mediaFormat.setInteger(MediaFormat.KEY_BITRATE_MODE,
                     MediaCodecInfo.EncoderCapabilities.BITRATE_MODE_CQ);
             mediaFormat.setInteger(MediaFormat.KEY_COLOR_FORMAT,

@@ -2260,9 +2260,8 @@ namespace alexander_media_mediacodec {
         return nullptr;
     }
 
-    static double add_time_step = 0.200000;
-
     /***
+     034be7f3de99ec63393b2395204aa2b0921a7e7a 有audio硬解码时的策略
      frameRate: 50 averageTimeDiff: 0.085061  TIME_DIFFERENCE: 0.135061
      音频快于视频
      */
@@ -2271,93 +2270,57 @@ namespace alexander_media_mediacodec {
              averageTimeDiff, frameRate);
 
         if (averageTimeDiff > 1.000000) {
-            if (audioWrapper->father->useMediaCodec) {
-                TIME_DIFFERENCE = averageTimeDiff + add_time_step;
-            } else {
-                TIME_DIFFERENCE = 0.900000;
-            }
+            TIME_DIFFERENCE = 0.900000;
         } else if (averageTimeDiff > 0.900000 && averageTimeDiff < 1.000000) {
-            if (audioWrapper->father->useMediaCodec) {
-                TIME_DIFFERENCE = averageTimeDiff + add_time_step;
-            } else {
-                TIME_DIFFERENCE = 0.800000;
-            }
+            TIME_DIFFERENCE = 0.800000;
         } else if (averageTimeDiff > 0.800000 && averageTimeDiff < 0.900000) {
-            if (audioWrapper->father->useMediaCodec) {
-                TIME_DIFFERENCE = averageTimeDiff + add_time_step;
-            } else {
-                TIME_DIFFERENCE = 0.700000;
-            }
+            TIME_DIFFERENCE = 0.700000;
         } else if (averageTimeDiff > 0.700000 && averageTimeDiff < 0.800000) {
-            if (audioWrapper->father->useMediaCodec) {
-                TIME_DIFFERENCE = averageTimeDiff + add_time_step;
-            } else {
-                TIME_DIFFERENCE = 0.600000;
-            }
+            TIME_DIFFERENCE = 0.600000;
         } else if (averageTimeDiff > 0.600000 && averageTimeDiff < 0.700000) {
-            if (audioWrapper->father->useMediaCodec) {
-                TIME_DIFFERENCE = averageTimeDiff + add_time_step;
-            } else {
-                TIME_DIFFERENCE = 0.500000;
-            }
+            TIME_DIFFERENCE = 0.500000;
         } else if (averageTimeDiff > 0.500000 && averageTimeDiff < 0.600000) {
-            if (audioWrapper->father->useMediaCodec) {
-                TIME_DIFFERENCE = averageTimeDiff + add_time_step;
-            } else {
-                TIME_DIFFERENCE = 0.400000;
-            }
+            /***
+             0.505212 0.524924
+             */
+            TIME_DIFFERENCE = 0.400000;
         } else if (averageTimeDiff > 0.400000 && averageTimeDiff < 0.500000) {
-            if (audioWrapper->father->useMediaCodec) {
-                TIME_DIFFERENCE = averageTimeDiff + add_time_step;
-            } else {
-                TIME_DIFFERENCE = 0.300000;
-            }
+            /***
+             0.405114 0.418364 0.429602 0.439030 0.449823 0.457614 0.461167 0.472319
+             0.486549 0.494847
+             */
+            TIME_DIFFERENCE = 0.300000;
         } else if (averageTimeDiff > 0.300000 && averageTimeDiff < 0.400000) {
-            if (audioWrapper->father->useMediaCodec) {
-                TIME_DIFFERENCE = averageTimeDiff + add_time_step;
-            } else {
-                TIME_DIFFERENCE = 0.200000;
-            }
+            TIME_DIFFERENCE = 0.200000;
         } else if (averageTimeDiff > 0.200000 && averageTimeDiff < 0.300000) {
-            if (audioWrapper->father->useMediaCodec) {
-                TIME_DIFFERENCE = averageTimeDiff + add_time_step;
-            } else {
-                TIME_DIFFERENCE = 0.100000;
-            }
+            /***
+             0.204199 0.263926
+             */
+            TIME_DIFFERENCE = 0.100000;
         } else if (averageTimeDiff > 0.100000 && averageTimeDiff < 0.200000) {
-            if (audioWrapper->father->useMediaCodec) {
-                TIME_DIFFERENCE = averageTimeDiff + add_time_step;
-            } else {
-                TIME_DIFFERENCE = averageTimeDiff;
-            }
+            /***
+             0.100523 0.168335
+             */
+            TIME_DIFFERENCE = averageTimeDiff;
         } else if (averageTimeDiff < 0.100000) {
-            if (audioWrapper->father->useMediaCodec) {
-                TIME_DIFFERENCE = averageTimeDiff + add_time_step;
-            } else {
-                TIME_DIFFERENCE = averageTimeDiff + 0.050000;
-            }
-        }
-        // 3840 2160
-        /***
-         0.026983 0.037722 0.027684 0.018936 0.023516 0.035012 0.037547 0.029821 0.039632
-         0.014149 0.035779 0.028610 0.037615 0.030690 0.024403 0.018768 0.029898 0.027595
-         0.216413 0.266579 0.317310
-         */
-        if (TIME_DIFFERENCE < 0.100000) {
-            if (audioWrapper->father->useMediaCodec) {
-                TIME_DIFFERENCE = averageTimeDiff + add_time_step;
-            } else {
+            /***
+             0.014149 0.018936 0.022836 0.023516 0.024403 0.026983 0.027595 0.028610
+             0.029898 0.030690 0.031515 0.034621 0.035779 0.036042 0.037615 0.038017
+             0.039632 0.042750 0.047141 0.048789 0.052697 0.054136 0.055711 0.059648
+             0.062606 0.065509 0.066374 0.073902 0.074668 0.079382
+             */
+            TIME_DIFFERENCE = averageTimeDiff + 0.050000;
+            if (TIME_DIFFERENCE < 0.100000) {
                 TIME_DIFFERENCE = 0.100000;
             }
         }
+
+        // 对4K视频特殊处理
         if (frameRate >= 45
             && videoWrapper->srcWidth >= 3840
             && videoWrapper->srcHeight >= 2160) {
-            if (audioWrapper->father->useMediaCodec) {
-                TIME_DIFFERENCE += 0.100000;
-            } else {
-                TIME_DIFFERENCE += add_time_step;
-            }
+            // 增大TIME_DIFFERENCE值让视频加快
+            TIME_DIFFERENCE += 0.200000;
         }
         LOGI("hope_to_get_a_good_result() TIME_DIFFERENCE: %lf\n", TIME_DIFFERENCE);
         char info[50];
@@ -2380,13 +2343,12 @@ namespace alexander_media_mediacodec {
     }
 
     int handleAudioDataImpl(AVStream *stream, AVFrame *decodedAVFrame) {
-        if (stream == nullptr
-            || decodedAVFrame == nullptr
-            || decodedAVFrame->data == nullptr
-            || audioWrapper == nullptr
+        if (audioWrapper == nullptr
             || audioWrapper->father == nullptr
+            || !audioWrapper->father->isHandling
             || videoWrapper == nullptr
-            || videoWrapper->father == nullptr) {
+            || videoWrapper->father == nullptr
+            || !videoWrapper->father->isHandling) {
             return 0;
         }
 
@@ -2479,13 +2441,12 @@ namespace alexander_media_mediacodec {
     }
 
     int handleVideoDataImpl(AVStream *stream, AVFrame *decodedAVFrame) {
-        if (stream == nullptr
-            || decodedAVFrame == nullptr
-            || decodedAVFrame->data == nullptr
-            || audioWrapper == nullptr
+        if (audioWrapper == nullptr
             || audioWrapper->father == nullptr
+            || !audioWrapper->father->isHandling
             || videoWrapper == nullptr
-            || videoWrapper->father == nullptr) {
+            || videoWrapper->father == nullptr
+            || !videoWrapper->father->isHandling) {
             return 0;
         }
 

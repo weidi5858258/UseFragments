@@ -30,8 +30,8 @@ import com.google.android.exoplayer2.source.MergingMediaSource;
 import com.weidi.usefragments.MyApplication;
 import com.weidi.usefragments.tool.MLog;
 
-/**
- * An activity that plays media using {@link SimpleExoPlayer}.
+/***
+ 
  */
 public class GetMediaFormat {
 

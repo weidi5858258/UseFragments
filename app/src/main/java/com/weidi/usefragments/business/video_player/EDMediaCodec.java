@@ -70,10 +70,10 @@ public class EDMediaCodec {
                     presentationTimeUs)
                     &&
                     drainOutputBuffer(callback, type, codec, render);
-        } else {
-            // 录制屏幕时,video是没有Input过程的
-            return drainOutputBuffer(callback, type, codec, render);
         }
+
+        // 录制屏幕时,video是没有Input过程的
+        return drainOutputBuffer(callback, type, codec, render);
     }
 
     /***
@@ -85,10 +85,10 @@ public class EDMediaCodec {
      * @param presentationTimeUs
      * @return
      *
-     如果第一次调用feedInputBuffer(...)方法,
-     执行dequeueInputBuffer(...)时就抛出java.lang.IllegalStateException异常
-     android.media.MediaCodec.native_dequeueInputBuffer(Native Method)
-     很可能是创建的MediaCodec有问题,这个又是MediaFormat引起的
+    如果第一次调用feedInputBuffer(...)方法,
+    执行dequeueInputBuffer(...)时就抛出java.lang.IllegalStateException异常
+    android.media.MediaCodec.native_dequeueInputBuffer(Native Method)
+    很可能是创建的MediaCodec有问题,这个又是MediaFormat引起的
      */
     private static boolean feedInputBuffer(
             Callback callback,
