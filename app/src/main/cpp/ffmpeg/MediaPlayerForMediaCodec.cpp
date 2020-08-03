@@ -2286,8 +2286,8 @@ namespace alexander_media_mediacodec {
             TIME_DIFFERENCE = 0.400000;
         } else if (averageTimeDiff > 0.400000 && averageTimeDiff < 0.500000) {
             /***
-             0.405114 0.418364 0.429602 0.439030 0.449823 0.457614 0.461167 0.472319
-             0.486549 0.494847
+             0.405114 0.418364 0.429602 0.439030 0.449823
+             0.457614 0.461167 0.472319 0.486549 0.494847
              */
             TIME_DIFFERENCE = 0.300000;
         } else if (averageTimeDiff > 0.300000 && averageTimeDiff < 0.400000) {
@@ -3902,8 +3902,8 @@ namespace alexander_media_mediacodec {
         }
 
         /*switch (use_mode) {
-            case USE_MODE_MEDIA_MEDIACODEC:
-            case USE_MODE_MEDIA: {
+            case USE_MODE_MEDIA:
+            case USE_MODE_MEDIA_MEDIACODEC: {
                 audioWrapper->father->duration =
                 videoWrapper->father->duration = mediaDuration;
                 onChangeWindow(videoWrapper->srcWidth, videoWrapper->srcHeight);

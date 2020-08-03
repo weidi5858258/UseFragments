@@ -154,7 +154,10 @@ public class SimpleAudioRecorder {
             mAudioRecord = MediaUtils.createAudioRecord();
             Assertions.checkNotNull(mAudioRecord != null);
             mAudioRecord.startRecording();
-            bufferSizeInBytes = MediaUtils.getMinBufferSize() * 2;
+            bufferSizeInBytes = AudioRecord.getMinBufferSize(
+                    MediaUtils.sampleRateInHz,
+                    MediaUtils.channelConfig,
+                    MediaUtils.audioFormat) * 2;
             mPcmData = new byte[bufferSizeInBytes];
         }
 

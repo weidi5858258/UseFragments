@@ -35,6 +35,7 @@ import android.widget.Toast;
 
 import com.weidi.usefragments.R;
 import com.weidi.usefragments.business.video_player.EDMediaCodec;
+import com.weidi.usefragments.business.video_player.MediaServer;
 import com.weidi.usefragments.fragment.FragOperManager;
 import com.weidi.usefragments.fragment.base.BaseFragment;
 import com.weidi.usefragments.inject.InjectOnClick;
@@ -433,12 +434,15 @@ public class RecordScreenFragment extends BaseFragment {
         }
         if (mIsMuxerStarted && mMediaMuxer != null) {
             mMediaMuxer.stop();
-            mMediaMuxer.release();
-            mMediaMuxer = null;
         }
+        if (mMediaMuxer != null) {
+            mMediaMuxer.release();
+        }
+
         MediaUtils.releaseMediaCodec(mVideoEncoderMediaCodec);
         MediaUtils.releaseMediaCodec(mAudioEncoderMediaCodec);
         MediaUtils.releaseAudioRecord(mAudioRecord);
+        mMediaMuxer = null;
         mVideoEncoderMediaCodec = null;
         mAudioEncoderMediaCodec = null;
         mAudioRecord = null;
@@ -583,6 +587,16 @@ public class RecordScreenFragment extends BaseFragment {
         }
 
         // test
+        if (file.exists()) {
+            try {
+                file.delete();
+            } catch (SecurityException e) {
+                e.printStackTrace();
+                return;
+            }
+        }
+
+        // test
         MLog.d(TAG, "Video Codec Name---------------------------------------------------");
         MediaCodecInfo[] mediaCodecInfos =
                 MediaUtils.findAllEncodersByMime(MediaUtils.VIDEO_MIME);
@@ -607,6 +621,10 @@ public class RecordScreenFragment extends BaseFragment {
         if (DEBUG)
             MLog.d(TAG, "startRecordScreen() " + printThis());
 
+        if (mMediaMuxer == null) {
+            prepare();
+        }
+
         mIsRecording = true;
         mIsMuxerStarted = false;
 
@@ -626,6 +644,12 @@ public class RecordScreenFragment extends BaseFragment {
                 && mAudioEncoderMediaCodec != null
                 && mAudioRecord != null
                 && mSurface != null) {
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    MediaServer.getInstance().sccept();
+                }
+            }).start();
             // 音频先启动,让音频的mOutputAudioTrack先得到值
             new Thread(new AudioEncoderRunnable()).start();
             new Thread(new VideoEncoderRunnable()).start();
@@ -672,6 +696,7 @@ public class RecordScreenFragment extends BaseFragment {
             MLog.d(TAG, "stopRecordScreen() start");
 
         mIsRecording = false;
+        MediaServer.getInstance().close();
 
         while (mIsVideoRecording || mIsAudioRecording) {
             SystemClock.sleep(10);
@@ -875,8 +900,8 @@ public class RecordScreenFragment extends BaseFragment {
                     && mOutputAudioTrack >= 0
                     && mOutputVideoTrack >= 0) {
                 MLog.d(TAG, "VideoEncoderThread Output mMediaMuxer.start()");
-                mMediaMuxer.start();
-                mIsMuxerStarted = true;
+                //mMediaMuxer.start();
+                //mIsMuxerStarted = true;
             }
         }
 
@@ -891,8 +916,8 @@ public class RecordScreenFragment extends BaseFragment {
                     && mOutputAudioTrack >= 0
                     && mOutputVideoTrack >= 0) {
                 MLog.d(TAG, "AudioEncoderThread Output mMediaMuxer.start()");
-                mMediaMuxer.start();
-                mIsMuxerStarted = true;
+                //mMediaMuxer.start();
+                //mIsMuxerStarted = true;
             }
         }
 
@@ -920,6 +945,21 @@ public class RecordScreenFragment extends BaseFragment {
                     && roomInfo.size != 0) {
                 roomInfo.presentationTimeUs = System.nanoTime() / 1000;
                 mMediaMuxer.writeSampleData(mOutputAudioTrack, room, roomInfo);
+            }
+
+            if (MediaServer.getInstance().mIsHandling && roomSize > 0) {
+                /*// 一帧AAC数据和ADTS头的大小
+                int frameSize = roomSize + 7;
+                // 空间只能不断地new
+                byte[] audioData = new byte[frameSize];
+                // 先写7个字节的头信息
+                MediaUtils.addADTStoFrame(audioData, frameSize);
+                // 0~6的位置已经有数据了,因此从第7个位置开始写
+                room.get(audioData, 7, roomSize);*/
+
+                byte[] audioData = new byte[roomSize];
+                room.get(audioData, 0, audioData.length);
+                MediaServer.getInstance().sendData(audioData, 0, roomSize);
             }
 
             return 0;

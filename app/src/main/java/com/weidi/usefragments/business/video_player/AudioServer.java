@@ -26,7 +26,7 @@ public class AudioServer {
     private static final String TAG =
             "player_alexander";
 
-    public static final int PORT = 8888;
+    public static final int PORT = 8889;
     public static final String AUDIOTRACK_INFO_TAG = "@@@@@@";
 
     private volatile static AudioServer sAudioServer;

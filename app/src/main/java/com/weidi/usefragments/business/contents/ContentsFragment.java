@@ -32,6 +32,7 @@ import com.weidi.usefragments.business.video_player.AudioClient;
 import com.weidi.usefragments.business.video_player.AudioServer;
 import com.weidi.usefragments.business.video_player.FFMPEG;
 import com.weidi.usefragments.business.video_player.JniPlayerActivity;
+import com.weidi.usefragments.business.video_player.MediaClient;
 import com.weidi.usefragments.business.video_player.PlayerService;
 import com.weidi.usefragments.business.video_player.PlayerWrapper;
 import com.weidi.usefragments.fragment.base.BaseFragment;
@@ -380,25 +381,6 @@ public class ContentsFragment extends BaseFragment {
                 DownloadFileService.class,
                 DownloadFileService.MSG_SET_CALLBACK,
                 new Object[]{mCallback});
-
-        // 如果能使用硬件解码,那么给EditText设置一个背景色,至于为什么? 没有为什么!
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            mAddressET.setBackgroundColor(
-                    getContext().getColor(android.R.color.white));
-        }
-        object = EventBusUtils.post(
-                PlayerWrapper.class,
-                PlayerWrapper.EVENT_CODE_USE_MEDIACODEC,
-                null);
-        if (object != null && object instanceof String) {
-            String toastInfo = (String) object;
-            if (toastInfo.contains("V")) {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                    mAddressET.setBackgroundColor(
-                            getContext().getColor(R.color.darksalmon));
-                }
-            }
-        }
     }
 
     /***
@@ -884,11 +866,25 @@ public class ContentsFragment extends BaseFragment {
                 }
                 String text = (String) msg.obj;
                 String[] infos = text.split(" ");
+
                 if (infos.length >= 3 && !TextUtils.isEmpty(infos[2])) {
+                    MediaClient.getInstance().setIp(infos[2]);
+                    MyToast.show(infos[2]);
+                }
+                ThreadPool.getFixedThreadPool().execute(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (MediaClient.getInstance().connect()) {
+                            MyToast.show("client start");
+                            MediaClient.getInstance().playAudio();
+                        }
+                    }
+                });
+
+                /*if (infos.length >= 3 && !TextUtils.isEmpty(infos[2])) {
                     AudioClient.getInstance().setIp(infos[2]);
                     MyToast.show(infos[2]);
                 }
-
                 if (FFMPEG.getDefault().sampleRateInHz > 0
                         && FFMPEG.getDefault().channelCount > 0
                         && FFMPEG.getDefault().audioFormat > 0) {
@@ -905,7 +901,7 @@ public class ContentsFragment extends BaseFragment {
                             }
                         }
                     });
-                }
+                }*/
                 break;
             case MSG_ON_CLIENT_CLOSE:
                 ThreadPool.getFixedThreadPool().execute(new Runnable() {
@@ -924,23 +920,6 @@ public class ContentsFragment extends BaseFragment {
     private Object onEvent(int what, Object[] objArray) {
         Object result = null;
         switch (what) {
-            case PlayerWrapper.EVENT_CODE_USE_MEDIACODEC:
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                    mAddressET.setBackgroundColor(
-                            getContext().getColor(android.R.color.white));
-                }
-                if (objArray != null
-                        && objArray.length > 0
-                        && objArray[0] instanceof String) {
-                    String toastInfo = (String) objArray[0];
-                    if (toastInfo.contains("V")) {
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                            mAddressET.setBackgroundColor(
-                                    getContext().getColor(R.color.darksalmon));
-                        }
-                    }
-                }
-                break;
             default:
                 break;
         }

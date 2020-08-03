@@ -31,6 +31,7 @@ import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
+import android.widget.ScrollView;
 import android.widget.SeekBar;
 import android.widget.TextView;
 
@@ -164,6 +165,9 @@ public class PlayerWrapper {
     private boolean mIsDownloading = false;
     // 1(停止下载) 2(下载音视频) 3(只下载,不播放)
     private int mDownloadClickCounts = 0;
+    // 跟视频有关的提示信息
+    private ScrollView textInfoScrollView;
+    private TextView textInfoTV;
 
     private Handler mUiHandler;
     private Handler mThreadHandler;
@@ -242,6 +246,9 @@ public class PlayerWrapper {
         mProgressBarLayout = mRootView.findViewById(R.id.progress_bar_layout);
         mVideoProgressBar = mRootView.findViewById(R.id.video_progress_bar);
         mAudioProgressBar = mRootView.findViewById(R.id.audio_progress_bar);
+
+        textInfoScrollView = mRootView.findViewById(R.id.text_scrollview);
+        textInfoTV = mRootView.findViewById(R.id.text_info_tv);
 
         if (mSP == null) {
             mSP = mContext.getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE);
@@ -586,15 +593,12 @@ public class PlayerWrapper {
                 break;
             case Callback.MSG_ON_TRANSACT_INFO:
                 if (msg.obj != null && msg.obj instanceof String) {
-                    toastInfo = (String) msg.obj;
+                    String toastInfo = (String) msg.obj;
                     MLog.d(TAG, "Callback.MSG_ON_TRANSACT_INFO " + toastInfo);
-                    MyToast.show(toastInfo);
+                    //MyToast.show(toastInfo);
                     if (toastInfo.contains("[")
                             && toastInfo.contains("]")) {
-                        EventBusUtils.post(
-                                ContentsFragment.class,
-                                EVENT_CODE_USE_MEDIACODEC,
-                                new Object[]{toastInfo});
+                        textInfoTV.setText(toastInfo);
                     }
                 }
                 break;
@@ -1171,9 +1175,15 @@ public class PlayerWrapper {
         } else {
             relativeParams.height = mNeedVideoHeight;
         }
+        mSurfaceView.setLayoutParams(relativeParams);
         MLog.d(TAG, "Callback.MSG_ON_CHANGE_WINDOW         relativeParams.width: " +
                 relativeParams.width + " relativeParams.height: " + relativeParams.height);
-        mSurfaceView.setLayoutParams(relativeParams);
+
+        relativeParams =
+                (RelativeLayout.LayoutParams) textInfoScrollView.getLayoutParams();
+        relativeParams.setMargins(
+                (mScreenWidth - mNeedVideoWidth) / 2, 4, 0, 0);
+        textInfoScrollView.setLayoutParams(relativeParams);
 
         // 改变ControllerPanelLayout高度
         FrameLayout.LayoutParams frameParams =
@@ -1260,12 +1270,16 @@ public class PlayerWrapper {
             mNeedVideoWidth = mScreenWidth;
             mNeedVideoHeight = 1;
         }
-
         relativeParams.width = mNeedVideoWidth;
         relativeParams.height = mNeedVideoHeight;
         mSurfaceView.setLayoutParams(relativeParams);
         MLog.d(TAG, "Callback.MSG_ON_CHANGE_WINDOW              mNeedVideoWidth: " +
                 mNeedVideoWidth + " mNeedVideoHeight: " + mNeedVideoHeight);
+
+        relativeParams =
+                (RelativeLayout.LayoutParams) textInfoScrollView.getLayoutParams();
+        relativeParams.setMargins(0, 4, 0, 0);
+        textInfoScrollView.setLayoutParams(relativeParams);
 
         // 改变ControllerPanelLayout高度
         FrameLayout.LayoutParams frameParams =
@@ -1383,6 +1397,11 @@ public class PlayerWrapper {
         mSurfaceView.setLayoutParams(relativeParams);
         MLog.d(TAG, "Callback.MSG_ON_CHANGE_WINDOW              mNeedVideoWidth: " +
                 mNeedVideoWidth + " mNeedVideoHeight: " + mNeedVideoHeight);
+
+        relativeParams =
+                (RelativeLayout.LayoutParams) textInfoScrollView.getLayoutParams();
+        relativeParams.setMargins(0, 4, 0, 0);
+        textInfoScrollView.setLayoutParams(relativeParams);
 
         // 改变ControllerPanelLayout高度
         FrameLayout.LayoutParams frameParams =
@@ -1513,9 +1532,14 @@ public class PlayerWrapper {
         }
         relativeParams.width = mNeedVideoWidth;
         relativeParams.height = mNeedVideoHeight;
+        mSurfaceView.setLayoutParams(relativeParams);
         MLog.d(TAG, "Callback.MSG_ON_CHANGE_WINDOW mNeedVideoWidth: " +
                 mNeedVideoWidth + " mNeedVideoHeight: " + mNeedVideoHeight);
-        mSurfaceView.setLayoutParams(relativeParams);
+
+        relativeParams =
+                (RelativeLayout.LayoutParams) textInfoScrollView.getLayoutParams();
+        relativeParams.setMargins(0, 4, 0, 0);
+        textInfoScrollView.setLayoutParams(relativeParams);
 
         // 改变ControllerPanelLayout高度
         FrameLayout.LayoutParams frameParams =
@@ -1581,6 +1605,8 @@ public class PlayerWrapper {
         mProgressBarLayout.setVisibility(View.GONE);
         mPlayIB.setVisibility(View.GONE);
         mPauseIB.setVisibility(View.VISIBLE);
+        textInfoScrollView.setVisibility(View.GONE);
+        textInfoTV.setText("");
         if (mService != null) {
             mDownloadTV.setText("");
             // R.color.lightgray
@@ -1637,19 +1663,27 @@ public class PlayerWrapper {
             } else {
                 //mControllerPanelLayout.setVisibility(View.INVISIBLE);
             }*/
-            if (!mIsLocal && mVideoWidth != 0 && mVideoHeight != 0) {
-                mProgressBarLayout.setVisibility(View.VISIBLE);
+            if (mVideoWidth != 0 && mVideoHeight != 0) {
                 boolean show = mSP.getBoolean(PLAYBACK_SHOW_CONTROLLERPANELLAYOUT, false);
+                if (!mIsLocal) {
+                    mProgressBarLayout.setVisibility(View.VISIBLE);
+                    if (show) {
+                        mControllerPanelLayout.setVisibility(View.VISIBLE);
+                    } else {
+                        mControllerPanelLayout.setVisibility(View.INVISIBLE);
+                    }
+                }
                 if (show) {
-                    mControllerPanelLayout.setVisibility(View.VISIBLE);
+                    textInfoScrollView.setVisibility(View.VISIBLE);
                 } else {
-                    mControllerPanelLayout.setVisibility(View.INVISIBLE);
+                    textInfoScrollView.setVisibility(View.GONE);
                 }
             }
 
             if (mVideoWidth == 0 && mVideoHeight == 0) {
                 mType = "audio/";
                 mControllerPanelLayout.setVisibility(View.VISIBLE);
+                textInfoScrollView.setVisibility(View.GONE);
             }
 
             if (!mCouldPlaybackPathList.contains(mPath)) {
@@ -1686,13 +1720,6 @@ public class PlayerWrapper {
 
     private void onFinished() {
         mFfmpegUseMediaCodecDecode.releaseMediaCodec();
-
-        // 改变EditText的背景色
-        toastInfo = null;
-        EventBusUtils.post(
-                ContentsFragment.class,
-                EVENT_CODE_USE_MEDIACODEC,
-                null);
 
         if (mHasError) {
             mHasError = false;
@@ -2044,10 +2071,12 @@ public class PlayerWrapper {
         if (mControllerPanelLayout.getVisibility() == View.VISIBLE) {
             if (mVideoWidth != 0 && mVideoHeight != 0) {
                 mControllerPanelLayout.setVisibility(View.GONE);
+                textInfoScrollView.setVisibility(View.GONE);
                 mSP.edit().putBoolean(PLAYBACK_SHOW_CONTROLLERPANELLAYOUT, false).commit();
             }
         } else {
             mControllerPanelLayout.setVisibility(View.VISIBLE);
+            textInfoScrollView.setVisibility(View.VISIBLE);
             mSP.edit().putBoolean(PLAYBACK_SHOW_CONTROLLERPANELLAYOUT, true).commit();
         }
     }
@@ -2321,10 +2350,8 @@ public class PlayerWrapper {
         return c / k == 0 ? true : false;
     }
 
-    public static final int EVENT_CODE_USE_MEDIACODEC = 100;
     private static final int NEED_CLICK_COUNTS = 5;
     private int clickCounts = 0;
-    private String toastInfo;
 
     public Object onEvent(int what, Object[] objArray) {
         Object result = null;
@@ -2355,9 +2382,6 @@ public class PlayerWrapper {
                 // 单击
                 //MLog.d(TAG, "clickOne()");
                 //clickOne();
-                break;
-            case EVENT_CODE_USE_MEDIACODEC:
-                result = toastInfo;
                 break;
             default:
                 break;

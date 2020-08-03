@@ -798,13 +798,12 @@ public class MediaUtils {
                 continue;
             }
             try {
-                if (DEBUG)
-                    MLog.d(TAG, "getVideoDecoderMediaCodec() " +
-                            "MediaCodec create success mime: " + mime +
-                            " codecName: " + mediaCodecInfo.getName());
                 decoder = MediaCodec.createByCodecName(mediaCodecInfo.getName());
                 decoder.configure(mediaFormat, surface, null, 0);
                 decoder.start();
+                MLog.d(TAG, "getVideoDecoderMediaCodec() " +
+                        "MediaCodec create success mime: " + mime +
+                        " codecName: " + mediaCodecInfo.getName());
                 break;
             } catch (NullPointerException
                     | IllegalArgumentException
@@ -839,13 +838,12 @@ public class MediaUtils {
                 continue;
             }
             try {
-                if (DEBUG)
-                    MLog.d(TAG, "getAudioDecoderMediaCodec() " +
-                            "MediaCodec create success mime: " + mime +
-                            " codecName: " + mediaCodecInfo.getName());
                 decoder = MediaCodec.createByCodecName(mediaCodecInfo.getName());
                 decoder.configure(mediaFormat, null, null, 0);
                 decoder.start();
+                MLog.d(TAG, "getAudioDecoderMediaCodec() " +
+                        "MediaCodec create success mime: " + mime +
+                        " codecName: " + mediaCodecInfo.getName());
                 break;
             } catch (NullPointerException
                     | IllegalArgumentException
@@ -884,8 +882,9 @@ public class MediaUtils {
          BITRATE_MODE_VBR: 表示编码器会根据图像内容的复杂度（实际上是帧间变化量的大小）来动态调整输出码率，
          图像复杂则码率高，图像简单则码率低
          */
-        format.setInteger(MediaFormat.KEY_BITRATE_MODE,
-                MediaCodecInfo.EncoderCapabilities.BITRATE_MODE_CQ);
+        // 电视机不支持
+        //format.setInteger(MediaFormat.KEY_BITRATE_MODE,
+        //        MediaCodecInfo.EncoderCapabilities.BITRATE_MODE_CQ);
         // 设置比特率(码率)
         format.setInteger(MediaFormat.KEY_BIT_RATE, width * height);
         //format.setInteger(MediaFormat.KEY_BIT_RATE, VIDEO_BIT_RATE);
@@ -915,14 +914,12 @@ public class MediaUtils {
         // aac-profile=2, bitrate=176400, max-input-size=14208
         MediaFormat format = MediaFormat.createAudioFormat(
                 AUDIO_MIME, sampleRateInHz, channelCount);
+        // AAC-HE
         format.setInteger(MediaFormat.KEY_AAC_PROFILE,
                 MediaCodecInfo.CodecProfileLevel.AACObjectLC);
-        format.setInteger(MediaFormat.KEY_BIT_RATE,
-                AUDIO_BIT_RATE);
-        format.setInteger(MediaFormat.KEY_CHANNEL_MASK,
-                channelConfig);
-        format.setInteger(MediaFormat.KEY_MAX_INPUT_SIZE,
-                getMinBufferSize() * 2);
+        format.setInteger(MediaFormat.KEY_BIT_RATE, AUDIO_BIT_RATE);
+        format.setInteger(MediaFormat.KEY_CHANNEL_MASK, channelConfig);
+        format.setInteger(MediaFormat.KEY_MAX_INPUT_SIZE, getMinBufferSize() * 2);
         MLog.d(TAG, "getAudioEncoderMediaFormat() created audio format: " + format);
         return format;
     }
@@ -957,18 +954,11 @@ public class MediaUtils {
         MediaFormat format = MediaFormat.createAudioFormat(
                 AUDIO_MIME, sampleRateInHz, channelCount);
         // AAC-HE
-        format.setInteger(
-                MediaFormat.KEY_AAC_PROFILE,
+        format.setInteger(MediaFormat.KEY_AAC_PROFILE,
                 MediaCodecInfo.CodecProfileLevel.AACObjectLC);
-        format.setInteger(
-                MediaFormat.KEY_BIT_RATE,
-                AUDIO_BIT_RATE);
-        format.setInteger(
-                MediaFormat.KEY_CHANNEL_MASK,
-                channelConfig);
-        format.setInteger(
-                MediaFormat.KEY_MAX_INPUT_SIZE,
-                getMinBufferSize() * 2);
+        format.setInteger(MediaFormat.KEY_BIT_RATE, AUDIO_BIT_RATE);
+        format.setInteger(MediaFormat.KEY_CHANNEL_MASK, channelConfig);
+        format.setInteger(MediaFormat.KEY_MAX_INPUT_SIZE, getMinBufferSize() * 2);
         if (DEBUG)
             MLog.d(TAG, "getAudioDecoderMediaFormat() created Audio format: " + format);
 
@@ -992,7 +982,7 @@ public class MediaUtils {
     // 下面两个是对应关系,只是方法所需要的参数不一样而已
     public static int channelCount = 2;
     // 立体声(AudioFormat.CHANNEL_IN_STEREO = AudioFormat.CHANNEL_OUT_STEREO)
-    private static final int channelConfig = AudioFormat.CHANNEL_IN_STEREO;
+    public static final int channelConfig = AudioFormat.CHANNEL_IN_STEREO;
     // 采样精度,数据位宽(兼容所有Android设备)
     public static int audioFormat = AudioFormat.ENCODING_PCM_16BIT;
     // AudioRecord(录音)
@@ -1004,7 +994,7 @@ public class MediaUtils {
     public static final int sessionId = AudioManager.AUDIO_SESSION_ID_GENERATE;
     // 比特率(audioFormat = 16 / 8,所以AUDIO_BIT_RATE的值不需要再除以8)
     // 没有除以8之前的单位是bit,除以8之后的单位是byte
-    public static final int AUDIO_BIT_RATE = sampleRateInHz * audioFormat * channelCount;
+    public static final int AUDIO_BIT_RATE = sampleRateInHz * channelCount * audioFormat;
 
     /***
      AudioTrack
@@ -1037,14 +1027,14 @@ public class MediaUtils {
     public static int getMinBufferSize(int sampleRateInHz,
                                        int channelConfig,
                                        int audioFormat) {
-        return AudioRecord.getMinBufferSize(
+        return AudioTrack.getMinBufferSize(
                 sampleRateInHz,
                 channelConfig,
                 audioFormat);
     }
 
     public static int getMinBufferSize() {
-        return AudioRecord.getMinBufferSize(
+        return AudioTrack.getMinBufferSize(
                 sampleRateInHz,
                 channelConfig,
                 audioFormat);
@@ -1161,7 +1151,10 @@ public class MediaUtils {
     public static AudioRecord createAudioRecord() {
         if (DEBUG)
             MLog.d(TAG, "createAudioRecord() start");
-        int bufferSizeInBytes = getMinBufferSize();
+        int bufferSizeInBytes = AudioRecord.getMinBufferSize(
+                sampleRateInHz,
+                channelConfig,
+                audioFormat);
         if (DEBUG)
             MLog.d(TAG, "createAudioRecord() bufferSizeInBytes: " + bufferSizeInBytes);
         if (bufferSizeInBytes <= 0) {
