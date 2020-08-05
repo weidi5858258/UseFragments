@@ -16,6 +16,7 @@ import com.weidi.usefragments.media.MediaUtils;
 import com.weidi.usefragments.tool.AACPlayer;
 import com.weidi.usefragments.tool.JniObject;
 import com.weidi.usefragments.tool.MLog;
+import com.weidi.utils.MyToast;
 
 import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
@@ -635,6 +636,7 @@ public class FfmpegUseMediaCodecDecode {
             MLog.e(TAG, "initVideoMediaCodec() videoMime is empty");
             return false;
         }
+        MLog.w(TAG, "initVideoMediaCodec() video  mime: " + videoMime);
         Object[] valueObjectArray = jniObject.valueObjectArray;
         long[] parameters = (long[]) valueObjectArray[0];
         // 视频宽
@@ -760,7 +762,7 @@ public class FfmpegUseMediaCodecDecode {
                             /***
                              /storage/2430-1702/BaiduNetdisk/video/流浪的地球.mp4
                              */
-                            MLog.e(TAG, "initVideoMediaCodec() doesn't find index");
+                            MLog.e(TAG, "initVideoMediaCodec() doesn't find index value");
                             int spsIndex = -1;
                             int spsLength = 0;
                             int ppsIndex = -1;
@@ -778,6 +780,26 @@ public class FfmpegUseMediaCodecDecode {
                                         ppsIndex = i;
                                         ppsLength = sps_pps[i - 1];
                                         break;
+                                    }
+                                }
+                            }
+                            if (spsIndex == -1 || ppsIndex == -1) {
+                                spsIndex = -1;
+                                spsLength = 0;
+                                ppsIndex = -1;
+                                ppsLength = 0;
+                                for (int i = 0; i < sps_pps.length; i++) {
+                                    if (sps_pps[i] == 39) {
+                                        if (spsIndex == -1) {
+                                            spsIndex = i;
+                                            spsLength = sps_pps[i - 1];
+                                        }
+                                    } else if (sps_pps[i] == 40) {
+                                        if (ppsIndex == -1) {
+                                            ppsIndex = i;
+                                            ppsLength = sps_pps[i - 1];
+                                            break;
+                                        }
                                     }
                                 }
                             }
@@ -804,7 +826,8 @@ public class FfmpegUseMediaCodecDecode {
                             MLog.i(TAG, "initVideoMediaCodec() video \n  csd-1: " +
                                     Arrays.toString(pps));
                         } else {
-                            MLog.e(TAG, "initVideoMediaCodec() sps or pps is null");
+                            MLog.e(TAG, "initVideoMediaCodec() sps/pps is null");
+                            MyToast.show("sps/pps is null");
                             return false;
                         }
                     } catch (Exception e) {
@@ -817,7 +840,6 @@ public class FfmpegUseMediaCodecDecode {
             // endregion
         }
 
-        MLog.w(TAG, "initVideoMediaCodec() video  mime: " + videoMime);
         MLog.w(TAG, "initVideoMediaCodec() mediaFormat: \n" + mediaFormat);
 
         mVideoWrapper = new VideoWrapper(TYPE_VIDEO);
