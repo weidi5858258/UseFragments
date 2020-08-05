@@ -90,8 +90,49 @@ public class MediaClient {
     }
 
     public void playVideo() {
-        // MediaCodec
+        Log.i(TAG, "MediaClient playVideo() start");
+        if (!mIsConnected) {
+            Log.e(TAG, "MediaClient playVideo() isn't connected");
+            return;
+        }
 
+        mVideoMF = MediaUtils.getVideoDecoderMediaFormat(720, 1280);
+        mVideoMC = MediaUtils.getVideoDecoderMediaCodec(mVideoMF);
+        if (mVideoMC == null) {
+            Log.e(TAG, "MediaClient playVideo() mVideoMC is null");
+            return;
+        }
+
+        final int VIDEO_FRAME_MAX_LENGTH = mVideoMF.getInteger(MediaFormat.KEY_MAX_INPUT_SIZE);
+        final byte[] data = new byte[VIDEO_FRAME_MAX_LENGTH];
+        int readCount = 0;
+        while (mIsConnected) {
+            Arrays.fill(data, (byte) 0);
+            try {
+                readCount = inputStream.read(data, 0, VIDEO_FRAME_MAX_LENGTH);
+                if (readCount <= 0) {
+                    Log.e(TAG, "MediaClient playVideo() readCount: " + readCount);
+                    break;
+                }
+
+                long presentationTimeUs = System.nanoTime() / 1000;
+                EDMediaCodec.feedInputBufferAndDrainOutputBuffer(
+                        mCallback,
+                        EDMediaCodec.TYPE.TYPE_VIDEO,
+                        mVideoMC,
+                        data,
+                        0,
+                        readCount,
+                        presentationTimeUs,
+                        false,
+                        true);
+            } catch (Exception e) {
+                e.printStackTrace();
+                Log.e(TAG, "MediaClient playVideo() " + e.toString());
+                break;
+            }
+        }// while(...) end
+        Log.i(TAG, "MediaClient playVideo() end");
     }
 
     public void playAudio() {
@@ -107,13 +148,13 @@ public class MediaClient {
         // https://blog.csdn.net/lavender1626/article/details/80431902
         byte[] csd0 = new byte[]{(byte) 0x12, (byte) 0x10};
         mAudioMF.setByteBuffer("csd-0", ByteBuffer.wrap(csd0));
-        mAudioMC = MediaUtils.getAudioDecoderMediaCodec(mAudioMF);
+        /*mAudioMC = MediaUtils.getAudioDecoderMediaCodec(mAudioMF);
         if (mAudioMC == null) {
             Log.e(TAG, "MediaClient playAudio() mAudioMC is null");
             return;
-        }
+        }*/
 
-        /*// 创建AudioTrack
+        // 创建AudioTrack
         // 1.
         int sampleRateInHz =
                 mAudioMF.getInteger(MediaFormat.KEY_SAMPLE_RATE);
@@ -122,12 +163,10 @@ public class MediaClient {
                 mAudioMF.getInteger(MediaFormat.KEY_CHANNEL_COUNT);
         // 3.
         int audioFormat = AudioFormat.ENCODING_PCM_16BIT;
-        // sampleRateInHz: 48000 channelCount: 2 audioFormat: 2
         MLog.d(TAG, "MediaClient playAudio()" +
                 " sampleRateInHz: " + sampleRateInHz +
                 " channelCount: " + channelCount +
                 " audioFormat: " + audioFormat);
-        // create AudioTrack
         mAudioTrack = MediaUtils.createAudioTrack(
                 AudioManager.STREAM_MUSIC,
                 sampleRateInHz, channelCount, audioFormat,
@@ -135,26 +174,25 @@ public class MediaClient {
         if (mAudioTrack != null) {
             mAudioTrack.play();
         } else {
-            MLog.e(TAG, "MediaClient playAudio() AudioTrack is null");
+            MLog.e(TAG, "MediaClient playAudio() mAudioTrack is null");
             return;
-        }*/
+        }
 
         final int AUDIO_FRAME_MAX_LENGTH = mAudioMF.getInteger(MediaFormat.KEY_MAX_INPUT_SIZE);
         final byte[] data = new byte[AUDIO_FRAME_MAX_LENGTH];
         int readCount = 0;
-        int count = 0;
         while (mIsConnected) {
             Arrays.fill(data, (byte) 0);
             try {
                 readCount = inputStream.read(data, 0, AUDIO_FRAME_MAX_LENGTH);
                 if (readCount <= 0) {
-                    Log.e(TAG, "MediaClient readCount: " + readCount);
+                    Log.e(TAG, "MediaClient playAudio() readCount: " + readCount);
                     break;
                 }
 
-                //mAudioTrack.write(data, 0, readCount);
+                mAudioTrack.write(data, 0, readCount);
 
-                long presentationTimeUs = System.nanoTime() / 1000;
+                /*long presentationTimeUs = System.nanoTime() / 1000;
                 EDMediaCodec.feedInputBufferAndDrainOutputBuffer(
                         mCallback,
                         EDMediaCodec.TYPE.TYPE_AUDIO,
@@ -164,10 +202,10 @@ public class MediaClient {
                         readCount,
                         presentationTimeUs,
                         false,
-                        true);
+                        true);*/
             } catch (Exception e) {
                 e.printStackTrace();
-                Log.e(TAG, "MediaClient " + e.toString());
+                Log.e(TAG, "MediaClient playAudio() " + e.toString());
                 break;
             }
         }// while(...) end

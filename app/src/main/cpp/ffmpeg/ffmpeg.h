@@ -52,9 +52,8 @@ enum {
 
 bool initMediaCodec(int type,
                     int mimeType,
-                    long long *parameters, int parameterSize,
-                    unsigned char *csd0, int csd0Size,
-                    unsigned char *csd1, int csd1Size);
+                    long long *parameters, int parameters_size,
+                    unsigned char *sps_pps, int sps_pps_size);
 
 bool feedInputBufferAndDrainOutputBuffer(int type,
                                          unsigned char *encodedData,

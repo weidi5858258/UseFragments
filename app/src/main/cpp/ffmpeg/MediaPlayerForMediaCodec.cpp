@@ -261,6 +261,10 @@ namespace alexander_media_mediacodec {
     static int64_t endReadTime = -1;
 
     static int frameRate = 0;
+    // Duration: 01:27:51.64, start: 0.000000, bitrate: 1666 kb/s
+    static int64_t bitRate = 0;
+    // Stream #0:1: Video: rv40 (RV40 / 0x30345652), yuv420p, 1280x720, 1506 kb/s, 23.98 fps, 23.98 tbr, 1k tbn, 1k tbc
+    static int64_t bit_rate = 0;
 
     static int videoMimeType = -1;
     static int audioMimeType = -1;
@@ -454,6 +458,8 @@ namespace alexander_media_mediacodec {
         endReadTime = -1;
         mediaDuration = -1;
         frameRate = 0;
+        bitRate = 0;
+        bit_rate = 0;
 
         isReading = false;
         isVideoHandling = false;
@@ -759,8 +765,8 @@ namespace alexander_media_mediacodec {
         }
 
         int audioFormat = 2;
-        int parameterSize = 4;
-        long long parameters[parameterSize];
+        int parameters_size = 4;
+        long long parameters[parameters_size];
         parameters[0] = audioWrapper->dstSampleRate;
         parameters[1] = audioWrapper->dstNbChannels;
         parameters[2] = audioFormat;
@@ -775,9 +781,9 @@ namespace alexander_media_mediacodec {
             LOGW("initAudioMediaCodec() audio extradata is not nullptr\n");
         }
         LOGW("initAudioMediaCodec() audio extradata_size: %d\n", extradata_size);
-        bool initRet = false;
 
-        switch (audioMimeType) {
+        bool initRet = false;
+        /*switch (audioMimeType) {
             case AV_CODEC_ID_MP3:   // 86017 0
             case AV_CODEC_ID_FLAC:  // 86028 0
             case AV_CODEC_ID_EAC3: {// 86056 0
@@ -819,7 +825,10 @@ namespace alexander_media_mediacodec {
                                          nullptr, 0);
                 break;
             }
-        }
+        }*/
+        initRet = initMediaCodec(0x0001, audioMimeType,
+                                 parameters, parameters_size,
+                                 extradata, extradata_size);
         if (!initRet) {
             audioWrapper->father->useMediaCodec = false;
         }
@@ -832,8 +841,8 @@ namespace alexander_media_mediacodec {
             return;
         }
 
-        int parameterSize = 6;
-        long long parameters[parameterSize];
+        int parameters_size = 6;
+        long long parameters[parameters_size];
         parameters[0] = videoWrapper->srcWidth;
         parameters[1] = videoWrapper->srcHeight;
         parameters[2] = mediaDuration;
@@ -841,7 +850,7 @@ namespace alexander_media_mediacodec {
         parameters[4] = bit_rate;
         parameters[5] = videoFrames;
 
-        // [h265]: 00 00 00 01 + vps + 00 00 00 01 +sps + 00 00 00 01 pps
+        // 传递到java层去处理比较方便
         uint8_t *extradata = videoWrapper->father->avCodecContext->extradata;
         int extradata_size = videoWrapper->father->avCodecContext->extradata_size;
         if (extradata == nullptr) {
@@ -850,82 +859,10 @@ namespace alexander_media_mediacodec {
             LOGW("initVideoMediaCodec() video extradata is not nullptr\n");
         }
         LOGW("initVideoMediaCodec() video extradata_size: %d\n", extradata_size);
-        bool initRet = false;
-        switch (videoMimeType) {
-            case AV_CODEC_ID_HEVC:        // 173
-            case AV_CODEC_ID_MPEG4:       // 12
-            case AV_CODEC_ID_MPEG2VIDEO: {// 2
-                // 比较轻松,只有csd-0
-                initRet = initMediaCodec(0x0002, videoMimeType,
-                                         parameters, parameterSize,
-                                         extradata, extradata_size,
-                                         nullptr, 0);
-                break;
-            }
-            case AV_CODEC_ID_H264: {// 27
-                /*for (int i = 0; i < extradata_size; i++) {
-                    LOGW("initVideoMediaCodec() video   extradataStr: %d\n", extradata[i]);
-                }*/
 
-                int startCodeSPSIndex = 0;
-                int startCodePPSIndex = 0;
-                int spsLength = 0;
-                int ppsLength = 0;
-                for (int i = 1; i < extradata_size; i++) {
-                    // 0x67 = 103
-                    if (extradata[i] == 0x67 && extradata[i - 2] == 0) {
-                        startCodeSPSIndex = i;
-                        spsLength = extradata[i - 1];
-                    }
-                    // 0x68 = 104
-                    if (extradata[i] == 0x68 && extradata[i - 2] == 0) {
-                        startCodePPSIndex = i;
-                        ppsLength = extradata[i - 1];
-                    }
-                }
-                // 0x00, 0x00, 0x00, 0x01
-                spsLength += 4;
-                ppsLength += 4;
-                uint8_t sps[spsLength];
-                uint8_t pps[ppsLength];
-                memset(sps, 0, spsLength);
-                memset(pps, 0, ppsLength);
-                sps[0] = pps[0] = 0x00;
-                sps[1] = pps[1] = 0x00;
-                sps[2] = pps[2] = 0x00;
-                sps[3] = pps[3] = 0x01;
-                memcpy(sps + 4, extradata + startCodeSPSIndex, spsLength - 4);
-                memcpy(pps + 4, extradata + startCodePPSIndex, ppsLength - 4);
-
-                /*uint8_t sps[spsLength];
-                uint8_t pps[ppsLength];
-                memset(sps, 0, spsLength);
-                memset(pps, 0, ppsLength);
-                memcpy(sps, extradata + startCodeSPSIndex, spsLength);
-                memcpy(pps, extradata + startCodePPSIndex, ppsLength);*/
-
-                initRet = initMediaCodec(0x0002, videoMimeType,
-                                         parameters, parameterSize,
-                                         sps, spsLength,
-                                         pps, ppsLength);
-                break;
-            }
-            case AV_CODEC_ID_VP8:  // 139
-            case AV_CODEC_ID_VP9: {// 167
-                initRet = initMediaCodec(0x0002, videoMimeType,
-                                         parameters, parameterSize,
-                                         nullptr, 0,
-                                         nullptr, 0);
-                break;
-            }
-            default: {
-                initRet = initMediaCodec(0x0002, videoMimeType,
-                                         nullptr, 0,
-                                         nullptr, 0,
-                                         nullptr, 0);
-                break;
-            }
-        }
+        bool initRet = initMediaCodec(0x0002, videoMimeType,
+                                      parameters, parameters_size,
+                                      extradata, extradata_size);
         if (!initRet) {
             videoWrapper->father->useMediaCodec = false;
         }
@@ -1281,7 +1218,8 @@ namespace alexander_media_mediacodec {
         // h265, h264, mpeg4, vp8, vp9
         AVCodecID codecID = videoWrapper->father->avCodecParameters->codec_id;
         videoMimeType = codecID;
-        LOGW("findAndOpenAVCodecForVideo() codecID: %d\n", codecID);
+        LOGW("findAndOpenAVCodecForVideo() codecID: %d avcodec_get_name: %s\n",
+             codecID, avcodec_get_name(codecID));
         switch (codecID) {
             case AV_CODEC_ID_HEVC: {// 173
                 LOGW("findAndOpenAVCodecForVideo() hevc_mediacodec\n");
@@ -1336,6 +1274,7 @@ namespace alexander_media_mediacodec {
                 break;
             }
             case AV_CODEC_ID_MPEG1VIDEO: {// 1
+                // 不支持硬解
                 LOGW("findAndOpenAVCodecForVideo() mpeg1_mediacodec\n");
                 videoWrapper->father->useMediaCodec = true;
                 videoWrapper->father->avBitStreamFilter =
@@ -1348,6 +1287,11 @@ namespace alexander_media_mediacodec {
                 videoWrapper->father->avBitStreamFilter =
                         av_bsf_get_by_name("mpeg2_metadata");
                 break;
+            }
+            case AV_CODEC_ID_H263: {// 4
+                videoWrapper->father->useMediaCodec = true;
+                videoWrapper->father->avBitStreamFilter =
+                        av_bsf_get_by_name("null");
             }
             default: {
                 videoWrapper->father->useMediaCodec = true;
@@ -1620,9 +1564,9 @@ namespace alexander_media_mediacodec {
             // 帧率
             frameRate = stream->avg_frame_rate.num / stream->avg_frame_rate.den;
         }
-        // 码率
-        int64_t bitRate = avFormatContext->bit_rate / 1000;
-        int64_t bit_rate = videoWrapper->father->avCodecContext->bit_rate;
+        // 码率(视频)/比特率(音频)
+        bitRate = avFormatContext->bit_rate / 1000;
+        bit_rate = videoWrapper->father->avCodecContext->bit_rate / 1000;
         // 帧数
         int64_t videoFrames = stream->nb_frames;
 
@@ -1633,8 +1577,8 @@ namespace alexander_media_mediacodec {
         LOGW("srcWidth             : %d\n", videoWrapper->srcWidth);
         LOGW("srcHeight            : %d\n", videoWrapper->srcHeight);
         LOGW("frameRate            : %d fps/Hz\n", frameRate);
-        LOGW("bitRate              : %lld kbps\n", (long long) bitRate);
-        LOGW("bit_rate             : %lld\n", (long long) bit_rate);
+        LOGW("bitRate              : %lld kb/s\n", (long long) bitRate);// Kbps
+        LOGW("bit_rate             : %lld kb/s\n", (long long) bit_rate);
         LOGW("bit_rate_tolerance   : %d\n", bit_rate_tolerance);
         LOGW("bits_per_coded_sample: %d\n", bits_per_coded_sample);
         LOGW("bits_per_raw_sample  : %d\n", bits_per_raw_sample);
@@ -2306,8 +2250,8 @@ namespace alexander_media_mediacodec {
             /***
              0.014149 0.018936 0.022836 0.023516 0.024403 0.026983 0.027595 0.028610
              0.029898 0.030690 0.031515 0.034621 0.035779 0.036042 0.037615 0.038017
-             0.039632 0.042750 0.047141 0.048789 0.052697 0.054136 0.055711 0.059648
-             0.062606 0.065509 0.066374 0.073902 0.074668 0.079382
+             0.039632 0.042750 0.043855 0.047141 0.048789 0.052697 0.054136 0.055711
+             0.059648 0.062606 0.065509 0.066374 0.073902 0.074668 0.079382
              */
             TIME_DIFFERENCE = averageTimeDiff + 0.050000;
             if (TIME_DIFFERENCE < 0.100000) {
@@ -2323,21 +2267,32 @@ namespace alexander_media_mediacodec {
             TIME_DIFFERENCE += 0.200000;
         }
         LOGI("hope_to_get_a_good_result() TIME_DIFFERENCE: %lf\n", TIME_DIFFERENCE);
-        char info[50];
-        sprintf(info, "[%lf]", averageTimeDiff);
-        sprintf(info + 10, " [%lf]", TIME_DIFFERENCE);
+
+        char info[100];
         if (videoWrapper->father->useMediaCodec
             && audioWrapper->father->useMediaCodec) {
-            sprintf(info + 21, "%s", " [AV]");
+            sprintf(info, "[%d] [%d] [%lld] [%lld] [%d] [%lf] [%lf] %s",
+                    videoWrapper->srcWidth, videoWrapper->srcHeight,
+                    (long long) bitRate, (long long) bit_rate, frameRate,
+                    averageTimeDiff, TIME_DIFFERENCE, "[AV]");
         } else if (videoWrapper->father->useMediaCodec
                    && !audioWrapper->father->useMediaCodec) {
-            sprintf(info + 21, "%s", " [V]");
+            sprintf(info, "[%d] [%d] [%lld] [%lld] [%d] [%lf] [%lf] %s",
+                    videoWrapper->srcWidth, videoWrapper->srcHeight,
+                    (long long) bitRate, (long long) bit_rate, frameRate,
+                    averageTimeDiff, TIME_DIFFERENCE, "[V]");
         } else if (!videoWrapper->father->useMediaCodec
                    && audioWrapper->father->useMediaCodec) {
-            sprintf(info + 21, "%s", " [A]");
+            sprintf(info, "[%d] [%d] [%lld] [%lld] [%d] [%lf] [%lf] %s",
+                    videoWrapper->srcWidth, videoWrapper->srcHeight,
+                    (long long) bitRate, (long long) bit_rate, frameRate,
+                    averageTimeDiff, TIME_DIFFERENCE, "[A]");
         } else if (!videoWrapper->father->useMediaCodec
                    && !audioWrapper->father->useMediaCodec) {
-            sprintf(info + 21, "%s", " []");
+            sprintf(info, "[%d] [%d] [%lld] [%lld] [%d] [%lf] [%lf] %s",
+                    videoWrapper->srcWidth, videoWrapper->srcHeight,
+                    (long long) bitRate, (long long) bit_rate, frameRate,
+                    averageTimeDiff, TIME_DIFFERENCE, "[]");
         }
         onInfo(info);
     }

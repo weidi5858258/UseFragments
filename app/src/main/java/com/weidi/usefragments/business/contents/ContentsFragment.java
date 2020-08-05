@@ -876,7 +876,8 @@ public class ContentsFragment extends BaseFragment {
                     public void run() {
                         if (MediaClient.getInstance().connect()) {
                             MyToast.show("client start");
-                            MediaClient.getInstance().playAudio();
+                            MediaClient.getInstance().playVideo();
+                            //MediaClient.getInstance().playAudio();
                         }
                     }
                 });

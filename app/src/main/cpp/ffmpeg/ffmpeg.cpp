@@ -158,12 +158,11 @@ bool getEnv(JNIEnv **env) {
 }
 
 bool initMediaCodecImpl(JNIEnv *jniEnv, int type, int mimeType,
-                        long long *parameters, int parameterSize,
-                        unsigned char *csd0, int csd0Size,
-                        unsigned char *csd1, int csd1Size) {
+                        long long *parameters, int parameters_size,
+                        unsigned char *sps_pps, int sps_pps_size) {
     bool initRet = false;
-    // 创建装3个对象的Object[]
-    jsize length = 3;
+    // 创建装2个对象的Object[]
+    jsize length = 2;
     jclass elementClass = jniEnv->FindClass("java/lang/Object");
     jobject initialElement = nullptr;
     jobjectArray objectsData = jniEnv->NewObjectArray(length, elementClass, initialElement);
@@ -171,34 +170,22 @@ bool initMediaCodecImpl(JNIEnv *jniEnv, int type, int mimeType,
     // int[]保存各种int值,创建MediaFormat时要用
     jlongArray parasData = nullptr;
     if (parameters != nullptr) {
-        parasData = jniEnv->NewLongArray(parameterSize);
+        parasData = jniEnv->NewLongArray(parameters_size);
         jniEnv->SetLongArrayRegion(
-                parasData, 0, parameterSize, reinterpret_cast<const jlong *>(parameters));
+                parasData, 0, parameters_size, reinterpret_cast<const jlong *>(parameters));
         jniEnv->SetObjectArrayElement(objectsData, 0, (jobject) parasData);
     } else {
         jniEnv->SetObjectArrayElement(objectsData, 0, nullptr);
     }
 
-    jbyteArray csd0Data = nullptr;
-    jbyteArray csd1Data = nullptr;
-    if (csd0 != nullptr && csd1 != nullptr) {
-        csd0Data = jniEnv->NewByteArray(csd0Size);
-        csd1Data = jniEnv->NewByteArray(csd1Size);
+    jbyteArray sps_pps_data = nullptr;
+    if (sps_pps != nullptr) {
+        sps_pps_data = jniEnv->NewByteArray(sps_pps_size);
         jniEnv->SetByteArrayRegion(
-                csd0Data, 0, csd0Size, reinterpret_cast<const jbyte *>(csd0));
-        jniEnv->SetByteArrayRegion(
-                csd1Data, 0, csd1Size, reinterpret_cast<const jbyte *>(csd1));
-        jniEnv->SetObjectArrayElement(objectsData, 1, (jobject) csd0Data);
-        jniEnv->SetObjectArrayElement(objectsData, 2, (jobject) csd1Data);
-    } else if (csd0 != nullptr && csd1 == nullptr) {
-        csd0Data = jniEnv->NewByteArray(csd0Size);
-        jniEnv->SetByteArrayRegion(
-                csd0Data, 0, csd0Size, reinterpret_cast<const jbyte *>(csd0));
-        jniEnv->SetObjectArrayElement(objectsData, 1, (jobject) csd0Data);
-        jniEnv->SetObjectArrayElement(objectsData, 2, nullptr);
-    } else if (csd0 == nullptr && csd1 == nullptr) {
+                sps_pps_data, 0, sps_pps_size, reinterpret_cast<const jbyte *>(sps_pps));
+        jniEnv->SetObjectArrayElement(objectsData, 1, (jobject) sps_pps_data);
+    } else {
         jniEnv->SetObjectArrayElement(objectsData, 1, nullptr);
-        jniEnv->SetObjectArrayElement(objectsData, 2, nullptr);
     }
 
     jobject jniObject = jniEnv->AllocObject(jniObject_jclass);
@@ -215,13 +202,9 @@ bool initMediaCodecImpl(JNIEnv *jniEnv, int type, int mimeType,
 
     jniEnv->DeleteLocalRef(parasData);
     parasData = nullptr;
-    if (csd0Data != nullptr) {
-        jniEnv->DeleteLocalRef(csd0Data);
-        csd0Data = nullptr;
-    }
-    if (csd1Data != nullptr) {
-        jniEnv->DeleteLocalRef(csd1Data);
-        csd1Data = nullptr;
+    if (sps_pps_data != nullptr) {
+        jniEnv->DeleteLocalRef(sps_pps_data);
+        sps_pps_data = nullptr;
     }
     jniEnv->DeleteLocalRef(objectsData);
     objectsData = nullptr;
@@ -235,9 +218,8 @@ bool initMediaCodecImpl(JNIEnv *jniEnv, int type, int mimeType,
 
 bool initMediaCodec(int type,
                     int mimeType,
-                    long long *parameters, int parameterSize,
-                    unsigned char *csd0, int csd0Size,
-                    unsigned char *csd1, int csd1Size) {
+                    long long *parameters, int parameters_size,
+                    unsigned char *sps_pps, int sps_pps_size) {
     bool initRet = false;
     JNIEnv *jniEnv;
     bool isAttached = getEnv(&jniEnv);
@@ -245,9 +227,8 @@ bool initMediaCodec(int type,
         && ffmpegJavaObject != nullptr
         && initMediaCodecMethodID != nullptr) {
         initRet = initMediaCodecImpl(jniEnv, type, mimeType,
-                                     parameters, parameterSize,
-                                     csd0, csd0Size,
-                                     csd1, csd1Size);
+                                     parameters, parameters_size,
+                                     sps_pps, sps_pps_size);
     }
     if (isAttached) {
         gJavaVm->DetachCurrentThread();

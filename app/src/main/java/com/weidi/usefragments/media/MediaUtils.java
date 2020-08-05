@@ -869,9 +869,16 @@ public class MediaUtils {
      */
     public static MediaFormat getVideoEncoderMediaFormat(int width, int height) {
         MediaFormat format = MediaFormat.createVideoFormat(VIDEO_MIME, width, height);
-        format.setInteger(MediaFormat.KEY_MAX_INPUT_SIZE, width * height);
         format.setInteger(MediaFormat.KEY_MAX_WIDTH, width);
         format.setInteger(MediaFormat.KEY_MAX_HEIGHT, height);
+        format.setInteger(MediaFormat.KEY_MAX_INPUT_SIZE, width * height);
+        // 设置码率
+        format.setInteger(MediaFormat.KEY_BIT_RATE, width * height);
+        // 设置帧率
+        format.setInteger(MediaFormat.KEY_FRAME_RATE, FRAME_RATE);
+        // 设置抽取关键帧的间隔，以s为单位，负数或者0表示不抽取关键帧
+        // i-frame iinterval
+        format.setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, IFRAME_INTERVAL);
         // 必须设置为COLOR_FormatSurface，因为是用Surface作为输入源
         // COLOR_FormatSurface这里表明数据将是一个graphicbuffer元数据
         format.setInteger(MediaFormat.KEY_COLOR_FORMAT,
@@ -885,14 +892,17 @@ public class MediaUtils {
         // 电视机不支持
         //format.setInteger(MediaFormat.KEY_BITRATE_MODE,
         //        MediaCodecInfo.EncoderCapabilities.BITRATE_MODE_CQ);
-        // 设置比特率(码率)
-        format.setInteger(MediaFormat.KEY_BIT_RATE, width * height);
-        //format.setInteger(MediaFormat.KEY_BIT_RATE, VIDEO_BIT_RATE);
-        // 设置帧率
-        format.setInteger(MediaFormat.KEY_FRAME_RATE, FRAME_RATE);
-        // 设置抽取关键帧的间隔，以s为单位，负数或者0表示不抽取关键帧
-        // i-frame iinterval
-        format.setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, IFRAME_INTERVAL);
+
+        /***
+         横屏
+         byte[] header_sps = {0, 0, 0, 1, 103, 66, -128, 31, -38, 1, 64, 22, -24, 6, -48, -95, 53};
+         byte[] header_pps = {0, 0 ,0, 1, 104, -50, 6, -30};
+         */
+        /*byte[] header_sps = {0, 0, 0, 1, 103, 66, -128, 31, -38, 2, -48, 40, 104, 6, -48, -95,
+        53};
+        byte[] header_pps = {0, 0, 0, 1, 104, -50, 6, -30};
+        format.setByteBuffer("csd-0", ByteBuffer.wrap(header_sps));
+        format.setByteBuffer("csd-1", ByteBuffer.wrap(header_pps));*/
 
         // 不能设置
         //format.setInteger(MediaFormat.KEY_PROFILE,
@@ -933,19 +943,19 @@ public class MediaUtils {
      */
     public static MediaFormat getVideoDecoderMediaFormat(int width, int height) {
         MediaFormat format = MediaFormat.createVideoFormat(VIDEO_MIME, width, height);
-        // 设置帧率
-        format.setInteger(MediaFormat.KEY_MAX_INPUT_SIZE, width * height);
         format.setInteger(MediaFormat.KEY_MAX_WIDTH, width);
         format.setInteger(MediaFormat.KEY_MAX_HEIGHT, height);
-        // 设置比特率
-        format.setInteger(MediaFormat.KEY_BIT_RATE, VIDEO_BIT_RATE);
+        format.setInteger(MediaFormat.KEY_MAX_INPUT_SIZE, width * height);
+        // 设置码率
+        format.setInteger(MediaFormat.KEY_BIT_RATE, width * height);
         // 设置帧率
         format.setInteger(MediaFormat.KEY_FRAME_RATE, FRAME_RATE);
         // 设置抽取关键帧的间隔，以s为单位，负数或者0表示不抽取关键帧
         // i-frame iinterval
         format.setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, IFRAME_INTERVAL);
-        if (DEBUG)
-            MLog.d(TAG, "getVideoDecoderMediaFormat() created video format: " + format);
+        format.setInteger(MediaFormat.KEY_COLOR_FORMAT,
+                MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface);
+        MLog.d(TAG, "getVideoDecoderMediaFormat() created video format: " + format);
 
         return format;
     }

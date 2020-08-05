@@ -20,6 +20,7 @@ import com.weidi.usefragments.tool.MLog;
 import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -242,6 +243,7 @@ public class FfmpegUseMediaCodecDecode {
     private static final int AV_CODEC_ID_VP8 = 139;
     private static final int AV_CODEC_ID_VP9 = 167;
     private static final int AV_CODEC_ID_MPEG2VIDEO = 2;
+    private static final int AV_CODEC_ID_H263 = 4;
 
     // audio
     private static final int AV_CODEC_ID_MP2 = 86016;
@@ -571,6 +573,17 @@ public class FfmpegUseMediaCodecDecode {
 
     public boolean initVideoMediaCodec(JniObject jniObject) {
         MLog.w(TAG, "initVideoMediaCodec() start");
+        if (jniObject == null
+                || jniObject.valueObjectArray == null
+                || jniObject.valueObjectArray.length < 2) {
+            MLog.e(TAG, "initVideoMediaCodec() jniObject failure");
+            return false;
+        }
+        if (mSurface == null) {
+            MLog.e(TAG, "initVideoMediaCodec() mSurface is null");
+            return false;
+        }
+
         if (mVideoWrapper != null
                 && mVideoWrapper.decoderMediaCodec != null) {
             // mVideoWrapper.decoderMediaCodec.flush();
@@ -587,14 +600,39 @@ public class FfmpegUseMediaCodecDecode {
             mediaFormat = GetMediaFormat.sVideoMediaFormat;
             videoMime = mediaFormat.getString(MediaFormat.KEY_MIME);
         } else {
-            MLog.e(TAG, "initVideoMediaCodec() GetMediaFormat.sVideoMediaFormat is null");
-            return false;
+            useExoPlayerForMediaFormat = false;
+            //MLog.e(TAG, "initVideoMediaCodec() GetMediaFormat.sVideoMediaFormat is null");
+            //return false;
         }
 
-        if (jniObject == null
-                || jniObject.valueObjectArray == null
-                || jniObject.valueObjectArray.length < 3) {
-            MLog.e(TAG, "initVideoMediaCodec() jniObject failure");
+        MLog.w(TAG, "initVideoMediaCodec()    mimeType: " + jniObject.valueInt);
+        // 现在只支持下面这几种硬解码
+        switch (jniObject.valueInt) {
+            case AV_CODEC_ID_HEVC:
+                videoMime = MediaFormat.MIMETYPE_VIDEO_HEVC;
+                break;
+            case AV_CODEC_ID_H264:
+                videoMime = MediaFormat.MIMETYPE_VIDEO_AVC;
+                break;
+            case AV_CODEC_ID_MPEG4:
+                videoMime = MediaFormat.MIMETYPE_VIDEO_MPEG4;
+                break;
+            case AV_CODEC_ID_VP8:
+                videoMime = MediaFormat.MIMETYPE_VIDEO_VP8;
+                break;
+            case AV_CODEC_ID_VP9:
+                videoMime = MediaFormat.MIMETYPE_VIDEO_VP9;
+                break;
+            case AV_CODEC_ID_MPEG2VIDEO:
+                videoMime = MediaFormat.MIMETYPE_VIDEO_MPEG2;
+                break;
+            case AV_CODEC_ID_H263:
+                //videoMime = MediaFormat.MIMETYPE_VIDEO_H263;
+            default:
+                break;
+        }
+        if (TextUtils.isEmpty(videoMime)) {
+            MLog.e(TAG, "initVideoMediaCodec() videoMime is empty");
             return false;
         }
         Object[] valueObjectArray = jniObject.valueObjectArray;
@@ -610,66 +648,38 @@ public class FfmpegUseMediaCodecDecode {
         // 码率
         long bitrate = parameters[4];
 
+        Object object = valueObjectArray[1];
+        byte[] sps_pps = null;
+        if (object != null) {
+            sps_pps = (byte[]) object;
+            MLog.w(TAG, "initVideoMediaCodec() video \nsps_pps: " + Arrays.toString(sps_pps));
+        } else {
+            MLog.w(TAG, "initVideoMediaCodec() sps_pps is null");
+        }
+
         if (mContext != null) {
             SharedPreferences sp =
                     mContext.getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE);
             String whatPlayer = sp.getString(PLAYBACK_USE_PLAYER, PLAYER_FFMPEG_MEDIACODEC);
             if (!TextUtils.equals(whatPlayer, PLAYER_FFMPEG_MEDIACODEC)
-                    || (width < 1280 && height < 720
+                    /*|| (width < 1280 && height < 720
                     && duration > 0 && duration <= 360
-                    && frame_rate <= 30)) {
+                    && frame_rate <= 30)*/) {
                 return false;
             }
 
-            String use_mode = sp.getString(PLAYBACK_USE_EXOPLAYER_OR_FFMPEG, "use_exoplayer");
+            /*String use_mode = sp.getString(PLAYBACK_USE_EXOPLAYER_OR_FFMPEG, "use_exoplayer");
             if (TextUtils.equals(use_mode, "use_ffmpeg")
                     || TextUtils.equals(videoMime, "video/hevc")) {
                 // http://112.17.40.12/PLTV/88888888/224/3221226758/1.m3u8 (video/hevc)
                 useExoPlayerForMediaFormat = false;
-            }
+            }*/
         }
 
         if (useExoPlayerForMediaFormat) {
             MLog.w(TAG, "initVideoMediaCodec() video  use exoplayer to get MediaFormat");
         } else {
             // region
-
-            if (mSurface == null) {
-                MLog.e(TAG, "initVideoMediaCodec() mSurface is null");
-                return false;
-            }
-
-            if (TextUtils.isEmpty(videoMime)) {
-                int videoMimeType = jniObject.valueInt;
-                MLog.w(TAG, "initVideoMediaCodec()    mimeType: " + videoMimeType);
-                switch (videoMimeType) {
-                    case AV_CODEC_ID_HEVC:
-                        videoMime = MediaFormat.MIMETYPE_VIDEO_HEVC;
-                        break;
-                    case AV_CODEC_ID_H264:
-                        videoMime = MediaFormat.MIMETYPE_VIDEO_AVC;
-                        break;
-                    case AV_CODEC_ID_MPEG4:
-                        videoMime = MediaFormat.MIMETYPE_VIDEO_MPEG4;
-                        break;
-                    case AV_CODEC_ID_VP8:
-                        videoMime = MediaFormat.MIMETYPE_VIDEO_VP8;
-                        break;
-                    case AV_CODEC_ID_VP9:
-                        videoMime = MediaFormat.MIMETYPE_VIDEO_VP9;
-                        break;
-                    case AV_CODEC_ID_MPEG2VIDEO:
-                        // MediaCodec创建不了
-                        videoMime = MediaFormat.MIMETYPE_VIDEO_MPEG2;
-                        break;
-                    default:
-                        break;
-                }
-            }
-            if (TextUtils.isEmpty(videoMime)) {
-                MLog.e(TAG, "initVideoMediaCodec() TextUtils.isEmpty(videoMime)");
-                return false;
-            }
 
             mediaFormat = MediaUtils.getVideoDecoderMediaFormat(width, height);
             mediaFormat.setString(MediaFormat.KEY_MIME, videoMime);
@@ -680,54 +690,127 @@ public class FfmpegUseMediaCodecDecode {
                 mediaFormat.setLong(MediaFormat.KEY_DURATION, -9223372036854L);
             }
             mediaFormat.setInteger(MediaFormat.KEY_FRAME_RATE, frame_rate);
-            mediaFormat.setLong(MediaFormat.KEY_BIT_RATE, bitrate);
+            if (bitrate != 0) {
+                mediaFormat.setLong(MediaFormat.KEY_BIT_RATE, bitrate);
+            }
             mediaFormat.setInteger(MediaFormat.KEY_BITRATE_MODE,
                     MediaCodecInfo.EncoderCapabilities.BITRATE_MODE_CQ);
             mediaFormat.setInteger(MediaFormat.KEY_COLOR_FORMAT,
                     MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420Flexible);
 
-            Object object1 = valueObjectArray[1];
-            Object object2 = valueObjectArray[2];
-            byte[] csd0 = null;
-            byte[] csd1 = null;
-
             if (TextUtils.equals(videoMime, MediaFormat.MIMETYPE_VIDEO_VP8)
                     || TextUtils.equals(videoMime, MediaFormat.MIMETYPE_VIDEO_VP9)) {
-                // 0(表示没有csd-0和csd-1)
+                // 没有csd-0和csd-1
+                // 可以使用MediaCodec硬解码
             } else if (TextUtils.equals(videoMime, MediaFormat.MIMETYPE_VIDEO_HEVC)
                     || TextUtils.equals(videoMime, MediaFormat.MIMETYPE_VIDEO_MPEG4)
                     || TextUtils.equals(videoMime, MediaFormat.MIMETYPE_VIDEO_MPEG2)) {
-                // 1(表示只有csd-0)
-                // video/mp4v-es csd-0: 0, 0, 1, -80,...
-                if (object1 != null && object2 == null) {
-                    csd0 = (byte[]) object1;
-                    mediaFormat.setByteBuffer("csd-0", ByteBuffer.wrap(csd0));
+                // 只有csd-0
+                // 可以使用MediaCodec硬解码
+                if (sps_pps != null) {
+                    mediaFormat.setByteBuffer("csd-0", ByteBuffer.wrap(sps_pps));
                 }
             } else if (TextUtils.equals(videoMime, MediaFormat.MIMETYPE_VIDEO_AVC)) {
-                // 2(表示同时有csd-0和csd-1)
+                // 同时有csd-0和csd-1
                 // csd-0: 0, 0, 0, 1, 103,... csd-1: 0, 0, 0, 1, 104,...
-                // csd-0: 0, 0, 1, 103,...    csd-1: 0, 0, 1, 104,...
-                // csd-0: 0, 0, 1, 39,...     csd-1: 0, 0, 1, 40,...
-                if (object1 != null && object2 != null) {
-                    csd0 = (byte[]) object1;
-                    csd1 = (byte[]) object2;
-                    mediaFormat.setByteBuffer("csd-0", ByteBuffer.wrap(csd0));
-                    mediaFormat.setByteBuffer("csd-1", ByteBuffer.wrap(csd1));
-                }
-            }
+                // csd-0:    0, 0, 1, 103,... csd-1:    0, 0, 1, 104,...
+                // csd-0:    0, 0, 1,  39,... csd-1:    0, 0, 1,  40,...
+                if (sps_pps != null) {
+                    try {
+                        ByteBuffer byteBuffer = ByteBuffer.wrap(sps_pps);
+                        byteBuffer.position(0);
+                        byteBuffer.limit(sps_pps.length);
+                        int index = -1;
+                        if (sps_pps[0] == 0
+                                && sps_pps[1] == 0
+                                && sps_pps[2] == 0
+                                && sps_pps[3] == 1) {
+                            for (int i = 1; i < sps_pps.length; i++) {
+                                if (sps_pps[i] == 0
+                                        && sps_pps[i + 1] == 0
+                                        && sps_pps[i + 2] == 0
+                                        && sps_pps[i + 3] == 1) {
+                                    index = i;
+                                    break;
+                                }
+                            }
+                        } else if (sps_pps[0] == 0
+                                && sps_pps[1] == 0
+                                && sps_pps[2] == 1) {
+                            for (int i = 1; i < sps_pps.length; i++) {
+                                if (sps_pps[i] == 0
+                                        && sps_pps[i + 1] == 0
+                                        && sps_pps[i + 2] == 1) {
+                                    index = i;
+                                    break;
+                                }
+                            }
+                        }
 
-            if (GetMediaFormat.sVideoMediaFormat != null) {
-                if (csd0 != null
-                        && csd0.length == 0
-                        && GetMediaFormat.sVideoMediaFormat.containsKey("csd-0")) {
-                    mediaFormat.setByteBuffer("csd-0",
-                            GetMediaFormat.sVideoMediaFormat.getByteBuffer("csd-0"));
-                }
-                if (csd1 != null
-                        && csd1.length == 0
-                        && GetMediaFormat.sVideoMediaFormat.containsKey("csd-1")) {
-                    mediaFormat.setByteBuffer("csd-1",
-                            GetMediaFormat.sVideoMediaFormat.getByteBuffer("csd-1"));
+                        byte[] sps = null;
+                        byte[] pps = null;
+                        if (index != -1) {
+                            sps = new byte[index];
+                            pps = new byte[sps_pps.length - index];
+                            byteBuffer.get(sps, 0, sps.length);
+                            byteBuffer.get(pps, 0, pps.length);
+                            mediaFormat.setByteBuffer("csd-0", ByteBuffer.wrap(sps));
+                            mediaFormat.setByteBuffer("csd-1", ByteBuffer.wrap(pps));
+                        } else {
+                            /***
+                             /storage/2430-1702/BaiduNetdisk/video/流浪的地球.mp4
+                             */
+                            MLog.e(TAG, "initVideoMediaCodec() doesn't find index");
+                            int spsIndex = -1;
+                            int spsLength = 0;
+                            int ppsIndex = -1;
+                            int ppsLength = 0;
+                            for (int i = 0; i < sps_pps.length; i++) {
+                                if (sps_pps[i] == 103) {
+                                    // 0x67 = 103
+                                    if (spsIndex == -1) {
+                                        spsIndex = i;
+                                        spsLength = sps_pps[i - 1];
+                                    }
+                                } else if (sps_pps[i] == 104) {
+                                    // 0x68 = 104
+                                    if (ppsIndex == -1) {
+                                        ppsIndex = i;
+                                        ppsLength = sps_pps[i - 1];
+                                        break;
+                                    }
+                                }
+                            }
+                            if (spsIndex != -1 && ppsIndex != -1) {
+                                byte[] tempSpsPps = new byte[sps_pps.length];
+                                byteBuffer.get(tempSpsPps, 0, sps_pps.length);
+                                sps = new byte[spsLength + 4];
+                                pps = new byte[ppsLength + 4];
+                                // 0x00, 0x00, 0x00, 0x01
+                                sps[0] = pps[0] = 0;
+                                sps[1] = pps[1] = 0;
+                                sps[2] = pps[2] = 0;
+                                sps[3] = pps[3] = 1;
+                                System.arraycopy(tempSpsPps, spsIndex, sps, 4, spsLength);
+                                System.arraycopy(tempSpsPps, ppsIndex, pps, 4, ppsLength);
+                                mediaFormat.setByteBuffer("csd-0", ByteBuffer.wrap(sps));
+                                mediaFormat.setByteBuffer("csd-1", ByteBuffer.wrap(pps));
+                            }
+                        }
+
+                        if (sps != null && pps != null) {
+                            MLog.i(TAG, "initVideoMediaCodec() video \n  csd-0: " +
+                                    Arrays.toString(sps));
+                            MLog.i(TAG, "initVideoMediaCodec() video \n  csd-1: " +
+                                    Arrays.toString(pps));
+                        } else {
+                            MLog.e(TAG, "initVideoMediaCodec() sps or pps is null");
+                            return false;
+                        }
+                    } catch (Exception e) {
+                        MLog.e(TAG, "initVideoMediaCodec() Exception: \n" + e);
+                        return false;
+                    }
                 }
             }
 
@@ -755,38 +838,19 @@ public class FfmpegUseMediaCodecDecode {
             return false;
         }
 
-        // mVideoWrapper.decoderMediaCodec.flush();
-        if (mVideoWrapper.decoderMediaFormat.containsKey("csd-0")) {
-            ByteBuffer buffer = mVideoWrapper.decoderMediaFormat.getByteBuffer("csd-0");
-            byte[] csd_0 = new byte[buffer.limit()];
-            buffer.get(csd_0);
-            StringBuilder sb = new StringBuilder();
-            sb.append("{");
-            int count = csd_0.length;
-            for (int i = 0; i < count; i++) {
-                sb.append(csd_0[i]);
-                if (i <= count - 2) {
-                    sb.append(", ");
-                }
+        if (GetMediaFormat.sVideoMediaFormat != null) {
+            if (mVideoWrapper.decoderMediaFormat.containsKey("csd-0")) {
+                ByteBuffer buffer = mVideoWrapper.decoderMediaFormat.getByteBuffer("csd-0");
+                byte[] csd_0 = new byte[buffer.limit()];
+                buffer.get(csd_0);
+                MLog.w(TAG, "initVideoMediaCodec() video \n  csd-0: " + Arrays.toString(csd_0));
             }
-            sb.append("}");
-            MLog.w(TAG, "initVideoMediaCodec() video csd-0: " + sb.toString());
-        }
-        if (mVideoWrapper.decoderMediaFormat.containsKey("csd-1")) {
-            ByteBuffer buffer = mVideoWrapper.decoderMediaFormat.getByteBuffer("csd-1");
-            byte[] csd_1 = new byte[buffer.limit()];
-            buffer.get(csd_1);
-            StringBuilder sb = new StringBuilder();
-            sb.append("{");
-            int count = csd_1.length;
-            for (int i = 0; i < count; i++) {
-                sb.append(csd_1[i]);
-                if (i <= count - 2) {
-                    sb.append(", ");
-                }
+            if (mVideoWrapper.decoderMediaFormat.containsKey("csd-1")) {
+                ByteBuffer buffer = mVideoWrapper.decoderMediaFormat.getByteBuffer("csd-1");
+                byte[] csd_1 = new byte[buffer.limit()];
+                buffer.get(csd_1);
+                MLog.w(TAG, "initVideoMediaCodec() video \n  csd-1: " + Arrays.toString(csd_1));
             }
-            sb.append("}");
-            MLog.w(TAG, "initVideoMediaCodec() video csd-1: " + sb.toString());
         }
 
         MLog.w(TAG, "initVideoMediaCodec() end");

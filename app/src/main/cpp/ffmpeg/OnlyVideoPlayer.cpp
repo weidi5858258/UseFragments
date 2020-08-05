@@ -1023,14 +1023,11 @@ namespace alexander_only_video {
     }
 
     void setJniParameters(JNIEnv *env, const char *filePath, jobject surfaceJavaObject) {
-//        const char *src = "/storage/emulated/0/Movies/权力的游戏第三季05.mp4";
-//        const char *src = "http://192.168.0.112:8080/tomcat_video/game_of_thrones/game_of_thrones_season_1/01.mp4";
-//        av_strlcpy(inVideoFilePath, src, sizeof(inVideoFilePath));
-
-        isLocal = false;
         memset(inFilePath, '\0', sizeof(inFilePath));
         av_strlcpy(inFilePath, filePath, sizeof(inFilePath));
-        LOGI("setJniParameters() inVideoFilePath: %s", inFilePath);
+        LOGI("setJniParameters() filePath  : %s", inFilePath);
+
+        isLocal = false;
         char *result = strstr(inFilePath, "http://");
         if (result == NULL) {
             result = strstr(inFilePath, "https://");
@@ -1044,7 +1041,16 @@ namespace alexander_only_video {
                 }
             }
         }
+        isH264 = true;
+        result = strstr(inFilePath, ".h264");
+        if (result == nullptr) {
+            result = strstr(inFilePath, ".H264");
+            if (result == nullptr) {
+                isH264 = false;
+            }
+        }
         LOGI("setJniParameters() isLocal   : %d", isLocal);
+        LOGI("setJniParameters() isH264    : %d", isH264);
 
         if (pANativeWindow != NULL) {
             ANativeWindow_release(pANativeWindow);
@@ -1052,11 +1058,6 @@ namespace alexander_only_video {
         }
         // 1.获取一个关联Surface的NativeWindow窗体
         pANativeWindow = ANativeWindow_fromSurface(env, surfaceJavaObject);
-        if (pANativeWindow == NULL) {
-            LOGI("setJniParameters() pANativeWindow is NULL\n");
-        } else {
-            LOGI("setJniParameters() pANativeWindow isn't NULL\n");
-        }
     }
 
     int play() {

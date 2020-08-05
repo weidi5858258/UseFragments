@@ -39,8 +39,6 @@ import com.weidi.eventbus.EventBusUtils;
 import com.weidi.threadpool.ThreadPool;
 import com.weidi.usefragments.R;
 import com.weidi.usefragments.business.contents.Contents;
-import com.weidi.usefragments.business.contents.ContentsFragment;
-import com.weidi.usefragments.service.DownloadFileService;
 import com.weidi.usefragments.tool.Callback;
 import com.weidi.usefragments.tool.JniObject;
 import com.weidi.usefragments.tool.MLog;
@@ -48,8 +46,13 @@ import com.weidi.utils.MyToast;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -491,6 +494,29 @@ public class PlayerWrapper {
                 return false;
             }
         });
+
+        // Test
+        /*new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    saveLog();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }).start();
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    SystemClock.sleep(5000);
+                    readLog();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }).start();*/
     }
 
     // 调用之前,视频路径先设置好
@@ -593,7 +619,7 @@ public class PlayerWrapper {
                 break;
             case Callback.MSG_ON_TRANSACT_INFO:
                 if (msg.obj != null && msg.obj instanceof String) {
-                    String toastInfo = (String) msg.obj;
+                    String toastInfo = ((String) msg.obj).trim();
                     MLog.d(TAG, "Callback.MSG_ON_TRANSACT_INFO " + toastInfo);
                     //MyToast.show(toastInfo);
                     if (toastInfo.contains("[")
@@ -865,7 +891,7 @@ public class PlayerWrapper {
     // @@@
     public void startForGetMediaFormat() {
         whatPlayer = mSP.getString(PLAYBACK_USE_PLAYER, PLAYER_FFMPEG_MEDIACODEC);
-        if (TextUtils.equals(whatPlayer, PLAYER_FFMPEG_MEDIACODEC)
+        /*if (TextUtils.equals(whatPlayer, PLAYER_FFMPEG_MEDIACODEC)
                 && !mPath.endsWith(".m4s")
                 && !mPath.endsWith(".h264")
                 && !mPath.endsWith(".aac")
@@ -875,7 +901,7 @@ public class PlayerWrapper {
             onReady();
             mGetMediaFormat.start(mPath);
             return;
-        }
+        }*/
 
         startPlayback();
     }
@@ -970,10 +996,16 @@ public class PlayerWrapper {
                         sendEmptyMessage(DO_SOMETHING_CODE_init);
                         if (TextUtils.isEmpty(mType)
                                 || mType.startsWith("video/")) {
-                            mFFMPEGPlayer.onTransact(DO_SOMETHING_CODE_setMode,
-                                    // USE_MODE_MEDIA_4K USE_MODE_MEDIA_MEDIACODEC
-                                    JniObject.obtain().writeInt(
-                                            FFMPEG.USE_MODE_MEDIA_MEDIACODEC));
+                            if (!mPath.endsWith(".h264")) {
+                                mFFMPEGPlayer.onTransact(DO_SOMETHING_CODE_setMode,
+                                        // USE_MODE_MEDIA_4K USE_MODE_MEDIA_MEDIACODEC
+                                        JniObject.obtain().writeInt(
+                                                FFMPEG.USE_MODE_MEDIA_MEDIACODEC));
+                            } else {
+                                mFFMPEGPlayer.onTransact(DO_SOMETHING_CODE_setMode,
+                                        JniObject.obtain().writeInt(
+                                                FFMPEG.USE_MODE_ONLY_VIDEO));
+                            }
                         } else if (mType.startsWith("audio/")) {
                             mFFMPEGPlayer.onTransact(DO_SOMETHING_CODE_setMode,
                                     JniObject.obtain().writeInt(FFMPEG.USE_MODE_ONLY_AUDIO));
@@ -1776,13 +1808,15 @@ public class PlayerWrapper {
                 MLog.e(TAG, "PlayerWrapper Callback.ERROR_FFMPEG_INIT errorInfo: " + errorInfo);
                 if (TextUtils.isEmpty(mType)
                         || mType.startsWith("video/")) {
-                    if (mCouldPlaybackPathList.contains(mPath)) {
+                    if (mCouldPlaybackPathList.contains(mPath)
+                            && !mPath.startsWith("http://cache.m.iqiyi.com/")) {
                         // startPlayback();
                         startForGetMediaFormat();
                         break;
                     } else {
                         String path = mSP.getString(PLAYBACK_ADDRESS, null);
-                        if (TextUtils.equals(path, mPath)) {
+                        if (TextUtils.equals(path, mPath)
+                                && !mPath.startsWith("http://cache.m.iqiyi.com/")) {
                             // startPlayback();
                             startForGetMediaFormat();
                             break;
@@ -2477,6 +2511,70 @@ public class PlayerWrapper {
             }
             return true;
         }
+    }
+
+    private boolean mIsReading = false;
+
+    private void saveLog() throws Exception {
+        File[] files = mContext.getExternalFilesDirs(Environment.MEDIA_SHARED);
+        File file = null;
+        for (File f : files) {
+            MLog.i(TAG, "Environment.MEDIA_SHARED    : " + f.getAbsolutePath());
+            file = f;
+        }
+        if (file == null) {
+            return;
+        }
+        file = new File(file.getAbsolutePath(), "/Log.txt");
+        if (file.exists()) {
+            file.delete();
+        }
+
+        // adb logcat -G 20m &&
+        String[] running = new String[]{"logcat", "-s", "adb logcat *:V"};
+        Process exec = Runtime.getRuntime().exec(running);
+        InputStream inputStream = exec.getInputStream();
+
+        FileOutputStream os = new FileOutputStream(file, false);
+        int readLength = 0;
+        byte[] buffer = new byte[1024];
+        MLog.i(TAG, "saveLog() start");
+        while (-1 != (readLength = inputStream.read(buffer))) {
+            os.write(buffer, 0, readLength);
+            os.flush();
+        }
+        MLog.i(TAG, "saveLog() end");
+    }
+
+    private void readLog() throws Exception {
+        File[] files = mContext.getExternalFilesDirs(Environment.MEDIA_SHARED);
+        File file = null;
+        for (File f : files) {
+            MLog.i(TAG, "Environment.MEDIA_SHARED    : " + f.getAbsolutePath());
+            file = f;
+        }
+        if (file == null) {
+            return;
+        }
+
+        file = new File(file.getAbsolutePath(), "/Log.txt");
+        BufferedReader reader = new BufferedReader(new FileReader(file));
+
+        mIsReading = true;
+        String aLineLog = null;
+        MLog.i(TAG, "readLog() start");
+        while (mIsReading) {
+            aLineLog = reader.readLine();
+            if (TextUtils.isEmpty(aLineLog)) {
+                SystemClock.sleep(10);
+                continue;
+            }
+
+            if (aLineLog.contains("DmrPlayerService")) {
+                MLog.d(TAG, "readLog(): \n" + aLineLog);
+            }
+        }
+        MLog.i(TAG, "readLog() end");
     }
 
 }

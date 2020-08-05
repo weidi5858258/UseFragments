@@ -18,12 +18,12 @@ public class MediaServer {
     private static final String TAG =
             "player_alexander";
 
+    private volatile static MediaServer sMediaServer;
     public static final int PORT = 8890;
     public static final String AUDIOTRACK_INFO_TAG = "@@@@@@";
     private ConcurrentHashMap<Socket, OutputStream> map =
             new ConcurrentHashMap<Socket, OutputStream>();
-
-    private volatile static MediaServer sMediaServer;
+    private Iterator<Map.Entry<Socket, OutputStream>> iterator;
 
     private ServerSocket server;
     public boolean mIsHandling = false;
@@ -87,6 +87,7 @@ public class MediaServer {
             }
 
             map.put(socket, outputStream);
+            iterator = map.entrySet().iterator();
         }
         clearMap();
     }
@@ -96,7 +97,7 @@ public class MediaServer {
             return;
         }
 
-        Iterator<Map.Entry<Socket, OutputStream>> iterator = map.entrySet().iterator();
+        boolean needToUpdateMap = false;
         while (iterator.hasNext()) {
             Map.Entry<Socket, OutputStream> entry = iterator.next();
             Socket socket = entry.getKey();
@@ -105,7 +106,7 @@ public class MediaServer {
                     || outputStream == null
                     || !socket.isConnected()
                     || socket.isClosed()) {
-                iterator.remove();
+                needToUpdateMap = true;
                 continue;
             }
 
@@ -114,6 +115,10 @@ public class MediaServer {
             } catch (IOException e) {
                 e.printStackTrace();
             }
+        }
+
+        if (needToUpdateMap) {
+            updateMap();
         }
     }
 
@@ -132,12 +137,29 @@ public class MediaServer {
         Log.i(TAG, "MediaServer close() end");
     }
 
+    private synchronized void updateMap() {
+        iterator = map.entrySet().iterator();
+        while (iterator.hasNext()) {
+            Map.Entry<Socket, OutputStream> entry = iterator.next();
+            Socket socket = entry.getKey();
+            OutputStream outputStream = entry.getValue();
+            if (socket == null
+                    || outputStream == null
+                    || !socket.isConnected()
+                    || socket.isClosed()) {
+                Log.i(TAG, "MediaServer updateMap() remove socket");
+                iterator.remove();
+            }
+        }
+        iterator = map.entrySet().iterator();
+    }
+
     private void clearMap() {
         if (map.isEmpty()) {
             return;
         }
 
-        Iterator<Map.Entry<Socket, OutputStream>> iterator = map.entrySet().iterator();
+        iterator = map.entrySet().iterator();
         while (iterator.hasNext()) {
             Map.Entry<Socket, OutputStream> entry = iterator.next();
             Socket socket = entry.getKey();

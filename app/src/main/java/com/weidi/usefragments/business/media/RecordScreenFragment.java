@@ -24,6 +24,7 @@ import android.os.Message;
 
 import android.os.SystemClock;
 import android.util.DisplayMetrics;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Surface;
 import android.view.View;
@@ -651,7 +652,7 @@ public class RecordScreenFragment extends BaseFragment {
                 }
             }).start();
             // 音频先启动,让音频的mOutputAudioTrack先得到值
-            new Thread(new AudioEncoderRunnable()).start();
+            //new Thread(new AudioEncoderRunnable()).start();
             new Thread(new VideoEncoderRunnable()).start();
 
             /***
@@ -794,14 +795,14 @@ public class RecordScreenFragment extends BaseFragment {
             while (mIsRecording) {
                 // 等到音频的mOutputAudioTrack >= 0时,才往下走
                 // 先把音频的准备工作做好了,再准备视频的准备工作
-                if (mOutputAudioTrack < 0) {
+                /*if (mOutputAudioTrack < 0) {
                     try {
                         Thread.sleep(1, 0);
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
                     continue;
-                }
+                }*/
 
                 feedInputBufferAndDrainOutputBuffer =
                         EDMediaCodec.feedInputBufferAndDrainOutputBuffer(
@@ -851,7 +852,11 @@ public class RecordScreenFragment extends BaseFragment {
                     break;
                 }
 
-                long presentationTimeUs = System.nanoTime() / 1000;
+                if (MediaServer.getInstance().mIsHandling) {
+                    MediaServer.getInstance().sendData(buffer, 0, readSize);
+                }
+
+                /*long presentationTimeUs = System.nanoTime() / 1000;
                 feedInputBufferAndDrainOutputBuffer =
                         EDMediaCodec.feedInputBufferAndDrainOutputBuffer(
                                 mCallback,
@@ -866,7 +871,7 @@ public class RecordScreenFragment extends BaseFragment {
 
                 if (!feedInputBufferAndDrainOutputBuffer) {
                     break;
-                }
+                }*/
             }// while(...) end
             mIsAudioRecording = false;
             mIsRecording = false;
@@ -879,7 +884,22 @@ public class RecordScreenFragment extends BaseFragment {
         }
     }
 
+    public static final int NAL_SLICE = 1;
+    public static final int NAL_SLICE_DPA = 2;
+    public static final int NAL_SLICE_DPB = 3;
+    public static final int NAL_SLICE_DPC = 4;
+    public static final int NAL_SLICE_IDR = 5;
+    public static final int NAL_SEI = 6;
+    public static final int NAL_SPS = 7;
+    public static final int NAL_PPS = 8;
+    public static final int NAL_AUD = 9;
+    public static final int NAL_FILLER = 12;
+
     private EDMediaCodec.Callback mCallback = new EDMediaCodec.Callback() {
+        private byte[] sps_pps = null;
+        private byte[] sps = null;
+        private byte[] pps = null;
+
         @Override
         public boolean isVideoFinished() {
             return !mIsRecording;
@@ -896,13 +916,13 @@ public class RecordScreenFragment extends BaseFragment {
             mOutputVideoTrack = mMediaMuxer.addTrack(mVideoEncoderMediaFormat);
             MLog.d(TAG, "VideoEncoderThread Output mOutputVideoTrack: " +
                     mOutputVideoTrack);
-            if (!mIsMuxerStarted
+            /*if (!mIsMuxerStarted
                     && mOutputAudioTrack >= 0
                     && mOutputVideoTrack >= 0) {
                 MLog.d(TAG, "VideoEncoderThread Output mMediaMuxer.start()");
-                //mMediaMuxer.start();
-                //mIsMuxerStarted = true;
-            }
+                mMediaMuxer.start();
+                mIsMuxerStarted = true;
+            }*/
         }
 
         @Override
@@ -912,25 +932,100 @@ public class RecordScreenFragment extends BaseFragment {
                     mMediaMuxer.addTrack(mAudioEncoderMediaFormat);
             MLog.d(TAG, "AudioEncoderThread Output mOutputAudioTrack: " +
                     mOutputAudioTrack);
-            if (!mIsMuxerStarted
+            /*if (!mIsMuxerStarted
                     && mOutputAudioTrack >= 0
                     && mOutputVideoTrack >= 0) {
                 MLog.d(TAG, "AudioEncoderThread Output mMediaMuxer.start()");
-                //mMediaMuxer.start();
-                //mIsMuxerStarted = true;
-            }
+                mMediaMuxer.start();
+                mIsMuxerStarted = true;
+            }*/
         }
 
         @Override
         public int handleVideoOutputBuffer(int roomIndex, ByteBuffer room,
                                            MediaCodec.BufferInfo roomInfo, int roomSize) {
+            if (room == null || roomInfo.size <= 0) {
+                return 0;
+            }
+
             if (mIsMuxerStarted
-                    && mOutputVideoTrack >= 0
-                    && room != null
-                    && roomInfo.size != 0) {
+                    && mOutputVideoTrack >= 0) {
                 roomInfo.presentationTimeUs = System.nanoTime() / 1000;
                 // 把编码后的数据写进文件
                 mMediaMuxer.writeSampleData(mOutputVideoTrack, room, roomInfo);
+            }
+
+            int offset = 4;
+            // 判断帧的类型
+            // 0, 0, 0, 1
+            //    0, 0, 1
+            if (room.get(2) == 0x01) {
+                offset = 3;
+            }
+            int type = room.get(offset) & 0x1f;
+            /***
+             如果送来的流的第一帧Frame有sps和pps,
+             那么不需要配置format.setByteBuffer的”csd-0”(sps) 和”csd-1”(pps).
+             否则必须配置相应的pps和sps.
+             通常情况下sps和pps如下
+             [0, 0, 0, 1, 103, 66, -64, 13, -38, 5, -126, 90, 1, -31, 16, -115, 64,
+             0, 0, 0, 1, 104, -50, 6, -30]
+             sps帧和pps帧合在了一起,sps为[4,len-8]个字节,pps为后4个字节
+             */
+            switch (type) {
+                case NAL_SLICE:
+                    byte[] buffer = new byte[roomInfo.size];
+                    room.get(buffer);
+                    //Log.i(TAG, "buffer: \n" + Arrays.toString(buffer));
+                    if (MediaServer.getInstance().mIsHandling) {
+                        MediaServer.getInstance().sendData(buffer, 0, buffer.length);
+                    }
+                    break;
+                case NAL_SLICE_DPA:
+                    break;
+                case NAL_SLICE_DPB:
+                    break;
+                case NAL_SLICE_DPC:
+                    break;
+                case NAL_SLICE_IDR:
+                    // I帧,前面添加sps和pps
+                    if (sps_pps != null) {
+                        buffer = new byte[roomInfo.size + sps_pps.length];
+                        System.arraycopy(sps, 0, buffer, 0, sps_pps.length);
+                        room.get(buffer, sps_pps.length, roomInfo.size);
+                        //Log.i(TAG, "buffer: \n" + Arrays.toString(buffer));
+                        if (MediaServer.getInstance().mIsHandling) {
+                            MediaServer.getInstance().sendData(buffer, 0, buffer.length);
+                        }
+                    }
+                    break;
+                case NAL_SEI:
+                    break;
+                case NAL_SPS:
+                    // [0, 0, 0, 1, 103, 66, -128, 40, -23, 1, 104, 20, 50,
+                    //  0, 0, 0, 1, 104, -18, 6, -14]
+                    sps_pps = new byte[roomInfo.size];
+                    room.get(sps_pps);
+                    Log.d(TAG, "NAL_SPS\nsps_pps: " + Arrays.toString(sps_pps));
+
+                    /*sps = new byte[roomInfo.size - 12];
+                    pps = new byte[4];
+                    // 抛弃 0,0,0,1
+                    room.getInt();
+                    room.get(sps, 0, sps.length);
+                    room.getInt();
+                    room.get(pps, 0, pps.length);
+                    Log.d(TAG, "\nsps: " + Arrays.toString(sps) +
+                            "\npps: " + Arrays.toString(pps));*/
+                    break;
+                case NAL_PPS:
+                    break;
+                case NAL_AUD:
+                    break;
+                case NAL_FILLER:
+                    break;
+                default:
+                    break;
             }
 
             return 0;
@@ -947,7 +1042,9 @@ public class RecordScreenFragment extends BaseFragment {
                 mMediaMuxer.writeSampleData(mOutputAudioTrack, room, roomInfo);
             }
 
-            if (MediaServer.getInstance().mIsHandling && roomSize > 0) {
+            if (MediaServer.getInstance().mIsHandling
+                    && room != null
+                    && roomSize > 0) {
                 /*// 一帧AAC数据和ADTS头的大小
                 int frameSize = roomSize + 7;
                 // 空间只能不断地new
