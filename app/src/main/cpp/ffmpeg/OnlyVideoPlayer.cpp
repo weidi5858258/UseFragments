@@ -85,16 +85,26 @@ namespace alexander_only_video {
     }
 
     void initVideo() {
+        if (videoWrapper != nullptr && videoWrapper->father != nullptr) {
+            av_free(videoWrapper->father);
+            videoWrapper->father = nullptr;
+        }
+        if (videoWrapper != nullptr) {
+            av_free(videoWrapper);
+            videoWrapper = nullptr;
+        }
+
         struct Wrapper *wrapper = (struct Wrapper *) av_mallocz(sizeof(struct Wrapper));
         memset(wrapper, 0, sizeof(struct Wrapper));
 
         wrapper->type = TYPE_VIDEO;
         if (isLocal) {
             wrapper->list1LimitCounts = MAX_AVPACKET_COUNT_VIDEO_LOCAL;
+            wrapper->list2LimitCounts = MAX_AVPACKET_COUNT_VIDEO_LOCAL;
         } else {
             wrapper->list1LimitCounts = MAX_AVPACKET_COUNT_VIDEO_HTTP;
+            wrapper->list2LimitCounts = MAX_AVPACKET_COUNT;
         }
-        wrapper->list2LimitCounts = MAX_AVPACKET_COUNT;
         LOGW("initVideo() list1LimitCounts: %d\n", wrapper->list1LimitCounts);
         LOGW("initVideo() list2LimitCounts: %d\n", wrapper->list2LimitCounts);
         wrapper->duration = -1;
@@ -1017,6 +1027,29 @@ namespace alexander_only_video {
             //onError();
             return -1;
         }
+        if (isLocal) {
+            FILE *fp = nullptr, *fq = nullptr;
+            fp = fopen(inFilePath, "rb");
+            fq = fp;
+            // 存储文件指针位置
+            fpos_t post_head;
+            fpos_t post_end;
+            // 定位在文件开头
+            fseek(fp, 0, SEEK_SET);
+            // 获取指针地址
+            fgetpos(fq, &post_head);
+            // 定位在文件尾部
+            fseek(fq, 0, SEEK_END);
+            // 获取指针地址
+            fgetpos(fq, &post_end);
+            // 计算文件大小
+            fileLength = post_end - post_head;
+            LOGI("initPlayer()      fileLength: %.0lf\n", fileLength);
+            fclose(fp);
+            fp = nullptr;
+            fq = nullptr;
+        }
+        onChangeWindow(videoWrapper->srcWidth, videoWrapper->srcHeight);
 
         LOGW("%s\n", "initPlayer() end");
         return 0;
@@ -1029,13 +1062,13 @@ namespace alexander_only_video {
 
         isLocal = false;
         char *result = strstr(inFilePath, "http://");
-        if (result == NULL) {
+        if (result == nullptr) {
             result = strstr(inFilePath, "https://");
-            if (result == NULL) {
-                result = strstr(inFilePath, "HTTP://");
-                if (result == NULL) {
-                    result = strstr(inFilePath, "HTTPS://");
-                    if (result == NULL) {
+            if (result == nullptr) {
+                result = strstr(inFilePath, "rtmp://");
+                if (result == nullptr) {
+                    result = strstr(inFilePath, "rtsp://");
+                    if (result == nullptr) {
                         isLocal = true;
                     }
                 }

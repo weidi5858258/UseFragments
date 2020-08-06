@@ -1024,6 +1024,7 @@ public class PlayerWrapper {
                         }
                     }
                 } else {
+                    sendEmptyMessage(DO_SOMETHING_CODE_init);
                     // [.m4s] or [.h264 and aac]
                     if (mPath.endsWith(".m4s")) {
                         mFFMPEGPlayer.onTransact(DO_SOMETHING_CODE_setMode,

@@ -1291,7 +1291,6 @@ namespace alexander_media_mediacodec {
                 videoWrapper->father->useMediaCodec = true;
                 videoWrapper->father->avBitStreamFilter =
                         av_bsf_get_by_name("null");
-                // LOGW("findAndOpenAVCodecForVideo() codecID\n");
                 // 软解
                 // videoWrapper->father->decoderAVCodec = avcodec_find_decoder(codecID);
                 break;
@@ -2344,9 +2343,9 @@ namespace alexander_media_mediacodec {
 
         // 为了达到音视频同步,也只能牺牲音频了.让音频慢下来.(个别视频会这样)
         while (audioPts - videoPts > 0) {
-            if (videoWrapper->father->isPausedForUser
-                || videoWrapper->father->isPausedForCache
-                || videoWrapper->father->isPausedForSeek
+            if (audioWrapper->father->isPausedForUser
+                || audioWrapper->father->isPausedForCache
+                || audioWrapper->father->isPausedForSeek
                 || !audioWrapper->father->isHandling
                 || !videoWrapper->father->isHandling) {
                 LOGI("handleAudioDataImpl() TIME_DIFFERENCE return\n");
@@ -2637,16 +2636,20 @@ namespace alexander_media_mediacodec {
             }
         }
 
-        /*if (mediaDuration < 0 && preVideoPts > 0 && preVideoPts > videoPts) {
-            return 0;
-        }*/
-
         double tempTimeDifference = 0.0;
         if (videoPts > 0 && audioPts > 0) {
             //LOGW("handleVideoDataImpl()    videoPts: %lf\n", videoPts);
             //LOGD("handleVideoDataImpl()    audioPts: %lf\n", audioPts);
             //LOGW("handleVideoDataImpl() preVideoPts: %lf\n", preVideoPts);
             tempTimeDifference = videoPts - audioPts;
+            if (tempTimeDifference < 0) {
+                // 正常情况下videoTimeDifference比audioTimeDifference大一些
+                // 如果发现小了,说明视频播放慢了,应丢弃这些帧
+                // break后videoTimeDifference增长的速度会加快
+                // videoPts = audioPts + averageTimeDiff;
+                return 0;
+            }
+
             if (runCounts < RUN_COUNTS) {
                 if (tempTimeDifference > 0) {
                     timeDiff[runCounts++] = tempTimeDifference;
@@ -2666,13 +2669,6 @@ namespace alexander_media_mediacodec {
                 averageTimeDiff = totleTimeDiff / RUN_COUNTS;
                 // 希望得到一个好的TIME_DIFFERENCE值
                 hope_to_get_a_good_result();
-            }
-            if (tempTimeDifference < 0) {
-                // 正常情况下videoTimeDifference比audioTimeDifference大一些
-                // 如果发现小了,说明视频播放慢了,应丢弃这些帧
-                // break后videoTimeDifference增长的速度会加快
-                // videoPts = audioPts + averageTimeDiff;
-                return 0;
             }
 
             if (tempTimeDifference > 2.000000) {
@@ -3253,15 +3249,6 @@ namespace alexander_media_mediacodec {
                 if (wrapper->useMediaCodec) {
                     isVideoRendering = true;
                     videoPts = copyAVPacket->pts * av_q2d(stream->time_base);
-                    /*if (videoPts < audioPts && videoPts > 0 && audioPts > 0) {
-                        if ((long long) (videoPts * 1000000) >
-                            (long long) (preVideoPts * 1000000)) {
-                            preVideoPts = videoPts;
-                            av_packet_unref(copyAVPacket);
-                            isVideoRendering = false;
-                            continue;
-                        }
-                    }*/
                     feedAndDrainRet = feedInputBufferAndDrainOutputBuffer(
                             0x0002,
                             copyAVPacket->data,

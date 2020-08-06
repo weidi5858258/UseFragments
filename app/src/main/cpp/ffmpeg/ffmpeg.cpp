@@ -10,7 +10,6 @@
 #include "OnlyAudioPlayer.h"
 #include "AudioVideoPlayer.h"
 #include "AACH264Player.h"
-#include "MediaPlayerFor4K.h"
 #include "MediaPlayerForMediaCodec.h"
 
 // 这个是自定义的LOG的标识
@@ -759,7 +758,6 @@ static jint onTransact_setSurface(JNIEnv *env, jobject ffmpegObject,
             break;
         }
         case USE_MODE_MEDIA_4K: {
-            alexander_media_4k::setJniParameters(env, filePath, surfaceObject);
             break;
         }
         case USE_MODE_MEDIA_MEDIACODEC: {
@@ -796,7 +794,6 @@ static jint onTransact_initPlayer(JNIEnv *env, jobject thiz,
             return (jint) alexander_aac_h264::initPlayer();
         }
         case USE_MODE_MEDIA_4K: {
-            return (jint) alexander_media_4k::initPlayer();
         }
         case USE_MODE_MEDIA_MEDIACODEC: {
             return (jint) alexander_media_mediacodec::initPlayer();
@@ -852,7 +849,6 @@ static jint onTransact_readData(JNIEnv *env, jobject thiz,
             break;
         }
         case USE_MODE_MEDIA_4K: {
-            alexander_media_4k::readData(NULL);
             break;
         }
         case USE_MODE_MEDIA_MEDIACODEC: {
@@ -891,7 +887,6 @@ static jint onTransact_audioHandleData(JNIEnv *env, jobject thiz,
             break;
         }
         case USE_MODE_MEDIA_4K: {
-            alexander_media_4k::handleData(&type);
             break;
         }
         case USE_MODE_MEDIA_MEDIACODEC: {
@@ -930,7 +925,6 @@ static jint onTransact_videoHandleData(JNIEnv *env, jobject thiz,
             break;
         }
         case USE_MODE_MEDIA_4K: {
-            alexander_media_4k::handleData(&type);
             break;
         }
         case USE_MODE_MEDIA_MEDIACODEC: {
@@ -963,7 +957,6 @@ static jint onTransact_videoHandleRender(JNIEnv *env, jobject thiz,
             break;
         }
         case USE_MODE_MEDIA_4K: {
-            alexander_media_4k::handleVideoRender();
             break;
         }
         default:
@@ -995,7 +988,33 @@ static jint onTransact_handleOutputBuffer(JNIEnv *env, jobject thiz,
                 handleRet = alexander_media_mediacodec::handleAudioOutputBuffer(roomIndex);
                 break;
             case DO_SOMETHING_CODE_handleVideoOutputBuffer:
-                handleRet = alexander_media_mediacodec::handleVideoOutputBuffer(roomIndex);
+                switch (use_mode) {
+                    case USE_MODE_MEDIA: {
+                        break;
+                    }
+                    case USE_MODE_ONLY_VIDEO: {
+                        break;
+                    }
+                    case USE_MODE_ONLY_AUDIO: {
+                        break;
+                    }
+                    case USE_MODE_AUDIO_VIDEO: {
+                        handleRet = alexander_audio_video::handleVideoOutputBuffer(roomIndex);
+                        break;
+                    }
+                    case USE_MODE_AAC_H264: {
+                        break;
+                    }
+                    case USE_MODE_MEDIA_4K: {
+                        break;
+                    }
+                    case USE_MODE_MEDIA_MEDIACODEC: {
+                        handleRet = alexander_media_mediacodec::handleVideoOutputBuffer(roomIndex);
+                        break;
+                    }
+                    default:
+                        break;
+                }
                 break;
             default:
                 break;
@@ -1035,7 +1054,6 @@ static jint onTransact_play(JNIEnv *env, jobject thiz,
             break;
         }
         case USE_MODE_MEDIA_4K: {
-            alexander_media_4k::play();
             break;
         }
         case USE_MODE_MEDIA_MEDIACODEC: {
@@ -1073,7 +1091,6 @@ static jint onTransact_pause(JNIEnv *env, jobject thiz,
             break;
         }
         case USE_MODE_MEDIA_4K: {
-            alexander_media_4k::pause();
             break;
         }
         case USE_MODE_MEDIA_MEDIACODEC: {
@@ -1111,7 +1128,6 @@ static jint onTransact_stop(JNIEnv *env, jobject thiz,
             break;
         }
         case USE_MODE_MEDIA_4K: {
-            alexander_media_4k::stop();
             break;
         }
         case USE_MODE_MEDIA_MEDIACODEC: {
@@ -1149,7 +1165,6 @@ static jint onTransact_release(JNIEnv *env, jobject thiz,
             break;
         }
         case USE_MODE_MEDIA_4K: {
-            alexander_media_4k::release();
             break;
         }
         case USE_MODE_MEDIA_MEDIACODEC: {
@@ -1182,7 +1197,7 @@ static jboolean onTransact_isRunning(JNIEnv *env, jobject thiz,
             return (jboolean) alexander_aac_h264::isRunning();
         }
         case USE_MODE_MEDIA_4K: {
-            return (jboolean) alexander_media_4k::isRunning();
+            break;
         }
         case USE_MODE_MEDIA_MEDIACODEC: {
             return (jboolean) alexander_media_mediacodec::isRunning();
@@ -1213,7 +1228,7 @@ static jboolean onTransact_isPlaying(JNIEnv *env, jobject thiz,
             return (jboolean) alexander_aac_h264::isPlaying();
         }
         case USE_MODE_MEDIA_4K: {
-            return (jboolean) alexander_media_4k::isPlaying();
+            break;
         }
         case USE_MODE_MEDIA_MEDIACODEC: {
             return (jboolean) alexander_media_mediacodec::isPlaying();
@@ -1244,7 +1259,7 @@ static jint onTransact_isPausedForUser(JNIEnv *env, jobject thiz,
             return (jboolean) alexander_aac_h264::isPausedForUser();
         }
         case USE_MODE_MEDIA_4K: {
-            return (jboolean) alexander_media_4k::isPausedForUser();
+            break;
         }
         case USE_MODE_MEDIA_MEDIACODEC: {
             return (jboolean) alexander_media_mediacodec::isPausedForUser();
@@ -1282,7 +1297,6 @@ static jint onTransact_stepAdd(JNIEnv *env, jobject thiz,
             break;
         }
         case USE_MODE_MEDIA_4K: {
-            alexander_media_4k::stepAdd((int64_t) addStep);
             break;
         }
         case USE_MODE_MEDIA_MEDIACODEC: {
@@ -1322,7 +1336,6 @@ static jint onTransact_stepSubtract(JNIEnv *env, jobject thiz,
             break;
         }
         case USE_MODE_MEDIA_4K: {
-            alexander_media_4k::stepSubtract((int64_t) subtractStep);
             break;
         }
         case USE_MODE_MEDIA_MEDIACODEC: {
@@ -1357,7 +1370,7 @@ static jint onTransact_seekTo(JNIEnv *env, jobject thiz,
             return (jint) alexander_aac_h264::seekTo((int64_t) timestamp);
         }
         case USE_MODE_MEDIA_4K: {
-            return (jint) alexander_media_4k::seekTo((int64_t) timestamp);
+            break;
         }
         case USE_MODE_MEDIA_MEDIACODEC: {
             return (jint) alexander_media_mediacodec::seekTo((int64_t) timestamp);
@@ -1388,7 +1401,7 @@ static jlong onTransact_getDuration(JNIEnv *env, jobject thiz,
             return (jlong) alexander_aac_h264::getDuration();
         }
         case USE_MODE_MEDIA_4K: {
-            return (jlong) alexander_media_4k::getDuration();
+            break;
         }
         case USE_MODE_MEDIA_MEDIACODEC: {
             return (jlong) alexander_media_mediacodec::getDuration();

@@ -13,6 +13,8 @@ namespace alexander_audio_video {
 
     void *handleData(void *opaque);
 
+    int handleVideoOutputBuffer(int roomIndex);
+
     void initAV();
 
     void initAudio();
