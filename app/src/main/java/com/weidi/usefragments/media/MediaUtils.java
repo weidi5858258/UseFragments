@@ -788,7 +788,7 @@ public class MediaUtils {
             String mime, MediaFormat mediaFormat, Surface surface) {
         if (TextUtils.isEmpty(mime)
                 || mediaFormat == null
-                || surface == null) {
+                /*|| surface == null*/) {
             return null;
         }
         MediaCodec decoder = null;
@@ -807,6 +807,7 @@ public class MediaUtils {
                 break;
             } catch (NullPointerException
                     | IllegalArgumentException
+                    | MediaCodec.CodecException
                     | IOException e) {
                 e.printStackTrace();
                 releaseMediaCodec(decoder);
@@ -847,6 +848,7 @@ public class MediaUtils {
                 break;
             } catch (NullPointerException
                     | IllegalArgumentException
+                    | MediaCodec.CodecException
                     | IOException e) {
                 e.printStackTrace();
                 releaseMediaCodec(decoder);

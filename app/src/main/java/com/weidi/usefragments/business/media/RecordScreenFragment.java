@@ -897,8 +897,8 @@ public class RecordScreenFragment extends BaseFragment {
 
     private EDMediaCodec.Callback mCallback = new EDMediaCodec.Callback() {
         private byte[] sps_pps = null;
-        private byte[] sps = null;
-        private byte[] pps = null;
+        //private byte[] sps = null;
+        //private byte[] pps = null;
 
         @Override
         public boolean isVideoFinished() {
@@ -991,7 +991,7 @@ public class RecordScreenFragment extends BaseFragment {
                     // I帧,前面添加sps和pps
                     if (sps_pps != null) {
                         buffer = new byte[roomInfo.size + sps_pps.length];
-                        System.arraycopy(sps, 0, buffer, 0, sps_pps.length);
+                        System.arraycopy(sps_pps, 0, buffer, 0, sps_pps.length);
                         room.get(buffer, sps_pps.length, roomInfo.size);
                         //Log.i(TAG, "buffer: \n" + Arrays.toString(buffer));
                         if (MediaServer.getInstance().mIsHandling) {

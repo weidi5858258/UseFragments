@@ -584,6 +584,24 @@ public class FfmpegUseMediaCodecDecode {
             MLog.e(TAG, "initVideoMediaCodec() mSurface is null");
             return false;
         }
+        if (mContext != null) {
+            SharedPreferences sp =
+                    mContext.getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE);
+            String whatPlayer = sp.getString(PLAYBACK_USE_PLAYER, PLAYER_FFMPEG_MEDIACODEC);
+            if (!TextUtils.equals(whatPlayer, PLAYER_FFMPEG_MEDIACODEC)
+                    /*|| (width < 1280 && height < 720
+                    && duration > 0 && duration <= 360
+                    && frame_rate <= 30)*/) {
+                return false;
+            }
+
+            /*String use_mode = sp.getString(PLAYBACK_USE_EXOPLAYER_OR_FFMPEG, "use_exoplayer");
+            if (TextUtils.equals(use_mode, "use_ffmpeg")
+                    || TextUtils.equals(videoMime, "video/hevc")) {
+                // http://112.17.40.12/PLTV/88888888/224/3221226758/1.m3u8 (video/hevc)
+                useExoPlayerForMediaFormat = false;
+            }*/
+        }
 
         if (mVideoWrapper != null
                 && mVideoWrapper.decoderMediaCodec != null) {
@@ -606,7 +624,7 @@ public class FfmpegUseMediaCodecDecode {
             //return false;
         }
 
-        MLog.w(TAG, "initVideoMediaCodec()    mimeType: " + jniObject.valueInt);
+        MLog.w(TAG, "initVideoMediaCodec() video       mimeType: " + jniObject.valueInt);
         // 现在只支持下面这几种硬解码
         switch (jniObject.valueInt) {
             case AV_CODEC_ID_HEVC:
@@ -636,7 +654,7 @@ public class FfmpegUseMediaCodecDecode {
             MLog.e(TAG, "initVideoMediaCodec() videoMime is empty");
             return false;
         }
-        MLog.w(TAG, "initVideoMediaCodec() video  mime: " + videoMime);
+        MLog.w(TAG, "initVideoMediaCodec() video           mime: " + videoMime);
         Object[] valueObjectArray = jniObject.valueObjectArray;
         long[] parameters = (long[]) valueObjectArray[0];
         // 视频宽
@@ -654,28 +672,10 @@ public class FfmpegUseMediaCodecDecode {
         byte[] sps_pps = null;
         if (object != null) {
             sps_pps = (byte[]) object;
-            MLog.w(TAG, "initVideoMediaCodec() video \nsps_pps: " + Arrays.toString(sps_pps));
+            MLog.w(TAG, "initVideoMediaCodec() video sps_pps.length: " + sps_pps.length +
+                    " \nsps_pps: " + Arrays.toString(sps_pps));
         } else {
             MLog.w(TAG, "initVideoMediaCodec() sps_pps is null");
-        }
-
-        if (mContext != null) {
-            SharedPreferences sp =
-                    mContext.getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE);
-            String whatPlayer = sp.getString(PLAYBACK_USE_PLAYER, PLAYER_FFMPEG_MEDIACODEC);
-            if (!TextUtils.equals(whatPlayer, PLAYER_FFMPEG_MEDIACODEC)
-                    /*|| (width < 1280 && height < 720
-                    && duration > 0 && duration <= 360
-                    && frame_rate <= 30)*/) {
-                return false;
-            }
-
-            /*String use_mode = sp.getString(PLAYBACK_USE_EXOPLAYER_OR_FFMPEG, "use_exoplayer");
-            if (TextUtils.equals(use_mode, "use_ffmpeg")
-                    || TextUtils.equals(videoMime, "video/hevc")) {
-                // http://112.17.40.12/PLTV/88888888/224/3221226758/1.m3u8 (video/hevc)
-                useExoPlayerForMediaFormat = false;
-            }*/
         }
 
         if (useExoPlayerForMediaFormat) {
@@ -683,8 +683,15 @@ public class FfmpegUseMediaCodecDecode {
         } else {
             // region
 
-            mediaFormat = MediaUtils.getVideoDecoderMediaFormat(width, height);
-            mediaFormat.setString(MediaFormat.KEY_MIME, videoMime);
+            // MediaFormat的参数并不是设置的值越多越好,有些值设置了视频反而不能播放
+            // mediaFormat = MediaUtils.getVideoDecoderMediaFormat(width, height);
+            mediaFormat = MediaFormat.createVideoFormat(videoMime, width, height);
+            mediaFormat.setInteger(MediaFormat.KEY_MAX_WIDTH, width);
+            mediaFormat.setInteger(MediaFormat.KEY_MAX_HEIGHT, height);
+            mediaFormat.setInteger(MediaFormat.KEY_MAX_INPUT_SIZE, width * height);
+            // 下面两个值设置后,用华为手机拍摄的4K视频就不能硬解码
+            // mediaFormat.setInteger(MediaFormat.KEY_ROTATION, 0);
+            // mediaFormat.setInteger(MediaFormat.KEY_PRIORITY, 0);
             if (duration > 0) {
                 mediaFormat.setLong(MediaFormat.KEY_DURATION, duration * 1000000L);
             } else {
@@ -695,10 +702,10 @@ public class FfmpegUseMediaCodecDecode {
             if (bitrate != 0) {
                 mediaFormat.setLong(MediaFormat.KEY_BIT_RATE, bitrate);
             }
-            mediaFormat.setInteger(MediaFormat.KEY_BITRATE_MODE,
+            /*mediaFormat.setInteger(MediaFormat.KEY_BITRATE_MODE,
                     MediaCodecInfo.EncoderCapabilities.BITRATE_MODE_CQ);
             mediaFormat.setInteger(MediaFormat.KEY_COLOR_FORMAT,
-                    MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420Flexible);
+                    MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420Flexible);*/
 
             if (TextUtils.equals(videoMime, MediaFormat.MIMETYPE_VIDEO_VP8)
                     || TextUtils.equals(videoMime, MediaFormat.MIMETYPE_VIDEO_VP9)) {
@@ -840,7 +847,7 @@ public class FfmpegUseMediaCodecDecode {
             // endregion
         }
 
-        MLog.w(TAG, "initVideoMediaCodec() mediaFormat: \n" + mediaFormat);
+        MLog.w(TAG, "initVideoMediaCodec() video    mediaFormat: \n" + mediaFormat);
 
         mVideoWrapper = new VideoWrapper(TYPE_VIDEO);
         mVideoWrapper.isHandling = true;

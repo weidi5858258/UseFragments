@@ -110,6 +110,7 @@ public class MediaClient {
             Arrays.fill(data, (byte) 0);
             try {
                 readCount = inputStream.read(data, 0, VIDEO_FRAME_MAX_LENGTH);
+                Log.i(TAG, "MediaClient playVideo() readCount: " + readCount);
                 if (readCount <= 0) {
                     Log.e(TAG, "MediaClient playVideo() readCount: " + readCount);
                     break;
@@ -377,7 +378,7 @@ public class MediaClient {
         @Override
         public int handleVideoOutputBuffer(int roomIndex, ByteBuffer room,
                                            MediaCodec.BufferInfo roomInfo, int roomSize) {
-
+            MLog.i(TAG, "handleVideoOutputBuffer() roomSize: " + roomSize);
             return 0;
         }
 

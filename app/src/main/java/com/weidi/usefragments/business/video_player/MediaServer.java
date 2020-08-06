@@ -98,6 +98,7 @@ public class MediaServer {
         }
 
         boolean needToUpdateMap = false;
+        iterator = map.entrySet().iterator();
         while (iterator.hasNext()) {
             Map.Entry<Socket, OutputStream> entry = iterator.next();
             Socket socket = entry.getKey();

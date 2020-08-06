@@ -890,8 +890,8 @@ public class PlayerWrapper {
 
     // @@@
     public void startForGetMediaFormat() {
-        whatPlayer = mSP.getString(PLAYBACK_USE_PLAYER, PLAYER_FFMPEG_MEDIACODEC);
-        /*if (TextUtils.equals(whatPlayer, PLAYER_FFMPEG_MEDIACODEC)
+        /*whatPlayer = mSP.getString(PLAYBACK_USE_PLAYER, PLAYER_FFMPEG_MEDIACODEC);
+        if (TextUtils.equals(whatPlayer, PLAYER_FFMPEG_MEDIACODEC)
                 && !mPath.endsWith(".m4s")
                 && !mPath.endsWith(".h264")
                 && !mPath.endsWith(".aac")
