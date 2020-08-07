@@ -705,14 +705,6 @@ public class PlayerWrapper {
                             sendEmptyMessage(DO_SOMETHING_CODE_videoHandleData);
                         }
                     });
-                    /*ThreadPool.getFixedThreadPool().execute(new Runnable() {
-                        @Override
-                        public void run() {
-                            MLog.d(TAG, "DO_SOMETHING_CODE_videoHandleRender start");
-                            sendEmptyMessage(DO_SOMETHING_CODE_videoHandleRender);
-                            MLog.d(TAG, "DO_SOMETHING_CODE_videoHandleRender end");
-                        }
-                    });*/
 
                     if (mIsSeparatedAudioVideo) {
                         ThreadPool.getFixedThreadPool().execute(new Runnable() {
@@ -1025,7 +1017,7 @@ public class PlayerWrapper {
                     }
                 } else {
                     sendEmptyMessage(DO_SOMETHING_CODE_init);
-                    // [.m4s] or [.h264 and aac]
+                    // [.m4s] or [.h264 and aac](达不到同步效果)
                     if (mPath.endsWith(".m4s")) {
                         mFFMPEGPlayer.onTransact(DO_SOMETHING_CODE_setMode,
                                 JniObject.obtain().writeInt(USE_MODE_AUDIO_VIDEO));
@@ -1854,7 +1846,8 @@ public class PlayerWrapper {
             return;
         }
 
-        mPresentationTime = (Long) msg.obj;// 秒
+        // 秒
+        mPresentationTime = (Long) msg.obj;
         if (!mIsH264) {
             String curElapsedTime = DateUtils.formatElapsedTime(mPresentationTime);
             mProgressTimeTV.setText(curElapsedTime);
