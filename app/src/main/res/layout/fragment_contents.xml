@@ -31,7 +31,8 @@
             android:layout_height="match_parent"
             android:layout_weight="1"
             android:maxLines="1"
-            android:text="P" />
+            android:textSize="12sp"
+            android:text="Go" />
 
         <Button
             android:id="@+id/download_tv"

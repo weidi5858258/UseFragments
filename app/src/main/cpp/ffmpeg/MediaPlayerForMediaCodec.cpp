@@ -2225,38 +2225,78 @@ namespace alexander_media_mediacodec {
              averageTimeDiff, frameRate);
 
         if (averageTimeDiff > 1.000000) {
-            TIME_DIFFERENCE = 0.900000;
+            if (videoWrapper->father->useMediaCodec) {
+                TIME_DIFFERENCE = 0.850000;
+            } else {
+                TIME_DIFFERENCE = 0.900000;
+            }
         } else if (averageTimeDiff > 0.900000 && averageTimeDiff < 1.000000) {
-            TIME_DIFFERENCE = 0.800000;
+            if (videoWrapper->father->useMediaCodec) {
+                TIME_DIFFERENCE = 0.750000;
+            } else {
+                TIME_DIFFERENCE = 0.800000;
+            }
         } else if (averageTimeDiff > 0.800000 && averageTimeDiff < 0.900000) {
-            TIME_DIFFERENCE = 0.700000;
+            if (videoWrapper->father->useMediaCodec) {
+                TIME_DIFFERENCE = 0.650000;
+            } else {
+                TIME_DIFFERENCE = 0.700000;
+            }
         } else if (averageTimeDiff > 0.700000 && averageTimeDiff < 0.800000) {
-            TIME_DIFFERENCE = 0.600000;
+            if (videoWrapper->father->useMediaCodec) {
+                TIME_DIFFERENCE = 0.550000;
+            } else {
+                TIME_DIFFERENCE = 0.600000;
+            }
         } else if (averageTimeDiff > 0.600000 && averageTimeDiff < 0.700000) {
-            TIME_DIFFERENCE = 0.500000;
+            if (videoWrapper->father->useMediaCodec) {
+                TIME_DIFFERENCE = 0.450000;
+            } else {
+                TIME_DIFFERENCE = 0.500000;
+            }
         } else if (averageTimeDiff > 0.500000 && averageTimeDiff < 0.600000) {
             /***
              0.505212 0.524924
              */
-            TIME_DIFFERENCE = 0.400000;
+            if (videoWrapper->father->useMediaCodec) {
+                TIME_DIFFERENCE = 0.350000;
+            } else {
+                TIME_DIFFERENCE = 0.400000;
+            }
         } else if (averageTimeDiff > 0.400000 && averageTimeDiff < 0.500000) {
             /***
              0.405114 0.418364 0.429602 0.439030 0.449823
              0.457614 0.461167 0.472319 0.486549 0.494847
              */
-            TIME_DIFFERENCE = 0.300000;
+            if (videoWrapper->father->useMediaCodec) {
+                TIME_DIFFERENCE = 0.250000;
+            } else {
+                TIME_DIFFERENCE = 0.300000;
+            }
         } else if (averageTimeDiff > 0.300000 && averageTimeDiff < 0.400000) {
-            TIME_DIFFERENCE = 0.200000;
+            if (videoWrapper->father->useMediaCodec) {
+                TIME_DIFFERENCE = 0.150000;
+            } else {
+                TIME_DIFFERENCE = 0.200000;
+            }
         } else if (averageTimeDiff > 0.200000 && averageTimeDiff < 0.300000) {
             /***
              0.204199 0.263926
              */
-            TIME_DIFFERENCE = 0.100000;
+            if (videoWrapper->father->useMediaCodec) {
+                TIME_DIFFERENCE = 0.090000;
+            } else {
+                TIME_DIFFERENCE = 0.100000;
+            }
         } else if (averageTimeDiff > 0.100000 && averageTimeDiff < 0.200000) {
             /***
              0.100523 0.168335
              */
-            TIME_DIFFERENCE = averageTimeDiff;
+            if (videoWrapper->father->useMediaCodec) {
+                TIME_DIFFERENCE = averageTimeDiff - 0.050000;
+            } else {
+                TIME_DIFFERENCE = averageTimeDiff;
+            }
         } else if (averageTimeDiff < 0.100000) {
             /***
              0.014149 0.018936 0.022836 0.023516 0.024403 0.026983 0.027595 0.028610
@@ -2687,7 +2727,7 @@ namespace alexander_media_mediacodec {
             //LOGD("handleVideoDataImpl()    audioPts: %lf\n", audioPts);
             //LOGW("handleVideoDataImpl() preVideoPts: %lf\n", preVideoPts);
             tempTimeDifference = videoPts - audioPts;
-            if (tempTimeDifference < 0) {
+            if (tempTimeDifference <= 0) {
                 // 正常情况下videoTimeDifference比audioTimeDifference大一些
                 // 如果发现小了,说明视频播放慢了,应丢弃这些帧
                 // break后videoTimeDifference增长的速度会加快
@@ -2696,9 +2736,7 @@ namespace alexander_media_mediacodec {
             }
 
             if (runCounts < RUN_COUNTS) {
-                if (tempTimeDifference > 0) {
-                    timeDiff[runCounts++] = tempTimeDifference;
-                }
+                timeDiff[runCounts++] = tempTimeDifference;
             } else if (runCounts == RUN_COUNTS) {
                 runCounts++;
                 double totleTimeDiff = 0;
@@ -2763,7 +2801,11 @@ namespace alexander_media_mediacodec {
             }
         } else {
             // 只有视频时
-            videoSleep(videoSleepTime);
+            if (videoWrapper->father->useMediaCodec) {
+                videoSleep(videoSleepTime);
+            } else {
+                videoSleep(11);
+            }
 
             if (mediaDuration > 0) {
                 curProgress = (long long) videoPts;// 秒

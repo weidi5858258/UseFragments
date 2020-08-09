@@ -867,7 +867,7 @@ public class ContentsFragment extends BaseFragment {
                 String text = (String) msg.obj;
                 String[] infos = text.split(" ");
 
-                if (infos.length >= 3 && !TextUtils.isEmpty(infos[2])) {
+                /*if (infos.length >= 3 && !TextUtils.isEmpty(infos[2])) {
                     MediaClient.getInstance().setIp(infos[2]);
                     MyToast.show(infos[2]);
                 }
@@ -877,12 +877,12 @@ public class ContentsFragment extends BaseFragment {
                         if (MediaClient.getInstance().connect()) {
                             MyToast.show("client start");
                             MediaClient.getInstance().playVideo();
-                            //MediaClient.getInstance().playAudio();
+                            MediaClient.getInstance().playAudio();
                         }
                     }
-                });
+                });*/
 
-                /*if (infos.length >= 3 && !TextUtils.isEmpty(infos[2])) {
+                if (infos.length >= 3 && !TextUtils.isEmpty(infos[2])) {
                     AudioClient.getInstance().setIp(infos[2]);
                     MyToast.show(infos[2]);
                 }
@@ -902,7 +902,7 @@ public class ContentsFragment extends BaseFragment {
                             }
                         }
                     });
-                }*/
+                }
                 break;
             case MSG_ON_CLIENT_CLOSE:
                 ThreadPool.getFixedThreadPool().execute(new Runnable() {

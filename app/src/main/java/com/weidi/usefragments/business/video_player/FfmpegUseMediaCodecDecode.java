@@ -584,24 +584,6 @@ public class FfmpegUseMediaCodecDecode {
             MLog.e(TAG, "initVideoMediaCodec() mSurface is null");
             return false;
         }
-        if (mContext != null) {
-            SharedPreferences sp =
-                    mContext.getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE);
-            String whatPlayer = sp.getString(PLAYBACK_USE_PLAYER, PLAYER_FFMPEG_MEDIACODEC);
-            if (!TextUtils.equals(whatPlayer, PLAYER_FFMPEG_MEDIACODEC)
-                    /*|| (width < 1280 && height < 720
-                    && duration > 0 && duration <= 360
-                    && frame_rate <= 30)*/) {
-                return false;
-            }
-
-            /*String use_mode = sp.getString(PLAYBACK_USE_EXOPLAYER_OR_FFMPEG, "use_exoplayer");
-            if (TextUtils.equals(use_mode, "use_ffmpeg")
-                    || TextUtils.equals(videoMime, "video/hevc")) {
-                // http://112.17.40.12/PLTV/88888888/224/3221226758/1.m3u8 (video/hevc)
-                useExoPlayerForMediaFormat = false;
-            }*/
-        }
 
         if (mVideoWrapper != null
                 && mVideoWrapper.decoderMediaCodec != null) {
@@ -612,16 +594,16 @@ public class FfmpegUseMediaCodecDecode {
             mVideoWrapper = null;
         }
 
-        boolean useExoPlayerForMediaFormat = true;
+        boolean useExoPlayerToGetMediaFormat = true;
         MediaFormat mediaFormat = null;
         String videoMime = null;
-        if (GetMediaFormat.sVideoMediaFormat != null) {
-            mediaFormat = GetMediaFormat.sVideoMediaFormat;
-            videoMime = mediaFormat.getString(MediaFormat.KEY_MIME);
-        } else {
-            useExoPlayerForMediaFormat = false;
+        if (GetMediaFormat.sVideoMediaFormat == null) {
+            useExoPlayerToGetMediaFormat = false;
             //MLog.e(TAG, "initVideoMediaCodec() GetMediaFormat.sVideoMediaFormat is null");
             //return false;
+        } else {
+            mediaFormat = GetMediaFormat.sVideoMediaFormat;
+            videoMime = mediaFormat.getString(MediaFormat.KEY_MIME);
         }
 
         MLog.w(TAG, "initVideoMediaCodec() video       mimeType: " + jniObject.valueInt);
@@ -662,11 +644,33 @@ public class FfmpegUseMediaCodecDecode {
         // 视频高
         int height = (int) parameters[1];
         // 单位: 秒
-        int duration = (int) parameters[2];
+        long duration = parameters[2];
         // 帧率
         int frame_rate = (int) parameters[3];
         // 码率
         long bitrate = parameters[4];
+
+        if (mContext != null) {
+            SharedPreferences sp =
+                    mContext.getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE);
+            String whatPlayer = sp.getString(PLAYBACK_USE_PLAYER, PLAYER_FFMPEG_MEDIACODEC);
+            if (!TextUtils.equals(whatPlayer, PLAYER_FFMPEG_MEDIACODEC)
+                    ||
+                    // 480P
+                    (((width <= 854 && height <= 480)
+                            || (width <= 480 && height <= 854))
+                            && duration > 0 && duration <= 600
+                            && frame_rate <= 30)) {
+                return false;
+            }
+
+            /*String use_mode = sp.getString(PLAYBACK_USE_EXOPLAYER_OR_FFMPEG, "use_exoplayer");
+            if (TextUtils.equals(use_mode, "use_ffmpeg")
+                    || TextUtils.equals(videoMime, "video/hevc")) {
+                // http://112.17.40.12/PLTV/88888888/224/3221226758/1.m3u8 (video/hevc)
+                useExoPlayerForMediaFormat = false;
+            }*/
+        }
 
         Object object = valueObjectArray[1];
         byte[] sps_pps = null;
@@ -678,7 +682,7 @@ public class FfmpegUseMediaCodecDecode {
             MLog.w(TAG, "initVideoMediaCodec() sps_pps is null");
         }
 
-        if (useExoPlayerForMediaFormat) {
+        if (useExoPlayerToGetMediaFormat) {
             MLog.w(TAG, "initVideoMediaCodec() video  use exoplayer to get MediaFormat");
         } else {
             // region
@@ -689,16 +693,20 @@ public class FfmpegUseMediaCodecDecode {
             mediaFormat.setInteger(MediaFormat.KEY_MAX_WIDTH, width);
             mediaFormat.setInteger(MediaFormat.KEY_MAX_HEIGHT, height);
             mediaFormat.setInteger(MediaFormat.KEY_MAX_INPUT_SIZE, width * height);
-            // 下面两个值设置后,用华为手机拍摄的4K视频就不能硬解码
-            // mediaFormat.setInteger(MediaFormat.KEY_ROTATION, 0);
+            // 视频需要旋转的角度(90时为顺时针旋转90度)
+            mediaFormat.setInteger(MediaFormat.KEY_ROTATION, 0);
+            // 下面这个值设置后,用华为手机拍摄的4K视频就不能硬解码
             // mediaFormat.setInteger(MediaFormat.KEY_PRIORITY, 0);
             if (duration > 0) {
                 mediaFormat.setLong(MediaFormat.KEY_DURATION, duration * 1000000L);
             } else {
-                // 随便设置了一个数
-                mediaFormat.setLong(MediaFormat.KEY_DURATION, -9223372036854L);
+                // -   2077252342L(C++ 时间)
+                // -9223372036854L(java时间)
+                mediaFormat.setLong(MediaFormat.KEY_DURATION, duration);
             }
-            mediaFormat.setInteger(MediaFormat.KEY_FRAME_RATE, frame_rate);
+            if (frame_rate != 0) {
+                mediaFormat.setInteger(MediaFormat.KEY_FRAME_RATE, frame_rate);
+            }
             if (bitrate != 0) {
                 mediaFormat.setLong(MediaFormat.KEY_BIT_RATE, bitrate);
             }
@@ -780,14 +788,15 @@ public class FfmpegUseMediaCodecDecode {
                                     if (spsIndex == -1) {
                                         spsIndex = i;
                                         spsLength = sps_pps[i - 1];
+                                        if (spsLength <= 0) {
+                                            spsIndex = -1;
+                                        }
                                     }
                                 } else if (sps_pps[i] == 104) {
+                                    // 103后面可能有2个或多个104
                                     // 0x68 = 104
-                                    if (ppsIndex == -1) {
-                                        ppsIndex = i;
-                                        ppsLength = sps_pps[i - 1];
-                                        break;
-                                    }
+                                    ppsIndex = i;
+                                    ppsLength = sps_pps[i - 1];
                                 }
                             }
                             if (spsIndex == -1 || ppsIndex == -1) {
@@ -800,13 +809,13 @@ public class FfmpegUseMediaCodecDecode {
                                         if (spsIndex == -1) {
                                             spsIndex = i;
                                             spsLength = sps_pps[i - 1];
+                                            if (spsLength <= 0) {
+                                                spsIndex = -1;
+                                            }
                                         }
                                     } else if (sps_pps[i] == 40) {
-                                        if (ppsIndex == -1) {
-                                            ppsIndex = i;
-                                            ppsLength = sps_pps[i - 1];
-                                            break;
-                                        }
+                                        ppsIndex = i;
+                                        ppsLength = sps_pps[i - 1];
                                     }
                                 }
                             }
@@ -838,6 +847,7 @@ public class FfmpegUseMediaCodecDecode {
                             return false;
                         }
                     } catch (Exception e) {
+                        // java.lang.NegativeArraySizeException: -70
                         MLog.e(TAG, "initVideoMediaCodec() Exception: \n" + e);
                         return false;
                     }
@@ -855,13 +865,11 @@ public class FfmpegUseMediaCodecDecode {
         mVideoWrapper.mime = videoMime;
         mVideoWrapper.decoderMediaFormat = mediaFormat;
         mVideoWrapper.mSurface = mSurface;
-        MLog.w(TAG, "initVideoMediaCodec() create MediaCodec start");
         mVideoWrapper.decoderMediaCodec =
                 MediaUtils.getVideoDecoderMediaCodec(
                         mVideoWrapper.mime,
                         mVideoWrapper.decoderMediaFormat,
                         mVideoWrapper.mSurface);
-        MLog.w(TAG, "initVideoMediaCodec() create MediaCodec end");
         if (mVideoWrapper.decoderMediaCodec == null) {
             MLog.e(TAG, "initVideoMediaCodec() mVideoWrapper.decoderMediaCodec is null");
             return false;

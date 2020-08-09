@@ -8,6 +8,7 @@ import android.content.IntentFilter;
 import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.database.Cursor;
+import android.graphics.Color;
 import android.media.AudioManager;
 import android.net.Uri;
 import android.os.Build;
@@ -25,6 +26,7 @@ import android.view.WindowManager;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
+import android.widget.RelativeLayout;
 import android.widget.SeekBar;
 import android.widget.TextView;
 
@@ -35,6 +37,7 @@ import com.weidi.usefragments.receiver.MediaButtonReceiver;
 import com.weidi.usefragments.test_view.BubblePopupWindow;
 import com.weidi.usefragments.tool.MLog;
 import com.weidi.usefragments.tool.PermissionsUtils;
+import com.weidi.utils.MyToast;
 
 import java.io.File;
 
@@ -251,7 +254,6 @@ public class JniPlayerActivity extends BaseActivity {
     private BubblePopupWindow mBubblePopupWindow;
     private boolean noFinish;
 
-
     private void internalCreate() {
         Intent intent = getIntent();
         // 为flase时表示从外部打开一个视频进行播放.为true时只是使用Activity的全屏特性(在本应用打开).
@@ -264,9 +266,19 @@ public class JniPlayerActivity extends BaseActivity {
                 getWindow().setFlags(
                         WindowManager.LayoutParams.FLAG_FULLSCREEN,
                         WindowManager.LayoutParams.FLAG_FULLSCREEN);
+                setFullscreen(false, false);
             }
         }
         setContentView(R.layout.transparent_player);
+        /*findViewById(R.id.transparent_layout).setOnLongClickListener(
+                new View.OnLongClickListener() {
+                    @Override
+                    public boolean onLongClick(View v) {
+                        MyToast.show("finish Activity");
+                        finish();
+                        return false;
+                    }
+                });*/
 
         if (noFinish) {
             return;
@@ -425,11 +437,27 @@ public class JniPlayerActivity extends BaseActivity {
                         PlayerService.COMMAND_HANDLE_PORTRAIT_SCREEN,
                         null);
             }
+            setFullscreen(true, true);
         }
 
         if (mPlayerWrapper != null) {
             mPlayerWrapper.onDestroy();
         }
+    }
+
+    private void setFullscreen(boolean isShowStatusBar, boolean isShowNavigationBar) {
+        int uiOptions = View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY;
+
+        if (!isShowStatusBar) {
+            uiOptions |= View.SYSTEM_UI_FLAG_FULLSCREEN;
+        }
+        if (!isShowNavigationBar) {
+            uiOptions |= View.SYSTEM_UI_FLAG_HIDE_NAVIGATION;
+        }
+        getWindow().getDecorView().setSystemUiVisibility(uiOptions);
     }
 
 }

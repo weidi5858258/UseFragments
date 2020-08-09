@@ -580,11 +580,11 @@ static jint onTransact_init(JNIEnv *env, jobject ffmpegObject,
         env->DeleteGlobalRef(ffmpegJavaObject);
         ffmpegJavaObject = nullptr;
     }
+    // java端FFMPEG类信息
     // java层native方法所对应的类对象
     // 在java层的native方法不是static的,因此需要用到java层的对象
     // ffmpegJavaObject = ffmpegObject;// error 直接赋值是不OK的
     ffmpegJavaObject = reinterpret_cast<jobject>(env->NewGlobalRef(ffmpegObject));
-
     jclass FFMPEGClass = env->GetObjectClass(ffmpegObject);
     //jclass FFMPEGClass = env->FindClass("com/weidi/usefragments/business/video_player/FFMPEG");
     //CHECK(FFMPEGClass != nullptr);
@@ -601,22 +601,6 @@ static jint onTransact_init(JNIEnv *env, jobject ffmpegObject,
     sleepMethodID = env->GetMethodID(
             FFMPEGClass, "sleep", "(J)V");
 
-    if (videoProducerObject) {
-        env->DeleteGlobalRef(videoProducerObject);
-        videoProducerObject = nullptr;
-    }
-    if (videoConsumerObject) {
-        env->DeleteGlobalRef(videoConsumerObject);
-        videoConsumerObject = nullptr;
-    }
-    if (audioProducerObject) {
-        env->DeleteGlobalRef(audioProducerObject);
-        audioProducerObject = nullptr;
-    }
-    if (audioConsumerObject) {
-        env->DeleteGlobalRef(audioConsumerObject);
-        audioConsumerObject = nullptr;
-    }
     if (jniObject_jclass) {
         env->DeleteGlobalRef(jniObject_jclass);
         jniObject_jclass = nullptr;
@@ -642,6 +626,22 @@ static jint onTransact_init(JNIEnv *env, jobject ffmpegObject,
     valueObjectArray_jfieldID = env->GetFieldID(
             jniObject_jclass, "valueObjectArray", "[Ljava/lang/Object;");
 
+    if (videoProducerObject) {
+        env->DeleteGlobalRef(videoProducerObject);
+        videoProducerObject = nullptr;
+    }
+    if (videoConsumerObject) {
+        env->DeleteGlobalRef(videoConsumerObject);
+        videoConsumerObject = nullptr;
+    }
+    if (audioProducerObject) {
+        env->DeleteGlobalRef(audioProducerObject);
+        audioProducerObject = nullptr;
+    }
+    if (audioConsumerObject) {
+        env->DeleteGlobalRef(audioConsumerObject);
+        audioConsumerObject = nullptr;
+    }
     jobject jni_object;
     jfieldID fieldID;
     //
@@ -668,14 +668,15 @@ static jint onTransact_init(JNIEnv *env, jobject ffmpegObject,
     jni_object = env->GetStaticObjectField(FFMPEGClass, fieldID);
     audioConsumerObject = reinterpret_cast<jobject>(env->NewGlobalRef(jni_object));
     env->DeleteLocalRef(jni_object);
+
     // 得到FFMPEG类中的mCallback属性
-    jfieldID mCallback_jfieldID = env->GetFieldID(
-            FFMPEGClass, "mCallback", "Lcom/weidi/usefragments/tool/Callback;");
-    jobject temp_callback_jobject = env->GetObjectField(ffmpegJavaObject, mCallback_jfieldID);
     if (callback_jobject != nullptr) {
         env->DeleteGlobalRef(callback_jobject);
         callback_jobject = nullptr;
     }
+    jfieldID mCallback_jfieldID = env->GetFieldID(
+            FFMPEGClass, "mCallback", "Lcom/weidi/usefragments/tool/Callback;");
+    jobject temp_callback_jobject = env->GetObjectField(ffmpegJavaObject, mCallback_jfieldID);
     // 调用下面方法需要用到这个对象
     callback_jobject = reinterpret_cast<jobject>(env->NewGlobalRef(temp_callback_jobject));
     env->DeleteLocalRef(temp_callback_jobject);

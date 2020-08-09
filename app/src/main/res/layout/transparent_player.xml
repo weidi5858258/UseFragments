@@ -3,6 +3,7 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/transparent_layout"
     android:layout_width="@dimen/dimen_1_dp"
     android:layout_height="@dimen/dimen_1_dp"
     android:background="@android:color/transparent">

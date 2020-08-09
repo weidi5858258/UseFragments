@@ -38,7 +38,8 @@ namespace alexander_audio_video {
     // 当前视频时间戳
     static double videoPts = 0;
     // 上一个时间戳
-    static double preVideoPts = 0;
+    static double preAudioPts = 0.0;
+    static double preVideoPts = 0.0;
 
     static ANativeWindow *pANativeWindow = NULL;
     // 绘制时的缓冲区
@@ -90,7 +91,8 @@ namespace alexander_audio_video {
         preProgress = 0;
         audioPts = 0.0;
         videoPts = 0.0;
-        preVideoPts = 0;
+        preAudioPts = 0.0;
+        preVideoPts = 0.0;
         runOneTime = true;
         runCounts = 0;
         averageTimeDiff = 0.0;
@@ -817,6 +819,7 @@ namespace alexander_audio_video {
             && !videoWrapper->father->isPausedForSeek) {
             timeStamp = -1;
             preProgress = 0;
+            preAudioPts = 0;
             preVideoPts = 0;
         }
 
@@ -1090,32 +1093,98 @@ namespace alexander_audio_video {
              averageTimeDiff, frameRate);
 
         if (averageTimeDiff > 1.000000) {
-            TIME_DIFFERENCE = 0.900000;
+            if (videoWrapper->father->useMediaCodec) {
+                TIME_DIFFERENCE = 0.850000;
+            } else {
+                TIME_DIFFERENCE = 0.900000;
+            }
         } else if (averageTimeDiff > 0.900000 && averageTimeDiff < 1.000000) {
-            TIME_DIFFERENCE = 0.800000;
+            if (videoWrapper->father->useMediaCodec) {
+                TIME_DIFFERENCE = 0.750000;
+            } else {
+                TIME_DIFFERENCE = 0.800000;
+            }
         } else if (averageTimeDiff > 0.800000 && averageTimeDiff < 0.900000) {
-            TIME_DIFFERENCE = 0.700000;
+            if (videoWrapper->father->useMediaCodec) {
+                TIME_DIFFERENCE = 0.650000;
+            } else {
+                TIME_DIFFERENCE = 0.700000;
+            }
         } else if (averageTimeDiff > 0.700000 && averageTimeDiff < 0.800000) {
-            TIME_DIFFERENCE = 0.600000;
+            if (videoWrapper->father->useMediaCodec) {
+                TIME_DIFFERENCE = 0.550000;
+            } else {
+                TIME_DIFFERENCE = 0.600000;
+            }
         } else if (averageTimeDiff > 0.600000 && averageTimeDiff < 0.700000) {
-            TIME_DIFFERENCE = 0.500000;
+            if (videoWrapper->father->useMediaCodec) {
+                TIME_DIFFERENCE = 0.450000;
+            } else {
+                TIME_DIFFERENCE = 0.500000;
+            }
         } else if (averageTimeDiff > 0.500000 && averageTimeDiff < 0.600000) {
-            TIME_DIFFERENCE = 0.400000;
+            /***
+             0.505212 0.524924
+             */
+            if (videoWrapper->father->useMediaCodec) {
+                TIME_DIFFERENCE = 0.350000;
+            } else {
+                TIME_DIFFERENCE = 0.400000;
+            }
         } else if (averageTimeDiff > 0.400000 && averageTimeDiff < 0.500000) {
-            TIME_DIFFERENCE = 0.300000;
+            /***
+             0.405114 0.418364 0.429602 0.439030 0.449823
+             0.457614 0.461167 0.472319 0.486549 0.494847
+             */
+            if (videoWrapper->father->useMediaCodec) {
+                TIME_DIFFERENCE = 0.250000;
+            } else {
+                TIME_DIFFERENCE = 0.300000;
+            }
         } else if (averageTimeDiff > 0.300000 && averageTimeDiff < 0.400000) {
-            TIME_DIFFERENCE = 0.200000;
+            if (videoWrapper->father->useMediaCodec) {
+                TIME_DIFFERENCE = 0.150000;
+            } else {
+                TIME_DIFFERENCE = 0.200000;
+            }
         } else if (averageTimeDiff > 0.200000 && averageTimeDiff < 0.300000) {
-            TIME_DIFFERENCE = 0.100000;
+            /***
+             0.204199 0.263926
+             */
+            if (videoWrapper->father->useMediaCodec) {
+                TIME_DIFFERENCE = 0.090000;
+            } else {
+                TIME_DIFFERENCE = 0.100000;
+            }
         } else if (averageTimeDiff > 0.100000 && averageTimeDiff < 0.200000) {
-            TIME_DIFFERENCE = averageTimeDiff;
+            /***
+             0.100523 0.168335
+             */
+            if (videoWrapper->father->useMediaCodec) {
+                TIME_DIFFERENCE = averageTimeDiff - 0.050000;
+            } else {
+                TIME_DIFFERENCE = averageTimeDiff;
+            }
         } else if (averageTimeDiff < 0.100000) {
+            /***
+             0.014149 0.018936 0.022836 0.023516 0.024403 0.026983 0.027595 0.028610
+             0.029898 0.030690 0.031515 0.034621 0.035779 0.036042 0.037615 0.038017
+             0.039632 0.042750 0.043855 0.047141 0.048789 0.052697 0.054136 0.055711
+             0.059648 0.062606 0.065509 0.066374 0.073902 0.074668 0.079382
+             */
             TIME_DIFFERENCE = averageTimeDiff + 0.050000;
             if (TIME_DIFFERENCE < 0.100000) {
                 TIME_DIFFERENCE = 0.100000;
             }
         }
 
+        // 对4K视频特殊处理
+        if (frameRate >= 45
+            && videoWrapper->srcWidth >= 3840
+            && videoWrapper->srcHeight >= 2160) {
+            // 增大TIME_DIFFERENCE值让视频加快
+            TIME_DIFFERENCE = averageTimeDiff + 0.200000;
+        }
         LOGI("hope_to_get_a_good_result() TIME_DIFFERENCE: %lf\n", TIME_DIFFERENCE);
 
         char info[100];
@@ -1148,6 +1217,25 @@ namespace alexander_audio_video {
     }
 
     int handleAudioDataImpl(AVStream *stream, AVFrame *decodedAVFrame) {
+        audioWrapper->father->isStarted = true;
+        if (runOneTime) {
+            while (!videoWrapper->father->isStarted) {
+                if (audioWrapper->father->isPausedForUser
+                    || audioWrapper->father->isPausedForCache
+                    || audioWrapper->father->isPausedForSeek
+                    || !videoWrapper->father->isHandling
+                    || !audioWrapper->father->isHandling) {
+                    return 0;
+                }
+                av_usleep(1000);
+            }
+            LOGD("handleAudioDataImpl() 音视频已经准备好,开始播放!!!\n");
+
+            // 回调(通知到java层)
+            onPlayed();
+            runOneTime = false;
+        }
+
         // 转换音频
         int ret = swr_convert(
                 audioWrapper->swrContext,
@@ -1164,22 +1252,20 @@ namespace alexander_audio_video {
             return ret;
         }
 
-        audioWrapper->father->isStarted = true;
-        while (!videoWrapper->father->isStarted) {
-            if (audioWrapper->father->isPausedForSeek
-                || !videoWrapper->father->isHandling
-                || !audioWrapper->father->isHandling) {
-                return 0;
-            }
-            av_usleep(1000);
+        audioPts = decodedAVFrame->pts * av_q2d(stream->time_base);
+        if (preAudioPts > audioPts && preAudioPts > 0 && audioPts > 0) {
+            return 0;
         }
-        if (runOneTime
-            && audioWrapper->father->isStarted
-            && videoWrapper->father->isStarted) {
-            LOGD("handleAudioDataImpl() 音视频都已经准备好,开始播放!!!\n");
-            runOneTime = false;
-            // 回调(通知到java层)
-            onPlayed();
+        preAudioPts = audioPts;
+
+        curProgress = (long long) audioPts;// 秒
+        if (curProgress > preProgress
+            && curProgress <= audioWrapper->father->duration) {
+            preProgress = curProgress;
+            onProgressUpdated(curProgress);
+        } else if (curProgress > audioWrapper->father->duration) {
+            onProgressUpdated(audioWrapper->father->duration);
+            LOGE("handleAudioDataImpl() curProgress > audioWrapper->father->duration\n");
         }
 
         while (audioPts - videoPts > 0) {
@@ -1194,17 +1280,6 @@ namespace alexander_audio_video {
             av_usleep(1000);
         }
 
-        ////////////////////////////////////////////////////////////////////
-
-        audioPts = decodedAVFrame->pts * av_q2d(stream->time_base);
-        curProgress = (long) audioPts;// 秒
-        if (curProgress > preProgress) {
-            preProgress = curProgress;
-            onProgressUpdated(curProgress);
-        }
-
-        ////////////////////////////////////////////////////////////////////
-
         // 获取给定音频参数所需的缓冲区大小
         int out_buffer_size = av_samples_get_buffer_size(
                 NULL,
@@ -1217,6 +1292,7 @@ namespace alexander_audio_video {
                 // 缓冲区大小对齐（0 = 默认值,1 = 不对齐）
                 1);
         write(audioWrapper->father->outBuffer1, 0, out_buffer_size);
+
         return ret;
     }
 
@@ -1323,7 +1399,7 @@ namespace alexander_audio_video {
             return 0;
         }
         videoWrapper->father->isStarted = true;
-        if (audioWrapper->father->streamIndex != -1) {
+        if (runOneTime) {
             while (!audioWrapper->father->isStarted) {
                 if (videoWrapper->father->isPausedForUser
                     || videoWrapper->father->isPausedForCache
@@ -1335,103 +1411,64 @@ namespace alexander_audio_video {
                 }
                 av_usleep(1000);
             }
-        } else {
-            if (runOneTime) {
-                runOneTime = false;
-                LOGD("handleVideoOutputBuffer() 视频已经准备好,开始播放!!!\n");
-                // 回调(通知到java层)
-                onPlayed();
-            }
+        }
+
+        if (videoPts <= 0 || audioPts <= 0) {
+            return 0;
         }
 
         double tempTimeDifference = 0.0;
-        if (videoPts > 0 && audioPts > 0) {
-            //LOGW("handleVideoDataImpl()    videoPts: %lf\n", videoPts);
-            //LOGD("handleVideoDataImpl()    audioPts: %lf\n", audioPts);
-            //LOGW("handleVideoDataImpl() preVideoPts: %lf\n", preVideoPts);
-            tempTimeDifference = videoPts - audioPts;
-            if (tempTimeDifference < 0) {
-                // 正常情况下videoTimeDifference比audioTimeDifference大一些
-                // 如果发现小了,说明视频播放慢了,应丢弃这些帧
-                // break后videoTimeDifference增长的速度会加快
-                // videoPts = audioPts + averageTimeDiff;
-                return 0;
-            }
+        tempTimeDifference = videoPts - audioPts;
+        if (tempTimeDifference <= 0) {
+            return 0;
+        }
 
-            if (runCounts < RUN_COUNTS) {
-                if (tempTimeDifference > 0) {
-                    timeDiff[runCounts++] = tempTimeDifference;
-                }
-            } else if (runCounts == RUN_COUNTS) {
-                runCounts++;
-                double totleTimeDiff = 0;
-                for (int i = 0; i < RUN_COUNTS; i++) {
-                    if ((audioWrapper->father->streamIndex != -1
-                         && !audioWrapper->father->isHandling)
-                        || !videoWrapper->father->isHandling) {
-                        LOGI("handleVideoOutputBuffer() RUN_COUNTS return\n");
-                        return 0;
-                    }
-                    totleTimeDiff += timeDiff[i];
-                }
-                averageTimeDiff = totleTimeDiff / RUN_COUNTS;
-                // 希望得到一个好的TIME_DIFFERENCE值
-                hope_to_get_a_good_result();
-            }
-
-            if (tempTimeDifference > 2.000000) {
-                // 不好的现象.为什么会出现这种情况还不知道?
-                //LOGE("handleVideoDataImpl() audioTimeDifference: %lf\n", audioPts);
-                //LOGE("handleVideoDataImpl() videoTimeDifference: %lf\n", videoPts);
-                //LOGE("handleVideoDataImpl() [video - audio]: %lf\n", tempTimeDifference);
-                videoPts = audioPts + averageTimeDiff;
-                //LOGE("handleVideoDataImpl() videoTimeDifference: %lf\n", videoPts);
-            }
-            // 如果videoTimeDifference比audioTimeDifference大出了一定的范围
-            // 那么说明视频播放快了,应等待音频
-            while (videoPts - audioPts > TIME_DIFFERENCE) {
-                if (videoWrapper->father->isPausedForUser
-                    || videoWrapper->father->isPausedForCache
-                    || videoWrapper->father->isPausedForSeek
-                    || !audioWrapper->father->isHandling
+        if (runCounts < RUN_COUNTS) {
+            timeDiff[runCounts++] = tempTimeDifference;
+        } else if (runCounts == RUN_COUNTS) {
+            runCounts++;
+            double totleTimeDiff = 0;
+            for (int i = 0; i < RUN_COUNTS; i++) {
+                if (!audioWrapper->father->isHandling
                     || !videoWrapper->father->isHandling) {
-                    LOGI("handleVideoOutputBuffer() TIME_DIFFERENCE return\n");
+                    LOGI("handleVideoOutputBuffer() RUN_COUNTS return\n");
                     return 0;
                 }
-                av_usleep(1000);
+                totleTimeDiff += timeDiff[i];
             }
+            averageTimeDiff = totleTimeDiff / RUN_COUNTS;
+            hope_to_get_a_good_result();
         }
 
-        ////////////////////////////////////////////////////////
-
-        if (videoWrapper->father->streamIndex != -1
-            && audioWrapper->father->streamIndex != -1) {
-            if (tempTimeDifference > 0) {
-                // timeDifference = 0.040000
-                // 单位: 毫秒
-                int tempSleep = ((int) ((videoPts - preVideoPts) * 1000)) - 30;
-                if (videoSleepTime != tempSleep) {
-                    videoSleepTime = tempSleep;
-                    //LOGW("handleVideoDataImpl() videoSleepTime     : %d\n", videoSleepTime);
-                }
-                if (videoSleepTime < 12
-                    && videoSleepTime > 0
-                    && videoWrapper->father->isHandling) {
-                    videoSleep(videoSleepTime);
-                } else {
-                    if (videoSleepTime > 0 && videoWrapper->father->isHandling) {
-                        // 好像是个比较合理的值
-                        videoSleep(11);
-                    }
-                }
+        if (tempTimeDifference > 2.000000) {
+            videoPts = audioPts + averageTimeDiff;
+        }
+        while (videoPts - audioPts > TIME_DIFFERENCE) {
+            if (videoWrapper->father->isPausedForUser
+                || videoWrapper->father->isPausedForCache
+                || videoWrapper->father->isPausedForSeek
+                || !audioWrapper->father->isHandling
+                || !videoWrapper->father->isHandling) {
+                LOGI("handleVideoOutputBuffer() TIME_DIFFERENCE return\n");
+                return 0;
             }
-        } else if (videoWrapper->father->streamIndex != -1
-                   && audioWrapper->father->streamIndex == -1) {
-            videoSleep(11);
+            av_usleep(1000);
+        }
+
+        int tempSleep = ((int) ((videoPts - preVideoPts) * 1000)) - 30;
+        if (videoSleepTime != tempSleep) {
+            videoSleepTime = tempSleep;
+        }
+        if (videoSleepTime < 12
+            && videoSleepTime > 0
+            && videoWrapper->father->isHandling) {
+            videoSleep(videoSleepTime);
+        } else {
+            if (videoSleepTime > 0 && videoWrapper->father->isHandling) {
+                videoSleep(11);
+            }
         }
         preVideoPts = videoPts;
-
-        ////////////////////////////////////////////////////////
 
         return 0;
     }

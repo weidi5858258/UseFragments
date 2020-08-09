@@ -1119,6 +1119,9 @@ public class PlayerWrapper {
             getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LOW_PROFILE);
         }*/
         MLog.d(TAG, "Callback.MSG_ON_CHANGE_WINDOW handleLandscapeScreen");
+        if (mVideoWidth == 0 || mVideoHeight == 0) {
+            return;
+        }
 
         mIsPortraitScreen = false;
 
@@ -1731,7 +1734,8 @@ public class PlayerWrapper {
                 if (!IS_HIKEY970) {
                     handleLandscapeScreen(0);
                 } else {
-                    handlePortraitScreenWithHikey970();
+                    // handlePortraitScreenWithHikey970();
+                    handlePortraitScreenWithTV();
                 }
             } else {
                 // 竖屏
@@ -2178,25 +2182,27 @@ public class PlayerWrapper {
                 if (mContext.getResources().getConfiguration().orientation ==
                         Configuration.ORIENTATION_LANDSCAPE) {
                     MLog.d(TAG, "onKeyDown() 4 横屏");
-                    if (JniPlayerActivity.isAliveJniPlayerActivity) {
+                    /*if (JniPlayerActivity.isAliveJniPlayerActivity) {
                         handleLandscapeScreen(0);
                     } else {
-                        if (!IS_HIKEY970) {
-                            if (handleLandscapeScreenFlag) {
-                                handleLandscapeScreenFlag = false;
-                                handleLandscapeScreen(1);
-                            } else {
-                                handleLandscapeScreenFlag = true;
-                                handleLandscapeScreen(0);
-                            }
+                    }*/
+                    if (!IS_HIKEY970) {
+                        if (handleLandscapeScreenFlag) {
+                            handleLandscapeScreenFlag = false;
+                            handleLandscapeScreen(1);
                         } else {
-                            if (handleLandscapeScreenFlag) {
-                                handleLandscapeScreenFlag = false;
-                                handlePortraitScreenWithHikey970();
-                            } else {
-                                handleLandscapeScreenFlag = true;
-                                handleLandscapeScreenWithHikey970();
-                            }
+                            handleLandscapeScreenFlag = true;
+                            handleLandscapeScreen(0);
+                        }
+                    } else {
+                        if (handleLandscapeScreenFlag) {
+                            handleLandscapeScreenFlag = false;
+                            // handleLandscapeScreenWithHikey970();
+                            handleLandscapeScreen(0);
+                        } else {
+                            handleLandscapeScreenFlag = true;
+                            //handlePortraitScreenWithHikey970();
+                            handlePortraitScreenWithTV();
                         }
                     }
                 } else if (mContext.getResources().getConfiguration().orientation ==
@@ -2378,7 +2384,7 @@ public class PlayerWrapper {
         return c / k == 0 ? true : false;
     }
 
-    private static final int NEED_CLICK_COUNTS = 5;
+    private static final int NEED_CLICK_COUNTS = 4;
     private int clickCounts = 0;
 
     public Object onEvent(int what, Object[] objArray) {
