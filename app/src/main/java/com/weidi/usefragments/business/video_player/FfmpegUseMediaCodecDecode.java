@@ -572,6 +572,30 @@ public class FfmpegUseMediaCodecDecode {
         return true;
     }
 
+    /***
+     .rmvb
+     AVCodecID = 69
+     Video: rv40 (RV40 / 0x30345652), yuv420p, 1920x1080, 1483 kb/s, 30 fps, 30 tbr, 1k tbn, 1k tbc
+     Video: rv40 (RV40 / 0x30345652), yuv420p, 1376x768 [SAR 128:129 DAR 16:9], 833 kb/s,
+     29.97 fps, 29.97 tbr, 1k tbn, 1k tbc
+     .wmv
+     Video: vc1 (Advanced) (WVC1 / 0x31435657), yuv420p, 1920x1080 [SAR 1:1 DAR 16:9], 4000 kb/s,
+     59.94 fps, 59.94 tbr, 1k tbn, 119.88 tbc
+     AVCodecID = 71
+     Video: wmv3 (Main) (WMV3 / 0x33564D57), yuv420p, 1920x1080, 7000 kb/s, SAR 1:1 DAR 16:9,
+     30 fps, 30 tbr, 1k tbn, 1k tbc
+     .flv
+     AVCodecID = 92
+     Video: vp6f, yuv420p, 1920x1088, 305 kb/s, 29.97 fps, 29.97 tbr, 1k tbn, 1k tbc
+     .mpg
+     AVCodecID = 1
+     Video: mpeg1video, yuv420p(tv), 1920x1080 [SAR 1:1 DAR 16:9], 1150 kb/s,
+     29.97 fps, 29.97 tbr, 90k tbn, 29.97 tbc
+     .avi
+     AVCodecID = 7
+     Video: mjpeg (MJPG / 0x47504A4D), yuvj422p(pc, bt470bg/unknown/unknown), 640x480,
+     9210 kb/s, 30 fps, 30 tbr, 30 tbn, 30 tbc
+     */
     public boolean initVideoMediaCodec(JniObject jniObject) {
         MLog.w(TAG, "initVideoMediaCodec() start");
         if (jniObject == null
@@ -610,25 +634,32 @@ public class FfmpegUseMediaCodecDecode {
         // 现在只支持下面这几种硬解码
         switch (jniObject.valueInt) {
             case AV_CODEC_ID_HEVC:
+                // video/hevc
                 videoMime = MediaFormat.MIMETYPE_VIDEO_HEVC;
                 break;
             case AV_CODEC_ID_H264:
+                // video/avc
                 videoMime = MediaFormat.MIMETYPE_VIDEO_AVC;
                 break;
             case AV_CODEC_ID_MPEG4:
+                // video/mp4v-es
                 videoMime = MediaFormat.MIMETYPE_VIDEO_MPEG4;
                 break;
             case AV_CODEC_ID_VP8:
+                // video/x-vnd.on2.vp8
                 videoMime = MediaFormat.MIMETYPE_VIDEO_VP8;
                 break;
             case AV_CODEC_ID_VP9:
+                // video/x-vnd.on2.vp9
                 videoMime = MediaFormat.MIMETYPE_VIDEO_VP9;
                 break;
             case AV_CODEC_ID_MPEG2VIDEO:
+                // video/mpeg2(创建MediaCodec时有时会失败)
                 videoMime = MediaFormat.MIMETYPE_VIDEO_MPEG2;
                 break;
             case AV_CODEC_ID_H263:
-                //videoMime = MediaFormat.MIMETYPE_VIDEO_H263;
+                // video/3gpp
+                videoMime = MediaFormat.MIMETYPE_VIDEO_H263;
             default:
                 break;
         }
@@ -649,18 +680,19 @@ public class FfmpegUseMediaCodecDecode {
         int frame_rate = (int) parameters[3];
         // 码率
         long bitrate = parameters[4];
+        int max_input_size = (int) parameters[5];
 
         if (mContext != null) {
             SharedPreferences sp =
                     mContext.getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE);
             String whatPlayer = sp.getString(PLAYBACK_USE_PLAYER, PLAYER_FFMPEG_MEDIACODEC);
             if (!TextUtils.equals(whatPlayer, PLAYER_FFMPEG_MEDIACODEC)
-                    ||
+                    /*||
                     // 480P
                     (((width <= 854 && height <= 480)
                             || (width <= 480 && height <= 854))
                             && duration > 0 && duration <= 600
-                            && frame_rate <= 30)) {
+                            && frame_rate <= 30)*/) {
                 return false;
             }
 
@@ -679,7 +711,7 @@ public class FfmpegUseMediaCodecDecode {
             MLog.w(TAG, "initVideoMediaCodec() video sps_pps.length: " + sps_pps.length +
                     " \nsps_pps: " + Arrays.toString(sps_pps));
         } else {
-            MLog.w(TAG, "initVideoMediaCodec() sps_pps is null");
+            MLog.w(TAG, "initVideoMediaCodec() video sps_pps is null");
         }
 
         if (useExoPlayerToGetMediaFormat) {
@@ -692,7 +724,11 @@ public class FfmpegUseMediaCodecDecode {
             mediaFormat = MediaFormat.createVideoFormat(videoMime, width, height);
             mediaFormat.setInteger(MediaFormat.KEY_MAX_WIDTH, width);
             mediaFormat.setInteger(MediaFormat.KEY_MAX_HEIGHT, height);
-            mediaFormat.setInteger(MediaFormat.KEY_MAX_INPUT_SIZE, width * height);
+            if (max_input_size > 0) {
+                mediaFormat.setInteger(MediaFormat.KEY_MAX_INPUT_SIZE, max_input_size);
+            } else {
+                mediaFormat.setInteger(MediaFormat.KEY_MAX_INPUT_SIZE, width * height * 4);
+            }
             // 视频需要旋转的角度(90时为顺时针旋转90度)
             mediaFormat.setInteger(MediaFormat.KEY_ROTATION, 0);
             // 下面这个值设置后,用华为手机拍摄的4K视频就不能硬解码
@@ -704,26 +740,24 @@ public class FfmpegUseMediaCodecDecode {
                 // -9223372036854L(java时间)
                 mediaFormat.setLong(MediaFormat.KEY_DURATION, duration);
             }
-            if (frame_rate != 0) {
+            if (frame_rate > 0) {
                 mediaFormat.setInteger(MediaFormat.KEY_FRAME_RATE, frame_rate);
             }
-            if (bitrate != 0) {
+            if (bitrate > 0) {
                 mediaFormat.setLong(MediaFormat.KEY_BIT_RATE, bitrate);
+                mediaFormat.setInteger(MediaFormat.KEY_BITRATE_MODE,
+                        MediaCodecInfo.EncoderCapabilities.BITRATE_MODE_CQ);
             }
-            /*mediaFormat.setInteger(MediaFormat.KEY_BITRATE_MODE,
-                    MediaCodecInfo.EncoderCapabilities.BITRATE_MODE_CQ);
-            mediaFormat.setInteger(MediaFormat.KEY_COLOR_FORMAT,
+            /*mediaFormat.setInteger(MediaFormat.KEY_COLOR_FORMAT,
                     MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420Flexible);*/
 
             if (TextUtils.equals(videoMime, MediaFormat.MIMETYPE_VIDEO_VP8)
                     || TextUtils.equals(videoMime, MediaFormat.MIMETYPE_VIDEO_VP9)) {
                 // 没有csd-0和csd-1
-                // 可以使用MediaCodec硬解码
             } else if (TextUtils.equals(videoMime, MediaFormat.MIMETYPE_VIDEO_HEVC)
                     || TextUtils.equals(videoMime, MediaFormat.MIMETYPE_VIDEO_MPEG4)
                     || TextUtils.equals(videoMime, MediaFormat.MIMETYPE_VIDEO_MPEG2)) {
                 // 只有csd-0
-                // 可以使用MediaCodec硬解码
                 if (sps_pps != null) {
                     mediaFormat.setByteBuffer("csd-0", ByteBuffer.wrap(sps_pps));
                 }
@@ -777,7 +811,7 @@ public class FfmpegUseMediaCodecDecode {
                             /***
                              /storage/2430-1702/BaiduNetdisk/video/流浪的地球.mp4
                              */
-                            MLog.e(TAG, "initVideoMediaCodec() doesn't find index value");
+                            MLog.w(TAG, "initVideoMediaCodec() doesn't find index value");
                             int spsIndex = -1;
                             int spsLength = 0;
                             int ppsIndex = -1;

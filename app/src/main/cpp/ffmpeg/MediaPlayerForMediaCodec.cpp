@@ -837,19 +837,27 @@ namespace alexander_media_mediacodec {
              audioWrapper->father->useMediaCodec);
     }
 
-    void initVideoMediaCodec(int64_t bit_rate, int64_t videoFrames) {
+    void initVideoMediaCodec() {
         if (!videoWrapper->father->useMediaCodec) {
             return;
         }
 
         int parameters_size = 6;
         long long parameters[parameters_size];
+        // 创建MediaFormat对象时需要的参数
+        // width
         parameters[0] = videoWrapper->srcWidth;
+        // height
         parameters[1] = videoWrapper->srcHeight;
+        // durationUs
         parameters[2] = mediaDuration;
+        // frame-rate
         parameters[3] = frameRate;
-        parameters[4] = bit_rate;
-        parameters[5] = videoFrames;
+        // bitrate
+        parameters[4] = bitRate;// bit_rate
+        // max_input_size
+        parameters[5] = videoWrapper->father->outBufferSize;
+        //parameters[6] = videoFrames;
 
         // 传递到java层去处理比较方便
         uint8_t *extradata = videoWrapper->father->avCodecContext->extradata;
@@ -1544,7 +1552,14 @@ namespace alexander_media_mediacodec {
 
         videoWrapper->srcWidth = videoWrapper->father->avCodecContext->width;
         videoWrapper->srcHeight = videoWrapper->father->avCodecContext->height;
+        // AV_PIX_FMT_YUV420P
         videoWrapper->srcAVPixelFormat = videoWrapper->father->avCodecContext->pix_fmt;
+        if (videoWrapper->srcAVPixelFormat < 0) {
+            LOGE("createSwsContext() videoWrapper->srcAVPixelFormat < 0\n");
+            // 无用
+            // videoWrapper->srcAVPixelFormat = AV_PIX_FMT_YUV420P;
+            return -1;
+        }
 
         int bit_rate_tolerance = videoWrapper->father->avCodecContext->bit_rate_tolerance;
         int bits_per_coded_sample = videoWrapper->father->avCodecContext->bits_per_coded_sample;
@@ -1564,8 +1579,6 @@ namespace alexander_media_mediacodec {
         // 帧数
         int64_t videoFrames = stream->nb_frames;
 
-        initVideoMediaCodec(bit_rate, videoFrames);
-
         LOGW("---------------------------------\n");
         LOGW("videoFrames          : %lld\n", (long long) videoFrames);
         LOGW("srcWidth             : %d\n", videoWrapper->srcWidth);
@@ -1581,6 +1594,7 @@ namespace alexander_media_mediacodec {
         LOGW("frame_size           : %d\n", frame_size);
         LOGW("frame_number         : %d\n", frame_number);
 
+        // -1 AV_PIX_FMT_NONE (null)
         LOGW("srcAVPixelFormat     : %d %s %s\n",
              videoWrapper->srcAVPixelFormat,
              getStrAVPixelFormat(videoWrapper->srcAVPixelFormat),
@@ -1633,6 +1647,8 @@ namespace alexander_media_mediacodec {
             return -1;
         }
         LOGW("---------------------------------\n");
+
+        initVideoMediaCodec();
 
         LOGI("createSwsContext() end\n");
         return 0;
@@ -1693,7 +1709,7 @@ namespace alexander_media_mediacodec {
             onLoadProgressUpdated(MSG_ON_TRANSACT_VIDEO_PRODUCER, 0);
         }
         LOGI("seekToImpl() av_seek_frame start\n");
-        LOGI("seekToImpl() timestamp: %ld\n", (long) timeStamp);
+        LOGI("seekToImpl() timestamp: %lld\n", (long long) timeStamp);
         //LOGI("seekToImpl() timestamp: %"PRIu64"\n", timestamp);
         av_seek_frame(avFormatContext, -1,
                       timeStamp * AV_TIME_BASE,
@@ -2779,24 +2795,22 @@ namespace alexander_media_mediacodec {
 
         if (audioWrapper->father->streamIndex != -1) {
             // 有音频和视频
-            if (tempTimeDifference > 0) {
-                // timeDifference = 0.040000
-                // 单位: 毫秒
-                int tempSleep = ((int) ((videoPts - preVideoPts) * 1000)) - 30;
-                if (videoSleepTime != tempSleep) {
-                    videoSleepTime = tempSleep;
-                    //LOGW("handleVideoDataImpl() videoSleepTime     : %d\n", videoSleepTime);
-                }
-                if (videoSleepTime < 12
-                    && videoSleepTime > 0
+            // timeDifference = 0.040000
+            // 单位: 毫秒
+            int tempSleep = ((int) ((videoPts - preVideoPts) * 1000)) - 30;
+            if (videoSleepTime != tempSleep) {
+                videoSleepTime = tempSleep;
+                //LOGW("handleVideoDataImpl() videoSleepTime     : %d\n", videoSleepTime);
+            }
+            if (videoSleepTime < 12
+                && videoSleepTime > 0
+                && videoWrapper->father->isHandling) {
+                videoSleep(videoSleepTime);
+            } else {
+                if (videoSleepTime > 0
                     && videoWrapper->father->isHandling) {
-                    videoSleep(videoSleepTime);
-                } else {
-                    if (videoSleepTime > 0
-                        && videoWrapper->father->isHandling) {
-                        // 好像是个比较合理的值
-                        videoSleep(11);
-                    }
+                    // 好像是个比较合理的值
+                    videoSleep(11);
                 }
             }
         } else {
@@ -3362,10 +3376,11 @@ namespace alexander_media_mediacodec {
                     av_packet_unref(copyAVPacket);
                     isVideoRendering = false;
                     if (!feedAndDrainRet && wrapper->isHandling) {
-                        wrapper->useMediaCodec = false;
-                        seekTo(curProgress);
-                        av_usleep(1000 * 1000);
                         LOGE("handleData() video feedInputBufferAndDrainOutputBuffer failure\n");
+                        wrapper->useMediaCodec = false;
+                        //seekTo(curProgress);
+                        seekTo(0);
+                        av_usleep(1000 * 1000);
                     }
                     continue;
                 }
@@ -3582,6 +3597,7 @@ namespace alexander_media_mediacodec {
             audioWrapper->decodedAVFrame = nullptr;
         }
         if (audioWrapper->father->avCodecContext != nullptr) {
+            avcodec_flush_buffers(audioWrapper->father->avCodecContext);
             avcodec_close(audioWrapper->father->avCodecContext);
             av_free(audioWrapper->father->avCodecContext);
             audioWrapper->father->avCodecContext = nullptr;
@@ -3672,6 +3688,7 @@ namespace alexander_media_mediacodec {
             videoWrapper->rgbAVFrame = nullptr;
         }
         if (videoWrapper->father->avCodecContext != nullptr) {
+            avcodec_flush_buffers(videoWrapper->father->avCodecContext);
             avcodec_close(videoWrapper->father->avCodecContext);
             av_free(videoWrapper->father->avCodecContext);
             videoWrapper->father->avCodecContext = nullptr;
@@ -4233,18 +4250,9 @@ namespace alexander_media_mediacodec {
     }
 
     /***
-     1.暂停状态下seek
-     2.播放状态下seek
-
-     bug
-     ---------->onClick() mProgress: 0 00:00
-     ==================================================================
-     seekTo() timestamp: 1402537096
-     ---------->onClick() mProgress: 0 00:00
-     ==================================================================
-     seekTo() timestamp: 1402537096
+     单位秒.比如seek到100秒,就传100
      */
-    int seekTo(int64_t timestamp) {// 单位秒.比如seek到100秒,就传100
+    int seekTo(int64_t timestamp) {
         LOGI("==================================================================\n");
         LOGI("seekTo() timeStamp: %lld\n", (long long) timestamp);
 
@@ -4421,7 +4429,7 @@ namespace alexander_media_mediacodec {
     char *getStrAVPixelFormat(AVPixelFormat format) {
         char info[25] = {0};
         switch (format) {
-            case AV_PIX_FMT_NONE:
+            case AV_PIX_FMT_NONE:// -1
                 strncpy(info, "AV_PIX_FMT_NONE", strlen("AV_PIX_FMT_NONE"));
                 break;
             case AV_PIX_FMT_YUV420P:// 0

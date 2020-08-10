@@ -324,6 +324,16 @@ public class Camera2Fragment extends BaseFragment {
 
     /////////////////////////////////////////////////////////////////
 
+    /***
+     我们都知道Camera预览采集的图像流通常为NV21或YV12，
+     那么编码器需要指定相应的颜色格式，否则编码得到的数据可能会出现花屏、叠影、颜色失真等现象。
+     MediaCodecInfo.CodecCapabilities.存储了编码器所有支持的颜色格式，常见颜色格式映射如下：
+     原始数据 编码器
+     NV12(YUV420sp) ———> COLOR_FormatYUV420PackedSemiPlanar
+     NV21 ———-> COLOR_FormatYUV420SemiPlanar
+     YV12(I420) ———-> COLOR_FormatYUV420Planar
+     */
+
     /**
      * Conversion from screen rotation to JPEG orientation.
      */

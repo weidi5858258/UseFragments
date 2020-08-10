@@ -788,7 +788,7 @@ public class MediaUtils {
             String mime, MediaFormat mediaFormat, Surface surface) {
         if (TextUtils.isEmpty(mime)
                 || mediaFormat == null
-                /*|| surface == null*/) {
+            /*|| surface == null*/) {
             return null;
         }
         MediaCodec decoder = null;
@@ -875,7 +875,7 @@ public class MediaUtils {
         format.setInteger(MediaFormat.KEY_MAX_HEIGHT, height);
         format.setInteger(MediaFormat.KEY_MAX_INPUT_SIZE, width * height);
         // 设置码率
-        format.setInteger(MediaFormat.KEY_BIT_RATE, width * height);
+        format.setInteger(MediaFormat.KEY_BIT_RATE, width * height * 4);
         // 设置帧率
         format.setInteger(MediaFormat.KEY_FRAME_RATE, FRAME_RATE);
         // 设置抽取关键帧的间隔，以s为单位，负数或者0表示不抽取关键帧
@@ -891,9 +891,9 @@ public class MediaUtils {
          BITRATE_MODE_VBR: 表示编码器会根据图像内容的复杂度（实际上是帧间变化量的大小）来动态调整输出码率，
          图像复杂则码率高，图像简单则码率低
          */
-        // 电视机不支持
-        //format.setInteger(MediaFormat.KEY_BITRATE_MODE,
-        //        MediaCodecInfo.EncoderCapabilities.BITRATE_MODE_CQ);
+        // 这个值不设置的话,录制的视频很模糊.电视机不支持
+        format.setInteger(MediaFormat.KEY_BITRATE_MODE,
+                MediaCodecInfo.EncoderCapabilities.BITRATE_MODE_CQ);
 
         /***
          横屏
@@ -949,7 +949,7 @@ public class MediaUtils {
         format.setInteger(MediaFormat.KEY_MAX_HEIGHT, height);
         format.setInteger(MediaFormat.KEY_MAX_INPUT_SIZE, width * height);
         // 设置码率
-        format.setInteger(MediaFormat.KEY_BIT_RATE, width * height);
+        format.setInteger(MediaFormat.KEY_BIT_RATE, width * height * 4);
         // 设置帧率
         format.setInteger(MediaFormat.KEY_FRAME_RATE, FRAME_RATE);
         // 设置抽取关键帧的间隔，以s为单位，负数或者0表示不抽取关键帧

@@ -195,19 +195,27 @@ namespace alexander_audio_video {
         videoWrapper->father->handleLockCondition = PTHREAD_COND_INITIALIZER;
     }
 
-    void initVideoMediaCodec(int64_t bit_rate, int64_t videoFrames) {
+    void initVideoMediaCodec() {
         if (!videoWrapper->father->useMediaCodec) {
             return;
         }
 
         int parameters_size = 6;
         long long parameters[parameters_size];
+        // 创建MediaFormat对象时需要的参数
+        // width
         parameters[0] = videoWrapper->srcWidth;
+        // height
         parameters[1] = videoWrapper->srcHeight;
+        // durationUs
         parameters[2] = mediaDuration;
+        // frame-rate
         parameters[3] = frameRate;
-        parameters[4] = bit_rate;
-        parameters[5] = videoFrames;
+        // bitrate
+        parameters[4] = bitRate;// bit_rate
+        // max_input_size
+        parameters[5] = videoWrapper->father->outBufferSize;
+        //parameters[6] = videoFrames;
 
         // 传递到java层去处理比较方便
         uint8_t *extradata = videoWrapper->father->avCodecContext->extradata;
@@ -689,8 +697,6 @@ namespace alexander_audio_video {
         }
         bitRate = videoAVFormatContext->bit_rate / 1000;
 
-        initVideoMediaCodec(bit_rate, videoFrames);
-
         LOGW("videoFrames         : %d\n", (long) videoFrames);
         LOGW("frameRate           : %d fps/Hz\n", frameRate);
         LOGW("bitRate             : %lld kbps\n", (long long) bitRate);
@@ -745,6 +751,8 @@ namespace alexander_audio_video {
             return -1;
         }
         LOGW("---------------------------------\n");
+
+        initVideoMediaCodec();
 
         LOGI("createSwsContext() end\n");
         return 0;

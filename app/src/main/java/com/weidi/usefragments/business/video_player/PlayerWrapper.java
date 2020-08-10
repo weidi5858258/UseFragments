@@ -53,6 +53,8 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -128,6 +130,7 @@ public class PlayerWrapper {
     private FfmpegUseMediaCodecDecode mFfmpegUseMediaCodecDecode;
     private GetMediaFormat mGetMediaFormat;
     private String mPath;
+    private String md5Path;
     // 有些mp3文件含有video,因此播放失败
     private String mType;
     private long mProgress;
@@ -355,6 +358,7 @@ public class PlayerWrapper {
             return;
         }
         mPath = path;
+        md5Path = md5(path);
         String newPath = mPath.toLowerCase();
         if (newPath.startsWith("/storage/")) {
             mIsLocal = true;
@@ -1004,8 +1008,8 @@ public class PlayerWrapper {
                         }
                     }
 
-                    if (mPathTimeMap.containsKey(mPath)) {
-                        long position = mPathTimeMap.get(mPath);
+                    if (mPathTimeMap.containsKey(md5Path)) {
+                        long position = mPathTimeMap.get(md5Path);
                         MLog.d(TAG, "startPlayback()               position: " + position);
 
                         if (TextUtils.equals(whatPlayer, PLAYER_MEDIACODEC)) {
@@ -1868,20 +1872,16 @@ public class PlayerWrapper {
 
         if (mMediaDuration > 0) {
             if (mPresentationTime < (mMediaDuration - 5)) {
-                /*MLog.d(TAG, "Callback.MSG_ON_PROGRESS_UPDATED mPresentationTime: " +
-                        mPresentationTime);*/
-                mPathTimeMap.put(mPath, mPresentationTime);
+                mPathTimeMap.put(md5Path, mPresentationTime);
                 if (mIsH264 && (mMediaDuration - mPresentationTime <= 1000000)) {
-                    mPathTimeMap.remove(mPath);
+                    mPathTimeMap.remove(md5Path);
                 }
             } else {
-                if (mPathTimeMap.containsKey(mPath)) {
-                    mPathTimeMap.remove(mPath);
+                if (mPathTimeMap.containsKey(md5Path)) {
+                    mPathTimeMap.remove(md5Path);
                 }
             }
-            //MLog.d(TAG, "Callback.MSG_ON_PROGRESS_UPDATED "+mPathTimeMap.size());
         }
-        //mSP.edit().putLong(PLAYBACK_POSITION, mPresentationTime).commit();
     }
 
     private void updateRootViewLayout(int width, int height) {
@@ -2575,6 +2575,38 @@ public class PlayerWrapper {
             }
         }
         MLog.i(TAG, "readLog() end");
+    }
+
+    public static String md5(String str) {
+        if (TextUtils.isEmpty(str)) {
+            return null;
+        }
+        try {
+            MessageDigest md = MessageDigest.getInstance("md5");
+            byte[] digest = md.digest(str.getBytes());
+            return bytes2hex02(digest);
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    private static String bytes2hex02(byte[] bytes) {
+        if (bytes == null) {
+            return null;
+        }
+        String tmp = null;
+        StringBuilder sb = new StringBuilder();
+        for (byte b : bytes) {
+            // 将每个字节与0xFF进行与运算，然后转化为10进制，然后借助于Integer再转化为16进制
+            tmp = Integer.toHexString(0xFF & b);
+            // 每个字节8为，转为16进制标志，2个16进制位
+            if (tmp.length() == 1) {
+                tmp = "0" + tmp;
+            }
+            sb.append(tmp);
+        }
+        return sb.toString();
     }
 
 }

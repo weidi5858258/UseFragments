@@ -44,6 +44,7 @@ import com.weidi.usefragments.inject.InjectView;
 import com.weidi.usefragments.media.MediaUtils;
 import com.weidi.usefragments.test_fragment.scene2.A2Fragment;
 import com.weidi.usefragments.tool.MLog;
+import com.weidi.utils.MyToast;
 
 import java.io.File;
 import java.io.IOException;
@@ -348,6 +349,7 @@ public class RecordScreenFragment extends BaseFragment {
     private MediaMuxer mMediaMuxer;
     private int mOutputVideoTrack = -1;
     private int mOutputAudioTrack = -1;
+    private File mSaveFile;
 
     private SimpleDateFormat mSimpleDateFormat = new SimpleDateFormat("yyyyMMddHHmmss");
 
@@ -460,7 +462,8 @@ public class RecordScreenFragment extends BaseFragment {
                 mThreadHandler.sendEmptyMessageDelayed(STOP_RECORD_SCREEN, 500);
                 break;
             case R.id.jump_btn:
-                FragOperManager.getInstance().enter3(new A2Fragment());
+                //FragOperManager.getInstance().enter3(new A2Fragment());
+                FragOperManager.getInstance().enter3(new Camera2Fragment());
                 break;
         }
     }
@@ -521,29 +524,33 @@ public class RecordScreenFragment extends BaseFragment {
             tempFile = f;
         }
 
+        if (tempFile == null) {
+            MyToast.show("没有可以保存文件的路径");
+            return;
+        }
+
         StringBuilder sb = new StringBuilder();
         sb.append("media-");
         sb.append(mSimpleDateFormat.format(new Date()));
         sb.append(".mp4");
-        File file = new File(tempFile.getAbsolutePath(), sb.toString());
-        if (file.exists()) {
+        mSaveFile = new File(tempFile.getAbsolutePath(), sb.toString());
+
+        File parentFile = mSaveFile.getParentFile();
+        files = parentFile.listFiles();
+        if (files != null) {
+            for (File file : files) {
+                if (file != null && file.length() <= 10) {
+                    file.delete();
+                }
+            }
+        }
+        /*if (file.exists()) {
             try {
                 file.delete();
             } catch (SecurityException e) {
                 e.printStackTrace();
                 return;
             }
-        }
-        /*if (!file.exists()) {
-            try {
-                file.createNewFile();
-            } catch (IOException e) {
-                e.printStackTrace();
-                return;
-            }
-        }*/
-        /*if (!file.canWrite()) {
-            return;
         }*/
 
         mIsVideoRecording = false;
@@ -579,22 +586,12 @@ public class RecordScreenFragment extends BaseFragment {
 
         try {
             mMediaMuxer = new MediaMuxer(
-                    file.getAbsolutePath(),
+                    mSaveFile.getAbsolutePath(),
                     MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4);
         } catch (IOException e) {
             e.printStackTrace();
             releaseAll();
             return;
-        }
-
-        // test
-        if (file.exists()) {
-            try {
-                file.delete();
-            } catch (SecurityException e) {
-                e.printStackTrace();
-                return;
-            }
         }
 
         // test
@@ -636,6 +633,7 @@ public class RecordScreenFragment extends BaseFragment {
             mAudioEncoderMediaCodec.start();
         }
         if (mVideoEncoderMediaCodec != null) {
+            // Surface的创建
             mSurface = mVideoEncoderMediaCodec.createInputSurface();
             mVideoEncoderMediaCodec.start();
         }
@@ -645,14 +643,14 @@ public class RecordScreenFragment extends BaseFragment {
                 && mAudioEncoderMediaCodec != null
                 && mAudioRecord != null
                 && mSurface != null) {
-            new Thread(new Runnable() {
+            /*new Thread(new Runnable() {
                 @Override
                 public void run() {
                     MediaServer.getInstance().sccept();
                 }
-            }).start();
+            }).start();*/
             // 音频先启动,让音频的mOutputAudioTrack先得到值
-            //new Thread(new AudioEncoderRunnable()).start();
+            new Thread(new AudioEncoderRunnable()).start();
             new Thread(new VideoEncoderRunnable()).start();
 
             /***
@@ -713,6 +711,16 @@ public class RecordScreenFragment extends BaseFragment {
             }
         });
 
+        File parentFile = mSaveFile.getParentFile();
+        File[] files = parentFile.listFiles();
+        if (files != null) {
+            for (File file : files) {
+                if (file != null && file.length() <= 10) {
+                    file.delete();
+                }
+            }
+        }
+
         if (DEBUG)
             MLog.d(TAG, "stopRecordScreen() end");
     }
@@ -721,8 +729,7 @@ public class RecordScreenFragment extends BaseFragment {
             new MediaProjection.Callback() {
                 @Override
                 public void onStop() {
-                    if (DEBUG)
-                        MLog.d(TAG, "MediaProjection.Callback onStop() " + printThis());
+                    MLog.d(TAG, "MediaProjection.Callback onStop() " + printThis());
                 }
             };
 
@@ -795,14 +802,14 @@ public class RecordScreenFragment extends BaseFragment {
             while (mIsRecording) {
                 // 等到音频的mOutputAudioTrack >= 0时,才往下走
                 // 先把音频的准备工作做好了,再准备视频的准备工作
-                /*if (mOutputAudioTrack < 0) {
+                if (mOutputAudioTrack < 0) {
                     try {
                         Thread.sleep(1, 0);
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
                     continue;
-                }*/
+                }
 
                 feedInputBufferAndDrainOutputBuffer =
                         EDMediaCodec.feedInputBufferAndDrainOutputBuffer(
@@ -852,11 +859,10 @@ public class RecordScreenFragment extends BaseFragment {
                     break;
                 }
 
-                if (MediaServer.getInstance().mIsHandling) {
+                /*if (MediaServer.getInstance().mIsHandling) {
                     MediaServer.getInstance().sendData(buffer, 0, readSize);
-                }
+                }*/
 
-                /*long presentationTimeUs = System.nanoTime() / 1000;
                 feedInputBufferAndDrainOutputBuffer =
                         EDMediaCodec.feedInputBufferAndDrainOutputBuffer(
                                 mCallback,
@@ -865,13 +871,13 @@ public class RecordScreenFragment extends BaseFragment {
                                 buffer,
                                 0,
                                 readSize,
-                                presentationTimeUs,
+                                System.nanoTime() / 1000,
                                 false,
                                 true);
 
                 if (!feedInputBufferAndDrainOutputBuffer) {
                     break;
-                }*/
+                }
             }// while(...) end
             mIsAudioRecording = false;
             mIsRecording = false;
@@ -916,13 +922,13 @@ public class RecordScreenFragment extends BaseFragment {
             mOutputVideoTrack = mMediaMuxer.addTrack(mVideoEncoderMediaFormat);
             MLog.d(TAG, "VideoEncoderThread Output mOutputVideoTrack: " +
                     mOutputVideoTrack);
-            /*if (!mIsMuxerStarted
+            if (!mIsMuxerStarted
                     && mOutputAudioTrack >= 0
                     && mOutputVideoTrack >= 0) {
                 MLog.d(TAG, "VideoEncoderThread Output mMediaMuxer.start()");
                 mMediaMuxer.start();
                 mIsMuxerStarted = true;
-            }*/
+            }
         }
 
         @Override
@@ -932,13 +938,13 @@ public class RecordScreenFragment extends BaseFragment {
                     mMediaMuxer.addTrack(mAudioEncoderMediaFormat);
             MLog.d(TAG, "AudioEncoderThread Output mOutputAudioTrack: " +
                     mOutputAudioTrack);
-            /*if (!mIsMuxerStarted
+            if (!mIsMuxerStarted
                     && mOutputAudioTrack >= 0
                     && mOutputVideoTrack >= 0) {
                 MLog.d(TAG, "AudioEncoderThread Output mMediaMuxer.start()");
                 mMediaMuxer.start();
                 mIsMuxerStarted = true;
-            }*/
+            }
         }
 
         @Override
@@ -953,7 +959,10 @@ public class RecordScreenFragment extends BaseFragment {
                 roomInfo.presentationTimeUs = System.nanoTime() / 1000;
                 // 把编码后的数据写进文件
                 mMediaMuxer.writeSampleData(mOutputVideoTrack, room, roomInfo);
+                return 0;
             }
+
+            // region
 
             int offset = 4;
             // 判断帧的类型
@@ -1028,19 +1037,26 @@ public class RecordScreenFragment extends BaseFragment {
                     break;
             }
 
+            // endregion
+
             return 0;
         }
 
         @Override
         public int handleAudioOutputBuffer(int roomIndex, ByteBuffer room,
                                            MediaCodec.BufferInfo roomInfo, int roomSize) {
+            if (room == null || roomInfo.size <= 0) {
+                return 0;
+            }
+
             if (mIsMuxerStarted
-                    && mOutputAudioTrack >= 0
-                    && room != null
-                    && roomInfo.size != 0) {
+                    && mOutputAudioTrack >= 0) {
                 roomInfo.presentationTimeUs = System.nanoTime() / 1000;
                 mMediaMuxer.writeSampleData(mOutputAudioTrack, room, roomInfo);
+                return 0;
             }
+
+            // region
 
             if (MediaServer.getInstance().mIsHandling
                     && room != null
@@ -1058,6 +1074,8 @@ public class RecordScreenFragment extends BaseFragment {
                 room.get(audioData, 0, audioData.length);
                 MediaServer.getInstance().sendData(audioData, 0, roomSize);
             }
+
+            // endregion
 
             return 0;
         }
