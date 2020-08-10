@@ -730,7 +730,7 @@ public class FfmpegUseMediaCodecDecode {
                 mediaFormat.setInteger(MediaFormat.KEY_MAX_INPUT_SIZE, width * height * 4);
             }
             // 视频需要旋转的角度(90时为顺时针旋转90度)
-            mediaFormat.setInteger(MediaFormat.KEY_ROTATION, 0);
+            // mediaFormat.setInteger(MediaFormat.KEY_ROTATION, 0);
             // 下面这个值设置后,用华为手机拍摄的4K视频就不能硬解码
             // mediaFormat.setInteger(MediaFormat.KEY_PRIORITY, 0);
             if (duration > 0) {
@@ -745,8 +745,8 @@ public class FfmpegUseMediaCodecDecode {
             }
             if (bitrate > 0) {
                 mediaFormat.setLong(MediaFormat.KEY_BIT_RATE, bitrate);
-                mediaFormat.setInteger(MediaFormat.KEY_BITRATE_MODE,
-                        MediaCodecInfo.EncoderCapabilities.BITRATE_MODE_CQ);
+                /*mediaFormat.setInteger(MediaFormat.KEY_BITRATE_MODE,
+                        MediaCodecInfo.EncoderCapabilities.BITRATE_MODE_CQ);*/
             }
             /*mediaFormat.setInteger(MediaFormat.KEY_COLOR_FORMAT,
                     MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420Flexible);*/
