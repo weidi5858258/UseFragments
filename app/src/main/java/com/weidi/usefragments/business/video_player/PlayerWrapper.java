@@ -994,7 +994,6 @@ public class PlayerWrapper {
                                 || mType.startsWith("video/")) {
                             if (!mPath.endsWith(".h264")) {
                                 mFFMPEGPlayer.onTransact(DO_SOMETHING_CODE_setMode,
-                                        // USE_MODE_MEDIA_4K USE_MODE_MEDIA_MEDIACODEC
                                         JniObject.obtain().writeInt(
                                                 FFMPEG.USE_MODE_MEDIA_MEDIACODEC));
                             } else {
@@ -1021,7 +1020,7 @@ public class PlayerWrapper {
                     }
                 } else {
                     sendEmptyMessage(DO_SOMETHING_CODE_init);
-                    // [.m4s] or [.h264 and aac](达不到同步效果)
+                    // [.m4s] or [.h264 and .aac](达不到同步效果)
                     if (mPath.endsWith(".m4s")) {
                         mFFMPEGPlayer.onTransact(DO_SOMETHING_CODE_setMode,
                                 JniObject.obtain().writeInt(USE_MODE_AUDIO_VIDEO));

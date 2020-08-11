@@ -18,6 +18,7 @@ package com.weidi.usefragments.tool;
 
 import android.content.Context;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.TextureView;
 
 /**
@@ -25,6 +26,7 @@ import android.view.TextureView;
  */
 public class AutoFitTextureView extends TextureView {
 
+    private static final String TAG = AutoFitTextureView.class.getSimpleName();
     private int mRatioWidth = 0;
     private int mRatioHeight = 0;
 
@@ -57,19 +59,35 @@ public class AutoFitTextureView extends TextureView {
         requestLayout();
     }
 
+    /***
+     setMeasuredDimension(width, height)参数说明:
+     1.如果width, height大于屏幕宽高,那么预览界面的物体是被放大的.
+     2.如果width, height小于屏幕宽高,那么预览界面的大小就是width, height.其他部分以白色填充.
+     */
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+        // 控件大小
         int width = MeasureSpec.getSize(widthMeasureSpec);
         int height = MeasureSpec.getSize(heightMeasureSpec);
+        Log.i(TAG, "onMeasure()" +
+                " width: " + width +
+                " height: " + height);
         if (0 == mRatioWidth || 0 == mRatioHeight) {
             setMeasuredDimension(width, height);
         } else {
+            setMeasuredDimension(width, height);
+
+            /*int tempWidth = width * mRatioHeight / mRatioWidth;
+            int tempHeight = height * mRatioWidth / mRatioHeight;
+            Log.i(TAG, "onMeasure()" +
+                    " tempWidth: " + tempWidth +
+                    " tempHeight: " + tempHeight);
             if (width < height * mRatioWidth / mRatioHeight) {
                 setMeasuredDimension(width, width * mRatioHeight / mRatioWidth);
             } else {
                 setMeasuredDimension(height * mRatioWidth / mRatioHeight, height);
-            }
+            }*/
         }
     }
 

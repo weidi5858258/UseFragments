@@ -34,6 +34,7 @@ import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.weidi.usefragments.Camera2Activity;
 import com.weidi.usefragments.R;
 import com.weidi.usefragments.business.video_player.EDMediaCodec;
 import com.weidi.usefragments.business.video_player.MediaServer;
@@ -463,7 +464,9 @@ public class RecordScreenFragment extends BaseFragment {
                 break;
             case R.id.jump_btn:
                 //FragOperManager.getInstance().enter3(new A2Fragment());
-                FragOperManager.getInstance().enter3(new Camera2Fragment());
+                //FragOperManager.getInstance().enter3(new Camera2Fragment());
+                getAttachedActivity().startActivity(
+                        new Intent(getContext(), Camera2Activity.class));
                 break;
         }
     }

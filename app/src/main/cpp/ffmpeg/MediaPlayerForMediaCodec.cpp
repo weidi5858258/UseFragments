@@ -1684,8 +1684,8 @@ namespace alexander_media_mediacodec {
             }
         }
         LOGI("seekToImpl() sleep end\n");
-        LOGD("seekToImpl() audio list2 size: %d\n", audioWrapper->father->list2->size());
-        LOGD("seekToImpl() video list2 size: %d\n", videoWrapper->father->list2->size());
+        //LOGD("seekToImpl() audio list2 size: %d\n", audioWrapper->father->list2->size());
+        //LOGD("seekToImpl() video list2 size: %d\n", videoWrapper->father->list2->size());
         if (audioWrapper->father->list2->size() != 0) {
             std::list<AVPacket>::iterator iter;
             for (iter = audioWrapper->father->list2->begin();
@@ -2242,31 +2242,31 @@ namespace alexander_media_mediacodec {
 
         if (averageTimeDiff > 1.000000) {
             if (videoWrapper->father->useMediaCodec) {
-                TIME_DIFFERENCE = 0.850000;
+                TIME_DIFFERENCE = 0.800000;
             } else {
                 TIME_DIFFERENCE = 0.900000;
             }
         } else if (averageTimeDiff > 0.900000 && averageTimeDiff < 1.000000) {
             if (videoWrapper->father->useMediaCodec) {
-                TIME_DIFFERENCE = 0.750000;
+                TIME_DIFFERENCE = 0.700000;
             } else {
                 TIME_DIFFERENCE = 0.800000;
             }
         } else if (averageTimeDiff > 0.800000 && averageTimeDiff < 0.900000) {
             if (videoWrapper->father->useMediaCodec) {
-                TIME_DIFFERENCE = 0.650000;
+                TIME_DIFFERENCE = 0.600000;
             } else {
                 TIME_DIFFERENCE = 0.700000;
             }
         } else if (averageTimeDiff > 0.700000 && averageTimeDiff < 0.800000) {
             if (videoWrapper->father->useMediaCodec) {
-                TIME_DIFFERENCE = 0.550000;
+                TIME_DIFFERENCE = 0.500000;
             } else {
                 TIME_DIFFERENCE = 0.600000;
             }
         } else if (averageTimeDiff > 0.600000 && averageTimeDiff < 0.700000) {
             if (videoWrapper->father->useMediaCodec) {
-                TIME_DIFFERENCE = 0.450000;
+                TIME_DIFFERENCE = 0.400000;
             } else {
                 TIME_DIFFERENCE = 0.500000;
             }
@@ -2275,7 +2275,7 @@ namespace alexander_media_mediacodec {
              0.505212 0.524924
              */
             if (videoWrapper->father->useMediaCodec) {
-                TIME_DIFFERENCE = 0.350000;
+                TIME_DIFFERENCE = 0.300000;
             } else {
                 TIME_DIFFERENCE = 0.400000;
             }
@@ -2285,13 +2285,13 @@ namespace alexander_media_mediacodec {
              0.457614 0.461167 0.472319 0.486549 0.494847
              */
             if (videoWrapper->father->useMediaCodec) {
-                TIME_DIFFERENCE = 0.250000;
+                TIME_DIFFERENCE = 0.200000;
             } else {
                 TIME_DIFFERENCE = 0.300000;
             }
         } else if (averageTimeDiff > 0.300000 && averageTimeDiff < 0.400000) {
             if (videoWrapper->father->useMediaCodec) {
-                TIME_DIFFERENCE = 0.150000;
+                TIME_DIFFERENCE = 0.100000;
             } else {
                 TIME_DIFFERENCE = 0.200000;
             }
@@ -2300,7 +2300,7 @@ namespace alexander_media_mediacodec {
              0.204199 0.263926
              */
             if (videoWrapper->father->useMediaCodec) {
-                TIME_DIFFERENCE = 0.090000;
+                TIME_DIFFERENCE = 0.080000;
             } else {
                 TIME_DIFFERENCE = 0.100000;
             }
@@ -2309,7 +2309,7 @@ namespace alexander_media_mediacodec {
              0.100523 0.168335
              */
             if (videoWrapper->father->useMediaCodec) {
-                TIME_DIFFERENCE = averageTimeDiff - 0.050000;
+                TIME_DIFFERENCE = averageTimeDiff - 0.100000;
             } else {
                 TIME_DIFFERENCE = averageTimeDiff;
             }
@@ -2970,10 +2970,6 @@ namespace alexander_media_mediacodec {
             preVideoAVFrame = av_frame_alloc();
         }
 
-        // test视频解码花费的时间
-        // int64_t startVideoDecodeTime;
-        // int64_t endVideoDecodeTime;
-
         bool feedAndDrainRet = false;
         int ret = 0;
         for (;;) {
@@ -2992,10 +2988,10 @@ namespace alexander_media_mediacodec {
                 if (isPausedForSeek) {
                     if (wrapper->type == TYPE_AUDIO) {
                         LOGD("handleData() wait() Seek  audio start\n");
-                        LOGD("handleData() audio list1 size: %d\n", wrapper->list1->size());
+                        //LOGD("handleData() audio list1 size: %d\n", wrapper->list1->size());
                     } else {
                         LOGW("handleData() wait() Seek  video start\n");
-                        LOGD("handleData() video list1 size: %d\n", wrapper->list1->size());
+                        //LOGD("handleData() video list1 size: %d\n", wrapper->list1->size());
                     }
                     if (wrapper->list1->size() != 0) {
                         std::list<AVPacket>::iterator iter;
@@ -3052,8 +3048,6 @@ namespace alexander_media_mediacodec {
                         LOGE("handleData() wait() Cache video end   被动暂停\n");
                     }
                 }
-
-                // startVideoLockedTime = av_gettime_relative();
             }// 暂停装置 end
 
             // endregion
@@ -3084,21 +3078,6 @@ namespace alexander_media_mediacodec {
                         notifyToRead(wrapper);
                     }
                 }
-
-                // test
-                /*if (wrapper->type == TYPE_AUDIO) {
-                } else {
-                    // flags: 0, pts: 4443433650, dts: 4443427440, duration: 3103, size: 8378
-                    // flags: 1, pts: 4443436710, dts: 4443430500, duration: 3103, size: 23613
-                    // flags: 0, pts: 4443442920, dts: 4443433650, duration: 3103, size: 6137
-                    LOGW("handleData() video                   "
-                         "flags: %d, pts: %lld, dts: %lld, duration: %lld, size: %d\n",
-                         copyAVPacket->flags,
-                         (long long) copyAVPacket->pts,
-                         (long long) copyAVPacket->dts,
-                         (long long) copyAVPacket->duration,
-                         copyAVPacket->size);
-                }*/
             }
 
             size_t list1Size = wrapper->list1->size();
@@ -3258,46 +3237,38 @@ namespace alexander_media_mediacodec {
                 notifyToRead(videoWrapper->father);
                 if (wrapper->type == TYPE_AUDIO) {
                     // 音频Cache引起的暂停
-                    audioWrapper->father->isPausedForCache = true;
-
-                    // 让视频也同时暂停
-                    videoWrapper->father->isPausedForCache = true;
-                    // 音频自身暂停
                     LOGE("handleData() wait() Cache audio start 主动暂停\n");
+                    // 让视频同时暂停
+                    videoWrapper->father->isPausedForCache = true;
+                    audioWrapper->father->isPausedForCache = true;
+                    // 音频自身暂停
                     notifyToHandleWait(audioWrapper->father);
+                    audioWrapper->father->isPausedForCache = false;
+                    videoWrapper->father->isPausedForCache = false;
+                    LOGE("handleData() wait() Cache audio end   主动暂停\n");
                     if (wrapper->isPausedForSeek) {
-                        audioWrapper->father->isPausedForCache = false;
-                        videoWrapper->father->isPausedForCache = false;
                         continue;
                     }
-                    LOGE("handleData() wait() Cache audio end   主动暂停\n");
-
-                    audioWrapper->father->isPausedForCache = false;
-                    // 通知视频结束暂停
-                    videoWrapper->father->isPausedForCache = false;
                     if (videoWrapper->father->streamIndex != -1) {
+                        // 通知视频结束暂停
                         notifyToHandle(videoWrapper->father);
                     }
                 } else {
                     // 视频Cache引起的暂停
-                    videoWrapper->father->isPausedForCache = true;
-
-                    // 让音频也同时暂停
-                    audioWrapper->father->isPausedForCache = true;
-                    // 视频自身暂停
                     LOGE("handleData() wait() Cache video start 主动暂停\n");
+                    // 让音频同时暂停
+                    audioWrapper->father->isPausedForCache = true;
+                    videoWrapper->father->isPausedForCache = true;
+                    // 视频自身暂停
                     notifyToHandleWait(videoWrapper->father);
+                    audioWrapper->father->isPausedForCache = false;
+                    videoWrapper->father->isPausedForCache = false;
+                    LOGE("handleData() wait() Cache video end   主动暂停\n");
                     if (wrapper->isPausedForSeek) {
-                        audioWrapper->father->isPausedForCache = false;
-                        videoWrapper->father->isPausedForCache = false;
                         continue;
                     }
-                    LOGE("handleData() wait() Cache video end   主动暂停\n");
-
-                    videoWrapper->father->isPausedForCache = false;
-                    // 通知音频结束暂停
-                    audioWrapper->father->isPausedForCache = false;
                     if (audioWrapper->father->streamIndex != -1) {
+                        // 通知音频结束暂停
                         notifyToHandle(audioWrapper->father);
                     }
                 }
@@ -3333,14 +3304,6 @@ namespace alexander_media_mediacodec {
 
             // endregion
 
-            // test
-            /*if (wrapper->type == TYPE_AUDIO) {
-
-            } else {
-                startVideoDecodeTime = av_gettime_relative();
-            }*/
-
-
             if (!wrapper->isHandling) {
                 // for (;;) end
                 break;
@@ -3349,6 +3312,8 @@ namespace alexander_media_mediacodec {
             if (!wrapper->allowDecode || copyAVPacket == nullptr) {
                 continue;
             }
+
+            // region 硬解码过程
 
             if (wrapper->type == TYPE_AUDIO) {
                 if (wrapper->useMediaCodec) {
@@ -3386,7 +3351,9 @@ namespace alexander_media_mediacodec {
                 }
             }
 
-            // region 解码过程
+            // endregion
+
+            // region 软解码过程
 
             ret = avcodec_send_packet(wrapper->avCodecContext, copyAVPacket);
             av_packet_unref(copyAVPacket);
@@ -3495,17 +3462,7 @@ namespace alexander_media_mediacodec {
 
             // endregion
 
-            // test
-            /*if (wrapper->type == TYPE_AUDIO) {
-
-            } else {
-                // 10363 22157 9553 23118 24919 30626 25110 8930 单位: 微秒
-                endVideoDecodeTime = av_gettime_relative();
-                LOGW("handleData() video decode AVFrame take time: %lld\n",
-                     (endVideoDecodeTime - startVideoDecodeTime));
-            }*/
-
-            ///////////////////////////////////////////////////////////////////
+            // region 处理软解码后的数据
 
             // 播放声音和渲染画面
             if (wrapper->type == TYPE_AUDIO) {
@@ -3515,19 +3472,7 @@ namespace alexander_media_mediacodec {
             }
             av_frame_unref(decodedAVFrame);
 
-            ///////////////////////////////////////////////////////////////////
-
-            // 设置结束标志
-            /*if (!wrapper->isReading
-                && wrapper->list1->size() == 0
-                && wrapper->list2->size() == 0) {
-                wrapper->isHandling = false;
-                if (wrapper->type == TYPE_AUDIO) {
-                    LOGD("handleData() audio wrapper->isHandling is false 2\n");
-                } else {
-                    LOGW("handleData() video wrapper->isHandling is false 2\n");
-                }
-            }*/
+            // endregion
         }//for(;;) end
 
         if (srcAVPacket != nullptr) {
@@ -3983,7 +3928,7 @@ namespace alexander_media_mediacodec {
      * 不是返回0
      * 出错返回-1
      */
-    int is_begin_with(const char *str1, char *str2) {
+    int is_begin_with2(const char *str1, char *str2) {
         if (str1 == nullptr || str2 == nullptr) {
             return -1;
         }
@@ -4011,7 +3956,7 @@ namespace alexander_media_mediacodec {
      * 出错返回-1
      *
      */
-    int is_end_with(const char *str1, char *str2) {
+    int is_end_with2(const char *str1, char *str2) {
         if (str1 == nullptr || str2 == nullptr) {
             return -1;
         }
@@ -4028,6 +3973,48 @@ namespace alexander_media_mediacodec {
             len1--;
         }
         return 1;
+    }
+
+    // 基本形式为strcmp(str1,str2)
+    // 若str1=str2，则返回零；
+    // 若str1<str2，则返回负数；
+    // 若str1>str2，则返回正数。
+    int startsWith(const char *str1, char *str2) {
+        if (str1 == nullptr || str2 == nullptr) {
+            return false;
+        }
+        int len1 = strlen(str1);
+        int len2 = strlen(str2);
+        if (len1 < len2 || len1 == 0 || len2 == 0) {
+            return false;
+        }
+        char temp[len2];
+        strncpy(temp, str1, len2);
+        int ret = strcmp(temp, str2);
+        if (!ret) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    bool endsWith(const char *str1, char *str2) {
+        if (str1 == nullptr || str2 == nullptr) {
+            return false;
+        }
+        int len1 = strlen(str1);
+        int len2 = strlen(str2);
+        if (len1 < len2 || len1 == 0 || len2 == 0) {
+            return false;
+        }
+        char temp[len2];
+        strncpy(temp, str1 + (len1 - len2), len2);
+        int ret = strcmp(temp, str2);
+        if (!ret) {
+            return true;
+        } else {
+            return false;
+        }
     }
 
     void setJniParameters(JNIEnv *env, const char *filePath, jobject surfaceJavaObject) {
@@ -4061,17 +4048,8 @@ namespace alexander_media_mediacodec {
             }
         }*/
 
-        isLocal = false;
-        int ret = is_begin_with(inFilePath, "/storage/");
-        if (ret > 0) {
-            isLocal = true;
-        }
-
-        isH264 = false;
-        ret = is_end_with(inFilePath, ".h264");
-        if (ret > 0) {
-            isH264 = true;
-        }
+        isLocal = startsWith(inFilePath, "/storage/");
+        isH264 = endsWith(inFilePath, ".h264");
         LOGI("setJniParameters() isLocal   : %d", isLocal);
         LOGI("setJniParameters() isH264    : %d", isH264);
 

@@ -9,6 +9,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.res.Configuration;
+import android.content.res.Resources;
 import android.media.AudioManager;
 import android.net.Uri;
 import android.os.Build;
@@ -20,9 +21,11 @@ import android.text.TextUtils;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.view.accessibility.AccessibilityManager;
 import android.widget.FrameLayout;
+import android.widget.LinearLayout;
 
 import com.weidi.usefragments.business.audio_player.SimpleAudioPlayer;
 import com.weidi.usefragments.business.back_stack.ShowTitleDialogFragment;
@@ -180,9 +183,14 @@ public class MainActivity1 extends BaseActivity
         // Volume change should always affect media volume_normal
         setVolumeControlStream(AudioManager.STREAM_MUSIC);
         mRootView = View.inflate(this, R.layout.activity_main, null);
+        // 得到系统提供的一个根布局,我们的布局都是在这个根布局下面
         FrameLayout contentLayout = getContentLayout(this);
         if (contentLayout != null) {
             contentLayout.addView(mRootView);
+            /*FrameLayout.LayoutParams layoutParams =
+                    (FrameLayout.LayoutParams) mRootView.getLayoutParams();
+            layoutParams.setMargins(0, getStatusBarHeight(), 0, 0);
+            mRootView.setLayoutParams(layoutParams);*/
         } else {
             finish();
             return;
@@ -191,6 +199,7 @@ public class MainActivity1 extends BaseActivity
         if (DEBUG)
             MLog.d(TAG, "onCreate(): " + printThis()
                     + " savedInstanceState: " + savedInstanceState);
+
         FragOperManager.getInstance().addActivity2(this, R.id.content_layout);
         if (savedInstanceState != null) {
 
@@ -683,25 +692,11 @@ public class MainActivity1 extends BaseActivity
         return super.dispatchKeyEvent(event);
     }*/
 
-    private SimpleAudioPlayer mSimpleAudioPlayer;
-    private SimpleVideoPlayer mSimpleVideoPlayer;
-
-    public void setSampleAudioPlayer(SimpleAudioPlayer simpleAudioPlayer) {
-        mSimpleAudioPlayer = simpleAudioPlayer;
-    }
-
-    public void setSampleVideoPlayer(SimpleVideoPlayer simpleVideoPlayer) {
-        mSimpleVideoPlayer = simpleVideoPlayer;
-    }
-
     /***
      锁屏后不会被回调
      */
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
-        /*if (mSimpleVideoPlayer != null) {
-            return mSimpleVideoPlayer.onKeyDown(keyCode, event);
-        }*/
         return super.onKeyDown(keyCode, event);
     }
 

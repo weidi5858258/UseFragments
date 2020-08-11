@@ -1102,31 +1102,31 @@ namespace alexander_audio_video {
 
         if (averageTimeDiff > 1.000000) {
             if (videoWrapper->father->useMediaCodec) {
-                TIME_DIFFERENCE = 0.850000;
+                TIME_DIFFERENCE = 0.800000;
             } else {
                 TIME_DIFFERENCE = 0.900000;
             }
         } else if (averageTimeDiff > 0.900000 && averageTimeDiff < 1.000000) {
             if (videoWrapper->father->useMediaCodec) {
-                TIME_DIFFERENCE = 0.750000;
+                TIME_DIFFERENCE = 0.700000;
             } else {
                 TIME_DIFFERENCE = 0.800000;
             }
         } else if (averageTimeDiff > 0.800000 && averageTimeDiff < 0.900000) {
             if (videoWrapper->father->useMediaCodec) {
-                TIME_DIFFERENCE = 0.650000;
+                TIME_DIFFERENCE = 0.600000;
             } else {
                 TIME_DIFFERENCE = 0.700000;
             }
         } else if (averageTimeDiff > 0.700000 && averageTimeDiff < 0.800000) {
             if (videoWrapper->father->useMediaCodec) {
-                TIME_DIFFERENCE = 0.550000;
+                TIME_DIFFERENCE = 0.500000;
             } else {
                 TIME_DIFFERENCE = 0.600000;
             }
         } else if (averageTimeDiff > 0.600000 && averageTimeDiff < 0.700000) {
             if (videoWrapper->father->useMediaCodec) {
-                TIME_DIFFERENCE = 0.450000;
+                TIME_DIFFERENCE = 0.400000;
             } else {
                 TIME_DIFFERENCE = 0.500000;
             }
@@ -1135,7 +1135,7 @@ namespace alexander_audio_video {
              0.505212 0.524924
              */
             if (videoWrapper->father->useMediaCodec) {
-                TIME_DIFFERENCE = 0.350000;
+                TIME_DIFFERENCE = 0.300000;
             } else {
                 TIME_DIFFERENCE = 0.400000;
             }
@@ -1145,13 +1145,13 @@ namespace alexander_audio_video {
              0.457614 0.461167 0.472319 0.486549 0.494847
              */
             if (videoWrapper->father->useMediaCodec) {
-                TIME_DIFFERENCE = 0.250000;
+                TIME_DIFFERENCE = 0.200000;
             } else {
                 TIME_DIFFERENCE = 0.300000;
             }
         } else if (averageTimeDiff > 0.300000 && averageTimeDiff < 0.400000) {
             if (videoWrapper->father->useMediaCodec) {
-                TIME_DIFFERENCE = 0.150000;
+                TIME_DIFFERENCE = 0.100000;
             } else {
                 TIME_DIFFERENCE = 0.200000;
             }
@@ -1160,7 +1160,7 @@ namespace alexander_audio_video {
              0.204199 0.263926
              */
             if (videoWrapper->father->useMediaCodec) {
-                TIME_DIFFERENCE = 0.090000;
+                TIME_DIFFERENCE = 0.080000;
             } else {
                 TIME_DIFFERENCE = 0.100000;
             }
@@ -1169,7 +1169,7 @@ namespace alexander_audio_video {
              0.100523 0.168335
              */
             if (videoWrapper->father->useMediaCodec) {
-                TIME_DIFFERENCE = averageTimeDiff - 0.050000;
+                TIME_DIFFERENCE = averageTimeDiff - 0.100000;
             } else {
                 TIME_DIFFERENCE = averageTimeDiff;
             }

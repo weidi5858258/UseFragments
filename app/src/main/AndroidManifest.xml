@@ -99,6 +99,12 @@
             android:exported="false" />
 
         <activity
+            android:name=".Camera2Activity"
+            android:screenOrientation="sensor"
+            android:configChanges="keyboardHidden|screenLayout|screenSize|smallestScreenSize|orientation"
+            android:exported="true" />
+
+        <activity
             android:name="com.weidi.usefragments.business.keeplive.OnePixelActivity"
             android:excludeFromRecents="true"
             android:launchMode="singleInstance"
