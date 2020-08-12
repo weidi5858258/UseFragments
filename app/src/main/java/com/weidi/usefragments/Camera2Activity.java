@@ -30,14 +30,12 @@ import android.hardware.camera2.TotalCaptureResult;
 import android.hardware.camera2.params.StreamConfigurationMap;
 import android.media.Image;
 import android.media.ImageReader;
-import android.media.MediaCodec;
-import android.media.MediaCodecInfo;
-import android.media.MediaFormat;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.text.TextUtils;
 import android.util.Log;
+import android.util.Range;
 import android.util.Size;
 import android.util.SparseIntArray;
 import android.view.Display;
@@ -49,7 +47,6 @@ import android.view.WindowManager;
 import android.widget.Toast;
 
 import com.weidi.usefragments.business.media.Camera2Fragment;
-import com.weidi.usefragments.fragment.FragOperManager;
 import com.weidi.usefragments.inject.InjectOnClick;
 import com.weidi.usefragments.tool.AutoFitTextureView;
 import com.weidi.usefragments.tool.MLog;
@@ -216,12 +213,16 @@ public class Camera2Activity extends BaseActivity {
                 }
 
                 if (orientation > 350 || orientation < 10) { //0度
+                    // 手机竖屏,摄像头在上边
                     curOrientation = 0;
                 } else if (orientation > 80 && orientation < 100) { //90度
+                    // 手机横屏,摄像头在右边
                     curOrientation = 90;
                 } else if (orientation > 170 && orientation < 190) { //180度
+                    // 手机竖屏,摄像头在下边
                     curOrientation = 180;
                 } else if (orientation > 260 && orientation < 280) { //270度
+                    // 手机横屏,摄像头在左边
                     curOrientation = 270;
                 } else {
                     return;
@@ -259,9 +260,12 @@ public class Camera2Activity extends BaseActivity {
 
     private void internalResume() {
         startBackgroundThread();
-        if (mOrientationListener != null
-                && mOrientationListener.canDetectOrientation()) {
-            mOrientationListener.enable();
+        if (mOrientationListener != null) {
+            if (mOrientationListener.canDetectOrientation()) {
+                mOrientationListener.enable();
+            } else {
+                mOrientationListener.disable();
+            }
         }
     }
 
@@ -403,7 +407,8 @@ public class Camera2Activity extends BaseActivity {
     /**
      * ID of the current {@link CameraDevice}.
      */
-    private String mCameraId;
+    private String mBackCameraId;
+    private String mFrontCameraId;
 
     /**
      * An {@link AutoFitTextureView} for camera preview.
@@ -696,8 +701,6 @@ public class Camera2Activity extends BaseActivity {
                     continue;
                 }
 
-                mCameraId = cameraId;
-
                 // 获取某个相机(摄像头特性)
                 CameraCharacteristics characteristics
                         = manager.getCameraCharacteristics(cameraId);
@@ -709,17 +712,29 @@ public class Camera2Activity extends BaseActivity {
 
                 }
 
-                // We don't use a front facing camera in this sample.
-                Integer facing = characteristics.get(CameraCharacteristics.LENS_FACING);
-                if (facing != null && facing == CameraCharacteristics.LENS_FACING_FRONT) {
-                    continue;
-                }
-
                 // 获取StreamConfigurationMap，它是管理摄像头支持的所有输出格式和尺寸
                 StreamConfigurationMap map = characteristics.get(
                         CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
                 if (map == null) {
                     continue;
+                }
+
+
+                // We don't use a front facing camera in this sample.
+                Integer facing = characteristics.get(CameraCharacteristics.LENS_FACING);
+                if (facing == null) {
+                    continue;
+                }
+                if (facing == CameraCharacteristics.LENS_FACING_FRONT) {
+                    mFrontCameraId = cameraId;
+                } else if (facing == CameraCharacteristics.LENS_FACING_BACK) {
+                    mBackCameraId = cameraId;
+                    Range<Integer>[] fpsRanges = characteristics.get(
+                            CameraCharacteristics.CONTROL_AE_AVAILABLE_TARGET_FPS_RANGES);
+                    Log.d(TAG, "setupCameraOutputs() fpsRanges: " + Arrays.toString(fpsRanges));
+                    // 设置预览画面的帧率 视实际情况而定选择一个帧率范围
+                    /*mPreviewRequestBuilder.set(
+                            CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE, fpsRanges[0]);*/
                 }
 
                 // 拍照时使用最大的宽高
@@ -844,6 +859,115 @@ public class Camera2Activity extends BaseActivity {
         }
     }
 
+    /***
+     * 如果视频显示需要角度旋转 用该函数进行角度转正(结果就是人看到的东西是正的)
+     * Configures the necessary {@link android.graphics.Matrix} transformation to `mTextureView`.
+     * This method should be called after the camera preview size is determined in
+     * setupCameraOutputs and also the size of `mTextureView` is fixed.
+     *
+     * @param viewWidth  The width of `mTextureView`
+     * @param viewHeight The height of `mTextureView`
+     *
+     * 总结:
+     * int rotation = getWindowManager().getDefaultDisplay().getRotation();
+     * rotation(0) ---> rotation(1) 从0能到1
+     * rotation(0) ---> rotation(3) 从0能到3
+     * rotation(1) ---> rotation(0) 从1能到0
+     * rotation(3) ---> rotation(0) 从3能到0
+     * rotation(1) !--> rotation(3) 从1不能到3
+     * rotation(3) !--> rotation(1) 从3不能到1
+     * "0"的状态是手机竖屏,摄像头在上边.
+     * "2"的状态是手机竖屏,摄像头在下边.
+     * "1"的状态是手机横屏,摄像头在左边.
+     * "3"的状态是手机横屏,摄像头在右边.
+     * 现在遇到的问题:
+     * "1"状态时,逆时针旋转90度(应该是"2"的状态),状态不发生变化,再次逆时针旋转90度(应该是"3"的状态),状态还是不发生变化.
+     * "3"状态时,顺时针旋转90度(应该是"2"的状态),状态不发生变化,再次顺时针旋转90度(应该是"1"的状态),状态还是不发生变化.
+     *
+     */
+    private void configureTransform(int viewWidth, int viewHeight) {
+        Log.i(TAG, "configureTransform()" +
+                " viewWidth: " + viewWidth +
+                " viewHeight: " + viewHeight);
+
+        if (null == mTextureView || null == mPreviewSize) {
+            return;
+        }
+
+        //int rotation = getWindowManager().getDefaultDisplay().getRotation();
+        int rotation = 0;
+        switch (curOrientation) {
+            case 0:
+                rotation = 0;
+                break;
+            case 90:
+                rotation = 3;
+                break;
+            case 180:
+                rotation = 2;
+                break;
+            case 270:
+                rotation = 1;
+                break;
+            default:
+                rotation = -1;
+                break;
+        }
+        Log.i(TAG, "configureTransform() rotation: " + rotation);
+        if (rotation < 0) {
+            return;
+        }
+
+        Matrix matrix = new Matrix();
+        RectF viewRect = new RectF(
+                0, 0, viewWidth, viewHeight);
+        // mPreviewSize.getWidth(): 960 mPreviewSize.getHeight(): 720
+        RectF bufferRect = new RectF(
+                0, 0, mPreviewSize.getHeight(), mPreviewSize.getWidth());
+        // TextureView的中心点坐标
+        float centerX = viewRect.centerX();
+        float centerY = viewRect.centerY();
+        float bufferCenterX = bufferRect.centerX();
+        float bufferCenterY = bufferRect.centerY();
+        Log.i(TAG, "configureTransform()" +
+                " centerX: " + centerX +
+                " centerY: " + centerY +
+                " bufferCenterX: " + bufferCenterX +
+                " bufferCenterY: " + bufferCenterY);
+        switch (rotation) {
+            case Surface.ROTATION_90: // 1
+            case Surface.ROTATION_270:// 3
+                bufferRect.offset(centerX - bufferCenterX, centerY - bufferCenterY);
+                matrix.setRectToRect(viewRect, bufferRect, Matrix.ScaleToFit.FILL);
+                float scale = Math.max(
+                        (float) viewHeight / mPreviewSize.getHeight(),
+                        (float) viewWidth / mPreviewSize.getWidth());
+                Log.i(TAG, "configureTransform()" +
+                        " scale: " + scale);
+                matrix.postScale(scale, scale, centerX, centerY);
+                matrix.postRotate(90 * (rotation - 2), centerX, centerY);
+                break;
+            case Surface.ROTATION_0:  // 0
+                matrix.postRotate(0, centerX, centerY);
+                break;
+            case Surface.ROTATION_180:// 2
+                bufferRect.offset(bufferCenterX - centerX, bufferCenterY - centerY);
+                matrix.setRectToRect(bufferRect, viewRect, Matrix.ScaleToFit.FILL);
+                scale = Math.max(
+                        (float) mPreviewSize.getHeight() / viewHeight,
+                        (float) mPreviewSize.getWidth() / viewWidth);
+                Log.i(TAG, "configureTransform()" +
+                        " scale: " + scale);
+                matrix.postScale(scale, scale, bufferCenterX, bufferCenterY);
+                matrix.postRotate(90, bufferCenterX, bufferCenterY);
+                break;
+            default:
+                break;
+        }
+
+        mTextureView.setTransform(matrix);
+    }
+
     /**
      * Opens the camera specified by {@link}.
      */
@@ -866,7 +990,7 @@ public class Camera2Activity extends BaseActivity {
             if (!mCameraOpenCloseLock.tryAcquire(2500, TimeUnit.MILLISECONDS)) {
                 throw new RuntimeException("Time out waiting to lock camera opening.");
             }
-            manager.openCamera(mCameraId, mStateCallback, mBackgroundHandler);
+            manager.openCamera(mBackCameraId, mStateCallback, mBackgroundHandler);
         } catch (CameraAccessException e) {
             e.printStackTrace();
         } catch (IllegalArgumentException e) {
@@ -1007,100 +1131,6 @@ public class Camera2Activity extends BaseActivity {
         } catch (CameraAccessException e) {
             e.printStackTrace();
         }
-    }
-
-    /***
-     * 如果视频显示需要角度旋转 用该函数进行角度转正(结果就是人看到的东西是正的)
-     * Configures the necessary {@link android.graphics.Matrix} transformation to `mTextureView`.
-     * This method should be called after the camera preview size is determined in
-     * setupCameraOutputs and also the size of `mTextureView` is fixed.
-     *
-     * @param viewWidth  The width of `mTextureView`
-     * @param viewHeight The height of `mTextureView`
-     *
-     * 总结:
-     * int rotation = getWindowManager().getDefaultDisplay().getRotation();
-     * rotation(0) ---> rotation(1) 从0能到1
-     * rotation(0) ---> rotation(3) 从0能到3
-     * rotation(1) ---> rotation(0) 从1能到0
-     * rotation(3) ---> rotation(0) 从3能到0
-     * rotation(1) !--> rotation(3) 从1不能到3
-     * rotation(3) !--> rotation(1) 从3不能到1
-     * "0"的状态是手机竖屏,摄像头在上边.
-     * "2"的状态是手机竖屏,摄像头在下边.
-     * "1"的状态是手机横屏,摄像头在左边.
-     * "3"的状态是手机横屏,摄像头在右边.
-     * 现在遇到的问题:
-     * "1"状态时,逆时针旋转90度(应该是"2"的状态),状态不发生变化,再次逆时针旋转90度(应该是"3"的状态),状态还是不发生变化.
-     * "3"状态时,顺时针旋转90度(应该是"2"的状态),状态不发生变化,再次顺时针旋转90度(应该是"1"的状态),状态还是不发生变化.
-     *
-     */
-    private void configureTransform(int viewWidth, int viewHeight) {
-        Log.i(TAG, "configureTransform()" +
-                " viewWidth: " + viewWidth +
-                " viewHeight: " + viewHeight);
-
-        if (null == mTextureView || null == mPreviewSize) {
-            return;
-        }
-
-        //int rotation = getWindowManager().getDefaultDisplay().getRotation();
-        int rotation = 0;
-        switch (curOrientation) {
-            case 0:
-                rotation = 0;
-                break;
-            case 90:
-                rotation = 3;
-                break;
-            case 180:
-                rotation = 2;
-                break;
-            case 270:
-                rotation = 1;
-                break;
-            default:
-                rotation = -1;
-                break;
-        }
-        Log.i(TAG, "configureTransform() rotation: " + rotation);
-        if (rotation < 0) {
-            return;
-        }
-
-        Matrix matrix = new Matrix();
-        RectF viewRect = new RectF(0, 0, viewWidth, viewHeight);
-        // mPreviewSize.getWidth(): 960 mPreviewSize.getHeight(): 720
-        RectF bufferRect = new RectF(0, 0, mPreviewSize.getHeight(), mPreviewSize.getWidth());
-        // TextureView的中心点坐标
-        float centerX = viewRect.centerX();
-        float centerY = viewRect.centerY();
-        /*Log.i(TAG, "configureTransform()" +
-                " centerX: " + centerX +
-                " centerY: " + centerY);*/
-        switch (rotation) {
-            case Surface.ROTATION_90: // 1
-            case Surface.ROTATION_270:// 3
-                bufferRect.offset(centerX - bufferRect.centerX(),
-                        centerY - bufferRect.centerY());
-                matrix.setRectToRect(viewRect, bufferRect, Matrix.ScaleToFit.FILL);
-                float scale = Math.max(
-                        (float) viewHeight / mPreviewSize.getHeight(),
-                        (float) viewWidth / mPreviewSize.getWidth());
-                matrix.postScale(scale, scale, centerX, centerY);
-                matrix.postRotate(90 * (rotation - 2), centerX, centerY);
-                break;
-            case Surface.ROTATION_0:  // 0
-                matrix.postRotate(0, centerX, centerY);
-                break;
-            case Surface.ROTATION_180:// 2
-                matrix.postRotate(0, centerX, centerY);
-                break;
-            default:
-                break;
-        }
-
-        mTextureView.setTransform(matrix);
     }
 
     /**

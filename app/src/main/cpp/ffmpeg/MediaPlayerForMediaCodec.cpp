@@ -269,6 +269,9 @@ namespace alexander_media_mediacodec {
     static int videoMimeType = -1;
     static int audioMimeType = -1;
 
+    // true时表示一帧一帧的看画面
+    static bool isFrameByFrameMode = false;
+
     ///////////////////////////////////////////////////////
 
     // true表示只下载,不播放
@@ -466,6 +469,7 @@ namespace alexander_media_mediacodec {
         isVideoRendering = false;
         isInterrupted = false;
         runOneTime = true;
+        isFrameByFrameMode = false;
         onlyDownloadNotPlayback = false;
         needToDownload = false;
         isInitSuccess = false;
@@ -2708,18 +2712,17 @@ namespace alexander_media_mediacodec {
     }
 
     int handleVideoOutputBuffer(int roomIndex) {
-        if (roomIndex < 0) {
-            videoWrapper->father->useMediaCodec = false;
+        if (isFrameByFrameMode) {
+            preVideoPts = videoPts;
             return 0;
         }
-        if (preVideoPts > videoPts && preVideoPts > 0 && videoPts > 0) {
-            return 0;
-        }
+
         videoWrapper->father->isStarted = true;
         if (runOneTime) {
             if (audioWrapper->father->streamIndex != -1) {
                 while (!audioWrapper->father->isStarted) {
-                    if (videoWrapper->father->isPausedForUser
+                    if (isFrameByFrameMode
+                        || videoWrapper->father->isPausedForUser
                         || videoWrapper->father->isPausedForCache
                         || videoWrapper->father->isPausedForSeek
                         || !audioWrapper->father->isHandling
@@ -2737,12 +2740,42 @@ namespace alexander_media_mediacodec {
             }
         }
 
-        double tempTimeDifference = 0.0;
+        if (audioWrapper->father->streamIndex == -1) {
+            // 只有视频时
+            if (videoWrapper->father->useMediaCodec) {
+                videoSleep(videoSleepTime);
+            } else {
+                videoSleep(11);
+            }
+
+            if (mediaDuration > 0) {
+                curProgress = (long long) videoPts;// 秒
+                if (curProgress > preProgress
+                    && curProgress <= mediaDuration) {
+                    preProgress = curProgress;
+                    onProgressUpdated(curProgress);
+                } else if (curProgress > mediaDuration) {
+                    onProgressUpdated(mediaDuration);
+                    LOGE("handleVideoOutputBuffer() curProgress > mediaDuration\n");
+                }
+            }
+            return 0;
+        }
+
+        if (roomIndex < 0) {
+            videoWrapper->father->useMediaCodec = false;
+            return 0;
+        }
+
+        if (preVideoPts > videoPts && preVideoPts > 0 && videoPts > 0) {
+            return 0;
+        }
+
         if (videoPts > 0 && audioPts > 0) {
             //LOGW("handleVideoDataImpl()    videoPts: %lf\n", videoPts);
             //LOGD("handleVideoDataImpl()    audioPts: %lf\n", audioPts);
             //LOGW("handleVideoDataImpl() preVideoPts: %lf\n", preVideoPts);
-            tempTimeDifference = videoPts - audioPts;
+            double tempTimeDifference = videoPts - audioPts;
             if (tempTimeDifference <= 0) {
                 // 正常情况下videoTimeDifference比audioTimeDifference大一些
                 // 如果发现小了,说明视频播放慢了,应丢弃这些帧
@@ -2781,7 +2814,8 @@ namespace alexander_media_mediacodec {
             // 如果videoTimeDifference比audioTimeDifference大出了一定的范围
             // 那么说明视频播放快了,应等待音频
             while (videoPts - audioPts > TIME_DIFFERENCE) {
-                if (videoWrapper->father->isPausedForUser
+                if (isFrameByFrameMode
+                    || videoWrapper->father->isPausedForUser
                     || videoWrapper->father->isPausedForCache
                     || videoWrapper->father->isPausedForSeek
                     || !audioWrapper->father->isHandling
@@ -2793,44 +2827,22 @@ namespace alexander_media_mediacodec {
             }
         }
 
-        if (audioWrapper->father->streamIndex != -1) {
-            // 有音频和视频
-            // timeDifference = 0.040000
-            // 单位: 毫秒
-            int tempSleep = ((int) ((videoPts - preVideoPts) * 1000)) - 30;
-            if (videoSleepTime != tempSleep) {
-                videoSleepTime = tempSleep;
-                //LOGW("handleVideoDataImpl() videoSleepTime     : %d\n", videoSleepTime);
-            }
-            if (videoSleepTime < 12
-                && videoSleepTime > 0
-                && videoWrapper->father->isHandling) {
-                videoSleep(videoSleepTime);
-            } else {
-                if (videoSleepTime > 0
-                    && videoWrapper->father->isHandling) {
-                    // 好像是个比较合理的值
-                    videoSleep(11);
-                }
-            }
+        // timeDifference = 0.040000
+        // 单位: 毫秒
+        int tempSleep = ((int) ((videoPts - preVideoPts) * 1000)) - 30;
+        if (videoSleepTime != tempSleep) {
+            videoSleepTime = tempSleep;
+            //LOGW("handleVideoDataImpl() videoSleepTime     : %d\n", videoSleepTime);
+        }
+        if (videoSleepTime < 12
+            && videoSleepTime > 0
+            && videoWrapper->father->isHandling) {
+            videoSleep(videoSleepTime);
         } else {
-            // 只有视频时
-            if (videoWrapper->father->useMediaCodec) {
-                videoSleep(videoSleepTime);
-            } else {
+            if (videoSleepTime > 0
+                && videoWrapper->father->isHandling) {
+                // 好像是个比较合理的值
                 videoSleep(11);
-            }
-
-            if (mediaDuration > 0) {
-                curProgress = (long long) videoPts;// 秒
-                if (curProgress > preProgress
-                    && curProgress <= mediaDuration) {
-                    preProgress = curProgress;
-                    onProgressUpdated(curProgress);
-                } else if (curProgress > mediaDuration) {
-                    onProgressUpdated(mediaDuration);
-                    LOGE("handleVideoOutputBuffer() curProgress > mediaDuration\n");
-                }
             }
         }
         preVideoPts = videoPts;
@@ -3333,6 +3345,18 @@ namespace alexander_media_mediacodec {
                 if (wrapper->useMediaCodec) {
                     isVideoRendering = true;
                     videoPts = copyAVPacket->pts * av_q2d(stream->time_base);
+
+                    if (isFrameByFrameMode) {
+                        long long prePts = (long long) (preVideoPts * 1000000);
+                        long long curPts = (long long) (videoPts * 1000000);
+                        LOGW("handleData() curPts: %lld prePts: %lld\n", curPts, prePts);
+                        if (curPts > prePts) {
+                            LOGW("handleData() wait() Step  video start\n");
+                            notifyToHandleWait(wrapper);
+                            LOGW("handleData() wait() Step  video end\n");
+                        }
+                    }
+
                     feedAndDrainRet = feedInputBufferAndDrainOutputBuffer(
                             0x0002,
                             copyAVPacket->data,
@@ -4075,6 +4099,7 @@ namespace alexander_media_mediacodec {
                 notifyToHandle(audioWrapper->father);
             }
         }
+
         if (videoWrapper != nullptr
             && videoWrapper->father != nullptr
             && videoWrapper->father->streamIndex != -1) {
@@ -4093,6 +4118,7 @@ namespace alexander_media_mediacodec {
             && audioWrapper->father->streamIndex != -1) {
             audioWrapper->father->isPausedForUser = true;
         }
+
         if (videoWrapper != nullptr
             && videoWrapper->father != nullptr
             && videoWrapper->father->streamIndex != -1) {
@@ -4124,6 +4150,7 @@ namespace alexander_media_mediacodec {
             && videoWrapper->father != nullptr) {
             LOGI("stop() video\n");
             // video
+            isFrameByFrameMode = false;
             // videoWrapper->father->isStarted = false;
             videoWrapper->father->isReading = false;
             videoWrapper->father->isHandling = false;
@@ -4135,7 +4162,6 @@ namespace alexander_media_mediacodec {
             notifyToHandle(videoWrapper->father);
             notifyToRead();
         }
-
         LOGI("stop() end\n");
         return 0;
     }
@@ -4158,6 +4184,7 @@ namespace alexander_media_mediacodec {
                 audioRunning = true;
             }
         }
+
         if (videoWrapper != nullptr
             && videoWrapper->father != nullptr) {
             if (videoWrapper->father->streamIndex != -1) {
@@ -4185,6 +4212,7 @@ namespace alexander_media_mediacodec {
                 audioPlaying = true;
             }
         }
+
         if (videoWrapper != nullptr
             && videoWrapper->father != nullptr) {
             if (videoWrapper->father->streamIndex != -1) {
@@ -4213,6 +4241,7 @@ namespace alexander_media_mediacodec {
                 audioPlaying = true;
             }
         }
+
         if (videoWrapper != nullptr
             && videoWrapper->father != nullptr) {
             if (videoWrapper->father->streamIndex != -1) {
@@ -4233,6 +4262,10 @@ namespace alexander_media_mediacodec {
     int seekTo(int64_t timestamp) {
         LOGI("==================================================================\n");
         LOGI("seekTo() timeStamp: %lld\n", (long long) timestamp);
+
+        if (isFrameByFrameMode) {
+            return 0;
+        }
 
         if ((long long) timestamp > 0
             && (audioWrapper == nullptr
@@ -4304,6 +4337,63 @@ namespace alexander_media_mediacodec {
             LOGI("stepAdd() subtractStep: %ld\n", (long) subtractStep);
             seekTo((int64_t) curProgress - subtractStep);
         }
+    }
+
+    /***
+     底层:
+     不管音频,只要在java层让它静音就行了.结束后恢复声音.
+
+     */
+    bool frameByFrameForReady() {
+        isFrameByFrameMode = false;
+        if (videoWrapper != nullptr
+            && videoWrapper->father != nullptr) {
+            if (videoWrapper->father->streamIndex == -1) {
+                return isFrameByFrameMode;
+            }
+
+            if (videoWrapper->father->isStarted
+                && !videoWrapper->father->isPausedForUser
+                && !videoWrapper->father->isPausedForCache
+                && !videoWrapper->father->isPausedForSeek) {
+                if (audioWrapper != nullptr
+                    && audioWrapper->father != nullptr) {
+                    if (audioWrapper->father->streamIndex != -1) {
+                        if (audioWrapper->father->isStarted
+                            && !audioWrapper->father->isPausedForUser
+                            && !audioWrapper->father->isPausedForCache
+                            && !audioWrapper->father->isPausedForSeek) {
+                            isFrameByFrameMode = true;
+                        }
+                    } else {
+                        isFrameByFrameMode = true;
+                    }
+                } else {
+                    isFrameByFrameMode = true;
+                }
+            }
+        }
+
+        return isFrameByFrameMode;
+    }
+
+    bool frameByFrameForFinish() {
+        isFrameByFrameMode = false;
+
+        return true;
+    }
+
+    // 一帧一帧的看(可行,但还需要修改代码)
+    // 音频也一帧一帧的走,但是需要静音
+    bool frameByFrame() {
+        if (isFrameByFrameMode
+            && videoWrapper != nullptr
+            && videoWrapper->father != nullptr
+            && videoWrapper->father->streamIndex != -1) {
+            notifyToHandle(videoWrapper->father);
+        }
+
+        return true;
     }
 
     int download(int flag, const char *filePath, const char *fileName) {

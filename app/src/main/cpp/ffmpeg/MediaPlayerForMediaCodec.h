@@ -83,6 +83,10 @@ namespace alexander_media_mediacodec {
 
     void stepSubtract(int64_t subtractStep);
 
+    bool frameByFrameForReady();
+    bool frameByFrameForFinish();
+    bool frameByFrame();
+
     int download(int flag, const char *filePath, const char *fileName);
 
 }

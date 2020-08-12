@@ -46,13 +46,10 @@ import com.weidi.utils.MyToast;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.text.SimpleDateFormat;
@@ -76,6 +73,9 @@ import static com.weidi.usefragments.business.video_player.FFMPEG.DO_SOMETHING_C
 import static com.weidi.usefragments.business.video_player.FFMPEG.DO_SOMETHING_CODE_setMode;
 import static com.weidi.usefragments.business.video_player.FFMPEG.DO_SOMETHING_CODE_setSurface;
 import static com.weidi.usefragments.business.video_player.FFMPEG.DO_SOMETHING_CODE_stepAdd;
+import static com.weidi.usefragments.business.video_player.FFMPEG.DO_SOMETHING_CODE_frameByFrame;
+import static com.weidi.usefragments.business.video_player.FFMPEG.DO_SOMETHING_CODE_frameByFrameForFinish;
+import static com.weidi.usefragments.business.video_player.FFMPEG.DO_SOMETHING_CODE_frameByFrameForReady;
 import static com.weidi.usefragments.business.video_player.FFMPEG.DO_SOMETHING_CODE_stepSubtract;
 import static com.weidi.usefragments.business.video_player.FFMPEG.DO_SOMETHING_CODE_videoHandleData;
 import static com.weidi.usefragments.business.video_player.FFMPEG.USE_MODE_AAC_H264;
@@ -444,7 +444,7 @@ public class PlayerWrapper {
 
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromTouch) {
-                if (fromTouch) {
+                if (fromTouch && !isFrameByFrameMode) {
                     // 得到的是秒
                     long tempProgress =
                             (long) ((progress / 3840.00) * mMediaDuration);
@@ -468,10 +468,16 @@ public class PlayerWrapper {
             public boolean onTouch(View v, MotionEvent event) {
                 switch (event.getAction()) {
                     case MotionEvent.ACTION_DOWN:
+                        if (isFrameByFrameMode) {
+                            return false;
+                        }
                         mNeedToSyncProgressBar = false;
                         mSeekTimeTV.setVisibility(View.VISIBLE);
                         break;
                     case MotionEvent.ACTION_UP:
+                        if (isFrameByFrameMode) {
+                            return false;
+                        }
                         mNeedToSyncProgressBar = true;
                         mSeekTimeTV.setVisibility(View.GONE);
                         if (!mIsH264) {
@@ -1806,20 +1812,22 @@ public class PlayerWrapper {
                 break;
             case Callback.ERROR_FFMPEG_INIT:
                 MLog.e(TAG, "PlayerWrapper Callback.ERROR_FFMPEG_INIT errorInfo: " + errorInfo);
-                if (TextUtils.isEmpty(mType)
-                        || mType.startsWith("video/")) {
-                    if (mCouldPlaybackPathList.contains(mPath)
-                            && !mPath.startsWith("http://cache.m.iqiyi.com/")) {
-                        // startPlayback();
-                        startForGetMediaFormat();
-                        break;
-                    } else {
-                        String path = mSP.getString(PLAYBACK_ADDRESS, null);
-                        if (TextUtils.equals(path, mPath)
+                if (mService.mIsAddedView) {
+                    if (TextUtils.isEmpty(mType)
+                            || mType.startsWith("video/")) {
+                        if (mCouldPlaybackPathList.contains(mPath)
                                 && !mPath.startsWith("http://cache.m.iqiyi.com/")) {
                             // startPlayback();
                             startForGetMediaFormat();
                             break;
+                        } else {
+                            String path = mSP.getString(PLAYBACK_ADDRESS, null);
+                            if (TextUtils.equals(path, mPath)
+                                    && !mPath.startsWith("http://cache.m.iqiyi.com/")) {
+                                // startPlayback();
+                                startForGetMediaFormat();
+                                break;
+                            }
                         }
                     }
                 }
@@ -1958,6 +1966,9 @@ public class PlayerWrapper {
         public void onClick(View v) {
             switch (v.getId()) {
                 case R.id.button_prev:
+                    if (isFrameByFrameMode) {
+                        return;
+                    }
                     if (mFFMPEGPlayer != null) {
                         if (!mIsH264) {
                             if (mMediaDuration > 300) {
@@ -2012,7 +2023,18 @@ public class PlayerWrapper {
                     } else {
                         if (mFFMPEGPlayer != null) {
                             if (!Boolean.parseBoolean(mFFMPEGPlayer.onTransact(
-                                    DO_SOMETHING_CODE_isPlaying, null))) {
+                                    DO_SOMETHING_CODE_isPlaying, null))
+                                    || isFrameByFrameMode) {
+                                if (isFrameByFrameMode) {
+                                    isFrameByFrameMode = false;
+                                    mFFMPEGPlayer.onTransact(DO_SOMETHING_CODE_frameByFrameForFinish, null);
+                                    mVolumeNormal.setVisibility(View.VISIBLE);
+                                    mVolumeMute.setVisibility(View.GONE);
+                                    mFFMPEGPlayer.setVolume(VOLUME_NORMAL);
+                                    mFfmpegUseMediaCodecDecode.setVolume(VOLUME_NORMAL);
+                                    mSP.edit().putBoolean(PLAYBACK_IS_MUTE, false).commit();
+                                    MyToast.show("帧模式已关闭");
+                                }
                                 mPlayIB.setVisibility(View.VISIBLE);
                                 mPauseIB.setVisibility(View.GONE);
                                 mLoadingView.setVisibility(View.GONE);
@@ -2022,6 +2044,9 @@ public class PlayerWrapper {
                     }
                     break;
                 case R.id.button_next:
+                    if (isFrameByFrameMode) {
+                        return;
+                    }
                     if (mFFMPEGPlayer != null) {
                         if (!mIsH264) {
                             if (mMediaDuration > 300) {
@@ -2048,6 +2073,7 @@ public class PlayerWrapper {
                 case R.id.button_exit:
                     mDownloadClickCounts = 0;
                     mIsDownloading = false;
+                    isFrameByFrameMode = false;
                     if (mService != null) {
                         mService.removeView();
                     }
@@ -2064,6 +2090,9 @@ public class PlayerWrapper {
                     mSP.edit().putBoolean(PLAYBACK_IS_MUTE, true).commit();
                     break;
                 case R.id.volume_mute:
+                    if (isFrameByFrameMode) {
+                        return;
+                    }
                     mVolumeNormal.setVisibility(View.VISIBLE);
                     mVolumeMute.setVisibility(View.GONE);
                     if (TextUtils.equals(whatPlayer, PLAYER_MEDIACODEC)) {
@@ -2245,11 +2274,25 @@ public class PlayerWrapper {
             }
         }
 
-        if (TextUtils.equals(whatPlayer, PLAYER_MEDIACODEC)) {
+        isFrameByFrameMode = Boolean.parseBoolean(mFFMPEGPlayer.onTransact(
+                DO_SOMETHING_CODE_frameByFrameForReady, null));
+        if (isFrameByFrameMode) {
+            // 静音
+            mVolumeNormal.setVisibility(View.GONE);
+            mVolumeMute.setVisibility(View.VISIBLE);
+            mFFMPEGPlayer.setVolume(VOLUME_MUTE);
+            mFfmpegUseMediaCodecDecode.setVolume(VOLUME_MUTE);
+            mSP.edit().putBoolean(PLAYBACK_IS_MUTE, true).commit();
+            // 显示"暂停"按钮
+            mPlayIB.setVisibility(View.GONE);
+            mPauseIB.setVisibility(View.VISIBLE);
+            MyToast.show("帧模式已开启");
+        }
+        /*if (TextUtils.equals(whatPlayer, PLAYER_MEDIACODEC)) {
             mSimpleVideoPlayer.release();
         } else {
             mFFMPEGPlayer.releaseAll();
-        }
+        }*/
     }
 
     private boolean isPhoneDevice() {
@@ -2383,18 +2426,25 @@ public class PlayerWrapper {
         return c / k == 0 ? true : false;
     }
 
-    private static final int NEED_CLICK_COUNTS = 4;
+    private boolean isFrameByFrameMode = false;
+    private static final int NEED_CLICK_COUNTS = 5;
     private int clickCounts = 0;
 
     public Object onEvent(int what, Object[] objArray) {
         Object result = null;
         switch (what) {
             case KeyEvent.KEYCODE_HEADSETHOOK:// 79
-                ++clickCounts;
+                if (!isFrameByFrameMode) {
+                    ++clickCounts;
 
-                // 单位时间内按1次,2次,3次分别实现单击,双击,三击
-                mUiHandler.removeMessages(KeyEvent.KEYCODE_HEADSETHOOK);
-                mUiHandler.sendEmptyMessageDelayed(KeyEvent.KEYCODE_HEADSETHOOK, 300);
+                    // 单位时间内按1次,2次,3次分别实现单击,双击,三击
+                    mUiHandler.removeMessages(KeyEvent.KEYCODE_HEADSETHOOK);
+                    mUiHandler.sendEmptyMessageDelayed(KeyEvent.KEYCODE_HEADSETHOOK, 1000);
+                } else {
+                    if (mFFMPEGPlayer != null) {
+                        mFFMPEGPlayer.onTransact(DO_SOMETHING_CODE_frameByFrame, null);
+                    }
+                }
                 break;
             case KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE:// 85
                 break;

@@ -120,6 +120,9 @@ public class FFMPEG {
     public static final int DO_SOMETHING_CODE_videoHandleRender = 1120;
     public static final int DO_SOMETHING_CODE_handleAudioOutputBuffer = 1121;
     public static final int DO_SOMETHING_CODE_handleVideoOutputBuffer = 1122;
+    public static final int DO_SOMETHING_CODE_frameByFrameForReady = 1123;
+    public static final int DO_SOMETHING_CODE_frameByFrameForFinish = 1124;
+    public static final int DO_SOMETHING_CODE_frameByFrame = 1125;
 
     private byte[] eof = new byte[]{-1, -1, -1, -1, -1};
 

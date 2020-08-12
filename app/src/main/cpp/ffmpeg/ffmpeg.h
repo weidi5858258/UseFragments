@@ -40,6 +40,9 @@ enum DO_SOMETHING_CODE {
     DO_SOMETHING_CODE_videoHandleRender = 1120,
     DO_SOMETHING_CODE_handleAudioOutputBuffer = 1121,
     DO_SOMETHING_CODE_handleVideoOutputBuffer = 1122,
+    DO_SOMETHING_CODE_frameByFrameForReady = 1123,
+    DO_SOMETHING_CODE_frameByFrameForFinish = 1124,
+    DO_SOMETHING_CODE_frameByFrame = 1125,
 };
 
 enum {

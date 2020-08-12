@@ -1547,6 +1547,18 @@ char *getStrFromDO_SOMETHING_CODE(DO_SOMETHING_CODE code) {
             strncpy(info, "DO_SOMETHING_CODE_handleVideoOutputBuffer",
                     strlen("DO_SOMETHING_CODE_handleVideoOutputBuffer"));
             break;
+        case DO_SOMETHING_CODE_frameByFrameForReady:
+            strncpy(info, "DO_SOMETHING_CODE_frameByFrameForReady",
+                    strlen("DO_SOMETHING_CODE_frameByFrameForReady"));
+            break;
+        case DO_SOMETHING_CODE_frameByFrameForFinish:
+            strncpy(info, "DO_SOMETHING_CODE_frameByFrameForFinish",
+                    strlen("DO_SOMETHING_CODE_frameByFrameForFinish"));
+            break;
+        case DO_SOMETHING_CODE_frameByFrame:
+            strncpy(info, "DO_SOMETHING_CODE_frameByFrame",
+                    strlen("DO_SOMETHING_CODE_frameByFrame"));
+            break;
         default:
             strncpy(info, "DO_SOMETHING_CODE_nothing",
                     strlen("DO_SOMETHING_CODE_nothing"));
@@ -1658,6 +1670,16 @@ Java_com_weidi_usefragments_business_video_1player_FFMPEG_onTransact(JNIEnv *env
             return env->NewStringUTF(
                     std::to_string(
                             onTransact_handleOutputBuffer(env, thiz, code, jniObject)).c_str());
+
+        case DO_SOMETHING_CODE_frameByFrameForReady:
+            return (alexander_media_mediacodec::frameByFrameForReady()
+                    ? env->NewStringUTF("true") : env->NewStringUTF("false"));
+        case DO_SOMETHING_CODE_frameByFrameForFinish:
+            return (alexander_media_mediacodec::frameByFrameForFinish()
+                    ? env->NewStringUTF("true") : env->NewStringUTF("false"));
+        case DO_SOMETHING_CODE_frameByFrame:
+            return (alexander_media_mediacodec::frameByFrame()
+                    ? env->NewStringUTF("true") : env->NewStringUTF("false"));
 
         default:
             break;

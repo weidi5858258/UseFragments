@@ -370,7 +370,7 @@ public class ContentsFragment extends BaseFragment {
         if (DEBUG)
             MLog.d(TAG, "onShow(): " + printThis());
 
-        Object object = EventBusUtils.post(
+        /*Object object = EventBusUtils.post(
                 DownloadFileService.class,
                 DownloadFileService.MSG_GET_CONTENT_LENGTH,
                 null);
@@ -380,7 +380,7 @@ public class ContentsFragment extends BaseFragment {
         EventBusUtils.post(
                 DownloadFileService.class,
                 DownloadFileService.MSG_SET_CALLBACK,
-                new Object[]{mCallback});
+                new Object[]{mCallback});*/
     }
 
     /***
@@ -469,14 +469,15 @@ public class ContentsFragment extends BaseFragment {
                         String videoPlaybackPath = key;
                         if (TextUtils.isEmpty(videoPlaybackPath)) {
                             Toast.makeText(
-                                    getContext(), "播放地址为null", Toast.LENGTH_SHORT).show();
+                                    getContext(), "没有地址,你叫我怎么播放呢?", Toast.LENGTH_SHORT)
+                                    .show();
                             return;
                         }
 
-                        Contents.setTitle(PlayerWrapper.mContentsMap.get(key));
+                        //Contents.setTitle(PlayerWrapper.mContentsMap.get(key));
                         mAddressET.setText(PlayerWrapper.mContentsMap.get(key));
 
-                        Uri uri = Uri.parse(videoPlaybackPath);
+                        /*Uri uri = Uri.parse(videoPlaybackPath);
                         String lastPath = uri.getLastPathSegment();
                         String suffixName = null;
                         if (lastPath != null) {
@@ -486,7 +487,6 @@ public class ContentsFragment extends BaseFragment {
                             }
                         }
                         String fileName = Contents.getTitle() + suffixName;
-
                         String httpPathMD5 = MD5Util.getMD5String(videoPlaybackPath);
                         // 视频文件存在,并且已经下载好的,点击后才播放它,不然还是在线播放
                         boolean videoIsFinished = mPreferences.getBoolean(httpPathMD5, false);
@@ -503,13 +503,11 @@ public class ContentsFragment extends BaseFragment {
                                     break;
                                 }
                             }
-                        }
+                        }*/
                         MLog.d(TAG, "onItemClick() videoPlaybackPath: " + videoPlaybackPath);
 
                         switch (viewId) {
                             case R.id.item_root_layout:
-                                //FFMPEG.getDefault().setMode(FFMPEG.USE_MODE_MEDIA);
-
                                 // Test
                                 /*long position_ = mPreferences.getLong(PLAYBACK_POSITION, 0);
                                 position_ = position_ - 600;
