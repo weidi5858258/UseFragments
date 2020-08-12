@@ -1966,26 +1966,29 @@ public class PlayerWrapper {
         public void onClick(View v) {
             switch (v.getId()) {
                 case R.id.button_prev:
-                    if (isFrameByFrameMode) {
-                        return;
-                    }
-                    if (mFFMPEGPlayer != null) {
-                        if (!mIsH264) {
-                            if (mMediaDuration > 300) {
-                                subtractStep += 30;
+                    if (!isFrameByFrameMode) {
+                        if (mFFMPEGPlayer != null) {
+                            if (!mIsH264) {
+                                if (mMediaDuration > 300) {
+                                    subtractStep += 30;
+                                } else {
+                                    subtractStep += 10;
+                                }
                             } else {
-                                subtractStep += 10;
+                                if (mMediaDuration > 52428800) {// 50MB
+                                    subtractStep += 1048576;// 1MB
+                                } else {
+                                    subtractStep += 524288;// 514KB
+                                }
                             }
-                        } else {
-                            if (mMediaDuration > 52428800) {// 50MB
-                                subtractStep += 1048576;// 1MB
-                            } else {
-                                subtractStep += 524288;// 514KB
-                            }
+                            MLog.d(TAG, "onClick() subtractStep: " + subtractStep);
+                            mUiHandler.removeMessages(MSG_SEEK_TO_SUBTRACT);
+                            mUiHandler.sendEmptyMessageDelayed(MSG_SEEK_TO_SUBTRACT, 500);
                         }
-                        MLog.d(TAG, "onClick() subtractStep: " + subtractStep);
-                        mUiHandler.removeMessages(MSG_SEEK_TO_SUBTRACT);
-                        mUiHandler.sendEmptyMessageDelayed(MSG_SEEK_TO_SUBTRACT, 500);
+                    } else {
+                        if (mFFMPEGPlayer != null) {
+                            mFFMPEGPlayer.onTransact(DO_SOMETHING_CODE_frameByFrame, null);
+                        }
                     }
                     break;
                 case R.id.button_play:
@@ -2044,26 +2047,29 @@ public class PlayerWrapper {
                     }
                     break;
                 case R.id.button_next:
-                    if (isFrameByFrameMode) {
-                        return;
-                    }
-                    if (mFFMPEGPlayer != null) {
-                        if (!mIsH264) {
-                            if (mMediaDuration > 300) {
-                                addStep += 30;
+                    if (!isFrameByFrameMode) {
+                        if (mFFMPEGPlayer != null) {
+                            if (!mIsH264) {
+                                if (mMediaDuration > 300) {
+                                    addStep += 30;
+                                } else {
+                                    addStep += 10;
+                                }
                             } else {
-                                addStep += 10;
+                                if (mMediaDuration > 52428800) {// 50MB
+                                    addStep += 1048576;// 1MB
+                                } else {
+                                    addStep += 524288;// 514KB
+                                }
                             }
-                        } else {
-                            if (mMediaDuration > 52428800) {// 50MB
-                                addStep += 1048576;// 1MB
-                            } else {
-                                addStep += 524288;// 514KB
-                            }
+                            MLog.d(TAG, "onClick() addStep: " + addStep);
+                            mUiHandler.removeMessages(MSG_SEEK_TO_ADD);
+                            mUiHandler.sendEmptyMessageDelayed(MSG_SEEK_TO_ADD, 500);
                         }
-                        MLog.d(TAG, "onClick() addStep: " + addStep);
-                        mUiHandler.removeMessages(MSG_SEEK_TO_ADD);
-                        mUiHandler.sendEmptyMessageDelayed(MSG_SEEK_TO_ADD, 500);
+                    } else {
+                        if (mFFMPEGPlayer != null) {
+                            mFFMPEGPlayer.onTransact(DO_SOMETHING_CODE_frameByFrame, null);
+                        }
                     }
                     break;
                 case R.id.surfaceView:
