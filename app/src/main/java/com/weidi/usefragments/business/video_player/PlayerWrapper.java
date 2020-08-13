@@ -9,6 +9,7 @@ import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.graphics.PixelFormat;
+import android.media.MediaFormat;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.HandlerThread;
@@ -634,7 +635,17 @@ public class PlayerWrapper {
                     //MyToast.show(toastInfo);
                     if (toastInfo.contains("[")
                             && toastInfo.contains("]")) {
-                        textInfoTV.setText(toastInfo);
+                        StringBuffer sb = new StringBuffer();
+                        sb.append("[");
+                        if (toastInfo.contains("[AV]")
+                                || toastInfo.contains("[V]")) {
+                            String mime = mFfmpegUseMediaCodecDecode.mVideoWrapper
+                                    .decoderMediaFormat.getString("mime-old");
+                            sb.append(mime);
+                        }
+                        sb.append("] ");
+                        sb.append(toastInfo);
+                        textInfoTV.setText(sb.toString());
                     }
                 }
                 break;
