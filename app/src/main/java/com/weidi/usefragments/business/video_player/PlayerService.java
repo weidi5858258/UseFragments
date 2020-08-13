@@ -15,7 +15,6 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
 import android.os.Message;
-
 import android.telephony.PhoneStateListener;
 import android.telephony.TelephonyManager;
 import android.text.TextUtils;
@@ -361,7 +360,8 @@ public class PlayerService extends Service {
         }
         mLayoutParams.flags = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE;
         mLayoutParams.gravity = Gravity.TOP + Gravity.LEFT;
-        //mLayoutParams.format = PixelFormat.RGBA_8888;
+        // 背景透明
+        // mLayoutParams.format = PixelFormat.RGBA_8888;
         mLayoutParams.width = screenWidth;
         mLayoutParams.height = 400;
         mLayoutParams.x = 0;

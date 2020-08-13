@@ -2245,30 +2245,45 @@ namespace alexander_media_mediacodec {
              averageTimeDiff, frameRate);
 
         if (averageTimeDiff > 1.000000) {
+            /***
+             还没遇到过
+             */
             if (videoWrapper->father->useMediaCodec) {
                 TIME_DIFFERENCE = 0.800000;
             } else {
                 TIME_DIFFERENCE = 0.900000;
             }
         } else if (averageTimeDiff > 0.900000 && averageTimeDiff < 1.000000) {
+            /***
+             还没遇到过
+             */
             if (videoWrapper->father->useMediaCodec) {
                 TIME_DIFFERENCE = 0.700000;
             } else {
                 TIME_DIFFERENCE = 0.800000;
             }
         } else if (averageTimeDiff > 0.800000 && averageTimeDiff < 0.900000) {
+            /***
+             还没遇到过
+             */
             if (videoWrapper->father->useMediaCodec) {
                 TIME_DIFFERENCE = 0.600000;
             } else {
                 TIME_DIFFERENCE = 0.700000;
             }
         } else if (averageTimeDiff > 0.700000 && averageTimeDiff < 0.800000) {
+            /***
+             还没遇到过
+             */
             if (videoWrapper->father->useMediaCodec) {
                 TIME_DIFFERENCE = 0.500000;
             } else {
                 TIME_DIFFERENCE = 0.600000;
             }
         } else if (averageTimeDiff > 0.600000 && averageTimeDiff < 0.700000) {
+            /***
+             还没遇到过
+             */
             if (videoWrapper->father->useMediaCodec) {
                 TIME_DIFFERENCE = 0.400000;
             } else {
@@ -2294,6 +2309,9 @@ namespace alexander_media_mediacodec {
                 TIME_DIFFERENCE = 0.300000;
             }
         } else if (averageTimeDiff > 0.300000 && averageTimeDiff < 0.400000) {
+            /***
+             0.397755
+             */
             if (videoWrapper->father->useMediaCodec) {
                 TIME_DIFFERENCE = 0.100000;
             } else {
@@ -2322,7 +2340,7 @@ namespace alexander_media_mediacodec {
              0.014149 0.018936 0.022836 0.023516 0.024403 0.026983 0.027595 0.028610
              0.029898 0.030690 0.031515 0.034621 0.035779 0.036042 0.037615 0.038017
              0.039632 0.042750 0.043855 0.047141 0.048789 0.052697 0.054136 0.055711
-             0.059648 0.062606 0.065509 0.066374 0.073902 0.074668 0.079382
+             0.059648 0.062606 0.065509 0.066374 0.073902 0.074668 0.079382 0.088914
              */
             TIME_DIFFERENCE = averageTimeDiff + 0.050000;
             if (TIME_DIFFERENCE < 0.100000) {
@@ -3259,6 +3277,9 @@ namespace alexander_media_mediacodec {
                     videoWrapper->father->isPausedForCache = false;
                     LOGE("handleData() wait() Cache audio end   主动暂停\n");
                     if (wrapper->isPausedForSeek) {
+                        if (wrapper->allowDecode) {
+                            av_packet_unref(copyAVPacket);
+                        }
                         continue;
                     }
                     if (videoWrapper->father->streamIndex != -1) {
@@ -3277,6 +3298,9 @@ namespace alexander_media_mediacodec {
                     videoWrapper->father->isPausedForCache = false;
                     LOGE("handleData() wait() Cache video end   主动暂停\n");
                     if (wrapper->isPausedForSeek) {
+                        if (wrapper->allowDecode) {
+                            av_packet_unref(copyAVPacket);
+                        }
                         continue;
                     }
                     if (audioWrapper->father->streamIndex != -1) {
@@ -3321,7 +3345,7 @@ namespace alexander_media_mediacodec {
                 break;
             }
 
-            if (!wrapper->allowDecode || copyAVPacket == nullptr) {
+            if (!wrapper->allowDecode) {
                 continue;
             }
 

@@ -788,7 +788,7 @@ public class MediaUtils {
             String mime, MediaFormat mediaFormat, Surface surface) {
         if (TextUtils.isEmpty(mime)
                 || mediaFormat == null
-            /*|| surface == null*/) {
+                || surface == null) {
             return null;
         }
         MediaCodec decoder = null;

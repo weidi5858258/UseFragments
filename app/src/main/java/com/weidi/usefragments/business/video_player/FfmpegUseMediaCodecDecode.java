@@ -665,6 +665,7 @@ public class FfmpegUseMediaCodecDecode {
         }
         if (TextUtils.isEmpty(videoMime)) {
             MLog.e(TAG, "initVideoMediaCodec() videoMime is empty");
+            MyToast.show("mime is empty");
             return false;
         }
         MLog.w(TAG, "initVideoMediaCodec() video           mime: " + videoMime);
@@ -883,6 +884,7 @@ public class FfmpegUseMediaCodecDecode {
                     } catch (Exception e) {
                         // java.lang.NegativeArraySizeException: -70
                         MLog.e(TAG, "initVideoMediaCodec() Exception: \n" + e);
+                        MyToast.show(e.toString());
                         return false;
                     }
                 }
@@ -905,7 +907,8 @@ public class FfmpegUseMediaCodecDecode {
                         mVideoWrapper.decoderMediaFormat,
                         mVideoWrapper.mSurface);
         if (mVideoWrapper.decoderMediaCodec == null) {
-            MLog.e(TAG, "initVideoMediaCodec() mVideoWrapper.decoderMediaCodec is null");
+            MLog.e(TAG, "initVideoMediaCodec() create Video MediaCodec failure");
+            MyToast.show("create Video MediaCodec failure");
             return false;
         }
 

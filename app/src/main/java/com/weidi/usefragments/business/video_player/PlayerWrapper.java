@@ -911,9 +911,7 @@ public class PlayerWrapper {
     public void startPlayback() {
         MLog.d(TAG, "startPlayback() start");
 
-        if (mSurfaceHolder == null) {
-            mSurfaceHolder = mSurfaceView.getHolder();
-        }
+        mSurfaceHolder = mSurfaceView.getHolder();
         // 这里也要写
         mSurfaceHolder.setFormat(PixelFormat.RGBA_8888);
 
@@ -923,7 +921,6 @@ public class PlayerWrapper {
         } else {
             // 底层有关参数的设置
             mFFMPEGPlayer.setHandler(mUiHandler);
-            mFfmpegUseMediaCodecDecode.setSurface(mSurfaceHolder.getSurface());
         }
 
         // 开启线程初始化ffmpeg
@@ -1038,6 +1035,7 @@ public class PlayerWrapper {
 
                 if (TextUtils.equals(whatPlayer, PLAYER_MEDIACODEC)) {
                 } else {
+                    mFfmpegUseMediaCodecDecode.setSurface(mSurfaceHolder.getSurface());
                     mFFMPEGPlayer.onTransact(DO_SOMETHING_CODE_setSurface,
                             JniObject.obtain()
                                     .writeString(mPath)
@@ -2289,6 +2287,10 @@ public class PlayerWrapper {
             mFFMPEGPlayer.setVolume(VOLUME_MUTE);
             mFfmpegUseMediaCodecDecode.setVolume(VOLUME_MUTE);
             mSP.edit().putBoolean(PLAYBACK_IS_MUTE, true).commit();
+            // 显示控制面板
+            mControllerPanelLayout.setVisibility(View.VISIBLE);
+            textInfoScrollView.setVisibility(View.VISIBLE);
+            mSP.edit().putBoolean(PLAYBACK_SHOW_CONTROLLERPANELLAYOUT, true).commit();
             // 显示"暂停"按钮
             mPlayIB.setVisibility(View.GONE);
             mPauseIB.setVisibility(View.VISIBLE);
@@ -2442,6 +2444,7 @@ public class PlayerWrapper {
             case KeyEvent.KEYCODE_HEADSETHOOK:// 79
                 if (!isFrameByFrameMode) {
                     ++clickCounts;
+                    MyToast.show(String.valueOf(clickCounts));
 
                     // 单位时间内按1次,2次,3次分别实现单击,双击,三击
                     mUiHandler.removeMessages(KeyEvent.KEYCODE_HEADSETHOOK);
