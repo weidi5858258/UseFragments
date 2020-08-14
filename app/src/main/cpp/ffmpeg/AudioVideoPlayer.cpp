@@ -21,7 +21,6 @@ namespace alexander_audio_video {
     static bool isAudioReading = false;
     static bool isAudioHandling = false;
     static bool runOneTime = true;
-    static int videoMimeType = -1;
     static long long mediaDuration = -1;
     static bool isVideoHandling = false;
     static bool isVideoRendering = false;
@@ -221,7 +220,7 @@ namespace alexander_audio_video {
         uint8_t *extradata = videoWrapper->father->avCodecContext->extradata;
         int extradata_size = videoWrapper->father->avCodecContext->extradata_size;
 
-        bool initRet = initMediaCodec(0x0002, videoMimeType,
+        bool initRet = initMediaCodec(0x0002, videoWrapper->father->avCodecId,
                                       parameters, parameters_size,
                                       extradata, extradata_size);
         if (!initRet) {
@@ -389,11 +388,10 @@ namespace alexander_audio_video {
         videoWrapper->father->useMediaCodec = false;
         videoWrapper->father->decoderAVCodec = nullptr;
         // h265, h264, mpeg4, vp8, vp9
-        AVCodecID codecID = videoWrapper->father->avCodecParameters->codec_id;
-        videoMimeType = codecID;
+        videoWrapper->father->avCodecId = videoWrapper->father->avCodecParameters->codec_id;
         LOGW("findAndOpenAVCodecForVideo() codecID: %d avcodec_get_name: %s\n",
-             codecID, avcodec_get_name(codecID));
-        switch (codecID) {
+             videoWrapper->father->avCodecId, avcodec_get_name(videoWrapper->father->avCodecId));
+        switch (videoWrapper->father->avCodecId) {
             case AV_CODEC_ID_HEVC: {// 173
                 LOGW("findAndOpenAVCodecForVideo() hevc_mediacodec\n");
                 videoWrapper->father->useMediaCodec = true;
@@ -491,7 +489,8 @@ namespace alexander_audio_video {
             }
         }
 
-        videoWrapper->father->decoderAVCodec = avcodec_find_decoder(codecID);
+        videoWrapper->father->decoderAVCodec = avcodec_find_decoder(
+                videoWrapper->father->avCodecId);
         if (videoWrapper->father->decoderAVCodec != nullptr) {
             videoWrapper->father->avCodecContext = avcodec_alloc_context3(
                     videoWrapper->father->decoderAVCodec);
@@ -1101,30 +1100,45 @@ namespace alexander_audio_video {
              averageTimeDiff, frameRate);
 
         if (averageTimeDiff > 1.000000) {
+            /***
+             还没遇到过
+             */
             if (videoWrapper->father->useMediaCodec) {
                 TIME_DIFFERENCE = 0.800000;
             } else {
                 TIME_DIFFERENCE = 0.900000;
             }
         } else if (averageTimeDiff > 0.900000 && averageTimeDiff < 1.000000) {
+            /***
+             还没遇到过
+             */
             if (videoWrapper->father->useMediaCodec) {
                 TIME_DIFFERENCE = 0.700000;
             } else {
                 TIME_DIFFERENCE = 0.800000;
             }
         } else if (averageTimeDiff > 0.800000 && averageTimeDiff < 0.900000) {
+            /***
+             还没遇到过
+             */
             if (videoWrapper->father->useMediaCodec) {
                 TIME_DIFFERENCE = 0.600000;
             } else {
                 TIME_DIFFERENCE = 0.700000;
             }
         } else if (averageTimeDiff > 0.700000 && averageTimeDiff < 0.800000) {
+            /***
+             还没遇到过
+             */
             if (videoWrapper->father->useMediaCodec) {
                 TIME_DIFFERENCE = 0.500000;
             } else {
                 TIME_DIFFERENCE = 0.600000;
             }
         } else if (averageTimeDiff > 0.600000 && averageTimeDiff < 0.700000) {
+            /***
+             还没遇到过
+             */
             if (videoWrapper->father->useMediaCodec) {
                 TIME_DIFFERENCE = 0.400000;
             } else {
@@ -1150,6 +1164,9 @@ namespace alexander_audio_video {
                 TIME_DIFFERENCE = 0.300000;
             }
         } else if (averageTimeDiff > 0.300000 && averageTimeDiff < 0.400000) {
+            /***
+             0.397755
+             */
             if (videoWrapper->father->useMediaCodec) {
                 TIME_DIFFERENCE = 0.100000;
             } else {
@@ -1178,7 +1195,7 @@ namespace alexander_audio_video {
              0.014149 0.018936 0.022836 0.023516 0.024403 0.026983 0.027595 0.028610
              0.029898 0.030690 0.031515 0.034621 0.035779 0.036042 0.037615 0.038017
              0.039632 0.042750 0.043855 0.047141 0.048789 0.052697 0.054136 0.055711
-             0.059648 0.062606 0.065509 0.066374 0.073902 0.074668 0.079382
+             0.059648 0.062606 0.065509 0.066374 0.073902 0.074668 0.079382 0.088914
              */
             TIME_DIFFERENCE = averageTimeDiff + 0.050000;
             if (TIME_DIFFERENCE < 0.100000) {
@@ -1195,28 +1212,36 @@ namespace alexander_audio_video {
         }
         LOGI("hope_to_get_a_good_result() TIME_DIFFERENCE: %lf\n", TIME_DIFFERENCE);
 
-        char info[100];
+        char info[150];
         if (videoWrapper->father->useMediaCodec
             && audioWrapper->father->useMediaCodec) {
-            sprintf(info, "[%d] [%d] [%lld] [%lld] [%d] [%lf] [%lf] %s",
+            sprintf(info, "[%s] [%s] [%d] [%d] [%lld] [%lld] [%d] [%lf] [%lf] %s",
+                    avcodec_get_name(videoWrapper->father->avCodecId),
+                    av_get_pix_fmt_name(videoWrapper->srcAVPixelFormat),
                     videoWrapper->srcWidth, videoWrapper->srcHeight,
                     (long long) bitRate, (long long) bit_rate, frameRate,
                     averageTimeDiff, TIME_DIFFERENCE, "[AV]");
         } else if (videoWrapper->father->useMediaCodec
                    && !audioWrapper->father->useMediaCodec) {
-            sprintf(info, "[%d] [%d] [%lld] [%lld] [%d] [%lf] [%lf] %s",
+            sprintf(info, "[%s] [%s] [%d] [%d] [%lld] [%lld] [%d] [%lf] [%lf] %s",
+                    avcodec_get_name(videoWrapper->father->avCodecId),
+                    av_get_pix_fmt_name(videoWrapper->srcAVPixelFormat),
                     videoWrapper->srcWidth, videoWrapper->srcHeight,
                     (long long) bitRate, (long long) bit_rate, frameRate,
                     averageTimeDiff, TIME_DIFFERENCE, "[V]");
         } else if (!videoWrapper->father->useMediaCodec
                    && audioWrapper->father->useMediaCodec) {
-            sprintf(info, "[%d] [%d] [%lld] [%lld] [%d] [%lf] [%lf] %s",
+            sprintf(info, "[%s] [%s] [%d] [%d] [%lld] [%lld] [%d] [%lf] [%lf] %s",
+                    avcodec_get_name(videoWrapper->father->avCodecId),
+                    av_get_pix_fmt_name(videoWrapper->srcAVPixelFormat),
                     videoWrapper->srcWidth, videoWrapper->srcHeight,
                     (long long) bitRate, (long long) bit_rate, frameRate,
                     averageTimeDiff, TIME_DIFFERENCE, "[A]");
         } else if (!videoWrapper->father->useMediaCodec
                    && !audioWrapper->father->useMediaCodec) {
-            sprintf(info, "[%d] [%d] [%lld] [%lld] [%d] [%lf] [%lf] %s",
+            sprintf(info, "[%s] [%s] [%d] [%d] [%lld] [%lld] [%d] [%lf] [%lf] %s",
+                    avcodec_get_name(videoWrapper->father->avCodecId),
+                    av_get_pix_fmt_name(videoWrapper->srcAVPixelFormat),
                     videoWrapper->srcWidth, videoWrapper->srcHeight,
                     (long long) bitRate, (long long) bit_rate, frameRate,
                     averageTimeDiff, TIME_DIFFERENCE, "[]");

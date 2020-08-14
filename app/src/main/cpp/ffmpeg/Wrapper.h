@@ -110,6 +110,7 @@ struct Wrapper {
     AVCodec *decoderAVCodec = NULL;
     // 编码器(没用到,因为是播放,所以不需要编码)
     AVCodec *encoderAVCodec = NULL;
+    AVCodecID avCodecId;
 
     bool useMediaCodec = false;
     const AVBitStreamFilter *avBitStreamFilter = nullptr;

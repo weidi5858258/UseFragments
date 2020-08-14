@@ -266,9 +266,6 @@ namespace alexander_media_mediacodec {
     // Stream #0:1: Video: rv40 (RV40 / 0x30345652), yuv420p, 1280x720, 1506 kb/s, 23.98 fps, 23.98 tbr, 1k tbn, 1k tbc
     static int64_t bit_rate = 0;
 
-    static int videoMimeType = -1;
-    static int audioMimeType = -1;
-
     // true时表示一帧一帧的看画面
     static bool isFrameByFrameMode = false;
 
@@ -831,7 +828,7 @@ namespace alexander_media_mediacodec {
                 break;
             }
         }*/
-        initRet = initMediaCodec(0x0001, audioMimeType,
+        initRet = initMediaCodec(0x0001, audioWrapper->father->avCodecId,
                                  parameters, parameters_size,
                                  extradata, extradata_size);
         if (!initRet) {
@@ -867,7 +864,7 @@ namespace alexander_media_mediacodec {
         uint8_t *extradata = videoWrapper->father->avCodecContext->extradata;
         int extradata_size = videoWrapper->father->avCodecContext->extradata_size;
 
-        bool initRet = initMediaCodec(0x0002, videoMimeType,
+        bool initRet = initMediaCodec(0x0002, videoWrapper->father->avCodecId,
                                       parameters, parameters_size,
                                       extradata, extradata_size);
         if (!initRet) {
@@ -1015,10 +1012,9 @@ namespace alexander_media_mediacodec {
         audioWrapper->father->decoderAVCodec = nullptr;
         // 获取音频解码器
         // 先通过AVCodecParameters找到AVCodec
-        AVCodecID codecID = audioWrapper->father->avCodecParameters->codec_id;
-        audioMimeType = codecID;
-        LOGD("findAndOpenAVCodecForAudio() codecID: %d\n", codecID);
-        switch (codecID) {
+        audioWrapper->father->avCodecId = audioWrapper->father->avCodecParameters->codec_id;
+        LOGD("findAndOpenAVCodecForAudio() codecID: %d\n", audioWrapper->father->avCodecId);
+        switch (audioWrapper->father->avCodecId) {
             case AV_CODEC_ID_MP2: {// 86016
                 LOGD("findAndOpenAVCodecForAudio() AV_CODEC_ID_MP2\n");
                 audioWrapper->father->useMediaCodec = true;
@@ -1120,7 +1116,8 @@ namespace alexander_media_mediacodec {
                 }
             }
         }
-        audioWrapper->father->decoderAVCodec = avcodec_find_decoder(codecID);
+        audioWrapper->father->decoderAVCodec = avcodec_find_decoder(
+                audioWrapper->father->avCodecId);
         if (audioWrapper->father->decoderAVCodec != nullptr) {
             // 获取解码器上下文
             // 再通过AVCodec得到AVCodecContext
@@ -1223,11 +1220,10 @@ namespace alexander_media_mediacodec {
         videoWrapper->father->useMediaCodec = false;
         videoWrapper->father->decoderAVCodec = nullptr;
         // h265, h264, mpeg4, vp8, vp9
-        AVCodecID codecID = videoWrapper->father->avCodecParameters->codec_id;
-        videoMimeType = codecID;
+        videoWrapper->father->avCodecId = videoWrapper->father->avCodecParameters->codec_id;
         LOGW("findAndOpenAVCodecForVideo() codecID: %d avcodec_get_name: %s\n",
-             codecID, avcodec_get_name(codecID));
-        switch (codecID) {
+             videoWrapper->father->avCodecId, avcodec_get_name(videoWrapper->father->avCodecId));
+        switch (videoWrapper->father->avCodecId) {
             case AV_CODEC_ID_HEVC: {// 173
                 LOGW("findAndOpenAVCodecForVideo() hevc_mediacodec\n");
                 videoWrapper->father->useMediaCodec = true;
@@ -1353,7 +1349,8 @@ namespace alexander_media_mediacodec {
             videoWrapper->father->decoderAVCodec = avcodec_find_decoder(codecID);
         }*/
         // videoWrapper->avCodecParserContext = av_parser_init(codecID);
-        videoWrapper->father->decoderAVCodec = avcodec_find_decoder(codecID);
+        videoWrapper->father->decoderAVCodec = avcodec_find_decoder(
+                videoWrapper->father->avCodecId);
         if (videoWrapper->father->decoderAVCodec != nullptr) {
             videoWrapper->father->avCodecContext = avcodec_alloc_context3(
                     videoWrapper->father->decoderAVCodec);
@@ -2357,28 +2354,36 @@ namespace alexander_media_mediacodec {
         }
         LOGI("hope_to_get_a_good_result() TIME_DIFFERENCE: %lf\n", TIME_DIFFERENCE);
 
-        char info[100];
+        char info[150];
         if (videoWrapper->father->useMediaCodec
             && audioWrapper->father->useMediaCodec) {
-            sprintf(info, "[%d] [%d] [%lld] [%lld] [%d] [%lf] [%lf] %s",
+            sprintf(info, "[%s] [%s] [%d] [%d] [%lld] [%lld] [%d] [%lf] [%lf] %s",
+                    avcodec_get_name(videoWrapper->father->avCodecId),
+                    av_get_pix_fmt_name(videoWrapper->srcAVPixelFormat),
                     videoWrapper->srcWidth, videoWrapper->srcHeight,
                     (long long) bitRate, (long long) bit_rate, frameRate,
                     averageTimeDiff, TIME_DIFFERENCE, "[AV]");
         } else if (videoWrapper->father->useMediaCodec
                    && !audioWrapper->father->useMediaCodec) {
-            sprintf(info, "[%d] [%d] [%lld] [%lld] [%d] [%lf] [%lf] %s",
+            sprintf(info, "[%s] [%s] [%d] [%d] [%lld] [%lld] [%d] [%lf] [%lf] %s",
+                    avcodec_get_name(videoWrapper->father->avCodecId),
+                    av_get_pix_fmt_name(videoWrapper->srcAVPixelFormat),
                     videoWrapper->srcWidth, videoWrapper->srcHeight,
                     (long long) bitRate, (long long) bit_rate, frameRate,
                     averageTimeDiff, TIME_DIFFERENCE, "[V]");
         } else if (!videoWrapper->father->useMediaCodec
                    && audioWrapper->father->useMediaCodec) {
-            sprintf(info, "[%d] [%d] [%lld] [%lld] [%d] [%lf] [%lf] %s",
+            sprintf(info, "[%s] [%s] [%d] [%d] [%lld] [%lld] [%d] [%lf] [%lf] %s",
+                    avcodec_get_name(videoWrapper->father->avCodecId),
+                    av_get_pix_fmt_name(videoWrapper->srcAVPixelFormat),
                     videoWrapper->srcWidth, videoWrapper->srcHeight,
                     (long long) bitRate, (long long) bit_rate, frameRate,
                     averageTimeDiff, TIME_DIFFERENCE, "[A]");
         } else if (!videoWrapper->father->useMediaCodec
                    && !audioWrapper->father->useMediaCodec) {
-            sprintf(info, "[%d] [%d] [%lld] [%lld] [%d] [%lf] [%lf] %s",
+            sprintf(info, "[%s] [%s] [%d] [%d] [%lld] [%lld] [%d] [%lf] [%lf] %s",
+                    avcodec_get_name(videoWrapper->father->avCodecId),
+                    av_get_pix_fmt_name(videoWrapper->srcAVPixelFormat),
                     videoWrapper->srcWidth, videoWrapper->srcHeight,
                     (long long) bitRate, (long long) bit_rate, frameRate,
                     averageTimeDiff, TIME_DIFFERENCE, "[]");

@@ -635,17 +635,7 @@ public class PlayerWrapper {
                     //MyToast.show(toastInfo);
                     if (toastInfo.contains("[")
                             && toastInfo.contains("]")) {
-                        StringBuffer sb = new StringBuffer();
-                        sb.append("[");
-                        if (toastInfo.contains("[AV]")
-                                || toastInfo.contains("[V]")) {
-                            String mime = mFfmpegUseMediaCodecDecode.mVideoWrapper
-                                    .decoderMediaFormat.getString("mime-old");
-                            sb.append(mime);
-                        }
-                        sb.append("] ");
-                        sb.append(toastInfo);
-                        textInfoTV.setText(sb.toString());
+                        textInfoTV.setText(toastInfo);
                     }
                 }
                 break;
@@ -692,6 +682,8 @@ public class PlayerWrapper {
                     case 9:
                         break;
                     case 10:
+                        MLog.d(TAG, "clickTen()");
+                        clickTen();
                         break;
                     default:
                         break;
@@ -2307,11 +2299,22 @@ public class PlayerWrapper {
             mPauseIB.setVisibility(View.VISIBLE);
             MyToast.show("帧模式已开启");
         }
-        /*if (TextUtils.equals(whatPlayer, PLAYER_MEDIACODEC)) {
+    }
+
+    private void clickTen() {
+        if (mFFMPEGPlayer != null) {
+            if (!Boolean.parseBoolean(mFFMPEGPlayer.onTransact(
+                    DO_SOMETHING_CODE_isRunning, null))) {
+                return;
+            }
+        }
+
+        if (TextUtils.equals(whatPlayer, PLAYER_MEDIACODEC)) {
             mSimpleVideoPlayer.release();
         } else {
+            mGetMediaFormat.release(false);
             mFFMPEGPlayer.releaseAll();
-        }*/
+        }
     }
 
     private boolean isPhoneDevice() {
@@ -2446,7 +2449,7 @@ public class PlayerWrapper {
     }
 
     private boolean isFrameByFrameMode = false;
-    private static final int NEED_CLICK_COUNTS = 5;
+    private static final int NEED_CLICK_COUNTS = 10;
     private int clickCounts = 0;
 
     public Object onEvent(int what, Object[] objArray) {
