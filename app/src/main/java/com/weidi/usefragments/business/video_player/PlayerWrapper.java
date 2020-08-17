@@ -5,6 +5,7 @@ import android.app.Activity;
 import android.app.Service;
 import android.app.UiModeManager;
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.content.res.Resources;
@@ -680,6 +681,8 @@ public class PlayerWrapper {
                     case 8:
                         break;
                     case 9:
+                        MLog.d(TAG, "clickNine()");
+                        clickNine();
                         break;
                     case 10:
                         MLog.d(TAG, "clickTen()");
@@ -913,6 +916,10 @@ public class PlayerWrapper {
 
     public void startPlayback() {
         MLog.d(TAG, "startPlayback() start");
+        if (!mService.mIsAddedView || !mRootView.isShown()) {
+            MLog.e(TAG, "startPlayback() The condition is not satisfied");
+            return;
+        }
 
         mSurfaceHolder = mSurfaceView.getHolder();
         // 这里也要写
@@ -1813,22 +1820,20 @@ public class PlayerWrapper {
                 break;
             case Callback.ERROR_FFMPEG_INIT:
                 MLog.e(TAG, "PlayerWrapper Callback.ERROR_FFMPEG_INIT errorInfo: " + errorInfo);
-                if (mService.mIsAddedView) {
-                    if (TextUtils.isEmpty(mType)
-                            || mType.startsWith("video/")) {
-                        if (mCouldPlaybackPathList.contains(mPath)
+                if (TextUtils.isEmpty(mType)
+                        || mType.startsWith("video/")) {
+                    if (mCouldPlaybackPathList.contains(mPath)
+                            && !mPath.startsWith("http://cache.m.iqiyi.com/")) {
+                        // startPlayback();
+                        startForGetMediaFormat();
+                        break;
+                    } else {
+                        String path = mSP.getString(PLAYBACK_ADDRESS, null);
+                        if (TextUtils.equals(path, mPath)
                                 && !mPath.startsWith("http://cache.m.iqiyi.com/")) {
                             // startPlayback();
                             startForGetMediaFormat();
                             break;
-                        } else {
-                            String path = mSP.getString(PLAYBACK_ADDRESS, null);
-                            if (TextUtils.equals(path, mPath)
-                                    && !mPath.startsWith("http://cache.m.iqiyi.com/")) {
-                                // startPlayback();
-                                startForGetMediaFormat();
-                                break;
-                            }
                         }
                     }
                 }
@@ -2299,6 +2304,21 @@ public class PlayerWrapper {
             mPauseIB.setVisibility(View.VISIBLE);
             MyToast.show("帧模式已开启");
         }
+    }
+
+    private void clickNine() {
+        if (mFFMPEGPlayer != null) {
+            if (!Boolean.parseBoolean(mFFMPEGPlayer.onTransact(
+                    DO_SOMETHING_CODE_isRunning, null))) {
+                return;
+            }
+        }
+
+        Intent intent = new Intent();
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        intent.putExtra(JniPlayerActivity.COMMAND_NO_FINISH, true);
+        intent.setClass(mContext, JniPlayerActivity.class);
+        mContext.startActivity(intent);
     }
 
     private void clickTen() {

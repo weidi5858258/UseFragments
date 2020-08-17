@@ -268,6 +268,7 @@
             android:enabled="true"
             android:exported="true"
             android:launchMode="singleTask"
+            android:excludeFromRecents="true"
             android:theme="@android:style/Theme.Translucent.NoTitleBar.Fullscreen"
             android:windowSoftInputMode="stateAlwaysHidden|adjustPan">
             <intent-filter>

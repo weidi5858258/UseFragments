@@ -3465,8 +3465,8 @@ namespace alexander_media_mediacodec {
                     case 0: {
                         // 解码成功,返回一个输出帧
                         if (wrapper->type == TYPE_AUDIO) {
-                            av_frame_unref(preAudioAVFrame);
-                            av_frame_ref(preAudioAVFrame, decodedAVFrame);
+                            //av_frame_unref(preAudioAVFrame);
+                            //av_frame_ref(preAudioAVFrame, decodedAVFrame);
                         } else {
                             /*LOGW("handleData() video                   "
                                  "flags: %d, pts: %lld, pkt_pos: %lld, pkt_duration: %lld, pkt_size: %d\n",
@@ -4317,9 +4317,9 @@ namespace alexander_media_mediacodec {
 
         LOGD("seekTo() signal() to Read and Handle\n");
         timeStamp = timestamp;
-        if (!isLocal && (long long) timestamp == 0) {
+        /*if (!isLocal && (long long) timestamp == 0) {
             timeStamp = 5;
-        }
+        }*/
         if (audioWrapper->father->streamIndex != -1) {
             audioWrapper->father->isPausedForSeek = true;
             audioWrapper->father->needToSeek = false;

@@ -1,15 +1,8 @@
 package com.weidi.usefragments.business.video_player;
 
-import android.content.BroadcastReceiver;
-import android.content.ComponentName;
-import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.content.res.Configuration;
-import android.content.res.Resources;
 import android.database.Cursor;
-import android.graphics.Color;
-import android.media.AudioManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -17,29 +10,22 @@ import android.provider.MediaStore;
 import android.provider.Settings;
 import android.text.TextUtils;
 import android.util.Log;
-import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.SurfaceView;
 import android.view.View;
-import android.view.Window;
 import android.view.WindowManager;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
-import android.widget.RelativeLayout;
 import android.widget.SeekBar;
 import android.widget.TextView;
 
 import com.weidi.eventbus.EventBusUtils;
 import com.weidi.usefragments.BaseActivity;
 import com.weidi.usefragments.R;
-import com.weidi.usefragments.receiver.MediaButtonReceiver;
 import com.weidi.usefragments.test_view.BubblePopupWindow;
 import com.weidi.usefragments.tool.MLog;
 import com.weidi.usefragments.tool.PermissionsUtils;
-import com.weidi.utils.MyToast;
-
-import java.io.File;
 
 import static com.weidi.usefragments.MainActivity1.isRunService;
 
