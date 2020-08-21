@@ -1424,13 +1424,6 @@ namespace alexander_audio_video {
     }
 
     int handleVideoOutputBuffer(int roomIndex) {
-        if (roomIndex < 0) {
-            videoWrapper->father->useMediaCodec = false;
-            return 0;
-        }
-        if (preVideoPts > videoPts && preVideoPts > 0 && videoPts > 0) {
-            return 0;
-        }
         videoWrapper->father->isStarted = true;
         if (runOneTime) {
             while (!audioWrapper->father->isStarted) {
@@ -1446,12 +1439,18 @@ namespace alexander_audio_video {
             }
         }
 
+        if (roomIndex < 0) {
+            videoWrapper->father->useMediaCodec = false;
+            return 0;
+        }
+        if (preVideoPts > videoPts && preVideoPts > 0 && videoPts > 0) {
+            return 0;
+        }
         if (videoPts <= 0 || audioPts <= 0) {
             return 0;
         }
 
-        double tempTimeDifference = 0.0;
-        tempTimeDifference = videoPts - audioPts;
+        double tempTimeDifference = videoPts - audioPts;
         if (tempTimeDifference <= 0) {
             return 0;
         }

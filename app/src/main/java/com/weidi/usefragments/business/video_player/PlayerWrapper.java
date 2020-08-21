@@ -1227,17 +1227,17 @@ public class PlayerWrapper {
         relativeParams =
                 (RelativeLayout.LayoutParams) textInfoScrollView.getLayoutParams();
         relativeParams.setMargins(
-                (mScreenWidth - mNeedVideoWidth) / 2, 4, 0, 0);
+                (mScreenWidth - mNeedVideoWidth) / 2, 6, 0, 0);
         textInfoScrollView.setLayoutParams(relativeParams);
 
         // 改变ControllerPanelLayout高度
         FrameLayout.LayoutParams frameParams =
                 (FrameLayout.LayoutParams) mControllerPanelLayout.getLayoutParams();
-        if ((mScreenWidth / 3) < mNeedVideoWidth) {
-            frameParams.setMargins((mScreenWidth - mNeedVideoWidth) / 2, 120, 0, 0);
+        if ((mScreenWidth / 3) < mNeedVideoWidth) {// top = 120
+            frameParams.setMargins((mScreenWidth - mNeedVideoWidth) / 2, 40, 0, 0);
             frameParams.width = mNeedVideoWidth;
         } else {
-            frameParams.setMargins((mScreenWidth - mScreenHeight) / 2, 120, 0, 0);
+            frameParams.setMargins((mScreenWidth - mScreenHeight) / 2, 40, 0, 0);
             frameParams.width = mScreenHeight;
         }
         frameParams.height = mControllerPanelLayoutHeight;
@@ -1323,7 +1323,7 @@ public class PlayerWrapper {
 
         relativeParams =
                 (RelativeLayout.LayoutParams) textInfoScrollView.getLayoutParams();
-        relativeParams.setMargins(0, 4, 0, 0);
+        relativeParams.setMargins(0, 6, 0, 0);
         textInfoScrollView.setLayoutParams(relativeParams);
 
         // 改变ControllerPanelLayout高度
@@ -2359,8 +2359,15 @@ public class PlayerWrapper {
         MLog.i(TAG, "loadContents() start");
         mContentsMap.clear();
         File[] files = mContext.getExternalFilesDirs(Environment.MEDIA_SHARED);
+        if (files == null) {
+            MLog.e(TAG, "loadContents() files is null");
+            return;
+        }
         File file = null;
         for (File f : files) {
+            if (f == null) {
+                continue;
+            }
             MLog.i(TAG, "Environment.MEDIA_SHARED    : " + f.getAbsolutePath());
             file = f;
         }
@@ -2475,6 +2482,7 @@ public class PlayerWrapper {
     public Object onEvent(int what, Object[] objArray) {
         Object result = null;
         switch (what) {
+            // 有线耳机发出的事件
             case KeyEvent.KEYCODE_HEADSETHOOK:// 79
                 if (!isFrameByFrameMode) {
                     ++clickCounts;
@@ -2489,19 +2497,20 @@ public class PlayerWrapper {
                     }
                 }
                 break;
+            // 85 86 87 88 126 127 这些都是蓝牙耳机发出的事件
             case KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE:// 85
                 break;
             case KeyEvent.KEYCODE_MEDIA_STOP:// 86
-                break;
-            case KeyEvent.KEYCODE_MEDIA_PREVIOUS:// 88
-                // 三击
-                MLog.d(TAG, "clickThree()");
-                clickThree();
                 break;
             case KeyEvent.KEYCODE_MEDIA_NEXT:// 87
                 // 双击
                 MLog.d(TAG, "clickTwo()");
                 clickTwo();
+                break;
+            case KeyEvent.KEYCODE_MEDIA_PREVIOUS:// 88
+                // 三击
+                MLog.d(TAG, "clickThree()");
+                clickThree();
                 break;
             case KeyEvent.KEYCODE_MEDIA_PLAY:// 126
             case KeyEvent.KEYCODE_MEDIA_PAUSE:// 127
