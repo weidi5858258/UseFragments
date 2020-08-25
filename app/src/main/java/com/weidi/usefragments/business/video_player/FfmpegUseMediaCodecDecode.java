@@ -688,12 +688,12 @@ public class FfmpegUseMediaCodecDecode {
                     mContext.getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE);
             String whatPlayer = sp.getString(PLAYBACK_USE_PLAYER, PLAYER_FFMPEG_MEDIACODEC);
             if (!TextUtils.equals(whatPlayer, PLAYER_FFMPEG_MEDIACODEC)
-                    ||
+                    /*||
                     // 480P及以下的视频使用ffmpeg解码
                     (((width <= 854 && height <= 480)
                             || (width <= 480 && height <= 854))
                             && duration > 0 && duration <= 600
-                            && frame_rate <= 30)) {
+                            && frame_rate <= 30)*/) {
                 return false;
             }
 

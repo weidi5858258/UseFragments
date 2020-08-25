@@ -675,6 +675,8 @@ public class PlayerWrapper {
                         clickFive();
                         break;
                     case 6:
+                        MLog.d(TAG, "clickSix()");
+                        clickSix();
                         break;
                     case 7:
                         break;
@@ -2303,6 +2305,17 @@ public class PlayerWrapper {
             mPlayIB.setVisibility(View.GONE);
             mPauseIB.setVisibility(View.VISIBLE);
             MyToast.show("帧模式已开启");
+        }
+    }
+
+    private void clickSix() {
+        String whatPlayer = mSP.getString(PLAYBACK_USE_PLAYER, PLAYER_FFMPEG_MEDIACODEC);
+        if (TextUtils.equals(whatPlayer, PLAYER_FFMPEG_MEDIACODEC)) {
+            MyToast.show(PLAYER_FFMPEG);
+            mSP.edit().putString(PLAYBACK_USE_PLAYER, PLAYER_FFMPEG).commit();
+        } else {
+            MyToast.show(PLAYER_FFMPEG_MEDIACODEC);
+            mSP.edit().putString(PLAYBACK_USE_PLAYER, PLAYER_FFMPEG_MEDIACODEC).commit();
         }
     }
 
