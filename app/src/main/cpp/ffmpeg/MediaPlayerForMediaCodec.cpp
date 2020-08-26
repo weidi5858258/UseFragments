@@ -2381,6 +2381,8 @@ namespace alexander_media_mediacodec {
             if (needToGetResultAgain) {
                 runCounts = 0;
             }
+        } else {
+            TIME_DIFFERENCE = averageTimeDiff + 0.100000;
         }
         LOGI("hope_to_get_a_good_result() TIME_DIFFERENCE: %lf\n", TIME_DIFFERENCE);
 
