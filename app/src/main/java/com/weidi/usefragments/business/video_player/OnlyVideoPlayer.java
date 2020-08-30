@@ -738,7 +738,7 @@ public class OnlyVideoPlayer {
                 AVPacket data = wrapper.handleData.get(0);
                 wrapper.frameData = data.data;
                 wrapper.frameDataLength = data.size;
-                wrapper.presentationTimeUs1 = data.sampleTime;
+                wrapper.presentationTimeUs1 = data.presentationTimeUs;
                 data = null;
                 wrapper.handleData.remove(0);
 

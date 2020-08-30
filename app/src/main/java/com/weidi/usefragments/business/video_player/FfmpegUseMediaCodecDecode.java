@@ -938,10 +938,12 @@ public class FfmpegUseMediaCodecDecode {
                         ? EDMediaCodec.TYPE.TYPE_AUDIO
                         : EDMediaCodec.TYPE.TYPE_VIDEO),
                 wrapper.decoderMediaCodec,
+                null,
                 wrapper.data,
                 0,
                 wrapper.size,
                 wrapper.sampleTime,
+                0,
                 wrapper.render,
                 true);
     }

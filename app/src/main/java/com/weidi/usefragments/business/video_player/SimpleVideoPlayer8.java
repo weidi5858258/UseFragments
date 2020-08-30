@@ -145,8 +145,6 @@ public class SimpleVideoPlayer8 {
     private float mVolume = 1.0f;
     private boolean mIsLocal = false;
 
-    private IMediaDataInterface mIMediaDataStub;
-
     private Handler mUiHandler = null;
     private Handler mThreadHandler = null;
     private HandlerThread mHandlerThread = null;
@@ -938,7 +936,7 @@ public class SimpleVideoPlayer8 {
                 AVPacket data = wrapper.handleData.get(0);
                 wrapper.frameData = data.data;
                 wrapper.frameDataLength = data.size;
-                wrapper.presentationTimeUs1 = data.sampleTime;
+                wrapper.presentationTimeUs1 = data.presentationTimeUs;
 
                 // 向MediaCodec喂数据
                 if (!feedInputBufferAndDrainOutputBuffer(wrapper)) {
@@ -2089,13 +2087,11 @@ public class SimpleVideoPlayer8 {
         @Override
         public void onServiceConnected(ComponentName name, IBinder service) {
             MLog.d(TAG, "onServiceConnected()");
-            mIMediaDataStub = IMediaDataInterface.Stub.asInterface(service);
         }
 
         @Override
         public void onServiceDisconnected(ComponentName name) {
             MLog.d(TAG, "onServiceDisconnected()");
-            mIMediaDataStub = null;
         }
     };
 

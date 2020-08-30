@@ -11,6 +11,7 @@ import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.graphics.PixelFormat;
 import android.media.MediaFormat;
+import android.os.Build;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.HandlerThread;
@@ -128,7 +129,8 @@ public class PlayerWrapper {
     private PowerManager.WakeLock mPowerWakeLock;
     private SurfaceHolder mSurfaceHolder;
     private FFMPEG mFFMPEGPlayer;
-    private SimpleVideoPlayer mSimpleVideoPlayer;
+    //private SimpleVideoPlayer mSimpleVideoPlayer;
+    private SimplePlayer mSimpleVideoPlayer;
     private FfmpegUseMediaCodecDecode mFfmpegUseMediaCodecDecode;
     private GetMediaFormat mGetMediaFormat;
     private String mPath;
@@ -399,10 +401,11 @@ public class PlayerWrapper {
             mFFMPEGPlayer = FFMPEG.getDefault();
         }
         mFFMPEGPlayer.setContext(mContext);
-        if (mSimpleVideoPlayer == null) {
-            mSimpleVideoPlayer = new SimpleVideoPlayer();
+        /*if (mSimpleVideoPlayer == null) {
+            //mSimpleVideoPlayer = new SimpleVideoPlayer();
+            mSimpleVideoPlayer = new SimplePlayer();
         }
-        mSimpleVideoPlayer.setContext(mContext);
+        mSimpleVideoPlayer.setContext(mContext);*/
         if (mFfmpegUseMediaCodecDecode == null) {
             mFfmpegUseMediaCodecDecode = new FfmpegUseMediaCodecDecode();
         }
@@ -698,7 +701,7 @@ public class PlayerWrapper {
                 break;
             case MSG_START_PLAYBACK:
                 if (TextUtils.equals(whatPlayer, PLAYER_MEDIACODEC)) {
-                    ThreadPool.getFixedThreadPool().execute(new Runnable() {
+                    /*ThreadPool.getFixedThreadPool().execute(new Runnable() {
                         @Override
                         public void run() {
                             mSimpleVideoPlayer.handleData(mSimpleVideoPlayer.mAudioWrapper);
@@ -709,7 +712,7 @@ public class PlayerWrapper {
                         public void run() {
                             mSimpleVideoPlayer.handleData(mSimpleVideoPlayer.mVideoWrapper);
                         }
-                    });
+                    });*/
                 } else {
                     ThreadPool.getFixedThreadPool().execute(new Runnable() {
                         @Override
@@ -900,8 +903,8 @@ public class PlayerWrapper {
 
     // @@@
     public void startForGetMediaFormat() {
-        /*whatPlayer = mSP.getString(PLAYBACK_USE_PLAYER, PLAYER_FFMPEG_MEDIACODEC);
-        if (TextUtils.equals(whatPlayer, PLAYER_FFMPEG_MEDIACODEC)
+        whatPlayer = mSP.getString(PLAYBACK_USE_PLAYER, PLAYER_FFMPEG_MEDIACODEC);
+        /*if (TextUtils.equals(whatPlayer, PLAYER_FFMPEG_MEDIACODEC)
                 && !mPath.endsWith(".m4s")
                 && !mPath.endsWith(".h264")
                 && !mPath.endsWith(".aac")
@@ -927,12 +930,14 @@ public class PlayerWrapper {
         // 这里也要写
         mSurfaceHolder.setFormat(PixelFormat.RGBA_8888);
 
+        // 底层有关参数的设置
+        mFFMPEGPlayer.setHandler(mUiHandler);
         if (TextUtils.equals(whatPlayer, PLAYER_MEDIACODEC)) {
+            //mSimpleVideoPlayer = new SimpleVideoPlayer();
+            mSimpleVideoPlayer = new SimplePlayer();
+            mSimpleVideoPlayer.setContext(mContext);
             mSimpleVideoPlayer.setHandler(mUiHandler);
             mSimpleVideoPlayer.setCallback(mFFMPEGPlayer.mCallback);
-        } else {
-            // 底层有关参数的设置
-            mFFMPEGPlayer.setHandler(mUiHandler);
         }
 
         // 开启线程初始化ffmpeg
@@ -998,11 +1003,13 @@ public class PlayerWrapper {
 
                 if (!mIsSeparatedAudioVideo) {
                     if (TextUtils.equals(whatPlayer, PLAYER_MEDIACODEC)) {
-                        mSimpleVideoPlayer.setDataSource(mPath);
                         mSimpleVideoPlayer.setSurface(mSurfaceHolder.getSurface());
-                        if (!mSimpleVideoPlayer.initPlayer()) {
-                            return;
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                            mSimpleVideoPlayer.setDataSource(mPath);
                         }
+                        /*if (!mSimpleVideoPlayer.initPlayer()) {
+                            return;
+                        }*/
                     } else {
                         sendEmptyMessage(DO_SOMETHING_CODE_init);
                         if (TextUtils.isEmpty(mType)
@@ -1027,7 +1034,7 @@ public class PlayerWrapper {
                         MLog.d(TAG, "startPlayback()               position: " + position);
 
                         if (TextUtils.equals(whatPlayer, PLAYER_MEDIACODEC)) {
-                            mSimpleVideoPlayer.setProgressUs(position * 1000000);
+                            //mSimpleVideoPlayer.setProgressUs(position * 1000000);
                         } else {
                             mFFMPEGPlayer.onTransact(DO_SOMETHING_CODE_seekTo,
                                     JniObject.obtain().writeLong(position));
@@ -1068,7 +1075,7 @@ public class PlayerWrapper {
                 if (!mIsSeparatedAudioVideo) {
                     SystemClock.sleep(600);
                     if (TextUtils.equals(whatPlayer, PLAYER_MEDIACODEC)) {
-                        mSimpleVideoPlayer.readData();
+                        //mSimpleVideoPlayer.readData();
                     } else {
                         sendEmptyMessage(DO_SOMETHING_CODE_readData);
                     }

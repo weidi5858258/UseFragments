@@ -121,10 +121,12 @@ public class MediaClient {
                         mCallback,
                         EDMediaCodec.TYPE.TYPE_VIDEO,
                         mVideoMC,
+                        null,
                         data,
                         0,
                         readCount,
                         presentationTimeUs,
+                        0,
                         false,
                         true);
             } catch (Exception e) {

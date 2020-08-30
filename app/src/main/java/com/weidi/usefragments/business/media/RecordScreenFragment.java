@@ -820,6 +820,8 @@ public class RecordScreenFragment extends BaseFragment {
                                 EDMediaCodec.TYPE.TYPE_VIDEO,
                                 mVideoEncoderMediaCodec,
                                 null,
+                                null,
+                                0,
                                 0,
                                 0,
                                 0,
@@ -871,10 +873,12 @@ public class RecordScreenFragment extends BaseFragment {
                                 mCallback,
                                 EDMediaCodec.TYPE.TYPE_AUDIO,
                                 mAudioEncoderMediaCodec,
+                                null,
                                 buffer,
                                 0,
                                 readSize,
                                 System.nanoTime() / 1000,
+                                0,
                                 false,
                                 true);
 

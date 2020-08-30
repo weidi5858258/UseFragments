@@ -6,10 +6,7 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.content.ServiceConnection;
-import android.media.AudioFormat;
 import android.media.AudioManager;
-import android.media.AudioTrack;
 import android.media.MediaCodec;
 import android.media.MediaCodecInfo;
 import android.media.MediaExtractor;
@@ -17,7 +14,6 @@ import android.media.MediaFormat;
 import android.os.Build;
 import android.os.Handler;
 import android.os.HandlerThread;
-import android.os.IBinder;
 import android.os.Looper;
 import android.os.Message;
 import android.os.SystemClock;
@@ -30,7 +26,6 @@ import android.view.Surface;
 import com.weidi.eventbus.EventBusUtils;
 import com.weidi.usefragments.media.MediaUtils;
 import com.weidi.usefragments.receiver.MediaButtonReceiver;
-import com.weidi.usefragments.tool.AACPlayer;
 import com.weidi.usefragments.tool.MLog;
 
 import java.io.BufferedOutputStream;
@@ -40,7 +35,6 @@ import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Map;
 
 /***
@@ -841,9 +835,9 @@ public class SimpleVideoPlayer10 {
                 wrapper.frameData = new byte[data.size];
                 System.arraycopy(data.data, 0, wrapper.frameData, 0, data.size);
                 wrapper.frameDataLength = data.size;
-                wrapper.presentationTimeUs1 = data.sampleTime;
+                wrapper.presentationTimeUs1 = data.presentationTimeUs;
                 data.size = -1;
-                data.sampleTime = -1;
+                data.presentationTimeUs = -1;
 
                 // 向MediaCodec喂数据
                 if (!feedInputBufferAndDrainOutputBuffer(wrapper)) {
@@ -1018,7 +1012,7 @@ public class SimpleVideoPlayer10 {
                 for (int i = 0; i < mVideoWrapper.CACHE; i++) {
                     AVPacket data = new AVPacket(mVideoWrapper.frameMaxLength, 0);
                     data.size = -1;
-                    data.sampleTime = -1;
+                    data.presentationTimeUs = -1;
                     mVideoWrapper.queue.queue[i] = data;
                 }
             }
@@ -1598,7 +1592,7 @@ public class SimpleVideoPlayer10 {
                 AVPacket data = wrapper.queue.queue[wrapper.queue.readIndex];
                 if (data.size < 0) {
                     data.size = readSize;
-                    data.sampleTime = sampleTime;
+                    data.presentationTimeUs = sampleTime;
                     Arrays.fill(data.data, (byte) 0);
                     System.arraycopy(buffer, 0, data.data, 0, readSize);
                     wrapper.queue.size++;

@@ -406,12 +406,6 @@
             android:exported="true"
             android:process=":remote" />
 
-        <service
-            android:name="com.weidi.usefragments.business.video_player.MediaDataService"
-            android:enabled="true"
-            android:exported="true"
-            android:process=":mediadata1" />
-
     </application>
 
 </manifest>

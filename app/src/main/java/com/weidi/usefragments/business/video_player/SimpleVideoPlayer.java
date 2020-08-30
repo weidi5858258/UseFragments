@@ -1,16 +1,11 @@
 package com.weidi.usefragments.business.video_player;
 
 import android.annotation.TargetApi;
-import android.content.BroadcastReceiver;
-import android.content.ComponentName;
 import android.content.Context;
-import android.content.Intent;
-import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.media.AudioFormat;
 import android.media.AudioManager;
 import android.media.AudioTrack;
-import android.media.Image;
 import android.media.MediaCodec;
 import android.media.MediaCodecInfo;
 import android.media.MediaExtractor;
@@ -27,15 +22,12 @@ import android.util.Log;
 import android.view.KeyEvent;
 import android.view.Surface;
 
-import com.weidi.eventbus.EventBusUtils;
 import com.weidi.threadpool.ThreadPool;
 import com.weidi.usefragments.media.MediaUtils;
-import com.weidi.usefragments.receiver.MediaButtonReceiver;
 import com.weidi.usefragments.tool.AACPlayer;
 import com.weidi.usefragments.tool.Callback;
 import com.weidi.usefragments.tool.MLog;
 
-import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Method;
@@ -1244,7 +1236,7 @@ public class SimpleVideoPlayer {
             if (readDataSize > 0) {
                 wrapper.data = data.data;
                 wrapper.size = data.size;
-                wrapper.sampleTime = data.sampleTime;
+                wrapper.sampleTime = data.presentationTimeUs;
 
                 // 向MediaCodec喂数据
                 if (!feedInputBufferAndDrainOutputBuffer(wrapper)) {
