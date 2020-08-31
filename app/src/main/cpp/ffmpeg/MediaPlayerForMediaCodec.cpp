@@ -1915,45 +1915,59 @@ namespace alexander_media_mediacodec {
                     LOGW("readDataImpl() video 填满数据了\n");
                 }
             }
-        } else if (wrapper->type == TYPE_VIDEO
-                   && list2Size >= wrapper->list2LimitCounts) {
-            /*if (!isLocal) {
-                LOGI("readDataImpl() audio list1: %d\n", audioWrapper->father->list1->size());
-                LOGI("readDataImpl() video list1: %d\n", videoWrapper->father->list1->size());
-                LOGI("readDataImpl() audio list2: %d\n", audioWrapper->father->list2->size());
-                LOGI("readDataImpl() video list2: %d\n", videoWrapper->father->list2->size());
-            }*/
-            if ((audioWrapper->father->streamIndex != -1
-                 && audioWrapper->father->list2->size() >
-                    audioWrapper->father->list1LimitCounts)
-                || audioWrapper->father->streamIndex == -1) {
-                onLoadProgressUpdated(
-                        MSG_ON_TRANSACT_AUDIO_PRODUCER, audioWrapper->father->list2->size());
-                onLoadProgressUpdated(
-                        MSG_ON_TRANSACT_VIDEO_PRODUCER, videoWrapper->father->list2->size());
-                if (!isLocal) {
-                    LOGD("readDataImpl() notifyToReadWait start\n");
-                }
-                notifyToReadWait(videoWrapper->father);
-                if (!isLocal) {
-                    LOGD("readDataImpl() notifyToReadWait end\n");
-                }
-            }
-        } else if (wrapper->type == TYPE_AUDIO
-                   && videoWrapper->father->streamIndex == -1
-                   && list2Size >= wrapper->list2LimitCounts) {
+        } else if (wrapper->type == TYPE_VIDEO) {
             onLoadProgressUpdated(
                     MSG_ON_TRANSACT_AUDIO_PRODUCER, audioWrapper->father->list2->size());
             onLoadProgressUpdated(
                     MSG_ON_TRANSACT_VIDEO_PRODUCER, videoWrapper->father->list2->size());
+        } else if (wrapper->type == TYPE_AUDIO) {
+            onLoadProgressUpdated(
+                    MSG_ON_TRANSACT_AUDIO_PRODUCER, audioWrapper->father->list2->size());
+            onLoadProgressUpdated(
+                    MSG_ON_TRANSACT_VIDEO_PRODUCER, videoWrapper->father->list2->size());
+        }
+
+        bool isFull = false;
+        if (videoWrapper->father->streamIndex != -1
+            && audioWrapper->father->streamIndex != -1) {
+            // video and audio
+            if (videoWrapper->father->list2->size() >=
+                videoWrapper->father->list2LimitCounts
+                && audioWrapper->father->list2->size() >=
+                   audioWrapper->father->list2LimitCounts) {
+                isFull = true;
+            }
+        } else if (videoWrapper->father->streamIndex != -1
+                   && audioWrapper->father->streamIndex == -1) {
+            // video
+            if (videoWrapper->father->list2->size() >=
+                videoWrapper->father->list2LimitCounts) {
+                isFull = true;
+            }
+        } else if (videoWrapper->father->streamIndex == -1
+                   && audioWrapper->father->streamIndex != -1) {
+            // audio
+            if (audioWrapper->father->list2->size() >=
+                audioWrapper->father->list2LimitCounts) {
+                isFull = true;
+            }
+        }
+        if (isFull) {
+            if (!isLocal) {
+                LOGI("readDataImpl() video list1: %d\n", videoWrapper->father->list1->size());
+                LOGI("readDataImpl() audio list1: %d\n", audioWrapper->father->list1->size());
+                LOGI("readDataImpl() video list2: %d\n", videoWrapper->father->list2->size());
+                LOGI("readDataImpl() audio list2: %d\n", audioWrapper->father->list2->size());
+            }
             if (!isLocal) {
                 LOGD("readDataImpl() notifyToReadWait start\n");
             }
-            notifyToReadWait(audioWrapper->father);
+            notifyToReadWait();
             if (!isLocal) {
                 LOGD("readDataImpl() notifyToReadWait end\n");
             }
         }
+
         return 0;
     }
 
@@ -3150,7 +3164,7 @@ namespace alexander_media_mediacodec {
                     && !isLocal
                     && wrapper->list2->size() < wrapper->list2LimitCounts
                     && list1Size % 10 == 0) {
-                    notifyToRead(wrapper);
+                    notifyToRead();
                 }
             }
 
@@ -3203,11 +3217,7 @@ namespace alexander_media_mediacodec {
                         }
                         // LOGI("===================================================\n");
                     }
-                    if (videoWrapper->father->streamIndex != -1) {
-                        notifyToRead(videoWrapper->father);
-                    } else {
-                        notifyToRead(audioWrapper->father);
-                    }
+                    notifyToRead();
                 }
             } else {
                 if (wrapper->list1->size() > 0) {
@@ -3297,7 +3307,7 @@ namespace alexander_media_mediacodec {
                 onPaused();
 
                 // 通知"读"
-                notifyToRead(videoWrapper->father);
+                notifyToRead();
                 if (wrapper->type == TYPE_AUDIO) {
                     // 音频Cache引起的暂停
                     LOGE("handleData() wait() Cache audio start 主动暂停\n");
