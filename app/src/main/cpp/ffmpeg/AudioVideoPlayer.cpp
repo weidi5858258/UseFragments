@@ -1159,7 +1159,29 @@ namespace alexander_audio_video {
              0.457614 0.461167 0.472319 0.486549 0.494847
              */
             if (videoWrapper->father->useMediaCodec) {
-                TIME_DIFFERENCE = 0.200000;
+                if (averageTimeDiff > 0.490000) {
+                    TIME_DIFFERENCE = 0.199500;
+                } else if (averageTimeDiff > 0.480000 && averageTimeDiff < 0.490000) {
+                    TIME_DIFFERENCE = 0.199000;
+                } else if (averageTimeDiff > 0.470000 && averageTimeDiff < 0.480000) {
+                    TIME_DIFFERENCE = 0.198500;
+                } else if (averageTimeDiff > 0.460000 && averageTimeDiff < 0.470000) {
+                    TIME_DIFFERENCE = 0.198000;
+                } else if (averageTimeDiff > 0.450000 && averageTimeDiff < 0.460000) {
+                    TIME_DIFFERENCE = 0.197500;
+                } else if (averageTimeDiff > 0.440000 && averageTimeDiff < 0.450000) {
+                    TIME_DIFFERENCE = 0.197000;
+                } else if (averageTimeDiff > 0.430000 && averageTimeDiff < 0.440000) {
+                    TIME_DIFFERENCE = 0.196500;
+                } else if (averageTimeDiff > 0.420000 && averageTimeDiff < 0.430000) {
+                    TIME_DIFFERENCE = 0.196000;
+                } else if (averageTimeDiff > 0.410000 && averageTimeDiff < 0.420000) {
+                    TIME_DIFFERENCE = 0.195500;
+                } else if (averageTimeDiff > 0.400000 && averageTimeDiff < 0.410000) {
+                    TIME_DIFFERENCE = 0.195000;
+                }
+
+                //TIME_DIFFERENCE = 0.200000;
             } else {
                 TIME_DIFFERENCE = 0.300000;
             }

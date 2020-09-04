@@ -287,7 +287,7 @@ namespace alexander_media_mediacodec {
     static AVFormatContext *avFormatContextAudioOutput = nullptr;
     static AVStream *video_out_stream = nullptr;
     static AVStream *audio_out_stream = nullptr;
-
+    //
     static FILE *videoFile = nullptr;
     static FILE *audioFile = nullptr;
 
@@ -575,6 +575,7 @@ namespace alexander_media_mediacodec {
         videoWrapper->father->handleLockCondition = PTHREAD_COND_INITIALIZER;
     }
 
+    // *.mp4
     int initDownload() {
         //avformat_alloc_output_context2(&avFormatContextOutput, nullptr, nullptr, outFilePath);
         //AVOutputFormat *out_fmt = avFormatContextOutput->oformat;
@@ -668,6 +669,7 @@ namespace alexander_media_mediacodec {
         return 0;
     }
 
+    // *.h264 *.aac
     int initDownload2() {
         int ret = -1;
         AVOutputFormat *video_out_fmt = av_guess_format(nullptr, videoOutFilePath, nullptr);
@@ -1735,6 +1737,7 @@ namespace alexander_media_mediacodec {
         return 0;
     }
 
+    // *.mp4
     int downloadImpl(Wrapper *wrapper, AVPacket *srcAVPacket, AVPacket *copyAVPacket) {
         av_packet_ref(copyAVPacket, srcAVPacket);
 
@@ -1810,7 +1813,7 @@ namespace alexander_media_mediacodec {
         av_packet_unref(copyAVPacket);
     }
 
-    // 音视频分开保存时
+    // *.h264 *.aac
     int downloadImpl2(Wrapper *wrapper, AVPacket *srcAVPacket, AVPacket *copyAVPacket) {
         av_packet_ref(copyAVPacket, srcAVPacket);
 
@@ -2113,14 +2116,14 @@ namespace alexander_media_mediacodec {
                             videoWrapper->father->list2->size());
                 }
 
-                /*pthread_mutex_lock(&readLockMutex);
+                pthread_mutex_lock(&readLockMutex);
                 if (needToDownload && isInitSuccess) {
                     LOGI("readData() 文件读完,已经停止下载\n");
                     needToDownload = false;
                     isInitSuccess = false;
                     closeDownload();
                 }
-                pthread_mutex_unlock(&readLockMutex);*/
+                pthread_mutex_unlock(&readLockMutex);
 
                 if (onlyDownloadNotPlayback) {
                     onInfo("文件已读完");
@@ -2153,7 +2156,7 @@ namespace alexander_media_mediacodec {
 
             if (srcAVPacket->stream_index == audioWrapper->father->streamIndex) {
                 if (needToDownload && isInitSuccess) {
-                    downloadImpl2(audioWrapper->father, srcAVPacket, copyAVPacket);
+                    downloadImpl(audioWrapper->father, srcAVPacket, copyAVPacket);
                 }
                 if (!onlyDownloadNotPlayback) {
                     if (audioWrapper->father->useMediaCodec) {
@@ -2174,7 +2177,7 @@ namespace alexander_media_mediacodec {
                 }
             } else if (srcAVPacket->stream_index == videoWrapper->father->streamIndex) {
                 if (needToDownload && isInitSuccess) {
-                    downloadImpl2(videoWrapper->father, srcAVPacket, copyAVPacket);
+                    downloadImpl(videoWrapper->father, srcAVPacket, copyAVPacket);
                 }
                 if (!onlyDownloadNotPlayback) {
                     if (videoWrapper->father->useMediaCodec) {
@@ -2256,7 +2259,7 @@ namespace alexander_media_mediacodec {
              averageTimeDiff, frameRate);
 
         bool isGoodResult = false;
-        if ((bitRate > 0 && bit_rate > 0)
+        if ((bitRate > 0 && bit_rate > 0 && bitRate >= bit_rate)
             || (bitRate > 0 && bit_rate == 0)
             || (bitRate == 0 && bit_rate == 0)) {
             isGoodResult = true;
@@ -2330,7 +2333,29 @@ namespace alexander_media_mediacodec {
                  0.457614 0.461167 0.472319 0.486549 0.494847
                  */
                 if (videoWrapper->father->useMediaCodec) {
-                    TIME_DIFFERENCE = 0.200000;
+                    if (averageTimeDiff > 0.490000) {
+                        TIME_DIFFERENCE = 0.199500;
+                    } else if (averageTimeDiff > 0.480000 && averageTimeDiff < 0.490000) {
+                        TIME_DIFFERENCE = 0.199000;
+                    } else if (averageTimeDiff > 0.470000 && averageTimeDiff < 0.480000) {
+                        TIME_DIFFERENCE = 0.198500;
+                    } else if (averageTimeDiff > 0.460000 && averageTimeDiff < 0.470000) {
+                        TIME_DIFFERENCE = 0.198000;
+                    } else if (averageTimeDiff > 0.450000 && averageTimeDiff < 0.460000) {
+                        TIME_DIFFERENCE = 0.197500;
+                    } else if (averageTimeDiff > 0.440000 && averageTimeDiff < 0.450000) {
+                        TIME_DIFFERENCE = 0.197000;
+                    } else if (averageTimeDiff > 0.430000 && averageTimeDiff < 0.440000) {
+                        TIME_DIFFERENCE = 0.196500;
+                    } else if (averageTimeDiff > 0.420000 && averageTimeDiff < 0.430000) {
+                        TIME_DIFFERENCE = 0.196000;
+                    } else if (averageTimeDiff > 0.410000 && averageTimeDiff < 0.420000) {
+                        TIME_DIFFERENCE = 0.195500;
+                    } else if (averageTimeDiff > 0.400000 && averageTimeDiff < 0.410000) {
+                        TIME_DIFFERENCE = 0.195000;
+                    }
+
+                    //TIME_DIFFERENCE = 0.200000;
                 } else {
                     TIME_DIFFERENCE = 0.300000;
                 }
@@ -4474,15 +4499,15 @@ namespace alexander_media_mediacodec {
                     return 0;
                 }*/
 
-                /*std::string mediaPath;
+                std::string mediaPath;
                 mediaPath.append(filePath);
                 mediaPath.append(fileName);
                 mediaPath.append(".mp4");// .h264 error
                 memset(outFilePath, '\0', sizeof(outFilePath));
                 av_strlcpy(outFilePath, mediaPath.c_str(), sizeof(outFilePath));
-                LOGI("download() outFilePath: %s\n", outFilePath);*/
+                LOGI("download() outFilePath: %s\n", outFilePath);
 
-                std::string videoPath;
+                /*std::string videoPath;
                 std::string audioPath;
                 videoPath.append(filePath);
                 videoPath.append(fileName);
@@ -4490,17 +4515,15 @@ namespace alexander_media_mediacodec {
                 audioPath.append(filePath);
                 audioPath.append(fileName);
                 audioPath.append(".aac");
-
                 memset(videoOutFilePath, '\0', sizeof(videoOutFilePath));
                 av_strlcpy(videoOutFilePath, videoPath.c_str(), sizeof(videoOutFilePath));
                 memset(audioOutFilePath, '\0', sizeof(audioOutFilePath));
                 av_strlcpy(audioOutFilePath, audioPath.c_str(), sizeof(audioOutFilePath));
-
                 LOGI("download() videoOutFilePath: %s\n", videoOutFilePath);
-                LOGI("download() audioOutFilePath: %s\n", audioOutFilePath);
+                LOGI("download() audioOutFilePath: %s\n", audioOutFilePath);*/
 
                 onlyDownloadNotPlayback = false;
-                if (initDownload2() < 0) {
+                if (initDownload() < 0) {
                     needToDownload = false;
                     isInitSuccess = false;
                 } else {

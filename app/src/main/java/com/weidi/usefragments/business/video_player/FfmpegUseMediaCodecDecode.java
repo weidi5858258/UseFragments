@@ -654,7 +654,7 @@ public class FfmpegUseMediaCodecDecode {
                 videoMime = MediaFormat.MIMETYPE_VIDEO_VP9;
                 break;
             case AV_CODEC_ID_MPEG2VIDEO:
-                // video/mpeg2(创建MediaCodec时有时会失败)
+                // video/mpeg2
                 videoMime = MediaFormat.MIMETYPE_VIDEO_MPEG2;
                 break;
             case AV_CODEC_ID_H263:
