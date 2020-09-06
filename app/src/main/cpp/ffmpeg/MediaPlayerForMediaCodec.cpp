@@ -220,6 +220,7 @@ pthread_cond_t readLockCondition = PTHREAD_COND_INITIALIZER;
 bool isLocal = false;
 bool isH264 = false;
 bool isReading = false;
+bool isReadWaited = false;
 bool isVideoHandling = false;
 bool isVideoRendering = false;
 bool isInterrupted = false;
@@ -462,6 +463,7 @@ namespace alexander_media_mediacodec {
         bit_rate = 0;
 
         isReading = false;
+        isReadWaited = false;
         isVideoHandling = false;
         isVideoRendering = false;
         isInterrupted = false;
@@ -504,6 +506,7 @@ namespace alexander_media_mediacodec {
         audioWrapper->father->isStarted = false;
         audioWrapper->father->isReading = true;
         audioWrapper->father->isHandling = true;
+        audioWrapper->father->isSleeping = false;
         audioWrapper->father->isPausedForUser = false;
         audioWrapper->father->isPausedForCache = false;
         audioWrapper->father->isPausedForSeek = false;
@@ -555,6 +558,7 @@ namespace alexander_media_mediacodec {
         videoWrapper->father->isStarted = false;
         videoWrapper->father->isReading = true;
         videoWrapper->father->isHandling = true;
+        videoWrapper->father->isSleeping = false;
         videoWrapper->father->isPausedForUser = false;
         videoWrapper->father->isPausedForCache = false;
         videoWrapper->father->isPausedForSeek = false;
@@ -1965,7 +1969,9 @@ namespace alexander_media_mediacodec {
             if (!isLocal) {
                 LOGD("readDataImpl() notifyToReadWait start\n");
             }
+            isReadWaited = true;
             notifyToReadWait();
+            isReadWaited = false;
             if (!isLocal) {
                 LOGD("readDataImpl() notifyToReadWait end\n");
             }
@@ -2266,7 +2272,7 @@ namespace alexander_media_mediacodec {
         }
 
         if (isGoodResult) {
-            bool needToGetResultAgain = false;
+            bool needToGetResultAgain = true;
             if (averageTimeDiff > 1.000000) {
                 /***
                  还没遇到过
@@ -2276,7 +2282,6 @@ namespace alexander_media_mediacodec {
                 } else {
                     TIME_DIFFERENCE = 0.900000;
                 }
-                needToGetResultAgain = true;
             } else if (averageTimeDiff > 0.900000 && averageTimeDiff < 1.000000) {
                 /***
                  还没遇到过
@@ -2286,7 +2291,6 @@ namespace alexander_media_mediacodec {
                 } else {
                     TIME_DIFFERENCE = 0.800000;
                 }
-                needToGetResultAgain = true;
             } else if (averageTimeDiff > 0.800000 && averageTimeDiff < 0.900000) {
                 /***
                  还没遇到过
@@ -2296,7 +2300,6 @@ namespace alexander_media_mediacodec {
                 } else {
                     TIME_DIFFERENCE = 0.700000;
                 }
-                needToGetResultAgain = true;
             } else if (averageTimeDiff > 0.700000 && averageTimeDiff < 0.800000) {
                 /***
                  还没遇到过
@@ -2306,7 +2309,6 @@ namespace alexander_media_mediacodec {
                 } else {
                     TIME_DIFFERENCE = 0.600000;
                 }
-                needToGetResultAgain = true;
             } else if (averageTimeDiff > 0.600000 && averageTimeDiff < 0.700000) {
                 /***
                  还没遇到过
@@ -2316,7 +2318,6 @@ namespace alexander_media_mediacodec {
                 } else {
                     TIME_DIFFERENCE = 0.500000;
                 }
-                needToGetResultAgain = true;
             } else if (averageTimeDiff > 0.500000 && averageTimeDiff < 0.600000) {
                 /***
                  0.505212 0.524924
@@ -2362,6 +2363,7 @@ namespace alexander_media_mediacodec {
                 needToGetResultAgain = false;
             } else if (averageTimeDiff > 0.300000 && averageTimeDiff < 0.400000) {
                 /***
+                 http://ivi.bupt.edu.cn/hls/sdetv.m3u8@@@@@@@@@@山东教育卫视 这个直播不能同步
                  0.376415 0.385712 0.397755
                  */
                 if (videoWrapper->father->useMediaCodec) {
@@ -2390,8 +2392,10 @@ namespace alexander_media_mediacodec {
                     TIME_DIFFERENCE = averageTimeDiff;
                 }
                 needToGetResultAgain = false;
-            } else if (averageTimeDiff < 0.100000) {
+            } else if (averageTimeDiff > 0.010000 && averageTimeDiff < 0.100000) {
                 /***
+                 之前frameRate <= 23时,会走这里.
+                 现在好像当frameRate = 0或者frameRate >= 50时才可能走到这里.
                  0.014149 0.018936
                  0.022836 0.023516 0.024403 0.026983 0.027595 0.028610 0.029898
                  0.030690 0.031515 0.034621 0.035779 0.036042 0.037615 0.038017 0.039632
@@ -2419,6 +2423,8 @@ namespace alexander_media_mediacodec {
 
             if (needToGetResultAgain) {
                 runCounts = 0;
+                averageTimeDiff = 0;
+                TIME_DIFFERENCE = 0.500000;
             }
         } else {
             TIME_DIFFERENCE = averageTimeDiff + 0.100000;
@@ -2540,19 +2546,24 @@ namespace alexander_media_mediacodec {
             }
         }
 
-        if (videoWrapper->father->streamIndex != -1) {
+        if (videoWrapper->father->streamIndex != -1
+            && videoWrapper->father->useMediaCodec) {
             // 为了达到音视频同步,只能牺牲音频了.让音频慢下来.(个别视频会这样)
-            while (audioPts - videoPts > 0) {
+            while (audioPts - videoPts > 0
+                   && !videoWrapper->father->isSleeping) {
                 if (audioWrapper->father->isPausedForUser
                     || audioWrapper->father->isPausedForCache
                     || audioWrapper->father->isPausedForSeek
                     || !audioWrapper->father->isHandling
                     || !videoWrapper->father->isHandling) {
                     LOGI("handleAudioDataImpl() TIME_DIFFERENCE return\n");
+                    audioWrapper->father->isSleeping = false;
                     return 0;
                 }
+                audioWrapper->father->isSleeping = true;
                 av_usleep(1000);
             }
+            audioWrapper->father->isSleeping = false;
         }
 
         ////////////////////////////////////////////////////////////////////
@@ -2875,6 +2886,7 @@ namespace alexander_media_mediacodec {
                 // 如果发现小了,说明视频播放慢了,应丢弃这些帧
                 // break后videoTimeDifference增长的速度会加快
                 // videoPts = audioPts + averageTimeDiff;
+                preVideoPts = videoPts;
                 return 0;
             }
 
@@ -2907,7 +2919,8 @@ namespace alexander_media_mediacodec {
             }
             // 如果videoTimeDifference比audioTimeDifference大出了一定的范围
             // 那么说明视频播放快了,应等待音频
-            while (videoPts - audioPts > TIME_DIFFERENCE) {
+            while (videoPts - audioPts > TIME_DIFFERENCE
+                   && !audioWrapper->father->isSleeping) {
                 if (isFrameByFrameMode
                     || videoWrapper->father->isPausedForUser
                     || videoWrapper->father->isPausedForCache
@@ -2915,10 +2928,13 @@ namespace alexander_media_mediacodec {
                     || !audioWrapper->father->isHandling
                     || !videoWrapper->father->isHandling) {
                     LOGI("handleVideoOutputBuffer() TIME_DIFFERENCE return\n");
+                    videoWrapper->father->isSleeping = false;
                     return 0;
                 }
+                videoWrapper->father->isSleeping = true;
                 av_usleep(1000);
             }
+            videoWrapper->father->isSleeping = false;
         }
 
         // timeDifference = 0.040000
@@ -3185,12 +3201,22 @@ namespace alexander_media_mediacodec {
                 if (list1Size % 10 == 0) {
                     onLoadProgressUpdated(MSG_ON_TRANSACT_VIDEO_CONSUMER, list1Size);
                 }
-                if (wrapper->isReading
-                    && !isLocal
-                    && wrapper->list2->size() < wrapper->list2LimitCounts
-                    && list1Size % 10 == 0) {
-                    notifyToRead();
+            }
+
+            if (isReadWaited
+                && ((audioWrapper->father->streamIndex != -1
+                     && audioWrapper->father->isReading
+                     && audioWrapper->father->list2->size() <
+                        audioWrapper->father->list2LimitCounts)
+                    ||
+                    (videoWrapper->father->streamIndex != -1
+                     && videoWrapper->father->isReading
+                     && videoWrapper->father->list2->size() <
+                        videoWrapper->father->list2LimitCounts))) {
+                if (!isLocal) {
+                    LOGI("handleData() notifyToRead\n");
                 }
+                notifyToRead();
             }
 
             // endregion
@@ -3994,11 +4020,12 @@ namespace alexander_media_mediacodec {
             return -1;
         }
 
-        if (frameRate <= 23) {
+        /*if (frameRate <= 23) {
             TIME_DIFFERENCE = 0.000600;
         } else {
             TIME_DIFFERENCE = 0.500000;
-        }
+        }*/
+        TIME_DIFFERENCE = 0.500000;
 
         if (audioWrapper->father->streamIndex != -1
             && videoWrapper->father->streamIndex == -1) {
@@ -4233,9 +4260,9 @@ namespace alexander_media_mediacodec {
             audioWrapper->father->isPausedForCache = false;
             audioWrapper->father->isPausedForSeek = false;
             audioWrapper->father->isHandleList1Full = false;
-            notifyToRead(audioWrapper->father);
-            notifyToHandle(audioWrapper->father);
             notifyToRead();
+            //notifyToRead(audioWrapper->father);
+            notifyToHandle(audioWrapper->father);
         }
 
         if (videoWrapper != nullptr
@@ -4250,9 +4277,9 @@ namespace alexander_media_mediacodec {
             videoWrapper->father->isPausedForCache = false;
             videoWrapper->father->isPausedForSeek = false;
             videoWrapper->father->isHandleList1Full = false;
-            notifyToRead(videoWrapper->father);
-            notifyToHandle(videoWrapper->father);
             notifyToRead();
+            //notifyToRead(videoWrapper->father);
+            notifyToHandle(videoWrapper->father);
         }
         LOGI("stop() end\n");
         return 0;
@@ -4387,13 +4414,13 @@ namespace alexander_media_mediacodec {
             audioWrapper->father->isPausedForSeek = true;
             audioWrapper->father->needToSeek = false;
             notifyToHandle(audioWrapper->father);
-            notifyToRead(audioWrapper->father);
+            //notifyToRead(audioWrapper->father);
         }
         if (videoWrapper->father->streamIndex != -1) {
             videoWrapper->father->isPausedForSeek = true;
             videoWrapper->father->needToSeek = false;
             notifyToHandle(videoWrapper->father);
-            notifyToRead(videoWrapper->father);
+            //notifyToRead(videoWrapper->father);
         }
         notifyToRead();
 

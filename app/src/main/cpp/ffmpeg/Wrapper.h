@@ -140,6 +140,7 @@ struct Wrapper {
     bool isStarted = false;
     bool isReading = false;
     bool isHandling = false;
+    bool isSleeping = false;
     // 因为user所以pause
     bool isPausedForUser = false;
     // 因为cache所以pause

@@ -2308,11 +2308,12 @@ namespace alexander_audio_video {
         videoWrapper->father->duration = audioDuration;
         onChangeWindow(videoWrapper->srcWidth, videoWrapper->srcHeight);
 
-        if (frameRate <= 23) {
+        /*if (frameRate <= 23) {
             TIME_DIFFERENCE = 0.000600;
         } else {
             TIME_DIFFERENCE = 0.500000;
-        }
+        }*/
+        TIME_DIFFERENCE = 0.500000;
 
         LOGW("%s\n", "initPlayer() end");
         return 0;
