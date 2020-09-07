@@ -271,7 +271,6 @@ public class EDMediaCodec {
                 int roomSize = roomInfo.size;
                 // 不能根据room是否为null来判断是audio还是video(但我的三星Note2手机上是可以的)
                 if (room != null) {
-                    // audio
                     room.position(roomInfo.offset);
                     room.limit(roomInfo.offset + roomSize);
                     if (type == TYPE.TYPE_AUDIO) {

@@ -775,68 +775,21 @@ namespace alexander_media_mediacodec {
         int audioFormat = 2;
         int parameters_size = 4;
         long long parameters[parameters_size];
+        // 采样率
         parameters[0] = audioWrapper->dstSampleRate;
+        // 声道数
         parameters[1] = audioWrapper->dstNbChannels;
+        //
         parameters[2] = audioFormat;
+        // 时长.单位为"秒"
         parameters[3] = mediaDuration;
 
-        // [h265]: 00 00 00 01 + vps + 00 00 00 01 +sps + 00 00 00 01 pps
         uint8_t *extradata = audioWrapper->father->avCodecContext->extradata;
         int extradata_size = audioWrapper->father->avCodecContext->extradata_size;
-        if (extradata == nullptr) {
-            LOGW("initAudioMediaCodec() audio extradata is nullptr\n");
-        } else {
-            LOGW("initAudioMediaCodec() audio extradata is not nullptr\n");
-        }
-        LOGW("initAudioMediaCodec() audio extradata_size: %d\n", extradata_size);
 
-        bool initRet = false;
-        /*switch (audioMimeType) {
-            case AV_CODEC_ID_MP3:   // 86017 0
-            case AV_CODEC_ID_FLAC:  // 86028 0
-            case AV_CODEC_ID_EAC3: {// 86056 0
-                initRet = initMediaCodec(0x0001, audioMimeType,
-                                         parameters, parameterSize,
-                                         nullptr, 0,
-                                         nullptr, 0);
-                break;
-            }
-            case AV_CODEC_ID_AAC:       // 86018 1
-            case AV_CODEC_ID_AAC_LATM: {// 86065 1
-                initRet = initMediaCodec(0x0001, audioMimeType,
-                                         parameters, parameterSize,
-                                         extradata, extradata_size,
-                                         nullptr, 0);
-                break;
-            }
-            case AV_CODEC_ID_AC3: {// 86019 2
-                initRet = initMediaCodec(0x0001, audioMimeType,
-                                         parameters, parameterSize,
-                                         nullptr, 0,
-                                         nullptr, 0);
-                break;
-            }
-            case AV_CODEC_ID_VORBIS: {// 86021 2
-                initRet = initMediaCodec(0x0001, audioMimeType,
-                                         parameters, parameterSize,
-                                         nullptr, 0,
-                                         nullptr, 0);
-                break;
-            }
-            case AV_CODEC_ID_MP2:   // 86016
-            case AV_CODEC_ID_QCELP: // 86040
-            case AV_CODEC_ID_OPUS:  // 86076
-            default: {
-                initRet = initMediaCodec(0x0001, audioMimeType,
-                                         nullptr, 0,
-                                         nullptr, 0,
-                                         nullptr, 0);
-                break;
-            }
-        }*/
-        initRet = initMediaCodec(0x0001, audioWrapper->father->avCodecId,
-                                 parameters, parameters_size,
-                                 extradata, extradata_size);
+        bool initRet = initMediaCodec(0x0001, audioWrapper->father->avCodecId,
+                                      parameters, parameters_size,
+                                      extradata, extradata_size);
         if (!initRet) {
             audioWrapper->father->useMediaCodec = false;
         }
@@ -1019,73 +972,48 @@ namespace alexander_media_mediacodec {
         // 获取音频解码器
         // 先通过AVCodecParameters找到AVCodec
         audioWrapper->father->avCodecId = audioWrapper->father->avCodecParameters->codec_id;
-        LOGD("findAndOpenAVCodecForAudio() codecID: %d\n", audioWrapper->father->avCodecId);
+        LOGD("findAndOpenAVCodecForAudio() codecID: %d avcodec_get_name: %s\n",
+             audioWrapper->father->avCodecId, avcodec_get_name(audioWrapper->father->avCodecId));
+
         switch (audioWrapper->father->avCodecId) {
-            case AV_CODEC_ID_MP2: {// 86016
-                LOGD("findAndOpenAVCodecForAudio() AV_CODEC_ID_MP2\n");
-                audioWrapper->father->useMediaCodec = true;
-                audioWrapper->father->avBitStreamFilter = av_bsf_get_by_name("null");
-                break;
-            }
-            case AV_CODEC_ID_MP3: {// 86017
+            // 86017 --->
+            case AV_CODEC_ID_MP3: {
                 LOGD("findAndOpenAVCodecForAudio() AV_CODEC_ID_MP3\n");
                 audioWrapper->father->useMediaCodec = true;
                 audioWrapper->father->avBitStreamFilter = av_bsf_get_by_name("mp3decomp");
                 break;
             }
-            case AV_CODEC_ID_AAC: {// 86018 主流
+                // 86018 aac ---> audio/mp4a-latm
+            case AV_CODEC_ID_AAC: {
                 LOGD("findAndOpenAVCodecForAudio() AV_CODEC_ID_AAC\n");
                 audioWrapper->father->useMediaCodec = true;
                 audioWrapper->father->avBitStreamFilter = av_bsf_get_by_name("aac_adtstoasc");
                 break;
             }
-            case AV_CODEC_ID_AC3: {// 86019
-                LOGD("findAndOpenAVCodecForAudio() AV_CODEC_ID_AC3\n");
-                audioWrapper->father->useMediaCodec = true;
-                audioWrapper->father->avBitStreamFilter = av_bsf_get_by_name("null");
-                break;
-            }
-            case AV_CODEC_ID_VORBIS: {// 86021
-                LOGD("findAndOpenAVCodecForAudio() AV_CODEC_ID_VORBIS\n");
-                audioWrapper->father->useMediaCodec = true;
-                audioWrapper->father->avBitStreamFilter = av_bsf_get_by_name("null");
-                break;
-            }
-            case AV_CODEC_ID_FLAC: {// 86028
-                LOGD("findAndOpenAVCodecForAudio() AV_CODEC_ID_FLAC\n");
-                audioWrapper->father->useMediaCodec = true;
-                audioWrapper->father->avBitStreamFilter = av_bsf_get_by_name("null");
-                break;
-            }
-            case AV_CODEC_ID_QCELP: {// 86040
-                LOGD("findAndOpenAVCodecForAudio() AV_CODEC_ID_QCELP\n");
-                audioWrapper->father->useMediaCodec = true;
-                audioWrapper->father->avBitStreamFilter = av_bsf_get_by_name("null");
-                break;
-            }
-            case AV_CODEC_ID_EAC3: {// 86056
-                LOGD("findAndOpenAVCodecForAudio() AV_CODEC_ID_EAC3\n");
-                audioWrapper->father->useMediaCodec = true;
-                audioWrapper->father->avBitStreamFilter = av_bsf_get_by_name("eac3_core");
-                break;
-            }
-            case AV_CODEC_ID_AAC_LATM: {// 86065
-                LOGD("findAndOpenAVCodecForAudio() AV_CODEC_ID_AAC_LATM\n");
-                audioWrapper->father->useMediaCodec = true;
-                audioWrapper->father->avBitStreamFilter = av_bsf_get_by_name("null");
-                break;
-            }
-            case AV_CODEC_ID_OPUS: {// 86076
-                LOGD("findAndOpenAVCodecForAudio() AV_CODEC_ID_OPUS\n");
-                audioWrapper->father->useMediaCodec = true;
-                audioWrapper->father->avBitStreamFilter = av_bsf_get_by_name("null");
-                break;
-            }
+
+            // 65537 pcm_s16be ---> audio/raw
+            case AV_CODEC_ID_PCM_S16BE:
+                // 86016 mp2 ---> audio/mpeg-L2
+            case AV_CODEC_ID_MP2:
+                // 86019 ac3 ---> audio/ac3
+            case AV_CODEC_ID_AC3:
+                // 86021 vorbis ---> audio/vorbis
+            case AV_CODEC_ID_VORBIS:
+                // 86024 wmav2 ---> audio/x-ms-wma
+            case AV_CODEC_ID_WMAV2:
+                // 86028 --->
+            case AV_CODEC_ID_FLAC:
+                // 86040 --->
+            case AV_CODEC_ID_QCELP:
+                // 86056 eac3 ---> audio/eac3
+            case AV_CODEC_ID_EAC3:
+                // 86065 --->
+            case AV_CODEC_ID_AAC_LATM:
+                // 86076 --->
+            case AV_CODEC_ID_OPUS:
             default: {
                 audioWrapper->father->useMediaCodec = true;
                 audioWrapper->father->avBitStreamFilter = av_bsf_get_by_name("null");
-                // 软解
-                // audioWrapper->father->decoderAVCodec = avcodec_find_decoder(codecID);
                 break;
             }
         }
@@ -1225,89 +1153,68 @@ namespace alexander_media_mediacodec {
         // video
         videoWrapper->father->useMediaCodec = false;
         videoWrapper->father->decoderAVCodec = nullptr;
-        // h265, h264, mpeg4, vp8, vp9
         videoWrapper->father->avCodecId = videoWrapper->father->avCodecParameters->codec_id;
         LOGW("findAndOpenAVCodecForVideo() codecID: %d avcodec_get_name: %s\n",
              videoWrapper->father->avCodecId, avcodec_get_name(videoWrapper->father->avCodecId));
         switch (videoWrapper->father->avCodecId) {
-            case AV_CODEC_ID_HEVC: {// 173
-                LOGW("findAndOpenAVCodecForVideo() hevc_mediacodec\n");
-                videoWrapper->father->useMediaCodec = true;
-                videoWrapper->father->avBitStreamFilter =
-                        //av_bsf_get_by_name("null");
-                        av_bsf_get_by_name("hevc_mp4toannexb");
-                // 硬解码265
-                /*videoWrapper->father->decoderAVCodec = avcodec_find_decoder_by_name(
-                        "hevc_mediacodec");*/
-                break;
-            }
-            case AV_CODEC_ID_H264: {// 27
-                LOGW("findAndOpenAVCodecForVideo() h264_mediacodec\n");
-                videoWrapper->father->useMediaCodec = true;
-                videoWrapper->father->avBitStreamFilter =
-                        av_bsf_get_by_name("h264_mp4toannexb");
-                // 硬解码264
-                /*videoWrapper->father->decoderAVCodec = avcodec_find_decoder_by_name(
-                        "h264_mediacodec");*/
-                break;
-            }
-            case AV_CODEC_ID_MPEG4: {// 12
-                LOGW("findAndOpenAVCodecForVideo() mpeg4_mediacodec\n");
-                videoWrapper->father->useMediaCodec = true;
-                videoWrapper->father->avBitStreamFilter =
-                        av_bsf_get_by_name("mpeg4_unpack_bframes");
-                // 硬解码mpeg4
-                /*videoWrapper->father->decoderAVCodec = avcodec_find_decoder_by_name(
-                        "mpeg4_mediacodec");*/
-                break;
-            }
-            case AV_CODEC_ID_VP8: {// 139
-                LOGW("findAndOpenAVCodecForVideo() vp8_mediacodec\n");
-                videoWrapper->father->useMediaCodec = true;
-                videoWrapper->father->avBitStreamFilter =
-                        av_bsf_get_by_name("null");
-                // 硬解码vp8
-                /*videoWrapper->father->decoderAVCodec = avcodec_find_decoder_by_name(
-                        "vp8_mediacodec");*/
-                break;
-            }
-            case AV_CODEC_ID_VP9: {// 167
-                LOGW("findAndOpenAVCodecForVideo() vp9_mediacodec\n");
-                videoWrapper->father->useMediaCodec = true;
-                videoWrapper->father->avBitStreamFilter =
-                        // vp9_superframe vp9_raw_reorder vp9_superframe_split null
-                        av_bsf_get_by_name("null");
-                // 硬解码vp9
-                /*videoWrapper->father->decoderAVCodec = avcodec_find_decoder_by_name(
-                        "vp9_mediacodec");*/
-                break;
-            }
-            case AV_CODEC_ID_MPEG1VIDEO: {// 1
-                // 不支持硬解
-                LOGW("findAndOpenAVCodecForVideo() mpeg1_mediacodec\n");
-                videoWrapper->father->useMediaCodec = true;
-                videoWrapper->father->avBitStreamFilter =
-                        av_bsf_get_by_name("null");
-                break;
-            }
-            case AV_CODEC_ID_MPEG2VIDEO: {// 2
+            case AV_CODEC_ID_MPEG2VIDEO: {
+                // 2 mpeg2video ---> video/mpeg2(创建MediaCodec时需要的mime)
                 LOGW("findAndOpenAVCodecForVideo() mpeg2_mediacodec\n");
                 videoWrapper->father->useMediaCodec = true;
                 videoWrapper->father->avBitStreamFilter =
                         av_bsf_get_by_name("mpeg2_metadata");
                 break;
             }
-            case AV_CODEC_ID_H263: {// 4
+            case AV_CODEC_ID_MPEG4: {
+                // 12 mpeg4 ---> video/mp4v-es
+                LOGW("findAndOpenAVCodecForVideo() mpeg4_mediacodec\n");
                 videoWrapper->father->useMediaCodec = true;
                 videoWrapper->father->avBitStreamFilter =
-                        av_bsf_get_by_name("null");
+                        av_bsf_get_by_name("mpeg4_unpack_bframes");
+                break;
             }
+            case AV_CODEC_ID_H264: {
+                // 27 h264 ---> video/avc
+                LOGW("findAndOpenAVCodecForVideo() h264_mediacodec\n");
+                videoWrapper->father->useMediaCodec = true;
+                videoWrapper->father->avBitStreamFilter =
+                        av_bsf_get_by_name("h264_mp4toannexb");
+                break;
+            }
+            case AV_CODEC_ID_HEVC: {
+                // 173 hevc(h265) ---> video/hevc
+                LOGW("findAndOpenAVCodecForVideo() hevc_mediacodec\n");
+                videoWrapper->father->useMediaCodec = true;
+                videoWrapper->father->avBitStreamFilter =
+                        //av_bsf_get_by_name("null");
+                        av_bsf_get_by_name("hevc_mp4toannexb");
+                break;
+            }
+
+                // 7 mjpeg ---> video/mjpeg
+            case AV_CODEC_ID_MJPEG:
+                // 69 rv40 --->
+            case AV_CODEC_ID_RV40:
+                // 70 vc1 ---> video/x-ms-wmv
+            case AV_CODEC_ID_VC1:
+                // 71 wmv3 ---> video/x-ms-wmv
+            case AV_CODEC_ID_WMV3:
+                // 91 vp6 --->
+            case AV_CODEC_ID_VP6:
+                // 92 vp6f ---> video/x-vp6
+            case AV_CODEC_ID_VP6F:
+                // 1 mpeg1video ---> video/mpeg2
+            case AV_CODEC_ID_MPEG1VIDEO:
+                // 4 h263 ---> video/3gpp
+            case AV_CODEC_ID_H263:
+                // 139 vp8 ---> video/x-vnd.on2.vp8
+            case AV_CODEC_ID_VP8:
+                // 167 vp9 ---> video/x-vnd.on2.vp9
+            case AV_CODEC_ID_VP9:
             default: {
                 videoWrapper->father->useMediaCodec = true;
                 videoWrapper->father->avBitStreamFilter =
                         av_bsf_get_by_name("null");
-                // 软解
-                // videoWrapper->father->decoderAVCodec = avcodec_find_decoder(codecID);
                 break;
             }
         }

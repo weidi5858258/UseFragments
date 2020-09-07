@@ -18,6 +18,7 @@ import com.weidi.usefragments.tool.JniObject;
 import com.weidi.usefragments.tool.MLog;
 import com.weidi.utils.MyToast;
 
+import java.io.IOException;
 import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -245,13 +246,24 @@ public class FfmpegUseMediaCodecDecode {
     private static final int AV_CODEC_ID_VP9 = 167;
     private static final int AV_CODEC_ID_MPEG2VIDEO = 2;
     private static final int AV_CODEC_ID_H263 = 4;
+    // 上面除AV_CODEC_ID_H263外,都已验证过
+    private static final int AV_CODEC_ID_MPEG1VIDEO = 1;
+    private static final int AV_CODEC_ID_MJPEG = 7;
+    private static final int AV_CODEC_ID_RV40 = 69;
+    private static final int AV_CODEC_ID_VC1 = 70;
+    private static final int AV_CODEC_ID_WMV3 = 71;
+    private static final int AV_CODEC_ID_VP6 = 91;
+    private static final int AV_CODEC_ID_VP6F = 92;
 
     // audio
+    private static final int AV_CODEC_ID_PCM_S16LE = 65536;
+    private static final int AV_CODEC_ID_PCM_S16BE = 65537;
     private static final int AV_CODEC_ID_MP2 = 86016;
     private static final int AV_CODEC_ID_MP3 = 86017;
     private static final int AV_CODEC_ID_AAC = 86018;
     private static final int AV_CODEC_ID_AC3 = 86019;
     private static final int AV_CODEC_ID_VORBIS = 86021;
+    private static final int AV_CODEC_ID_WMAV2 = 86024;
     private static final int AV_CODEC_ID_FLAC = 86028;
     private static final int AV_CODEC_ID_QCELP = 86040;
     private static final int AV_CODEC_ID_EAC3 = 86056;
@@ -361,6 +373,14 @@ public class FfmpegUseMediaCodecDecode {
      channel-count=2, language=new, mime-old=audio/ac3, max-input-size=1556}
      */
     public boolean initAudioMediaCodec(JniObject jniObject) {
+        MLog.d(TAG, "initAudioMediaCodec() start");
+        if (jniObject == null
+                || jniObject.valueObjectArray == null
+                || jniObject.valueObjectArray.length < 2) {
+            MLog.e(TAG, "initAudioMediaCodec() jniObject failure");
+            return false;
+        }
+
         if (mContext != null) {
             SharedPreferences sp =
                     mContext.getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE);
@@ -369,79 +389,110 @@ public class FfmpegUseMediaCodecDecode {
                 return false;
             }
         }
-        MLog.d(TAG, "initAudioMediaCodec() start");
+
+        if (mAudioWrapper != null
+                && mAudioWrapper.decoderMediaCodec != null) {
+            // mAudioWrapper.decoderMediaCodec.flush();
+            MLog.e(TAG, "initAudioMediaCodec() audio clear");
+            mAudioWrapper.clear();
+            mAudioWrapper.decoderMediaCodec = null;
+            mAudioWrapper = null;
+        }
+
+        boolean useExoPlayerToGetMediaFormat = true;
         MediaFormat mediaFormat = null;
         String audioMime = null;
-        if (GetMediaFormat.sAudioMediaFormat != null) {
-            mediaFormat = GetMediaFormat.sAudioMediaFormat;
+        String codecName = null;
+        if (GetMediaFormat.sAudioMediaFormat == null) {
+            useExoPlayerToGetMediaFormat = false;
+            MLog.w(TAG, "initAudioMediaCodec() audio       mimeType: " + jniObject.valueInt);
+            switch (jniObject.valueInt) {
+                // 65536 pcm_s16le ---> audio/raw
+                case AV_CODEC_ID_PCM_S16LE:
+                    audioMime = MediaFormat.MIMETYPE_AUDIO_RAW;
+                    codecName = "OMX.google.raw.decoder";
+                    break;
+                // 65537 pcm_s16be ---> audio/raw
+                case AV_CODEC_ID_PCM_S16BE:
+                    audioMime = MediaFormat.MIMETYPE_AUDIO_RAW;
+                    codecName = "OMX.google.raw.decoder";
+                    break;
+                // 86016 mp2 ---> audio/mpeg-L2
+                case AV_CODEC_ID_MP2:
+                    audioMime = "audio/mpeg-L2";
+                    codecName = "OMX.MTK.AUDIO.DECODER.DSPMP2";
+                    break;
+                // 86017 mp3 ---> audio/mpeg
+                case AV_CODEC_ID_MP3:
+                    audioMime = MediaFormat.MIMETYPE_AUDIO_MPEG;
+                    codecName = "OMX.google.mp3.decoder";
+                    break;
+                // 86018 aac ---> audio/mp4a-latm
+                case AV_CODEC_ID_AAC:
+                    audioMime = MediaFormat.MIMETYPE_AUDIO_AAC;
+                    codecName = "OMX.google.raw.decoder";
+                    break;
+                // 86019 ac3 ---> audio/ac3
+                case AV_CODEC_ID_AC3:
+                    audioMime = MediaFormat.MIMETYPE_AUDIO_AC3;
+                    codecName = "OMX.google.raw.decoder";
+                    break;
+                // 86021 vorbis ---> audio/vorbis
+                case AV_CODEC_ID_VORBIS:
+                    audioMime = MediaFormat.MIMETYPE_AUDIO_VORBIS;
+                    codecName = "OMX.google.vorbis.decoder";
+                    break;
+                // 86024 wmav2 ---> audio/x-ms-wma
+                case AV_CODEC_ID_WMAV2:
+                    audioMime = "audio/x-ms-wma";
+                    codecName = "OMX.MTK.AUDIO.DECODER.DSPWMA";
+                    break;
+                // 86028 flac ---> audio/raw
+                case AV_CODEC_ID_FLAC:
+                    audioMime = MediaFormat.MIMETYPE_AUDIO_RAW;
+                    codecName = "OMX.google.raw.decoder";
+                    break;
+                // 86040
+                case AV_CODEC_ID_QCELP:
+                    //audioMime = MediaFormat.MIMETYPE_AUDIO_QCELP;
+                    //codecName = "";
+                    break;
+                // 86056 eac3 ---> audio/eac3
+                case AV_CODEC_ID_EAC3:
+                    audioMime = MediaFormat.MIMETYPE_AUDIO_EAC3;
+                    codecName = "OMX.google.raw.decoder";
+                    break;
+                // 86065
+                case AV_CODEC_ID_AAC_LATM:
+                    //audioMime = "";
+                    //codecName = "";
+                    break;
+                // 86076
+                case AV_CODEC_ID_OPUS:
+                    //audioMime = MediaFormat.MIMETYPE_AUDIO_OPUS;
+                    //codecName = "";
+                    break;
+                default:
+                    break;
+            }
+        } else {
+            mediaFormat = GetMediaFormat.sVideoMediaFormat;
             audioMime = mediaFormat.getString(MediaFormat.KEY_MIME);
-            MLog.d(TAG, "initAudioMediaCodec() audio GetMediaFormat");
+        }
+
+        MLog.d(TAG, "initAudioMediaCodec() audio           mime: " + audioMime);
+        if (TextUtils.isEmpty(audioMime)) {
+            MLog.e(TAG, "initAudioMediaCodec() audioMime is empty");
+            MyToast.show("audio mime is empty");
+            return false;
+        }
+
+        if (useExoPlayerToGetMediaFormat) {
+            MLog.d(TAG, "initAudioMediaCodec() audio use exoplayer to get MediaFormat");
         } else {
             // region
 
-            if (jniObject == null
-                    || jniObject.valueObjectArray == null
-                    || jniObject.valueObjectArray.length < 3) {
-                MLog.e(TAG, "initAudioMediaCodec() jniObject failure");
-                return false;
-            }
-
-            int audioMimeType = jniObject.valueInt;
             Object[] valueObjectArray = jniObject.valueObjectArray;
-
-            MLog.d(TAG, "initAudioMediaCodec()    mimeType: " + audioMimeType);
-            switch (audioMimeType) {
-                /*case AV_CODEC_ID_MP2: {// 86016
-                    audioMime = MediaFormat.MIMETYPE_AUDIO_AAC;
-                    break;
-                }*/
-                case AV_CODEC_ID_MP3: {// 86017
-                    audioMime = MediaFormat.MIMETYPE_AUDIO_MPEG;
-                    break;
-                }
-                case AV_CODEC_ID_AAC: {// 86018
-                    audioMime = MediaFormat.MIMETYPE_AUDIO_AAC;
-                    break;
-                }
-                case AV_CODEC_ID_AC3: {// 86019
-                    audioMime = MediaFormat.MIMETYPE_AUDIO_AC3;
-                    break;
-                }
-                case AV_CODEC_ID_VORBIS: {// 86021
-                    audioMime = MediaFormat.MIMETYPE_AUDIO_VORBIS;
-                    break;
-                }
-                case AV_CODEC_ID_FLAC: {// 86028
-                    audioMime = MediaFormat.MIMETYPE_AUDIO_FLAC;
-                    audioMime = MediaFormat.MIMETYPE_AUDIO_RAW;
-                    break;
-                }
-                case AV_CODEC_ID_QCELP: {// 86040
-                    audioMime = MediaFormat.MIMETYPE_AUDIO_QCELP;
-                    break;
-                }
-                case AV_CODEC_ID_EAC3: {// 86056
-                    audioMime = MediaFormat.MIMETYPE_AUDIO_EAC3;
-                    break;
-                }
-                case AV_CODEC_ID_AAC_LATM: {// 86065
-                    audioMime = MediaFormat.MIMETYPE_AUDIO_AAC;
-                    break;
-                }
-                case AV_CODEC_ID_OPUS: {// 86076
-                    audioMime = MediaFormat.MIMETYPE_AUDIO_OPUS;
-                    break;
-                }
-                default: {
-                    break;
-                }
-            }
-            if (TextUtils.isEmpty(audioMime)) {
-                MLog.e(TAG, "initAudioMediaCodec() TextUtils.isEmpty(audioMime)");
-                return false;
-            }
-            MLog.d(TAG, "initAudioMediaCodec() audio  mime: " + audioMime);
-
             long[] parameters = (long[]) valueObjectArray[0];
             int sampleRateInHz = (int) parameters[0];
             int channelCount = (int) parameters[1];
@@ -449,123 +500,84 @@ public class FfmpegUseMediaCodecDecode {
             // 单位: 秒
             int duration = (int) parameters[3];
 
-            MediaUtils.sampleRateInHz = sampleRateInHz;
-            MediaUtils.channelCount = channelCount;
-            MediaUtils.audioFormat = audioFormat;
-            mediaFormat = MediaUtils.getAudioDecoderMediaFormat();
-
-            Object object1 = valueObjectArray[1];
-            Object object2 = valueObjectArray[2];
-            byte[] csd0 = null;
-            byte[] csd1 = null;
-
-            if (TextUtils.equals(audioMime, MediaFormat.MIMETYPE_AUDIO_MPEG)
-                    || TextUtils.equals(audioMime, MediaFormat.MIMETYPE_AUDIO_RAW)
-                    || TextUtils.equals(audioMime, MediaFormat.MIMETYPE_AUDIO_FLAC)
-                    || TextUtils.equals(audioMime, MediaFormat.MIMETYPE_AUDIO_EAC3)) {// 无csd-0
-                // csd-1
-
-            } else if (TextUtils.equals(audioMime, MediaFormat.MIMETYPE_AUDIO_AAC)) {// csd-0
-                if (object1 == null && object2 == null) {
-                    csd0 = new byte[]{17, -112, 86, -27, 0};
-                } else if (object1 != null && object2 == null) {
-                    csd0 = (byte[]) object1;
-                }
-                mediaFormat.setByteBuffer("csd-0", ByteBuffer.wrap(csd0));
-            } else if (TextUtils.equals(audioMime, MediaFormat.MIMETYPE_AUDIO_VORBIS)) {// csd-0
-                // csd-1
-                if (object1 != null && object2 != null) {
-                    csd0 = (byte[]) object1;
-                    csd1 = (byte[]) object2;
-                } else if (object1 == null && object2 == null) {
-                    /*csd0 = new byte[]{1, 118, 111, 114, 98, 105, 115, 0, 0, 0, 0, 2, 68, -84, 0,
-                            0, -1,
-                            -1, -1, -1, 0, 113, 2, 0, -1, -1, -1, -1, -72, 1};
-                    csd1 = new byte[]{};*/
-                }
-                mediaFormat.setByteBuffer("csd-0", ByteBuffer.wrap(csd0));
-                mediaFormat.setByteBuffer("csd-1", ByteBuffer.wrap(csd1));
-            } else if (TextUtils.equals(audioMime, MediaFormat.MIMETYPE_AUDIO_AC3)) {// csd-0 csd-1
-                if (object1 != null && object2 != null) {
-                    csd0 = (byte[]) object1;
-                    csd1 = (byte[]) object2;
-                } else if (object1 == null && object2 == null) {
-                    csd0 = new byte[]
-                            {0, 0, 0, 1, 103, 100, 0, 41, -84, 27, 26, 80, 30, 1, 19, -9, -128, -75,
-                                    1, 1, 1, 64, 0, 0, -6, 64, 0, 58, -104, 56, -104, 0, 1, 48, -33,
-                                    0, 0, 28, -100, 62, 49, 46, 49, 48, 0, 2, 97, -66, 0, 0, 57, 56,
-                                    124, 98, 92, 62, 56, 97, 75};
-                    csd1 = new byte[]{0, 0, 0, 1, 104, -6, -116, -14, 60};
-                }
-                mediaFormat.setByteBuffer("csd-0", ByteBuffer.wrap(csd0));
-                mediaFormat.setByteBuffer("csd-1", ByteBuffer.wrap(csd1));
-            }
-
-            mediaFormat.setString(MediaFormat.KEY_MIME, audioMime);
+            mediaFormat = MediaFormat.createAudioFormat(audioMime, sampleRateInHz, channelCount);
             if (duration > 0) {
                 mediaFormat.setLong(MediaFormat.KEY_DURATION, duration * 1000000L);
             } else {
-                // 随便设置了一个数
-                mediaFormat.setLong(MediaFormat.KEY_DURATION, -9223372036854L);
+                mediaFormat.setLong(MediaFormat.KEY_DURATION, duration);
+            }
+
+            Object object = valueObjectArray[1];
+            byte[] sps_pps = null;
+            if (object != null) {
+                sps_pps = (byte[]) object;
+                MLog.d(TAG, "initAudioMediaCodec() audio sps_pps.length: " + sps_pps.length +
+                        " \nsps_pps: " + Arrays.toString(sps_pps));
+            } else {
+                MLog.d(TAG, "initAudioMediaCodec() audio sps_pps is null");
+            }
+            if (TextUtils.equals(audioMime, MediaFormat.MIMETYPE_AUDIO_RAW)
+                    || TextUtils.equals(audioMime, MediaFormat.MIMETYPE_AUDIO_MPEG)
+                    || TextUtils.equals(audioMime, MediaFormat.MIMETYPE_AUDIO_AC3)
+                    || TextUtils.equals(audioMime, MediaFormat.MIMETYPE_AUDIO_EAC3)
+                    || TextUtils.equals(audioMime, MediaFormat.MIMETYPE_AUDIO_FLAC)
+                    || TextUtils.equals(audioMime, "audio/ac4")
+                    || TextUtils.equals(audioMime, "audio/mpeg-L2")) {
+                // 没有csd-0和csd-1
+            } else if (TextUtils.equals(audioMime, MediaFormat.MIMETYPE_AUDIO_AAC)
+                    || TextUtils.equals(audioMime, "audio/x-ms-wma")) {
+                // 只有csd-0
+                if (sps_pps != null) {
+                    mediaFormat.setByteBuffer("csd-0", ByteBuffer.wrap(sps_pps));
+                }
+            } else if (TextUtils.equals(audioMime, MediaFormat.MIMETYPE_AUDIO_VORBIS)) {
+                if (sps_pps != null) {
+
+                }
             }
 
             // endregion
         }
 
-        if (mAudioWrapper != null && mAudioWrapper.decoderMediaCodec != null) {
-            // mAudioWrapper.decoderMediaCodec.flush();
-            MLog.d(TAG, "initAudioMediaCodec() audio clear");
-            mAudioWrapper.clear();
-            mAudioWrapper = null;
-        }
+        MLog.d(TAG, "initAudioMediaCodec() audio    mediaFormat: \n" + mediaFormat);
 
         mAudioWrapper = new AudioWrapper(TYPE_AUDIO);
         mAudioWrapper.isHandling = true;
         mAudioWrapper.render = false;
         mAudioWrapper.mime = audioMime;
         mAudioWrapper.decoderMediaFormat = mediaFormat;
-        MLog.d(TAG, "initAudioMediaCodec() create MediaCodec start");
-        mAudioWrapper.decoderMediaCodec =
-                MediaUtils.getAudioDecoderMediaCodec(
-                        mAudioWrapper.mime,
-                        mAudioWrapper.decoderMediaFormat);
-        MLog.d(TAG, "initAudioMediaCodec() create MediaCodec end");
+        try {
+            mAudioWrapper.decoderMediaCodec = MediaCodec.createByCodecName(codecName);
+            mAudioWrapper.decoderMediaCodec.configure(
+                    mAudioWrapper.decoderMediaFormat, null, null, 0);
+            mAudioWrapper.decoderMediaCodec.start();
+        } catch (Exception e) {
+            e.printStackTrace();
+            if (mAudioWrapper.decoderMediaCodec != null) {
+                MediaUtils.releaseMediaCodec(mAudioWrapper.decoderMediaCodec);
+                mAudioWrapper.decoderMediaCodec = null;
+            }
+        }
+
         if (mAudioWrapper.decoderMediaCodec == null) {
+            MLog.e(TAG, "initAudioMediaCodec() create Audio MediaCodec failure");
+            MyToast.show("create Audio MediaCodec failure");
             return false;
         }
 
-        // mAudioWrapper.decoderMediaCodec.flush();
-        if (mAudioWrapper.decoderMediaFormat.containsKey("csd-0")) {
-            ByteBuffer buffer = mAudioWrapper.decoderMediaFormat.getByteBuffer("csd-0");
-            byte[] csd_0 = new byte[buffer.limit()];
-            buffer.get(csd_0);
-            StringBuilder sb = new StringBuilder();
-            sb.append("{");
-            int count = csd_0.length;
-            for (int i = 0; i < count; i++) {
-                sb.append(csd_0[i]);
-                if (i <= count - 2) {
-                    sb.append(", ");
-                }
+        if (GetMediaFormat.sAudioMediaFormat != null) {
+            if (mAudioWrapper.decoderMediaFormat.containsKey("csd-0")) {
+                ByteBuffer buffer = mAudioWrapper.decoderMediaFormat.getByteBuffer("csd-0");
+                byte[] csd_0 = new byte[buffer.limit()];
+                buffer.get(csd_0);
+                MLog.d(TAG, "initAudioMediaCodec() audio \n  csd-0: " + Arrays.toString(csd_0));
             }
-            sb.append("}");
-            MLog.d(TAG, "initAudioMediaCodec() audio csd-0: " + sb.toString());
-        }
-        if (mAudioWrapper.decoderMediaFormat.containsKey("csd-1")) {
-            ByteBuffer buffer = mAudioWrapper.decoderMediaFormat.getByteBuffer("csd-1");
-            byte[] csd_1 = new byte[buffer.limit()];
-            buffer.get(csd_1);
-            StringBuilder sb = new StringBuilder();
-            sb.append("{");
-            int count = csd_1.length;
-            for (int i = 0; i < count; i++) {
-                sb.append(csd_1[i]);
-                if (i <= count - 2) {
-                    sb.append(", ");
-                }
+            if (mAudioWrapper.decoderMediaFormat.containsKey("csd-1")) {
+                ByteBuffer buffer = mAudioWrapper.decoderMediaFormat.getByteBuffer("csd-1");
+                byte[] csd_1 = new byte[buffer.limit()];
+                buffer.get(csd_1);
+                MLog.d(TAG, "initAudioMediaCodec() audio \n  csd-1: " + Arrays.toString(csd_1));
             }
-            sb.append("}");
-            MLog.d(TAG, "initAudioMediaCodec() audio csd-1: " + sb.toString());
         }
 
         MLog.d(TAG, "initAudioMediaCodec() end");
@@ -595,6 +607,13 @@ public class FfmpegUseMediaCodecDecode {
      AVCodecID = 7
      Video: mjpeg (MJPG / 0x47504A4D), yuvj422p(pc, bt470bg/unknown/unknown), 640x480,
      9210 kb/s, 30 fps, 30 tbr, 30 tbn, 30 tbc
+
+     AVCodecID = 69 // rv40
+     AVCodecID = 71 // wmv3
+     AVCodecID = 92 // vp6f
+     AVCodecID = 1 // mpeg1video
+     AVCodecID = 7 // mjpeg
+
      */
     public boolean initVideoMediaCodec(JniObject jniObject) {
         MLog.w(TAG, "initVideoMediaCodec() start");
@@ -612,7 +631,7 @@ public class FfmpegUseMediaCodecDecode {
         if (mVideoWrapper != null
                 && mVideoWrapper.decoderMediaCodec != null) {
             // mVideoWrapper.decoderMediaCodec.flush();
-            MLog.e(TAG, "initVideoMediaCodec() video  clear");
+            MLog.e(TAG, "initVideoMediaCodec() video clear");
             mVideoWrapper.clear();
             mVideoWrapper.decoderMediaCodec = null;
             mVideoWrapper = null;
@@ -623,52 +642,73 @@ public class FfmpegUseMediaCodecDecode {
         String videoMime = null;
         if (GetMediaFormat.sVideoMediaFormat == null) {
             useExoPlayerToGetMediaFormat = false;
-            //MLog.e(TAG, "initVideoMediaCodec() GetMediaFormat.sVideoMediaFormat is null");
-            //return false;
+            MLog.w(TAG, "initVideoMediaCodec() video       mimeType: " + jniObject.valueInt);
+            // 现在只支持下面这几种硬解码
+            switch (jniObject.valueInt) {
+                // video/hevc
+                case AV_CODEC_ID_HEVC:
+                    videoMime = MediaFormat.MIMETYPE_VIDEO_HEVC;
+                    break;
+                // video/avc
+                case AV_CODEC_ID_H264:
+                    videoMime = MediaFormat.MIMETYPE_VIDEO_AVC;
+                    break;
+                // video/3gpp
+                case AV_CODEC_ID_H263:// 还没有遇到这种视频
+                    videoMime = MediaFormat.MIMETYPE_VIDEO_H263;
+                    break;
+                // video/mp4v-es
+                case AV_CODEC_ID_MPEG4:
+                    videoMime = MediaFormat.MIMETYPE_VIDEO_MPEG4;
+                    break;
+                // video/x-vnd.on2.vp8
+                case AV_CODEC_ID_VP8:
+                    videoMime = MediaFormat.MIMETYPE_VIDEO_VP8;
+                    break;
+                // video/x-vnd.on2.vp9
+                case AV_CODEC_ID_VP9:
+                    videoMime = MediaFormat.MIMETYPE_VIDEO_VP9;
+                    break;
+                // video/mpeg2
+                case AV_CODEC_ID_MPEG2VIDEO:
+                    videoMime = MediaFormat.MIMETYPE_VIDEO_MPEG2;
+                    break;
+                // 上面几种是能解码成功的
+
+                case AV_CODEC_ID_MPEG1VIDEO:// crash
+                    //videoMime = MediaFormat.MIMETYPE_VIDEO_MPEG2;
+                    break;
+                case AV_CODEC_ID_MJPEG:// ok
+                    //videoMime = "video/mjpeg";
+                    break;
+                case AV_CODEC_ID_RV40:
+                    //videoMime = "";
+                    break;
+                case AV_CODEC_ID_VC1:// error
+                case AV_CODEC_ID_WMV3:// crash
+                    //videoMime = "video/x-ms-wmv";
+                    break;
+                case AV_CODEC_ID_VP6:
+                    //videoMime = "";
+                    break;
+                case AV_CODEC_ID_VP6F:// ok
+                    //videoMime = "video/x-vp6";
+                    break;
+                default:
+                    break;
+            }
         } else {
             mediaFormat = GetMediaFormat.sVideoMediaFormat;
             videoMime = mediaFormat.getString(MediaFormat.KEY_MIME);
         }
 
-        MLog.w(TAG, "initVideoMediaCodec() video       mimeType: " + jniObject.valueInt);
-        // 现在只支持下面这几种硬解码
-        switch (jniObject.valueInt) {
-            case AV_CODEC_ID_HEVC:
-                // video/hevc
-                videoMime = MediaFormat.MIMETYPE_VIDEO_HEVC;
-                break;
-            case AV_CODEC_ID_H264:
-                // video/avc
-                videoMime = MediaFormat.MIMETYPE_VIDEO_AVC;
-                break;
-            case AV_CODEC_ID_MPEG4:
-                // video/mp4v-es
-                videoMime = MediaFormat.MIMETYPE_VIDEO_MPEG4;
-                break;
-            case AV_CODEC_ID_VP8:
-                // video/x-vnd.on2.vp8
-                videoMime = MediaFormat.MIMETYPE_VIDEO_VP8;
-                break;
-            case AV_CODEC_ID_VP9:
-                // video/x-vnd.on2.vp9
-                videoMime = MediaFormat.MIMETYPE_VIDEO_VP9;
-                break;
-            case AV_CODEC_ID_MPEG2VIDEO:
-                // video/mpeg2
-                videoMime = MediaFormat.MIMETYPE_VIDEO_MPEG2;
-                break;
-            case AV_CODEC_ID_H263:
-                // video/3gpp
-                videoMime = MediaFormat.MIMETYPE_VIDEO_H263;
-            default:
-                break;
-        }
+        MLog.w(TAG, "initVideoMediaCodec() video           mime: " + videoMime);
         if (TextUtils.isEmpty(videoMime)) {
             MLog.e(TAG, "initVideoMediaCodec() videoMime is empty");
-            MyToast.show("mime is empty");
+            MyToast.show("video mime is empty");
             return false;
         }
-        MLog.w(TAG, "initVideoMediaCodec() video           mime: " + videoMime);
+
         Object[] valueObjectArray = jniObject.valueObjectArray;
         long[] parameters = (long[]) valueObjectArray[0];
         // 视频宽
@@ -705,18 +745,8 @@ public class FfmpegUseMediaCodecDecode {
             }*/
         }
 
-        Object object = valueObjectArray[1];
-        byte[] sps_pps = null;
-        if (object != null) {
-            sps_pps = (byte[]) object;
-            MLog.w(TAG, "initVideoMediaCodec() video sps_pps.length: " + sps_pps.length +
-                    " \nsps_pps: " + Arrays.toString(sps_pps));
-        } else {
-            MLog.w(TAG, "initVideoMediaCodec() video sps_pps is null");
-        }
-
         if (useExoPlayerToGetMediaFormat) {
-            MLog.w(TAG, "initVideoMediaCodec() video  use exoplayer to get MediaFormat");
+            MLog.w(TAG, "initVideoMediaCodec() video use exoplayer to get MediaFormat");
         } else {
             // region
 
@@ -752,12 +782,24 @@ public class FfmpegUseMediaCodecDecode {
             /*mediaFormat.setInteger(MediaFormat.KEY_COLOR_FORMAT,
                     MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420Flexible);*/
 
+            Object object = valueObjectArray[1];
+            byte[] sps_pps = null;
+            if (object != null) {
+                sps_pps = (byte[]) object;
+                MLog.w(TAG, "initVideoMediaCodec() video sps_pps.length: " + sps_pps.length +
+                        " \nsps_pps: " + Arrays.toString(sps_pps));
+            } else {
+                MLog.w(TAG, "initVideoMediaCodec() video sps_pps is null");
+            }
             if (TextUtils.equals(videoMime, MediaFormat.MIMETYPE_VIDEO_VP8)
-                    || TextUtils.equals(videoMime, MediaFormat.MIMETYPE_VIDEO_VP9)) {
+                    || TextUtils.equals(videoMime, MediaFormat.MIMETYPE_VIDEO_VP9)
+                    || TextUtils.equals(videoMime, "video/mjpeg")
+                    || TextUtils.equals(videoMime, "video/x-vp6")) {
                 // 没有csd-0和csd-1
             } else if (TextUtils.equals(videoMime, MediaFormat.MIMETYPE_VIDEO_HEVC)
                     || TextUtils.equals(videoMime, MediaFormat.MIMETYPE_VIDEO_MPEG4)
-                    || TextUtils.equals(videoMime, MediaFormat.MIMETYPE_VIDEO_MPEG2)) {
+                    || TextUtils.equals(videoMime, MediaFormat.MIMETYPE_VIDEO_MPEG2)
+                    || TextUtils.equals(videoMime, "video/x-ms-wmv")) {
                 // 只有csd-0
                 if (sps_pps != null) {
                     mediaFormat.setByteBuffer("csd-0", ByteBuffer.wrap(sps_pps));

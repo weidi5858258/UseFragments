@@ -157,7 +157,7 @@ public class FFMPEG {
         if (mFfmpegUseMediaCodecDecode != null) {
             switch (type) {
                 case FfmpegUseMediaCodecDecode.TYPE_AUDIO:
-                    //return mFfmpegUseMediaCodecDecode.initAudioMediaCodec(jniObject);
+                    return mFfmpegUseMediaCodecDecode.initAudioMediaCodec(jniObject);
                 case FfmpegUseMediaCodecDecode.TYPE_VIDEO:
                     return mFfmpegUseMediaCodecDecode.initVideoMediaCodec(jniObject);
                 default:
