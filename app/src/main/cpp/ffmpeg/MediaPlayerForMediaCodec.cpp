@@ -1426,6 +1426,7 @@ namespace alexander_media_mediacodec {
         }
 
         if (videoWrapper->father->useMediaCodec
+            && (audioWrapper->srcSampleRate == 48000 || audioWrapper->srcSampleRate == 44100)
             && audioWrapper->srcNbChannels == 2) {
             initAudioMediaCodec();
         } else {
@@ -2248,7 +2249,7 @@ namespace alexander_media_mediacodec {
                 } else {
                     TIME_DIFFERENCE = 0.400000;
                 }
-                needToGetResultAgain = false;
+                //needToGetResultAgain = false;
             } else if (averageTimeDiff > 0.400000 && averageTimeDiff < 0.500000) {
                 /***
                  0.405114 0.418364 0.429602 0.439030 0.449823
