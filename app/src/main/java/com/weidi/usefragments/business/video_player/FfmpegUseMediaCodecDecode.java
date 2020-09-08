@@ -7,18 +7,21 @@ import android.media.AudioManager;
 import android.media.AudioTrack;
 import android.media.MediaCodec;
 import android.media.MediaCodecInfo;
+import android.media.MediaCodecList;
 import android.media.MediaFormat;
 import android.os.Build;
 import android.text.TextUtils;
 import android.view.Surface;
 
+import com.weidi.usefragments.business.video_player.exo.ExoAudioTrack;
+import com.weidi.usefragments.business.video_player.exo.ExoMediaFormat;
+import com.weidi.usefragments.business.video_player.exo.MimeTypes;
 import com.weidi.usefragments.media.MediaUtils;
 import com.weidi.usefragments.tool.AACPlayer;
 import com.weidi.usefragments.tool.JniObject;
 import com.weidi.usefragments.tool.MLog;
 import com.weidi.utils.MyToast;
 
-import java.io.IOException;
 import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -27,7 +30,6 @@ import java.util.List;
 import java.util.Map;
 
 import static com.weidi.usefragments.business.video_player.PlayerWrapper.PLAYBACK_IS_MUTE;
-import static com.weidi.usefragments.business.video_player.PlayerWrapper.PLAYBACK_USE_EXOPLAYER_OR_FFMPEG;
 import static com.weidi.usefragments.business.video_player.PlayerWrapper.PLAYBACK_USE_PLAYER;
 import static com.weidi.usefragments.business.video_player.PlayerWrapper.PLAYER_FFMPEG_MEDIACODEC;
 import static com.weidi.usefragments.service.DownloadFileService.PREFERENCES_NAME;
@@ -56,6 +58,7 @@ public class FfmpegUseMediaCodecDecode {
 
     public AudioWrapper mAudioWrapper = null;
     public VideoWrapper mVideoWrapper = null;
+    private ExoAudioTrack mExoAudioTrack = null;
     private FFMPEG mFFMPEG = null;
     private GetMediaFormat mGetMediaFormat = null;
 
@@ -137,7 +140,7 @@ public class FfmpegUseMediaCodecDecode {
     }
 
     public static class AudioWrapper extends SimpleWrapper {
-        public AudioTrack mAudioTrack = null;
+        //public AudioTrack mAudioTrack = null;
 
         private AudioWrapper() {
         }
@@ -147,7 +150,7 @@ public class FfmpegUseMediaCodecDecode {
         }
 
         public void clear() {
-            MediaUtils.releaseAudioTrack(mAudioTrack);
+            //MediaUtils.releaseAudioTrack(mAudioTrack);
             MediaUtils.releaseMediaCodec(decoderMediaCodec);
             super.clear();
         }
@@ -186,19 +189,11 @@ public class FfmpegUseMediaCodecDecode {
     }
 
     public void setVolume(float volume) {
-        if (mAudioWrapper == null
-                || mAudioWrapper.mAudioTrack == null
-                || mAudioWrapper.mAudioTrack.getState() == AudioTrack.STATE_UNINITIALIZED) {
+        if (mExoAudioTrack == null) {
             return;
         }
-        if (volume < 0 || volume > 1.0f) {
-            volume = FFMPEG.VOLUME_NORMAL;
-        }
-        if (Build.VERSION.SDK_INT >= 21) {
-            mAudioWrapper.mAudioTrack.setVolume(volume);
-        } else {
-            mAudioWrapper.mAudioTrack.setStereoVolume(volume, volume);
-        }
+
+        mExoAudioTrack.setVolume(volume);
     }
 
     public void releaseMediaCodec() {
@@ -206,6 +201,11 @@ public class FfmpegUseMediaCodecDecode {
             MediaUtils.releaseMediaCodec(mVideoWrapper.decoderMediaCodec);
             mVideoWrapper.decoderMediaCodec = null;
             mVideoWrapper = null;
+        }
+        if (mExoAudioTrack != null
+                && mExoAudioTrack.mAudioTrack != null) {
+            MediaUtils.releaseAudioTrack(mExoAudioTrack.mAudioTrack);
+            mExoAudioTrack.mAudioTrack = null;
         }
         if (mAudioWrapper != null) {
             MediaUtils.releaseMediaCodec(mAudioWrapper.decoderMediaCodec);
@@ -405,7 +405,7 @@ public class FfmpegUseMediaCodecDecode {
         String codecName = null;
         if (GetMediaFormat.sAudioMediaFormat == null) {
             useExoPlayerToGetMediaFormat = false;
-            MLog.w(TAG, "initAudioMediaCodec() audio       mimeType: " + jniObject.valueInt);
+            MLog.d(TAG, "initAudioMediaCodec() audio       mimeType: " + jniObject.valueInt);
             switch (jniObject.valueInt) {
                 // 65536 pcm_s16le ---> audio/raw
                 case AV_CODEC_ID_PCM_S16LE:
@@ -441,7 +441,7 @@ public class FfmpegUseMediaCodecDecode {
                 case AV_CODEC_ID_VORBIS:
                     audioMime = MediaFormat.MIMETYPE_AUDIO_VORBIS;
                     codecName = "OMX.google.vorbis.decoder";
-                    break;
+                    return false;
                 // 86024 wmav2 ---> audio/x-ms-wma
                 case AV_CODEC_ID_WMAV2:
                     audioMime = "audio/x-ms-wma";
@@ -498,7 +498,9 @@ public class FfmpegUseMediaCodecDecode {
             int channelCount = (int) parameters[1];
             int audioFormat = (int) parameters[2];
             // 单位: 秒
-            int duration = (int) parameters[3];
+            long duration = parameters[3];
+            // 码率
+            int bitrate = (int) parameters[4];
 
             mediaFormat = MediaFormat.createAudioFormat(audioMime, sampleRateInHz, channelCount);
             if (duration > 0) {
@@ -506,6 +508,12 @@ public class FfmpegUseMediaCodecDecode {
             } else {
                 mediaFormat.setLong(MediaFormat.KEY_DURATION, duration);
             }
+            if (bitrate > 0) {
+                mediaFormat.setInteger(MediaFormat.KEY_BIT_RATE, bitrate);
+            }
+            /*if (TextUtils.equals(audioMime, MediaFormat.MIMETYPE_AUDIO_AAC)) {
+                mediaFormat.setInteger(android.media.MediaFormat.KEY_AAC_PROFILE, 2);
+            }*/
 
             Object object = valueObjectArray[1];
             byte[] sps_pps = null;
@@ -529,6 +537,18 @@ public class FfmpegUseMediaCodecDecode {
                 // 只有csd-0
                 if (sps_pps != null) {
                     mediaFormat.setByteBuffer("csd-0", ByteBuffer.wrap(sps_pps));
+                } else {
+                    // [17, -112, 86, -27, 0]
+                    // [18,   16, 86, -27, 0]
+                    // [18, 16]
+                    // [17, -112]
+                    sps_pps = new byte[5];
+                    sps_pps[0] = 17;
+                    sps_pps[1] = -112;
+                    sps_pps[2] = 86;
+                    sps_pps[3] = -27;
+                    sps_pps[4] = 0;
+                    mediaFormat.setByteBuffer("csd-0", ByteBuffer.wrap(sps_pps));
                 }
             } else if (TextUtils.equals(audioMime, MediaFormat.MIMETYPE_AUDIO_VORBIS)) {
                 if (sps_pps != null) {
@@ -546,11 +566,63 @@ public class FfmpegUseMediaCodecDecode {
         mAudioWrapper.render = false;
         mAudioWrapper.mime = audioMime;
         mAudioWrapper.decoderMediaFormat = mediaFormat;
+        mExoAudioTrack = new ExoAudioTrack();
         try {
+            mExoAudioTrack.mime = audioMime;
+            mExoAudioTrack.mContext = mContext;
+            mExoAudioTrack.mMediaFormat = mAudioWrapper.decoderMediaFormat;
+
+            mAudioWrapper.decoderMediaCodec =
+                    MediaUtils.getAudioDecoderMediaCodec(
+                            mAudioWrapper.mime, mAudioWrapper.decoderMediaFormat);
+
+            /*boolean passthroughEnabled = mExoAudioTrack.isPassthroughEnabled();
+            MLog.d(TAG, "initAudioMediaCodec() audio passthroughEnabled: " + passthroughEnabled);
+            if (passthroughEnabled) {
+                codecName = "OMX.google.raw.decoder";
+                mAudioWrapper.decoderMediaFormat.setString(
+                        android.media.MediaFormat.KEY_MIME, MediaFormat.MIMETYPE_AUDIO_RAW);
+
+                if (mAudioWrapper.decoderMediaFormat.containsKey("encoder-delay")) {
+                    mAudioWrapper.decoderMediaFormat.setInteger("encoder-delay", 0);
+                }
+                if (mAudioWrapper.decoderMediaFormat.containsKey("encoder-padding")) {
+                    mAudioWrapper.decoderMediaFormat.setInteger("encoder-padding", 0);
+                }
+            }
+            switch (mAudioWrapper.mime) {
+                case "audio/ac4":
+                    MediaCodecInfo mediaCodecInfo =
+                            MediaUtils.getDecoderMediaCodecInfo(mAudioWrapper.mime);
+                    if (mediaCodecInfo != null) {
+                        codecName = mediaCodecInfo.getName();
+                    } else {
+                        codecName = "OMX.google.raw.decoder";
+                        mAudioWrapper.decoderMediaFormat.setString(
+                                MediaFormat.KEY_MIME, MediaFormat.MIMETYPE_AUDIO_RAW);
+                    }
+                    break;
+                default:
+                    break;
+            }
+            boolean isDolbyVision = MimeTypes.VIDEO_DOLBY_VISION.equals(mAudioWrapper.mime);
+            if (isDolbyVision) {
+                MediaCodecList mediaCodecList = new MediaCodecList(MediaCodecList.REGULAR_CODECS);
+                if (mExoAudioTrack.mFormat != null) {
+                    codecName =
+                            mediaCodecList.findDecoderForFormat(
+                                    mExoAudioTrack.mFormat.getFrameworkMediaFormatV16());
+                }
+            }
+            MLog.d(TAG, "initAudioMediaCodec() audio      codecName: " + codecName);
             mAudioWrapper.decoderMediaCodec = MediaCodec.createByCodecName(codecName);
             mAudioWrapper.decoderMediaCodec.configure(
                     mAudioWrapper.decoderMediaFormat, null, null, 0);
             mAudioWrapper.decoderMediaCodec.start();
+            if (passthroughEnabled) {
+                mAudioWrapper.decoderMediaFormat.setString(
+                        android.media.MediaFormat.KEY_MIME, mAudioWrapper.mime);
+            }*/
         } catch (Exception e) {
             e.printStackTrace();
             if (mAudioWrapper.decoderMediaCodec != null) {
@@ -720,7 +792,7 @@ public class FfmpegUseMediaCodecDecode {
         // 帧率
         int frame_rate = (int) parameters[3];
         // 码率
-        long bitrate = parameters[4];
+        int bitrate = (int) parameters[4];
         int max_input_size = (int) parameters[5];
 
         if (mContext != null) {
@@ -775,7 +847,7 @@ public class FfmpegUseMediaCodecDecode {
                 mediaFormat.setInteger(MediaFormat.KEY_FRAME_RATE, frame_rate);
             }
             if (bitrate > 0) {
-                mediaFormat.setLong(MediaFormat.KEY_BIT_RATE, bitrate);
+                mediaFormat.setInteger(MediaFormat.KEY_BIT_RATE, bitrate);
                 /*mediaFormat.setInteger(MediaFormat.KEY_BITRATE_MODE,
                         MediaCodecInfo.EncoderCapabilities.BITRATE_MODE_CQ);*/
             }
@@ -1094,9 +1166,16 @@ public class FfmpegUseMediaCodecDecode {
                 e.printStackTrace();
             }
 
-            MediaUtils.releaseAudioTrack(mAudioWrapper.mAudioTrack);
+            mExoAudioTrack.mMediaFormat = mAudioWrapper.decoderMediaFormat;
+            mExoAudioTrack.createAudioTrack();
 
-            // 创建AudioTrack
+            if (mExoAudioTrack.mAudioTrack == null) {
+                MLog.e(TAG, "handleAudioOutputFormat() AudioTrack is null");
+                mAudioWrapper.isHandling = false;
+                handleAudioOutputBuffer(-1, null, null, -1);
+            }
+
+            /*// 创建AudioTrack
             // 1.
             int sampleRateInHz =
                     mAudioWrapper.decoderMediaFormat.getInteger(MediaFormat.KEY_SAMPLE_RATE);
@@ -1110,13 +1189,11 @@ public class FfmpegUseMediaCodecDecode {
                 audioFormat =
                         mAudioWrapper.decoderMediaFormat.getInteger(MediaFormat.KEY_PCM_ENCODING);
             }
-
             // sampleRateInHz: 48000 channelCount: 2 audioFormat: 2
             MLog.d(TAG, "handleAudioOutputFormat()" +
                     " sampleRateInHz: " + sampleRateInHz +
                     " channelCount: " + channelCount +
                     " audioFormat: " + audioFormat);
-
             // create AudioTrack
             mAudioWrapper.mAudioTrack = MediaUtils.createAudioTrack(
                     AudioManager.STREAM_MUSIC,
@@ -1152,7 +1229,7 @@ public class FfmpegUseMediaCodecDecode {
                         AACPlayer.sampleRateIndexMap.get(sampleRateInHz),
                         AACPlayer.channelConfigIndexMap.get(channelCount)));
                 MediaUtils.setCsdBuffers(mAudioWrapper.decoderMediaFormat, list);
-            }
+            }*/
         }
 
         @Override
@@ -1188,12 +1265,11 @@ public class FfmpegUseMediaCodecDecode {
                                 FFMPEG.DO_SOMETHING_CODE_handleAudioOutputBuffer, mAudioJniObject));
             }
             if (mAudioWrapper.isHandling
-                    && mAudioWrapper.mAudioTrack != null
-                    && mAudioWrapper.mAudioTrack.getState() == AudioTrack.STATE_INITIALIZED
+                    && mExoAudioTrack.mAudioTrack != null
                     && roomSize > 0) {
                 byte[] audioData = new byte[roomSize];
                 room.get(audioData, 0, audioData.length);
-                mAudioWrapper.mAudioTrack.write(audioData, roomInfo.offset, audioData.length);
+                mExoAudioTrack.mAudioTrack.write(audioData, roomInfo.offset, audioData.length);
             }
 
             return 0;

@@ -213,7 +213,7 @@ public class PlayerWrapper {
     public static final String PLAYER_FFMPEG = "player_ffmpeg";
     public static final String PLAYER_MEDIACODEC = "player_mediacodec";
     public static final String PLAYER_FFMPEG_MEDIACODEC = "player_ffmpeg_mediacodec";
-    private String whatPlayer = PLAYER_FFMPEG;
+    private String whatPlayer = PLAYER_FFMPEG_MEDIACODEC;
 
     // 第一个存储视频地址,第二个存储标题
     public static final LinkedHashMap<String, String> mContentsMap = new LinkedHashMap();
