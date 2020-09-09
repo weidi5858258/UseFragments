@@ -2303,8 +2303,7 @@ namespace alexander_media_mediacodec {
                 }
                 needToGetResultAgain = false;
                 if (audioWrapper->father->useMediaCodec) {
-                    audioWrapper->father->useMediaCodec = false;
-                    needToGetResultAgain = true;
+                    TIME_DIFFERENCE = 0.050000;
                 }
             } else if (averageTimeDiff > 0.200000 && averageTimeDiff < 0.300000) {
                 /***
