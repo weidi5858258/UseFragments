@@ -202,10 +202,10 @@ public class FfmpegUseMediaCodecDecode {
             mVideoWrapper.decoderMediaCodec = null;
             mVideoWrapper = null;
         }
-        if (mExoAudioTrack != null
-                && mExoAudioTrack.mAudioTrack != null) {
+        if (mExoAudioTrack != null) {
             MediaUtils.releaseAudioTrack(mExoAudioTrack.mAudioTrack);
             mExoAudioTrack.mAudioTrack = null;
+            mExoAudioTrack = null;
         }
         if (mAudioWrapper != null) {
             MediaUtils.releaseMediaCodec(mAudioWrapper.decoderMediaCodec);
@@ -571,6 +571,11 @@ public class FfmpegUseMediaCodecDecode {
             mExoAudioTrack.mime = audioMime;
             mExoAudioTrack.mContext = mContext;
             mExoAudioTrack.mMediaFormat = mAudioWrapper.decoderMediaFormat;
+
+            /*mAudioWrapper.decoderMediaCodec = MediaCodec.createByCodecName(codecName);
+            mAudioWrapper.decoderMediaCodec.configure(
+                    mAudioWrapper.decoderMediaFormat, null, null, 0);
+            mAudioWrapper.decoderMediaCodec.start();*/
 
             mAudioWrapper.decoderMediaCodec =
                     MediaUtils.getAudioDecoderMediaCodec(
@@ -1264,8 +1269,10 @@ public class FfmpegUseMediaCodecDecode {
                         mFFMPEG.onTransact(
                                 FFMPEG.DO_SOMETHING_CODE_handleAudioOutputBuffer, mAudioJniObject));
             }
+
             if (mAudioWrapper.isHandling
                     && mExoAudioTrack.mAudioTrack != null
+                    && room != null
                     && roomSize > 0) {
                 byte[] audioData = new byte[roomSize];
                 room.get(audioData, 0, audioData.length);

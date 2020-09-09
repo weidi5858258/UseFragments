@@ -635,7 +635,7 @@ public class PlayerWrapper {
             case Callback.MSG_ON_TRANSACT_INFO:
                 if (msg.obj != null && msg.obj instanceof String) {
                     String toastInfo = ((String) msg.obj).trim();
-                    MLog.d(TAG, "Callback.MSG_ON_TRANSACT_INFO " + toastInfo);
+                    MLog.d(TAG, "Callback.MSG_ON_TRANSACT_INFO\n" + toastInfo);
                     //MyToast.show(toastInfo);
                     if (toastInfo.contains("[")
                             && toastInfo.contains("]")) {
@@ -1796,6 +1796,7 @@ public class PlayerWrapper {
                         mSurfaceHolder.removeCallback(mSurfaceCallback);
                         mSurfaceHolder = null;
                     }
+                    System.gc();
                 }
             } else if (mActivity != null) {
                 mActivity.finish();

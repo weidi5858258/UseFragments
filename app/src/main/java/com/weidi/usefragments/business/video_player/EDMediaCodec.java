@@ -281,9 +281,9 @@ public class EDMediaCodec {
                     room.clear();
                 } else {
                     if (type == TYPE.TYPE_AUDIO) {
-                        callback.handleAudioOutputBuffer(roomIndex, null, null, 0);
+                        callback.handleAudioOutputBuffer(roomIndex, null, null, -1);
                     } else {
-                        callback.handleVideoOutputBuffer(roomIndex, null, null, 0);
+                        callback.handleVideoOutputBuffer(roomIndex, null, null, -1);
                     }
                 }
 

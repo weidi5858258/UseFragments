@@ -393,7 +393,7 @@ public class FFMPEG {
 
                 @Override
                 public void onInfo(String info) {
-                    MLog.i(TAG, "FFMPEG onInfo() info: " + info);
+                    MLog.i(TAG, "FFMPEG onInfo() info:\n" + info);
                     if (mUiHandler != null) {
                         Message msg = mUiHandler.obtainMessage();
                         msg.what = Callback.MSG_ON_TRANSACT_INFO;
