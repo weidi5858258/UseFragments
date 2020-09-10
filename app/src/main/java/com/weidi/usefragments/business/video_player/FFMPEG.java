@@ -173,17 +173,23 @@ public class FFMPEG {
         if (mFfmpegUseMediaCodecDecode != null) {
             switch (type) {
                 case FfmpegUseMediaCodecDecode.TYPE_AUDIO:
-                    mFfmpegUseMediaCodecDecode.mAudioWrapper.data = data;
-                    mFfmpegUseMediaCodecDecode.mAudioWrapper.size = size;
-                    mFfmpegUseMediaCodecDecode.mAudioWrapper.sampleTime = presentationTimeUs;
-                    return mFfmpegUseMediaCodecDecode.feedInputBufferAndDrainOutputBuffer(
-                            mFfmpegUseMediaCodecDecode.mAudioWrapper);
+                    if (mFfmpegUseMediaCodecDecode.mAudioWrapper != null) {
+                        mFfmpegUseMediaCodecDecode.mAudioWrapper.data = data;
+                        mFfmpegUseMediaCodecDecode.mAudioWrapper.size = size;
+                        mFfmpegUseMediaCodecDecode.mAudioWrapper.sampleTime = presentationTimeUs;
+                        return mFfmpegUseMediaCodecDecode.feedInputBufferAndDrainOutputBuffer(
+                                mFfmpegUseMediaCodecDecode.mAudioWrapper);
+                    }
+                    break;
                 case FfmpegUseMediaCodecDecode.TYPE_VIDEO:
-                    mFfmpegUseMediaCodecDecode.mVideoWrapper.data = data;
-                    mFfmpegUseMediaCodecDecode.mVideoWrapper.size = size;
-                    mFfmpegUseMediaCodecDecode.mVideoWrapper.sampleTime = presentationTimeUs;
-                    return mFfmpegUseMediaCodecDecode.feedInputBufferAndDrainOutputBuffer(
-                            mFfmpegUseMediaCodecDecode.mVideoWrapper);
+                    if (mFfmpegUseMediaCodecDecode.mVideoWrapper != null) {
+                        mFfmpegUseMediaCodecDecode.mVideoWrapper.data = data;
+                        mFfmpegUseMediaCodecDecode.mVideoWrapper.size = size;
+                        mFfmpegUseMediaCodecDecode.mVideoWrapper.sampleTime = presentationTimeUs;
+                        return mFfmpegUseMediaCodecDecode.feedInputBufferAndDrainOutputBuffer(
+                                mFfmpegUseMediaCodecDecode.mVideoWrapper);
+                    }
+                    break;
                 default:
                     break;
 

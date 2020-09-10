@@ -56,6 +56,7 @@ public class FfmpegUseMediaCodecDecode {
     private Context mContext = null;
     private Surface mSurface = null;
 
+    public boolean mUseMediaCodecForAudio = true;
     public AudioWrapper mAudioWrapper = null;
     public VideoWrapper mVideoWrapper = null;
     private ExoAudioTrack mExoAudioTrack = null;
@@ -374,6 +375,10 @@ public class FfmpegUseMediaCodecDecode {
      */
     public boolean initAudioMediaCodec(JniObject jniObject) {
         MLog.d(TAG, "initAudioMediaCodec() start");
+        if (!mUseMediaCodecForAudio) {
+            return false;
+        }
+
         if (jniObject == null
                 || jniObject.valueObjectArray == null
                 || jniObject.valueObjectArray.length < 2) {

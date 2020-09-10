@@ -682,6 +682,8 @@ public class PlayerWrapper {
                         clickSix();
                         break;
                     case 7:
+                        MLog.d(TAG, "clickSeven()");
+                        clickSeven();
                         break;
                     case 8:
                         break;
@@ -2324,6 +2326,18 @@ public class PlayerWrapper {
         } else {
             MyToast.show(PLAYER_FFMPEG_MEDIACODEC);
             mSP.edit().putString(PLAYBACK_USE_PLAYER, PLAYER_FFMPEG_MEDIACODEC).commit();
+        }
+    }
+
+    private void clickSeven() {
+        if (mFfmpegUseMediaCodecDecode != null) {
+            if (mFfmpegUseMediaCodecDecode.mUseMediaCodecForAudio) {
+                mFfmpegUseMediaCodecDecode.mUseMediaCodecForAudio = false;
+                MyToast.show("不使用音频硬解码");
+            } else {
+                mFfmpegUseMediaCodecDecode.mUseMediaCodecForAudio = true;
+                MyToast.show("使用音频硬解码");
+            }
         }
     }
 
