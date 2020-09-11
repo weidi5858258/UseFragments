@@ -113,6 +113,18 @@ public class ExoAudioTrack {
                 AudioTrack.MODE_STREAM);
 
         if (mAudioTrack != null) {
+            if (mContext != null) {
+                SharedPreferences sp =
+                        mContext.getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE);
+                boolean isMute = sp.getBoolean(PLAYBACK_IS_MUTE, false);
+                if (!isMute) {
+                    setVolume(FFMPEG.VOLUME_NORMAL);
+                } else {
+                    setVolume(FFMPEG.VOLUME_MUTE);
+                }
+            } else {
+                setVolume(FFMPEG.VOLUME_NORMAL);
+            }
             mAudioTrack.play();
         }
 

@@ -1359,8 +1359,8 @@ public class MediaUtils {
 
         bufferSizeInBytes *= 2;
         AudioTrack audioTrack = null;
-        // java.lang.IllegalArgumentException: Unsupported channel configuration.
         try {
+            // java.lang.IllegalArgumentException: Unsupported channel configuration.
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
                 AudioAttributes attributes = new AudioAttributes.Builder()
                         .setUsage(AudioAttributes.USAGE_MEDIA)
@@ -1386,7 +1386,7 @@ public class MediaUtils {
                         bufferSizeInBytes,
                         mode);
             }
-        } catch (IllegalArgumentException e) {
+        } catch (Exception e) {
             e.printStackTrace();
             return null;
         }
@@ -1395,11 +1395,8 @@ public class MediaUtils {
                 MLog.e(TAG, String.format(Locale.US,
                         "Bad arguments to new AudioTrack(%d, %d, %d, %d, %d)",
                         sampleRateInHz, channelConfig, audioFormat, mode, sessionId));
-            try {
-                audioTrack.release();
-            } finally {
-                audioTrack = null;
-            }
+            MediaUtils.releaseAudioTrack(audioTrack);
+            audioTrack = null;
             return null;
         }
 

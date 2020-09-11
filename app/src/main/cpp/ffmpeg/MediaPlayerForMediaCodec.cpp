@@ -2359,7 +2359,8 @@ namespace alexander_media_mediacodec {
             }
 
             // 对4K视频特殊处理
-            if (frameRate >= 45
+            if (!needToGetResultAgain
+                && frameRate >= 45
                 && videoWrapper->srcWidth >= 3840
                 && videoWrapper->srcHeight >= 2160) {
                 // 增大TIME_DIFFERENCE值让视频加快
