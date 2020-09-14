@@ -2251,7 +2251,8 @@ namespace alexander_media_mediacodec {
                 }
                 needToGetResultAgain = false;
                 if (audioWrapper->father->useMediaCodec) {
-                    TIME_DIFFERENCE = 0.200000;
+                    //TIME_DIFFERENCE = 0.200000;
+                    TIME_DIFFERENCE = 0.500000;
                 }
             } else if (averageTimeDiff > 0.400000 && averageTimeDiff < 0.500000) {
                 /***
@@ -2303,7 +2304,8 @@ namespace alexander_media_mediacodec {
                 }
                 needToGetResultAgain = false;
                 if (audioWrapper->father->useMediaCodec) {
-                    TIME_DIFFERENCE = 0.050000;
+                    //TIME_DIFFERENCE = 0.050000;
+                    TIME_DIFFERENCE = 0.300000;
                 }
             } else if (averageTimeDiff > 0.200000 && averageTimeDiff < 0.300000) {
                 /***
@@ -2380,39 +2382,39 @@ namespace alexander_media_mediacodec {
         char info[200];
         if (videoWrapper->father->useMediaCodec
             && audioWrapper->father->useMediaCodec) {
-            sprintf(info, "[%s] [%s] [%d] [%d] [%lld] [%lld] [%d] [%lf] [%lf] %s"
-                          "\n[%s] [%s] [%d] [%d] [%lld] %s",
+            sprintf(info, "[%s] [%s] [%d] [%d] [%lld] [%d] %s"
+                          "\n[%s] [%s] [%d] [%d] [%lld] %s"
+                          "\n[%lld] [%lf] [%lf]",
                     // video
                     avcodec_get_name(videoWrapper->father->avCodecId),
                     av_get_pix_fmt_name(videoWrapper->srcAVPixelFormat),
                     videoWrapper->srcWidth, videoWrapper->srcHeight,
-                    (long long) bitRate, (long long) bit_rate_video, frameRate,
-                    averageTimeDiff, TIME_DIFFERENCE, "[V]",
+                    (long long) bit_rate_video, frameRate, "[V]",
                     // audio
                     avcodec_get_name(audioWrapper->father->avCodecId),
                     av_get_sample_fmt_name(audioWrapper->srcAVSampleFormat),
                     audioWrapper->srcSampleRate,
                     audioWrapper->srcNbChannels,
-                    (long long) bit_rate_audio,
-                    "[A]");
+                    (long long) bit_rate_audio, "[A]",
+                    (long long) bitRate, averageTimeDiff, TIME_DIFFERENCE);
         } else if (videoWrapper->father->useMediaCodec
                    && !audioWrapper->father->useMediaCodec) {
             if (audioWrapper->father->streamIndex != -1) {
-                sprintf(info, "[%s] [%s] [%d] [%d] [%lld] [%lld] [%d] [%lf] [%lf] %s"
-                              "\n[%s] [%s] [%d] [%d] [%lld] %s",
+                sprintf(info, "[%s] [%s] [%d] [%d] [%lld] [%d] %s"
+                              "\n[%s] [%s] [%d] [%d] [%lld] %s"
+                              "\n[%lld] [%lf] [%lf]",
                         // video
                         avcodec_get_name(videoWrapper->father->avCodecId),
                         av_get_pix_fmt_name(videoWrapper->srcAVPixelFormat),
                         videoWrapper->srcWidth, videoWrapper->srcHeight,
-                        (long long) bitRate, (long long) bit_rate_video, frameRate,
-                        averageTimeDiff, TIME_DIFFERENCE, "[V]",
+                        (long long) bit_rate_video, frameRate, "[V]",
                         // audio
                         avcodec_get_name(audioWrapper->father->avCodecId),
                         av_get_sample_fmt_name(audioWrapper->srcAVSampleFormat),
                         audioWrapper->srcSampleRate,
                         audioWrapper->srcNbChannels,
-                        (long long) bit_rate_audio,
-                        "[]");
+                        (long long) bit_rate_audio, "[]",
+                        (long long) bitRate, averageTimeDiff, TIME_DIFFERENCE);
             } else {
                 sprintf(info, "[%s] [%s] [%d] [%d] [%lld] [%lld] [%d] [%lf] [%lf] %s",
                         avcodec_get_name(videoWrapper->father->avCodecId),
@@ -2424,21 +2426,21 @@ namespace alexander_media_mediacodec {
         } else if (!videoWrapper->father->useMediaCodec
                    && audioWrapper->father->useMediaCodec) {
             if (audioWrapper->father->streamIndex != -1) {
-                sprintf(info, "[%s] [%s] [%d] [%d] [%lld] [%lld] [%d] [%lf] [%lf] %s"
-                              "\n[%s] [%s] [%d] [%d] [%lld] %s",
+                sprintf(info, "[%s] [%s] [%d] [%d] [%lld] [%d] %s"
+                              "\n[%s] [%s] [%d] [%d] [%lld] %s"
+                              "\n[%lld] [%lf] [%lf]",
                         // video
                         avcodec_get_name(videoWrapper->father->avCodecId),
                         av_get_pix_fmt_name(videoWrapper->srcAVPixelFormat),
                         videoWrapper->srcWidth, videoWrapper->srcHeight,
-                        (long long) bitRate, (long long) bit_rate_video, frameRate,
-                        averageTimeDiff, TIME_DIFFERENCE, "[]",
+                        (long long) bit_rate_video, frameRate, "[]",
                         // audio
                         avcodec_get_name(audioWrapper->father->avCodecId),
                         av_get_sample_fmt_name(audioWrapper->srcAVSampleFormat),
                         audioWrapper->srcSampleRate,
                         audioWrapper->srcNbChannels,
-                        (long long) bit_rate_audio,
-                        "[A]");
+                        (long long) bit_rate_audio, "[A]",
+                        (long long) bitRate, averageTimeDiff, TIME_DIFFERENCE);
             } else {
                 sprintf(info, "[%s] [%s] [%d] [%d] [%lld] [%lld] [%d] [%lf] [%lf] %s",
                         avcodec_get_name(videoWrapper->father->avCodecId),
@@ -2450,21 +2452,21 @@ namespace alexander_media_mediacodec {
         } else if (!videoWrapper->father->useMediaCodec
                    && !audioWrapper->father->useMediaCodec) {
             if (audioWrapper->father->streamIndex != -1) {
-                sprintf(info, "[%s] [%s] [%d] [%d] [%lld] [%lld] [%d] [%lf] [%lf] %s"
-                              "\n[%s] [%s] [%d] [%d] [%lld] %s",
+                sprintf(info, "[%s] [%s] [%d] [%d] [%lld] [%d] %s"
+                              "\n[%s] [%s] [%d] [%d] [%lld] %s"
+                              "\n[%lld] [%lf] [%lf]",
                         // video
                         avcodec_get_name(videoWrapper->father->avCodecId),
                         av_get_pix_fmt_name(videoWrapper->srcAVPixelFormat),
                         videoWrapper->srcWidth, videoWrapper->srcHeight,
-                        (long long) bitRate, (long long) bit_rate_video, frameRate,
-                        averageTimeDiff, TIME_DIFFERENCE, "[]",
+                        (long long) bit_rate_video, frameRate, "[]",
                         // audio
                         avcodec_get_name(audioWrapper->father->avCodecId),
                         av_get_sample_fmt_name(audioWrapper->srcAVSampleFormat),
                         audioWrapper->srcSampleRate,
                         audioWrapper->srcNbChannels,
-                        (long long) bit_rate_audio,
-                        "[]");
+                        (long long) bit_rate_audio, "[]",
+                        (long long) bitRate, averageTimeDiff, TIME_DIFFERENCE);
             } else {
                 sprintf(info, "[%s] [%s] [%d] [%d] [%lld] [%lld] [%d] [%lf] [%lf] %s",
                         avcodec_get_name(videoWrapper->father->avCodecId),

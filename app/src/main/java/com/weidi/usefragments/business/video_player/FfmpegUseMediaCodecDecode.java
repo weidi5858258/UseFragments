@@ -56,7 +56,7 @@ public class FfmpegUseMediaCodecDecode {
     private Context mContext = null;
     private Surface mSurface = null;
 
-    public boolean mUseMediaCodecForAudio = true;
+    public boolean mUseMediaCodecForAudio = false;
     public AudioWrapper mAudioWrapper = null;
     public VideoWrapper mVideoWrapper = null;
     private ExoAudioTrack mExoAudioTrack = null;

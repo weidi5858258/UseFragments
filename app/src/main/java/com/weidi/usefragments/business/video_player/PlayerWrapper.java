@@ -2152,16 +2152,20 @@ public class PlayerWrapper {
             }
         }
 
-        if (mControllerPanelLayout.getVisibility() == View.VISIBLE) {
-            if (mVideoWidth != 0 && mVideoHeight != 0) {
-                mControllerPanelLayout.setVisibility(View.GONE);
-                textInfoScrollView.setVisibility(View.GONE);
-                mSP.edit().putBoolean(PLAYBACK_SHOW_CONTROLLERPANELLAYOUT, false).commit();
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N
+                || mContext.getResources().getConfiguration().orientation
+                == Configuration.ORIENTATION_LANDSCAPE) {
+            if (mControllerPanelLayout.getVisibility() == View.VISIBLE) {
+                if (mVideoWidth != 0 && mVideoHeight != 0) {
+                    mControllerPanelLayout.setVisibility(View.GONE);
+                    textInfoScrollView.setVisibility(View.GONE);
+                    mSP.edit().putBoolean(PLAYBACK_SHOW_CONTROLLERPANELLAYOUT, false).commit();
+                }
+            } else {
+                mControllerPanelLayout.setVisibility(View.VISIBLE);
+                textInfoScrollView.setVisibility(View.VISIBLE);
+                mSP.edit().putBoolean(PLAYBACK_SHOW_CONTROLLERPANELLAYOUT, true).commit();
             }
-        } else {
-            mControllerPanelLayout.setVisibility(View.VISIBLE);
-            textInfoScrollView.setVisibility(View.VISIBLE);
-            mSP.edit().putBoolean(PLAYBACK_SHOW_CONTROLLERPANELLAYOUT, true).commit();
         }
     }
 
