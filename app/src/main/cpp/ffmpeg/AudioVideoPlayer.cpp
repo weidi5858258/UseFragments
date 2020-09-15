@@ -51,7 +51,8 @@ namespace alexander_audio_video {
 
     static int frameRate = 0;
     static int64_t bitRate = 0;
-    static int64_t bit_rate = 0;
+    static int64_t bit_rate_video = 0;
+    static int64_t bit_rate_audio = 0;
 
     char *getStrAVPixelFormat(AVPixelFormat format);
 
@@ -547,6 +548,8 @@ namespace alexander_audio_video {
         // 但是还是要使用函数得到的channel_layout为好
         audioWrapper->srcChannelLayout = av_get_default_channel_layout(audioWrapper->srcNbChannels);
         LOGD("srcChannelLayout2   : %d\n", audioWrapper->srcChannelLayout);
+        bit_rate_audio = audioWrapper->father->avCodecContext->bit_rate / 1000;
+        LOGD("bit_rate            : %lld\n", (long long) bit_rate_audio);
         LOGD("---------------------------------\n");
         if (audioWrapper->srcNbSamples <= 0) {
             audioWrapper->srcNbSamples = 1024;
@@ -670,7 +673,7 @@ namespace alexander_audio_video {
         videoWrapper->srcHeight = videoWrapper->father->avCodecContext->height;
         videoWrapper->srcAVPixelFormat = videoWrapper->father->avCodecContext->pix_fmt;
 
-        bit_rate = videoWrapper->father->avCodecContext->bit_rate / 1000;
+        bit_rate_video = videoWrapper->father->avCodecContext->bit_rate / 1000;
         int bit_rate_tolerance = videoWrapper->father->avCodecContext->bit_rate_tolerance;
         int bits_per_coded_sample = videoWrapper->father->avCodecContext->bits_per_coded_sample;
         int bits_per_raw_sample = videoWrapper->father->avCodecContext->bits_per_raw_sample;
@@ -679,7 +682,7 @@ namespace alexander_audio_video {
         int frame_size = videoWrapper->father->avCodecContext->frame_size;
         int level = videoWrapper->father->avCodecContext->level;
         LOGW("---------------------------------\n");
-        LOGW("bit_rate            : %lld\n", (long long) bit_rate);
+        LOGW("bit_rate            : %lld\n", (long long) bit_rate_video);
         LOGW("bit_rate_tolerance  : %d\n", bit_rate_tolerance);
         LOGW("bits_per_coded_sample: %d\n", bits_per_coded_sample);
         LOGW("bits_per_raw_sample : %d\n", bits_per_raw_sample);
@@ -1099,174 +1102,328 @@ namespace alexander_audio_video {
         LOGI("hope_to_get_a_good_result() averageTimeDiff: %lf frameRate: %d \n",
              averageTimeDiff, frameRate);
 
-        if (averageTimeDiff > 1.000000) {
-            /***
-             还没遇到过
-             */
-            if (videoWrapper->father->useMediaCodec) {
-                TIME_DIFFERENCE = 0.800000;
-            } else {
-                TIME_DIFFERENCE = 0.900000;
-            }
-        } else if (averageTimeDiff > 0.900000 && averageTimeDiff < 1.000000) {
-            /***
-             还没遇到过
-             */
-            if (videoWrapper->father->useMediaCodec) {
-                TIME_DIFFERENCE = 0.700000;
-            } else {
-                TIME_DIFFERENCE = 0.800000;
-            }
-        } else if (averageTimeDiff > 0.800000 && averageTimeDiff < 0.900000) {
-            /***
-             还没遇到过
-             */
-            if (videoWrapper->father->useMediaCodec) {
-                TIME_DIFFERENCE = 0.600000;
-            } else {
-                TIME_DIFFERENCE = 0.700000;
-            }
-        } else if (averageTimeDiff > 0.700000 && averageTimeDiff < 0.800000) {
-            /***
-             还没遇到过
-             */
-            if (videoWrapper->father->useMediaCodec) {
-                TIME_DIFFERENCE = 0.500000;
-            } else {
-                TIME_DIFFERENCE = 0.600000;
-            }
-        } else if (averageTimeDiff > 0.600000 && averageTimeDiff < 0.700000) {
-            /***
-             还没遇到过
-             */
-            if (videoWrapper->father->useMediaCodec) {
-                TIME_DIFFERENCE = 0.400000;
-            } else {
-                TIME_DIFFERENCE = 0.500000;
-            }
-        } else if (averageTimeDiff > 0.500000 && averageTimeDiff < 0.600000) {
-            /***
-             0.505212 0.524924
-             */
-            if (videoWrapper->father->useMediaCodec) {
-                TIME_DIFFERENCE = 0.300000;
-            } else {
-                TIME_DIFFERENCE = 0.400000;
-            }
-        } else if (averageTimeDiff > 0.400000 && averageTimeDiff < 0.500000) {
-            /***
-             0.405114 0.418364 0.429602 0.439030 0.449823
-             0.457614 0.461167 0.472319 0.486549 0.494847
-             */
-            if (videoWrapper->father->useMediaCodec) {
-                if (averageTimeDiff > 0.490000) {
-                    TIME_DIFFERENCE = 0.199500;
-                } else if (averageTimeDiff > 0.480000 && averageTimeDiff < 0.490000) {
-                    TIME_DIFFERENCE = 0.199000;
-                } else if (averageTimeDiff > 0.470000 && averageTimeDiff < 0.480000) {
-                    TIME_DIFFERENCE = 0.198500;
-                } else if (averageTimeDiff > 0.460000 && averageTimeDiff < 0.470000) {
-                    TIME_DIFFERENCE = 0.198000;
-                } else if (averageTimeDiff > 0.450000 && averageTimeDiff < 0.460000) {
-                    TIME_DIFFERENCE = 0.197500;
-                } else if (averageTimeDiff > 0.440000 && averageTimeDiff < 0.450000) {
-                    TIME_DIFFERENCE = 0.197000;
-                } else if (averageTimeDiff > 0.430000 && averageTimeDiff < 0.440000) {
-                    TIME_DIFFERENCE = 0.196500;
-                } else if (averageTimeDiff > 0.420000 && averageTimeDiff < 0.430000) {
-                    TIME_DIFFERENCE = 0.196000;
-                } else if (averageTimeDiff > 0.410000 && averageTimeDiff < 0.420000) {
-                    TIME_DIFFERENCE = 0.195500;
-                } else if (averageTimeDiff > 0.400000 && averageTimeDiff < 0.410000) {
-                    TIME_DIFFERENCE = 0.195000;
-                }
-
-                //TIME_DIFFERENCE = 0.200000;
-            } else {
-                TIME_DIFFERENCE = 0.300000;
-            }
-        } else if (averageTimeDiff > 0.300000 && averageTimeDiff < 0.400000) {
-            /***
-             0.397755
-             */
-            if (videoWrapper->father->useMediaCodec) {
-                TIME_DIFFERENCE = 0.100000;
-            } else {
-                TIME_DIFFERENCE = 0.200000;
-            }
-        } else if (averageTimeDiff > 0.200000 && averageTimeDiff < 0.300000) {
-            /***
-             0.204199 0.263926
-             */
-            if (videoWrapper->father->useMediaCodec) {
-                TIME_DIFFERENCE = 0.080000;
-            } else {
-                TIME_DIFFERENCE = 0.100000;
-            }
-        } else if (averageTimeDiff > 0.100000 && averageTimeDiff < 0.200000) {
-            /***
-             0.100523 0.168335
-             */
-            if (videoWrapper->father->useMediaCodec) {
-                TIME_DIFFERENCE = averageTimeDiff - 0.100000;
-            } else {
-                TIME_DIFFERENCE = averageTimeDiff;
-            }
-        } else if (averageTimeDiff < 0.100000) {
-            /***
-             0.014149 0.018936 0.022836 0.023516 0.024403 0.026983 0.027595 0.028610
-             0.029898 0.030690 0.031515 0.034621 0.035779 0.036042 0.037615 0.038017
-             0.039632 0.042750 0.043855 0.047141 0.048789 0.052697 0.054136 0.055711
-             0.059648 0.062606 0.065509 0.066374 0.073902 0.074668 0.079382 0.088914
-             */
-            TIME_DIFFERENCE = averageTimeDiff + 0.050000;
-            if (TIME_DIFFERENCE < 0.100000) {
-                TIME_DIFFERENCE = 0.100000;
-            }
+        bool isGoodResult = false;
+        if ((bitRate > 0 && bit_rate_video > 0 && bitRate >= bit_rate_video)
+            || (bitRate > 0 && bit_rate_video == 0)
+            || (bitRate == 0 && bit_rate_video == 0)) {
+            isGoodResult = true;
         }
 
-        // 对4K视频特殊处理
-        if (frameRate >= 45
-            && videoWrapper->srcWidth >= 3840
-            && videoWrapper->srcHeight >= 2160) {
-            // 增大TIME_DIFFERENCE值让视频加快
-            TIME_DIFFERENCE = averageTimeDiff + 0.200000;
+        if (isGoodResult) {
+            bool needToGetResultAgain = true;
+            if (averageTimeDiff > 1.000000) {
+                /***
+                 还没遇到过
+                 */
+                if (videoWrapper->father->useMediaCodec) {
+                    TIME_DIFFERENCE = 0.200000;
+                } else {
+                    TIME_DIFFERENCE = 0.900000;
+                }
+            } else if (averageTimeDiff > 0.900000 && averageTimeDiff < 1.000000) {
+                /***
+                 还没遇到过
+                 */
+                if (videoWrapper->father->useMediaCodec) {
+                    TIME_DIFFERENCE = 0.200000;
+                } else {
+                    TIME_DIFFERENCE = 0.800000;
+                }
+            } else if (averageTimeDiff > 0.800000 && averageTimeDiff < 0.900000) {
+                /***
+                 还没遇到过
+                 */
+                if (videoWrapper->father->useMediaCodec) {
+                    TIME_DIFFERENCE = 0.200000;
+                } else {
+                    TIME_DIFFERENCE = 0.700000;
+                }
+            } else if (averageTimeDiff > 0.700000 && averageTimeDiff < 0.800000) {
+                /***
+                 还没遇到过
+                 */
+                if (videoWrapper->father->useMediaCodec) {
+                    TIME_DIFFERENCE = 0.200000;
+                } else {
+                    TIME_DIFFERENCE = 0.600000;
+                }
+            } else if (averageTimeDiff > 0.600000 && averageTimeDiff < 0.700000) {
+                /***
+                 还没遇到过
+                 */
+                if (videoWrapper->father->useMediaCodec) {
+                    TIME_DIFFERENCE = 0.200000;
+                } else {
+                    TIME_DIFFERENCE = 0.500000;
+                }
+            } else if (averageTimeDiff > 0.500000 && averageTimeDiff < 0.600000) {
+                /***
+                 0.505212 0.517508 0.524924 0.531797 0.543092
+                 */
+                if (videoWrapper->father->useMediaCodec) {
+                    TIME_DIFFERENCE = 0.300000;
+                } else {
+                    TIME_DIFFERENCE = 0.400000;
+                }
+                needToGetResultAgain = false;
+                if (audioWrapper->father->useMediaCodec) {
+                    //TIME_DIFFERENCE = 0.200000;
+                    TIME_DIFFERENCE = 0.500000;
+                }
+            } else if (averageTimeDiff > 0.400000 && averageTimeDiff < 0.500000) {
+                /***
+                 0.405114 0.418364 0.429602 0.439030 0.449823
+                 0.457614 0.461167 0.472319 0.486549 0.494847
+                 */
+                double step = -0.000500;
+                if (videoWrapper->father->useMediaCodec) {
+                    if (audioWrapper->father->useMediaCodec) {
+                        step = -0.105000;
+                    }
+
+                    if (averageTimeDiff > 0.490000) {
+                        TIME_DIFFERENCE = 0.199500 + step;
+                    } else if (averageTimeDiff > 0.480000 && averageTimeDiff < 0.490000) {
+                        TIME_DIFFERENCE = 0.199000 + step;
+                    } else if (averageTimeDiff > 0.470000 && averageTimeDiff < 0.480000) {
+                        TIME_DIFFERENCE = 0.198500 + step;
+                    } else if (averageTimeDiff > 0.460000 && averageTimeDiff < 0.470000) {
+                        TIME_DIFFERENCE = 0.198000 + step;
+                    } else if (averageTimeDiff > 0.450000 && averageTimeDiff < 0.460000) {
+                        TIME_DIFFERENCE = 0.197500 + step;
+                    } else if (averageTimeDiff > 0.440000 && averageTimeDiff < 0.450000) {
+                        TIME_DIFFERENCE = 0.197000 + step;
+                    } else if (averageTimeDiff > 0.430000 && averageTimeDiff < 0.440000) {
+                        TIME_DIFFERENCE = 0.196500 + step;
+                    } else if (averageTimeDiff > 0.420000 && averageTimeDiff < 0.430000) {
+                        TIME_DIFFERENCE = 0.196000 + step;
+                    } else if (averageTimeDiff > 0.410000 && averageTimeDiff < 0.420000) {
+                        TIME_DIFFERENCE = 0.195500 + step;
+                    } else if (averageTimeDiff > 0.400000 && averageTimeDiff < 0.410000) {
+                        TIME_DIFFERENCE = 0.195000 + step;
+                    }
+
+                    //TIME_DIFFERENCE = 0.200000;
+                } else {
+                    TIME_DIFFERENCE = 0.300000;
+                }
+                needToGetResultAgain = false;
+            } else if (averageTimeDiff > 0.300000 && averageTimeDiff < 0.400000) {
+                /***
+                 http://ivi.bupt.edu.cn/hls/sdetv.m3u8@@@@@@@@@@山东教育卫视 这个直播不能同步
+                 0.365758 0.376415 0.385712 0.397755
+                 */
+                if (videoWrapper->father->useMediaCodec) {
+                    TIME_DIFFERENCE = 0.100000;
+                } else {
+                    TIME_DIFFERENCE = 0.200000;
+                }
+                needToGetResultAgain = false;
+                if (audioWrapper->father->useMediaCodec) {
+                    //TIME_DIFFERENCE = 0.050000;
+                    TIME_DIFFERENCE = 0.300000;
+                }
+            } else if (averageTimeDiff > 0.200000 && averageTimeDiff < 0.300000) {
+                /***
+                 0.204199 0.263926
+                 */
+                if (videoWrapper->father->useMediaCodec) {
+                    TIME_DIFFERENCE = 0.080000;
+                } else {
+                    TIME_DIFFERENCE = 0.100000;
+                }
+                needToGetResultAgain = false;
+                if (audioWrapper->father->useMediaCodec) {
+                    audioWrapper->father->useMediaCodec = false;
+                    needToGetResultAgain = true;
+                }
+            } else if (averageTimeDiff > 0.100000 && averageTimeDiff < 0.200000) {
+                /***
+                 0.100523 0.127849 0.168335
+                 */
+                if (videoWrapper->father->useMediaCodec) {
+                    TIME_DIFFERENCE = averageTimeDiff - 0.100000;
+                } else {
+                    TIME_DIFFERENCE = averageTimeDiff;
+                }
+                needToGetResultAgain = false;
+                if (audioWrapper->father->useMediaCodec) {
+                    audioWrapper->father->useMediaCodec = false;
+                    needToGetResultAgain = true;
+                }
+            } else if (averageTimeDiff > 0.010000 && averageTimeDiff < 0.100000) {
+                /***
+                 之前frameRate <= 23时,会走这里.
+                 现在好像当frameRate = 0或者frameRate >= 50时才可能走到这里.
+                 0.014149 0.018936
+                 0.022836 0.023516 0.024403 0.026983 0.027595 0.028610 0.029898
+                 0.030690 0.031515 0.034621 0.035779 0.036042 0.037615 0.038017 0.039632
+                 0.042750 0.043855 0.047141 0.048789
+                 0.052697 0.054136 0.055711 0.059648
+                 0.062606 0.063012 0.064637 0.065509 0.066374 0.067457
+                 0.073902 0.074668 0.079382
+                 0.088914
+                 0.099370
+                 */
+                TIME_DIFFERENCE = averageTimeDiff + 0.050000;
+                if (TIME_DIFFERENCE < 0.100000) {
+                    TIME_DIFFERENCE = 0.100000;
+                }
+                needToGetResultAgain = false;
+                if (audioWrapper->father->useMediaCodec) {
+                    audioWrapper->father->useMediaCodec = false;
+                    needToGetResultAgain = true;
+                }
+            }
+
+            // 对4K视频特殊处理
+            if (!needToGetResultAgain
+                && frameRate >= 45
+                && videoWrapper->srcWidth >= 3840
+                && videoWrapper->srcHeight >= 2160) {
+                // 增大TIME_DIFFERENCE值让视频加快
+                TIME_DIFFERENCE = averageTimeDiff + 0.200000;
+            }
+
+            if (needToGetResultAgain) {
+                runCounts = 0;
+                averageTimeDiff = 0;
+                TIME_DIFFERENCE = 0.500000;
+            }
+        } else {
+            TIME_DIFFERENCE = averageTimeDiff + 0.100000;
         }
         LOGI("hope_to_get_a_good_result() TIME_DIFFERENCE: %lf\n", TIME_DIFFERENCE);
 
-        char info[150];
+        char info[200];
         if (videoWrapper->father->useMediaCodec
             && audioWrapper->father->useMediaCodec) {
-            sprintf(info, "[%s] [%s] [%d] [%d] [%lld] [%lld] [%d] [%lf] [%lf] %s",
+            sprintf(info,
+                    "[%d] [%lld] [%lld] [%lld] [%lf] [%lf]"
+                    "\n[%s] [%s] [%d] [%d] %s"
+                    "\n[%s] [%s] [%d] [%d] %s",
+                    frameRate,
+                    (long long) bitRate,
+                    (long long) bit_rate_video,
+                    (long long) bit_rate_audio,
+                    averageTimeDiff,
+                    TIME_DIFFERENCE,
+                    // video
                     avcodec_get_name(videoWrapper->father->avCodecId),
                     av_get_pix_fmt_name(videoWrapper->srcAVPixelFormat),
-                    videoWrapper->srcWidth, videoWrapper->srcHeight,
-                    (long long) bitRate, (long long) bit_rate, frameRate,
-                    averageTimeDiff, TIME_DIFFERENCE, "[AV]");
+                    videoWrapper->srcWidth,
+                    videoWrapper->srcHeight,
+                    "[V]",
+                    // audio
+                    avcodec_get_name(audioWrapper->father->avCodecId),
+                    av_get_sample_fmt_name(audioWrapper->srcAVSampleFormat),
+                    audioWrapper->srcSampleRate,
+                    audioWrapper->srcNbChannels,
+                    "[A]"
+            );
         } else if (videoWrapper->father->useMediaCodec
                    && !audioWrapper->father->useMediaCodec) {
-            sprintf(info, "[%s] [%s] [%d] [%d] [%lld] [%lld] [%d] [%lf] [%lf] %s",
-                    avcodec_get_name(videoWrapper->father->avCodecId),
-                    av_get_pix_fmt_name(videoWrapper->srcAVPixelFormat),
-                    videoWrapper->srcWidth, videoWrapper->srcHeight,
-                    (long long) bitRate, (long long) bit_rate, frameRate,
-                    averageTimeDiff, TIME_DIFFERENCE, "[V]");
+            if (audioWrapper->father->streamIndex != -1) {
+                sprintf(info,
+                        "[%d] [%lld] [%lld] [%lld] [%lf] [%lf]"
+                        "\n[%s] [%s] [%d] [%d] %s"
+                        "\n[%s] [%s] [%d] [%d] %s",
+                        frameRate,
+                        (long long) bitRate,
+                        (long long) bit_rate_video,
+                        (long long) bit_rate_audio,
+                        averageTimeDiff,
+                        TIME_DIFFERENCE,
+                        // video
+                        avcodec_get_name(videoWrapper->father->avCodecId),
+                        av_get_pix_fmt_name(videoWrapper->srcAVPixelFormat),
+                        videoWrapper->srcWidth,
+                        videoWrapper->srcHeight,
+                        "[V]",
+                        // audio
+                        avcodec_get_name(audioWrapper->father->avCodecId),
+                        av_get_sample_fmt_name(audioWrapper->srcAVSampleFormat),
+                        audioWrapper->srcSampleRate,
+                        audioWrapper->srcNbChannels,
+                        "[ ]"
+                );
+            } else {
+                sprintf(info, "[%s] [%s] [%d] [%d] [%lld] [%lld] [%d] [%lf] [%lf] %s",
+                        avcodec_get_name(videoWrapper->father->avCodecId),
+                        av_get_pix_fmt_name(videoWrapper->srcAVPixelFormat),
+                        videoWrapper->srcWidth, videoWrapper->srcHeight,
+                        (long long) bitRate, (long long) bit_rate_video, frameRate,
+                        averageTimeDiff, TIME_DIFFERENCE, "[V]");
+            }
         } else if (!videoWrapper->father->useMediaCodec
                    && audioWrapper->father->useMediaCodec) {
-            sprintf(info, "[%s] [%s] [%d] [%d] [%lld] [%lld] [%d] [%lf] [%lf] %s",
-                    avcodec_get_name(videoWrapper->father->avCodecId),
-                    av_get_pix_fmt_name(videoWrapper->srcAVPixelFormat),
-                    videoWrapper->srcWidth, videoWrapper->srcHeight,
-                    (long long) bitRate, (long long) bit_rate, frameRate,
-                    averageTimeDiff, TIME_DIFFERENCE, "[A]");
+            // 这里不会执行到,因为这种情况不好
+            if (audioWrapper->father->streamIndex != -1) {
+                sprintf(info,
+                        "[%d] [%lld] [%lld] [%lld] [%lf] [%lf]"
+                        "\n[%s] [%s] [%d] [%d] %s"
+                        "\n[%s] [%s] [%d] [%d] %s",
+                        frameRate,
+                        (long long) bitRate,
+                        (long long) bit_rate_video,
+                        (long long) bit_rate_audio,
+                        averageTimeDiff,
+                        TIME_DIFFERENCE,
+                        // video
+                        avcodec_get_name(videoWrapper->father->avCodecId),
+                        av_get_pix_fmt_name(videoWrapper->srcAVPixelFormat),
+                        videoWrapper->srcWidth,
+                        videoWrapper->srcHeight,
+                        "[ ]",
+                        // audio
+                        avcodec_get_name(audioWrapper->father->avCodecId),
+                        av_get_sample_fmt_name(audioWrapper->srcAVSampleFormat),
+                        audioWrapper->srcSampleRate,
+                        audioWrapper->srcNbChannels,
+                        "[A]"
+                );
+            } else {
+                sprintf(info, "[%s] [%s] [%d] [%d] [%lld] [%lld] [%d] [%lf] [%lf] %s",
+                        avcodec_get_name(videoWrapper->father->avCodecId),
+                        av_get_pix_fmt_name(videoWrapper->srcAVPixelFormat),
+                        videoWrapper->srcWidth, videoWrapper->srcHeight,
+                        (long long) bitRate, (long long) bit_rate_video, frameRate,
+                        averageTimeDiff, TIME_DIFFERENCE, "[A]");
+            }
         } else if (!videoWrapper->father->useMediaCodec
                    && !audioWrapper->father->useMediaCodec) {
-            sprintf(info, "[%s] [%s] [%d] [%d] [%lld] [%lld] [%d] [%lf] [%lf] %s",
-                    avcodec_get_name(videoWrapper->father->avCodecId),
-                    av_get_pix_fmt_name(videoWrapper->srcAVPixelFormat),
-                    videoWrapper->srcWidth, videoWrapper->srcHeight,
-                    (long long) bitRate, (long long) bit_rate, frameRate,
-                    averageTimeDiff, TIME_DIFFERENCE, "[]");
+            if (audioWrapper->father->streamIndex != -1) {
+                sprintf(info,
+                        "[%d] [%lld] [%lld] [%lld] [%lf] [%lf]"
+                        "\n[%s] [%s] [%d] [%d] %s"
+                        "\n[%s] [%s] [%d] [%d] %s",
+                        frameRate,
+                        (long long) bitRate,
+                        (long long) bit_rate_video,
+                        (long long) bit_rate_audio,
+                        averageTimeDiff,
+                        TIME_DIFFERENCE,
+                        // video
+                        avcodec_get_name(videoWrapper->father->avCodecId),
+                        av_get_pix_fmt_name(videoWrapper->srcAVPixelFormat),
+                        videoWrapper->srcWidth,
+                        videoWrapper->srcHeight,
+                        "[ ]",
+                        // audio
+                        avcodec_get_name(audioWrapper->father->avCodecId),
+                        av_get_sample_fmt_name(audioWrapper->srcAVSampleFormat),
+                        audioWrapper->srcSampleRate,
+                        audioWrapper->srcNbChannels,
+                        "[ ]"
+                );
+            } else {
+                sprintf(info, "[%s] [%s] [%d] [%d] [%lld] [%lld] [%d] [%lf] [%lf] %s",
+                        avcodec_get_name(videoWrapper->father->avCodecId),
+                        av_get_pix_fmt_name(videoWrapper->srcAVPixelFormat),
+                        videoWrapper->srcWidth, videoWrapper->srcHeight,
+                        (long long) bitRate, (long long) bit_rate_video, frameRate,
+                        averageTimeDiff, TIME_DIFFERENCE, "[ ]");
+            }
         }
         onInfo(info);
     }
