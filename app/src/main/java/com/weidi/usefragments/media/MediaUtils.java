@@ -401,16 +401,19 @@ public class MediaUtils {
         List<MediaCodecInfo> mediaCodecInfos = new ArrayList<MediaCodecInfo>();
         for (MediaCodecInfo mediaCodecInfo : codecList.getCodecInfos()) {
             // 过滤掉编码器
-            if (mediaCodecInfo.isEncoder()) {
+            if (mediaCodecInfo == null || mediaCodecInfo.isEncoder()) {
                 continue;
             }
+
             try {
                 MediaCodecInfo.CodecCapabilities codecCapabilities =
                         mediaCodecInfo.getCapabilitiesForType(mime);
-                if (codecCapabilities == null) {
+                if (codecCapabilities == null
+                        || codecCapabilities.getVideoCapabilities() == null) {
                     continue;
                 }
-                if (codecCapabilities.getVideoCapabilities() != null) {
+
+                if (DEBUG) {
                     MLog.d(TAG, "findAllDecodersByMime() codecName: " +
                             mediaCodecInfo.getName() +
                             " 解码时支持的colorFormat start");
@@ -426,6 +429,7 @@ public class MediaUtils {
                 // unsupported
                 continue;
             }
+
             mediaCodecInfos.add(mediaCodecInfo);
         }
 

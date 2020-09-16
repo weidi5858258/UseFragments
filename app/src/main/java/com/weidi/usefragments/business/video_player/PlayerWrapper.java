@@ -10,7 +10,9 @@ import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.graphics.PixelFormat;
-import android.media.MediaFormat;
+import android.media.AudioAttributes;
+import android.media.AudioFocusRequest;
+import android.media.AudioManager;
 import android.os.Build;
 import android.os.Environment;
 import android.os.Handler;
@@ -153,6 +155,9 @@ public class PlayerWrapper {
     private WindowManager mWindowManager;
     private WindowManager.LayoutParams mLayoutParams;
     private View mRootView;
+
+    private AudioManager mAudioManager;
+    private AudioFocusRequest mAudioFocusRequest;
 
     private SurfaceView mSurfaceView;
     private LinearLayout mControllerPanelLayout;
@@ -393,29 +398,25 @@ public class PlayerWrapper {
         }
 
         mPathTimeMap.clear();
-        mCouldPlaybackPathList.clear();
         mContentsMap.clear();
+        mCouldPlaybackPathList.clear();
 
         mIsPhoneDevice = isPhoneDevice();
         if (mFFMPEGPlayer == null) {
             mFFMPEGPlayer = FFMPEG.getDefault();
         }
-        mFFMPEGPlayer.setContext(mContext);
-        /*if (mSimpleVideoPlayer == null) {
-            //mSimpleVideoPlayer = new SimpleVideoPlayer();
-            mSimpleVideoPlayer = new SimplePlayer();
-        }
-        mSimpleVideoPlayer.setContext(mContext);*/
         if (mFfmpegUseMediaCodecDecode == null) {
             mFfmpegUseMediaCodecDecode = new FfmpegUseMediaCodecDecode();
         }
-        mFfmpegUseMediaCodecDecode.setContext(mContext);
+        mFFMPEGPlayer.setContext(mContext);
         mFFMPEGPlayer.setFfmpegUseMediaCodecDecode(mFfmpegUseMediaCodecDecode);
-        if (mGetMediaFormat == null) {
+        mFfmpegUseMediaCodecDecode.setContext(mContext);
+
+        /*if (mGetMediaFormat == null) {
             mGetMediaFormat = new GetMediaFormat();
         }
         mGetMediaFormat.setContext(mContext);
-        mGetMediaFormat.setPlayerWrapper(this);
+        mGetMediaFormat.setPlayerWrapper(this);*/
         //mFfmpegUseMediaCodecDecode.setGetMediaFormat(mGetMediaFormat);
 
         mUiHandler = new Handler(Looper.getMainLooper()) {
@@ -509,6 +510,8 @@ public class PlayerWrapper {
                 return false;
             }
         });
+
+        mAudioManager = (AudioManager) mContext.getSystemService(Context.AUDIO_SERVICE);
 
         // Test
         /*new Thread(new Runnable() {
@@ -926,6 +929,46 @@ public class PlayerWrapper {
         if (!mService.mIsAddedView || !mRootView.isShown()) {
             MLog.e(TAG, "startPlayback() The condition is not satisfied");
             return;
+        }
+
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+            /***
+             AUDIOFOCUS_LOSS：当本程序正在播放音频时有另一播放器请求获得音频焦点播放音频，那么就会回调该方法并传入此参数
+             AUDIOFOCUS_LOSS_TRANSIENT：当另一个播放器请求“短暂”获得音频焦点，传入此参数
+             AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK：当另一播放器请求“短暂”获得音频焦点且不用完全暂停可以让对方降低音量时传入此参数
+             AUDIOFOCUS_GAIN：当其他播放器正在播放音频时，本程序请求获得音频焦点播放音频，传入此参数
+             AUDIOFOCUS_GAIN_TRANSIENT：本程序请求“短暂”获取音频焦点时传入此参数
+             AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK：本程序请求“短暂”音频焦点且可能会将低对方音量时传入此参数
+             */
+            AudioAttributes audioAttributes =
+                    new AudioAttributes.Builder()
+                            .setUsage(AudioAttributes.USAGE_MEDIA)
+                            .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+                            .build();
+            mAudioFocusRequest =
+                    new AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN)
+                            // 有短暂的音频（如短信）来了，这时音乐的声音就会降低（但不会暂停）以此凸显出短信提示音，这是由系统自己自动处理的
+                            .setWillPauseWhenDucked(false)
+                            .setAcceptsDelayedFocusGain(true)// ---> AUDIOFOCUS_REQUEST_DELAYED
+                            .setAudioAttributes(audioAttributes)
+                            .setOnAudioFocusChangeListener(AudioFocusChangeListener)
+                            .build();
+            int focusRequest = mAudioManager.requestAudioFocus(mAudioFocusRequest);
+            switch (focusRequest) {
+                case AudioManager.AUDIOFOCUS_REQUEST_FAILED:
+                    // 不允许播放
+                    MLog.i(TAG, "startPlayback() AudioManager.AUDIOFOCUS_REQUEST_FAILED");
+                    break;
+                case AudioManager.AUDIOFOCUS_REQUEST_GRANTED:
+                    // 开始播放
+                    MLog.i(TAG, "startPlayback() AudioManager.AUDIOFOCUS_REQUEST_GRANTED");
+                    break;
+                case AudioManager.AUDIOFOCUS_REQUEST_DELAYED:
+                    MLog.i(TAG, "startPlayback() AudioManager.AUDIOFOCUS_REQUEST_DELAYED");
+                    break;
+                default:
+                    break;
+            }
         }
 
         mSurfaceHolder = mSurfaceView.getHolder();
@@ -1798,6 +1841,9 @@ public class PlayerWrapper {
                         mSurfaceHolder.removeCallback(mSurfaceCallback);
                         mSurfaceHolder = null;
                     }
+                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                        mAudioManager.abandonAudioFocusRequest(mAudioFocusRequest);
+                    }
                     System.gc();
                 }
             } else if (mActivity != null) {
@@ -1971,7 +2017,9 @@ public class PlayerWrapper {
             if (TextUtils.equals(whatPlayer, PLAYER_MEDIACODEC)) {
                 mSimpleVideoPlayer.release();
             } else {
-                mGetMediaFormat.release(false);
+                if (mGetMediaFormat != null) {
+                    mGetMediaFormat.release(false);
+                }
                 mFFMPEGPlayer.releaseAll();
             }
         }
@@ -2371,7 +2419,9 @@ public class PlayerWrapper {
         if (TextUtils.equals(whatPlayer, PLAYER_MEDIACODEC)) {
             mSimpleVideoPlayer.release();
         } else {
-            mGetMediaFormat.release(false);
+            if (mGetMediaFormat != null) {
+                mGetMediaFormat.release(false);
+            }
             mFFMPEGPlayer.releaseAll();
         }
     }
@@ -2592,15 +2642,47 @@ public class PlayerWrapper {
         if (mFFMPEGPlayer != null) {
             if (Boolean.parseBoolean(mFFMPEGPlayer.onTransact(
                     DO_SOMETHING_CODE_isRunning, null))) {
-                if (Boolean.parseBoolean(mFFMPEGPlayer.onTransact(
-                        DO_SOMETHING_CODE_isPlaying, null))) {
-                    mPlayIB.setVisibility(View.GONE);
-                    mPauseIB.setVisibility(View.VISIBLE);
-                    sendEmptyMessage(DO_SOMETHING_CODE_pause);
-                }
+                mPlayIB.setVisibility(View.GONE);
+                mPauseIB.setVisibility(View.VISIBLE);
+                sendEmptyMessage(DO_SOMETHING_CODE_pause);
             }
         }
     }
+
+    AudioManager.OnAudioFocusChangeListener AudioFocusChangeListener =
+            new AudioManager.OnAudioFocusChangeListener() {
+                public void onAudioFocusChange(int focusChange) {
+                    switch (focusChange) {
+                        case AudioManager.AUDIOFOCUS_GAIN:
+                            // Resume playback or Raise it back to normal
+                            MLog.i(TAG, "onAudioFocusChange() AudioManager.AUDIOFOCUS_GAIN");
+                            playPlayerWithTelephonyCall();
+                            break;
+                        case AudioManager.AUDIOFOCUS_LOSS:
+                            //am.unregisterMediaButtonEventReceiver(RemoteControlReceiver);
+                            //am.abandonAudioFocus(afChangeListener);
+                            // Stop playback
+                            MLog.i(TAG, "onAudioFocusChange() AudioManager.AUDIOFOCUS_LOSS");
+                            pausePlayerWithTelephonyCall();
+                            break;
+                        case AudioManager.AUDIOFOCUS_LOSS_TRANSIENT:
+                            // Pause playback
+                            MLog.i(TAG, "onAudioFocusChange()" +
+                                    " AudioManager.AUDIOFOCUS_LOSS_TRANSIENT");
+                            pausePlayerWithTelephonyCall();
+                            break;
+                        case AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK:
+                            // Pause playback
+                            // Lower the volume
+                            MLog.i(TAG, "onAudioFocusChange()" +
+                                    " AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK");
+                            pausePlayerWithTelephonyCall();
+                            break;
+                        default:
+                            break;
+                    }
+                }
+            };
 
     private class PlayerOnTouchListener implements View.OnTouchListener {
         private StringBuffer sb = new StringBuffer();

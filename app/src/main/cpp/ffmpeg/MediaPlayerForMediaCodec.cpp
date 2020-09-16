@@ -1310,25 +1310,29 @@ namespace alexander_media_mediacodec {
         audioWrapper->srcSampleRate = audioWrapper->father->avCodecContext->sample_rate;
         audioWrapper->srcNbChannels = audioWrapper->father->avCodecContext->channels;
         audioWrapper->srcAVSampleFormat = audioWrapper->father->avCodecContext->sample_fmt;
-        audioWrapper->srcNbSamples = audioWrapper->father->avCodecContext->frame_size;
         audioWrapper->srcChannelLayout = audioWrapper->father->avCodecContext->channel_layout;
         LOGD("---------------------------------\n");
-        LOGD("srcSampleRate        : %d\n", audioWrapper->srcSampleRate);// 48000 48000 48000
-        LOGD("srcNbChannels        : %d\n", audioWrapper->srcNbChannels);// 2 6 0
+        LOGD("srcSampleRate        : %d\n", audioWrapper->srcSampleRate);// 48000 44100 32000
+        LOGD("srcNbChannels        : %d\n", audioWrapper->srcNbChannels);// 1 2 6
         // 8 fltp
         LOGD("srcAVSampleFormat    : %d %s\n",
              audioWrapper->srcAVSampleFormat,
              av_get_sample_fmt_name(audioWrapper->srcAVSampleFormat));// 8 -1 -1
-        LOGD("srcNbSamples         : %d\n", audioWrapper->srcNbSamples);// 1024 0 0
+
         LOGD("srcChannelLayout1    : %d\n", audioWrapper->srcChannelLayout);// 3 0 0
         // 有些视频从源视频中得到的channel_layout与使用函数得到的channel_layout结果是一样的
         // 但是还是要使用函数得到的channel_layout为好
-        //av_get_sample_fmt_name()
         audioWrapper->srcChannelLayout = av_get_default_channel_layout(audioWrapper->srcNbChannels);
         LOGD("srcChannelLayout2    : %d\n", audioWrapper->srcChannelLayout);// 3 63 0
+
         bit_rate_audio = audioWrapper->father->avCodecContext->bit_rate / 1000;
         LOGD("bit_rate             : %lld\n", (long long) bit_rate_audio);
         LOGD("---------------------------------\n");
+
+        //audioWrapper->srcNbSamples = audioWrapper->father->avCodecContext->frame_size;
+        //audioWrapper->dstNbSamples = audioWrapper->srcNbSamples;
+        //LOGD("srcNbSamples         : %d\n", audioWrapper->srcNbSamples);// 1024 0
+        //LOGD("dstNbSamples         : %d\n", audioWrapper->dstNbSamples);// 1024 0
 
         // dst
         // Android中跟音频有关的参数: dstSampleRate dstNbChannels 位宽
@@ -1336,32 +1340,31 @@ namespace alexander_media_mediacodec {
         // 然后通过下面处理后在Java端就能创建AudioTrack对象了
         // 不然像有些5声道,6声道就创建不了,因此没有声音
         audioWrapper->dstSampleRate = audioWrapper->srcSampleRate;
-        audioWrapper->dstNbSamples = audioWrapper->srcNbSamples;
         audioWrapper->dstNbChannels = av_get_channel_layout_nb_channels(
                 audioWrapper->dstChannelLayout);
 
-        LOGD("dstSampleRate        : %d\n", audioWrapper->dstSampleRate);// 48000 48000
+        LOGD("dstSampleRate        : %d\n", audioWrapper->dstSampleRate);// 48000 44100 32000
         LOGD("dstNbChannels        : %d\n", audioWrapper->dstNbChannels);// 2 2
         // 1 s16
         LOGD("dstAVSampleFormat    : %d %s\n",
              audioWrapper->dstAVSampleFormat,
              av_get_sample_fmt_name(audioWrapper->dstAVSampleFormat));// 1 1
-        LOGD("dstNbSamples         : %d\n", audioWrapper->dstNbSamples);// 1024 0
+        LOGD("dstChannelLayout     : %d\n", audioWrapper->dstChannelLayout);
         LOGD("---------------------------------\n");
-        /*if (audioWrapper->dstNbSamples == 0) {
-            audioWrapper->dstNbSamples = 1024;
-        }*/
 
         audioWrapper->swrContext = swr_alloc();
         swr_alloc_set_opts(audioWrapper->swrContext,
+
                            audioWrapper->dstChannelLayout,  // out_ch_layout
                            audioWrapper->dstAVSampleFormat, // out_sample_fmt
                            audioWrapper->dstSampleRate,     // out_sample_rate
+
                            audioWrapper->srcChannelLayout,  // in_ch_layout
                            audioWrapper->srcAVSampleFormat, // in_sample_fmt
                            audioWrapper->srcSampleRate,     // in_sample_rate
-                           0,                               // log_offset
-                           nullptr);                           // log_ctx
+
+                           0,                       // log_offset
+                           nullptr);                  // log_ctx
         if (audioWrapper->swrContext == nullptr) {
             LOGE("%s\n", "createSwrContent() swrContext is nullptr");
             return -1;
