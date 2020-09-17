@@ -38,9 +38,9 @@ public class EDMediaCodec {
 
     /***
      *
-     * @param callback
+     * @param callback               Callback
      * @param type                   TYPE.TYPE_VIDEO or TYPE.TYPE_AUDIO
-     * @param codec                  编解码器
+     * @param mediaCodec             编解码器
      * @param data                   需要编解码的数据
      * @param offset                 一般为0
      * @param size                   编解码数据的大小
@@ -52,8 +52,8 @@ public class EDMediaCodec {
     public static boolean feedInputBufferAndDrainOutputBuffer(
             Callback callback,
             TYPE type,
-            MediaCodec codec,
-            MediaCodec.CryptoInfo info,
+            MediaCodec mediaCodec,
+            MediaCodec.CryptoInfo cryptoInfo,
             byte[] data,
             int offset,
             int size,
@@ -65,19 +65,19 @@ public class EDMediaCodec {
             return feedInputBuffer(
                     callback,
                     type,
-                    codec,
-                    info,
+                    mediaCodec,
+                    cryptoInfo,
                     data,
                     offset,
                     size,
                     presentationTimeUs,
                     flags)
                     &&
-                    drainOutputBuffer(callback, type, codec, render);
+                    drainOutputBuffer(callback, type, mediaCodec, render);
         }
 
         // 录制屏幕时,video是没有Input过程的
-        return drainOutputBuffer(callback, type, codec, render);
+        return drainOutputBuffer(callback, type, mediaCodec, render);
     }
 
     /***
@@ -164,7 +164,6 @@ public class EDMediaCodec {
                 Log.e(TAG, "feedInputBuffer() Video Input occur exception: " + e);
                 callback.handleVideoOutputBuffer(-1, null, null, -1);
             }
-            //MediaUtils.releaseMediaCodec(codec);
             return false;
         }
 
@@ -300,7 +299,6 @@ public class EDMediaCodec {
                     Log.e(TAG, "drainOutputBuffer() Video Output occur exception: " + e);
                     callback.handleVideoOutputBuffer(-1, null, null, -1);
                 }
-                //MediaUtils.releaseMediaCodec(codec);
                 return false;
             }
         }// for(;;) end

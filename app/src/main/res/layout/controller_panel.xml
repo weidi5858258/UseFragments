@@ -130,7 +130,7 @@
             android:background="@android:color/transparent"
             android:textSize="24sp"
             android:text=""
-            android:visibility="gone" />
+            android:visibility="invisible" />
         <!--android:src="@drawable/download1" @color/burlywood-->
 
         <ImageButton

@@ -178,7 +178,12 @@ public class PlayerWrapper {
     // 下载
     private TextView mDownloadTV;
     private boolean mIsDownloading = false;
-    // 1(停止下载) 2(下载音视频) 3(只下载,不播放)
+    /***
+     1(停止下载)
+     2(下载音视频,边下边播)
+     3(只下载,不播放.不调用seekTo)
+     4(只提取音视频,不播放.调用seekTo到0)
+     */
     private int mDownloadClickCounts = 0;
     // 跟视频有关的提示信息
     private ScrollView textInfoScrollView;
@@ -791,8 +796,8 @@ public class PlayerWrapper {
 
         switch (msg.what) {
             case MSG_DOWNLOAD:
-                if (mDownloadClickCounts > 4) {
-                    mDownloadClickCounts = 4;
+                if (mDownloadClickCounts > 5) {
+                    mDownloadClickCounts = 5;
                 }
                 MLog.d(TAG, "threadHandleMessage() mDownloadClickCounts: " +
                         mDownloadClickCounts);
@@ -850,7 +855,7 @@ public class PlayerWrapper {
                                     mDownloadTV.setText("2");
                                 }
                             });
-                            // 开始下载,边播放边下
+                            // 开始下载,边下边播
                             mFFMPEGPlayer.onTransact(
                                     DO_SOMETHING_CODE_download,
                                     JniObject.obtain()
@@ -891,6 +896,16 @@ public class PlayerWrapper {
                                                         new String[]{path, sb.toString()}));
                             }
                         }
+                        break;
+                    case 5:
+                        mUiHandler.post(new Runnable() {
+                            @Override
+                            public void run() {
+                                mDownloadTV.setText("");
+                                mDownloadTV.setBackgroundColor(
+                                        mContext.getResources().getColor(R.color.transparent));
+                            }
+                        });
                         break;
                     default:
                         break;
@@ -2177,14 +2192,14 @@ public class PlayerWrapper {
                     break;
                 case R.id.download_tv:
                     if (TextUtils.isEmpty(mDownloadTV.getText())) {
-                        mDownloadTV.setText("1");
+                        mDownloadTV.setText("0");
                         mDownloadTV.setBackgroundColor(
                                 mContext.getResources().getColor(R.color.burlywood));
                         return;
                     }
                     mDownloadClickCounts++;
                     mThreadHandler.removeMessages(MSG_DOWNLOAD);
-                    mThreadHandler.sendEmptyMessageDelayed(MSG_DOWNLOAD, 500);
+                    mThreadHandler.sendEmptyMessageDelayed(MSG_DOWNLOAD, 1000);
                     break;
                 default:
                     break;

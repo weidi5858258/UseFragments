@@ -1416,7 +1416,7 @@ static jlong onTransact_getDuration(JNIEnv *env, jobject thiz,
 
 static jint onTransact_download(JNIEnv *env, jobject thiz,
                                 jint code, jobject jniObject) {
-    if (use_mode != USE_MODE_MEDIA) {
+    if (use_mode != USE_MODE_MEDIA_MEDIACODEC) {
         return (jint) -1;
     }
 
@@ -1431,7 +1431,7 @@ static jint onTransact_download(JNIEnv *env, jobject thiz,
         const char *fileName = env->GetStringUTFChars(element1, 0);
 
         LOGI("onTransact_download() flag: %d path: %s fileName: %s\n", flag, filePath, fileName);
-        alexander_media::download(flag, filePath, fileName);
+        alexander_media_mediacodec::download(flag, filePath, fileName);
 
         // release
         env->ReleaseStringUTFChars(element0, filePath);

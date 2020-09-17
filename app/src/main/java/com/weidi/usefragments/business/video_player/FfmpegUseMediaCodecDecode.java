@@ -375,9 +375,6 @@ public class FfmpegUseMediaCodecDecode {
      */
     public boolean initAudioMediaCodec(JniObject jniObject) {
         MLog.d(TAG, "initAudioMediaCodec() start");
-        if (!mUseMediaCodecForAudio) {
-            return false;
-        }
 
         if (jniObject == null
                 || jniObject.valueObjectArray == null
@@ -446,7 +443,7 @@ public class FfmpegUseMediaCodecDecode {
                 case AV_CODEC_ID_VORBIS:
                     audioMime = MediaFormat.MIMETYPE_AUDIO_VORBIS;
                     codecName = "OMX.google.vorbis.decoder";
-                    return false;
+                    break;
                 // 86024 wmav2 ---> audio/x-ms-wma
                 case AV_CODEC_ID_WMAV2:
                     audioMime = "audio/x-ms-wma";
@@ -543,10 +540,10 @@ public class FfmpegUseMediaCodecDecode {
                 if (sps_pps != null) {
                     mediaFormat.setByteBuffer("csd-0", ByteBuffer.wrap(sps_pps));
                 } else {
-                    // [17, -112, 86, -27, 0]
-                    // [18,   16, 86, -27, 0]
-                    // [18, 16]
                     // [17, -112]
+                    // [17, -112, 86, -27, 0]
+                    // [18, 16]
+                    // [18,   16, 86, -27, 0]
                     sps_pps = new byte[5];
                     sps_pps[0] = 17;
                     sps_pps[1] = -112;
@@ -571,20 +568,20 @@ public class FfmpegUseMediaCodecDecode {
         mAudioWrapper.render = false;
         mAudioWrapper.mime = audioMime;
         mAudioWrapper.decoderMediaFormat = mediaFormat;
+
         mExoAudioTrack = new ExoAudioTrack();
+        mExoAudioTrack.mContext = mContext;
+        mExoAudioTrack.mime = audioMime;
+        mExoAudioTrack.mMediaFormat = mAudioWrapper.decoderMediaFormat;
         try {
-            mExoAudioTrack.mime = audioMime;
-            mExoAudioTrack.mContext = mContext;
-            mExoAudioTrack.mMediaFormat = mAudioWrapper.decoderMediaFormat;
+            mAudioWrapper.decoderMediaCodec =
+                    MediaUtils.getAudioDecoderMediaCodec(
+                            mAudioWrapper.mime, mAudioWrapper.decoderMediaFormat);
 
             /*mAudioWrapper.decoderMediaCodec = MediaCodec.createByCodecName(codecName);
             mAudioWrapper.decoderMediaCodec.configure(
                     mAudioWrapper.decoderMediaFormat, null, null, 0);
             mAudioWrapper.decoderMediaCodec.start();*/
-
-            mAudioWrapper.decoderMediaCodec =
-                    MediaUtils.getAudioDecoderMediaCodec(
-                            mAudioWrapper.mime, mAudioWrapper.decoderMediaFormat);
 
             /*boolean passthroughEnabled = mExoAudioTrack.isPassthroughEnabled();
             MLog.d(TAG, "initAudioMediaCodec() audio passthroughEnabled: " + passthroughEnabled);
@@ -644,6 +641,16 @@ public class FfmpegUseMediaCodecDecode {
         if (mAudioWrapper.decoderMediaCodec == null) {
             MLog.e(TAG, "initAudioMediaCodec() create Audio MediaCodec failure");
             MyToast.show("create Audio MediaCodec failure");
+            return false;
+        }
+
+        if (mAudioWrapper.decoderMediaCodec != null) {
+            MediaUtils.releaseMediaCodec(mAudioWrapper.decoderMediaCodec);
+            mAudioWrapper.decoderMediaCodec = null;
+        }
+
+        if (!mUseMediaCodecForAudio) {
+            MLog.d(TAG, "initAudioMediaCodec() end with return false");
             return false;
         }
 

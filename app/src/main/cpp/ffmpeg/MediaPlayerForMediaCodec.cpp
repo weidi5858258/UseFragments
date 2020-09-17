@@ -1160,40 +1160,42 @@ namespace alexander_media_mediacodec {
         LOGW("findAndOpenAVCodecForVideo() codecID: %d avcodec_get_name: %s\n",
              videoWrapper->father->avCodecId, avcodec_get_name(videoWrapper->father->avCodecId));
         switch (videoWrapper->father->avCodecId) {
+            ////// 2 mpeg2video ---> video/mpeg2(创建MediaCodec时需要的mime)
             case AV_CODEC_ID_MPEG2VIDEO: {
-                // 2 mpeg2video ---> video/mpeg2(创建MediaCodec时需要的mime)
                 LOGW("findAndOpenAVCodecForVideo() mpeg2_mediacodec\n");
                 videoWrapper->father->useMediaCodec = true;
                 videoWrapper->father->avBitStreamFilter =
                         av_bsf_get_by_name("mpeg2_metadata");
                 break;
             }
-            case AV_CODEC_ID_MPEG4: {
                 // 12 mpeg4 ---> video/mp4v-es
+            case AV_CODEC_ID_MPEG4: {
                 LOGW("findAndOpenAVCodecForVideo() mpeg4_mediacodec\n");
                 videoWrapper->father->useMediaCodec = true;
                 videoWrapper->father->avBitStreamFilter =
                         av_bsf_get_by_name("mpeg4_unpack_bframes");
                 break;
             }
-            case AV_CODEC_ID_H264: {
                 // 27 h264 ---> video/avc
+            case AV_CODEC_ID_H264: {
                 LOGW("findAndOpenAVCodecForVideo() h264_mediacodec\n");
                 videoWrapper->father->useMediaCodec = true;
                 videoWrapper->father->avBitStreamFilter =
                         av_bsf_get_by_name("h264_mp4toannexb");
                 break;
             }
-            case AV_CODEC_ID_HEVC: {
                 // 173 hevc(h265) ---> video/hevc
+            case AV_CODEC_ID_HEVC: {
                 LOGW("findAndOpenAVCodecForVideo() hevc_mediacodec\n");
                 videoWrapper->father->useMediaCodec = true;
                 videoWrapper->father->avBitStreamFilter =
-                        //av_bsf_get_by_name("null");
                         av_bsf_get_by_name("hevc_mp4toannexb");
                 break;
             }
 
+                //////////////////////////////////////////////
+                // 1 mpeg1video ---> video/mpeg2
+            case AV_CODEC_ID_MPEG1VIDEO:
                 // 7 mjpeg ---> video/mjpeg
             case AV_CODEC_ID_MJPEG:
                 // 69 rv40 --->
@@ -1206,9 +1208,9 @@ namespace alexander_media_mediacodec {
             case AV_CODEC_ID_VP6:
                 // 92 vp6f ---> video/x-vp6
             case AV_CODEC_ID_VP6F:
-                // 1 mpeg1video ---> video/mpeg2
-            case AV_CODEC_ID_MPEG1VIDEO:
-                // 4 h263 ---> video/3gpp
+                //////////////////////////////////////////////
+
+                // 4 h263 ---> video/3gpp(找不到视频测试)
             case AV_CODEC_ID_H263:
                 // 139 vp8 ---> video/x-vnd.on2.vp8
             case AV_CODEC_ID_VP8:
@@ -1980,8 +1982,7 @@ namespace alexander_media_mediacodec {
 
             // 0 if OK, < 0 on error or end of file
             if (readFrame < 0) {
-                if (readFrame != -12
-                    && readFrame != AVERROR_EOF) {
+                if (readFrame != -12 && readFrame != AVERROR_EOF) {
                     if (readFrame != AVERROR_HTTP_FORBIDDEN) {
                         LOGE("readData()   readFrame: %d\n", readFrame);
                     }
@@ -2186,201 +2187,202 @@ namespace alexander_media_mediacodec {
      音频快于视频
      */
     void hope_to_get_a_good_result() {
-        LOGI("hope_to_get_a_good_result() averageTimeDiff: %lf frameRate: %d \n",
-             averageTimeDiff, frameRate);
+        if (averageTimeDiff > 0) {
+            LOGI("hope_to_get_a_good_result() averageTimeDiff: %lf frameRate: %d \n",
+                 averageTimeDiff, frameRate);
+            bool isGoodResult = false;
+            if ((bitRate > 0 && bit_rate_video > 0 && bitRate >= bit_rate_video)
+                || (bitRate > 0 && bit_rate_video == 0)
+                || (bitRate == 0 && bit_rate_video == 0)) {
+                isGoodResult = true;
+            }
 
-        bool isGoodResult = false;
-        if ((bitRate > 0 && bit_rate_video > 0 && bitRate >= bit_rate_video)
-            || (bitRate > 0 && bit_rate_video == 0)
-            || (bitRate == 0 && bit_rate_video == 0)) {
-            isGoodResult = true;
-        }
-
-        if (isGoodResult) {
-            bool needToGetResultAgain = true;
-            if (averageTimeDiff > 1.000000) {
-                /***
-                 还没遇到过
-                 */
-                if (videoWrapper->father->useMediaCodec) {
-                    TIME_DIFFERENCE = 0.200000;
-                } else {
-                    TIME_DIFFERENCE = 0.900000;
-                }
-            } else if (averageTimeDiff > 0.900000 && averageTimeDiff < 1.000000) {
-                /***
-                 还没遇到过
-                 */
-                if (videoWrapper->father->useMediaCodec) {
-                    TIME_DIFFERENCE = 0.200000;
-                } else {
-                    TIME_DIFFERENCE = 0.800000;
-                }
-            } else if (averageTimeDiff > 0.800000 && averageTimeDiff < 0.900000) {
-                /***
-                 还没遇到过
-                 */
-                if (videoWrapper->father->useMediaCodec) {
-                    TIME_DIFFERENCE = 0.200000;
-                } else {
-                    TIME_DIFFERENCE = 0.700000;
-                }
-            } else if (averageTimeDiff > 0.700000 && averageTimeDiff < 0.800000) {
-                /***
-                 还没遇到过
-                 */
-                if (videoWrapper->father->useMediaCodec) {
-                    TIME_DIFFERENCE = 0.200000;
-                } else {
-                    TIME_DIFFERENCE = 0.600000;
-                }
-            } else if (averageTimeDiff > 0.600000 && averageTimeDiff < 0.700000) {
-                /***
-                 还没遇到过
-                 */
-                if (videoWrapper->father->useMediaCodec) {
-                    TIME_DIFFERENCE = 0.200000;
-                } else {
-                    TIME_DIFFERENCE = 0.500000;
-                }
-            } else if (averageTimeDiff > 0.500000 && averageTimeDiff < 0.600000) {
-                /***
-                 0.505212 0.517508 0.524924 0.531797 0.543092
-                 */
-                if (videoWrapper->father->useMediaCodec) {
-                    TIME_DIFFERENCE = 0.300000;
-                } else {
-                    TIME_DIFFERENCE = 0.400000;
-                }
-                needToGetResultAgain = false;
-                if (audioWrapper->father->useMediaCodec) {
-                    //TIME_DIFFERENCE = 0.200000;
-                    TIME_DIFFERENCE = 0.500000;
-                }
-            } else if (averageTimeDiff > 0.400000 && averageTimeDiff < 0.500000) {
-                /***
-                 0.405114 0.418364 0.429602 0.439030 0.449823
-                 0.457614 0.461167 0.472319 0.486549 0.494847
-                 */
-                double step = -0.000500;
-                if (videoWrapper->father->useMediaCodec) {
+            if (isGoodResult) {
+                bool needToGetResultAgain = true;
+                if (averageTimeDiff > 1.000000) {
+                    /***
+                     还没遇到过
+                     */
+                    if (videoWrapper->father->useMediaCodec) {
+                        TIME_DIFFERENCE = 0.200000;
+                    } else {
+                        TIME_DIFFERENCE = 0.900000;
+                    }
+                } else if (averageTimeDiff > 0.900000 && averageTimeDiff < 1.000000) {
+                    /***
+                     还没遇到过
+                     */
+                    if (videoWrapper->father->useMediaCodec) {
+                        TIME_DIFFERENCE = 0.200000;
+                    } else {
+                        TIME_DIFFERENCE = 0.800000;
+                    }
+                } else if (averageTimeDiff > 0.800000 && averageTimeDiff < 0.900000) {
+                    /***
+                     还没遇到过
+                     */
+                    if (videoWrapper->father->useMediaCodec) {
+                        TIME_DIFFERENCE = 0.200000;
+                    } else {
+                        TIME_DIFFERENCE = 0.700000;
+                    }
+                } else if (averageTimeDiff > 0.700000 && averageTimeDiff < 0.800000) {
+                    /***
+                     还没遇到过
+                     */
+                    if (videoWrapper->father->useMediaCodec) {
+                        TIME_DIFFERENCE = 0.200000;
+                    } else {
+                        TIME_DIFFERENCE = 0.600000;
+                    }
+                } else if (averageTimeDiff > 0.600000 && averageTimeDiff < 0.700000) {
+                    /***
+                     还没遇到过
+                     */
+                    if (videoWrapper->father->useMediaCodec) {
+                        TIME_DIFFERENCE = 0.200000;
+                    } else {
+                        TIME_DIFFERENCE = 0.500000;
+                    }
+                } else if (averageTimeDiff > 0.500000 && averageTimeDiff < 0.600000) {
+                    /***
+                     0.505212 0.517508 0.524924 0.531797 0.543092
+                     */
+                    if (videoWrapper->father->useMediaCodec) {
+                        TIME_DIFFERENCE = 0.300000;
+                    } else {
+                        TIME_DIFFERENCE = 0.400000;
+                    }
+                    needToGetResultAgain = false;
                     if (audioWrapper->father->useMediaCodec) {
-                        step = -0.105000;
+                        //TIME_DIFFERENCE = 0.200000;
+                        TIME_DIFFERENCE = 0.500000;
                     }
+                } else if (averageTimeDiff > 0.400000 && averageTimeDiff < 0.500000) {
+                    /***
+                     0.405114 0.418364 0.429602 0.439030 0.449823
+                     0.457614 0.461167 0.472319 0.486549 0.494847
+                     */
+                    double step = -0.000500;
+                    if (videoWrapper->father->useMediaCodec) {
+                        if (audioWrapper->father->useMediaCodec) {
+                            step = -0.105000;
+                        }
 
-                    if (averageTimeDiff > 0.490000) {
-                        TIME_DIFFERENCE = 0.199500 + step;
-                    } else if (averageTimeDiff > 0.480000 && averageTimeDiff < 0.490000) {
-                        TIME_DIFFERENCE = 0.199000 + step;
-                    } else if (averageTimeDiff > 0.470000 && averageTimeDiff < 0.480000) {
-                        TIME_DIFFERENCE = 0.198500 + step;
-                    } else if (averageTimeDiff > 0.460000 && averageTimeDiff < 0.470000) {
-                        TIME_DIFFERENCE = 0.198000 + step;
-                    } else if (averageTimeDiff > 0.450000 && averageTimeDiff < 0.460000) {
-                        TIME_DIFFERENCE = 0.197500 + step;
-                    } else if (averageTimeDiff > 0.440000 && averageTimeDiff < 0.450000) {
-                        TIME_DIFFERENCE = 0.197000 + step;
-                    } else if (averageTimeDiff > 0.430000 && averageTimeDiff < 0.440000) {
-                        TIME_DIFFERENCE = 0.196500 + step;
-                    } else if (averageTimeDiff > 0.420000 && averageTimeDiff < 0.430000) {
-                        TIME_DIFFERENCE = 0.196000 + step;
-                    } else if (averageTimeDiff > 0.410000 && averageTimeDiff < 0.420000) {
-                        TIME_DIFFERENCE = 0.195500 + step;
-                    } else if (averageTimeDiff > 0.400000 && averageTimeDiff < 0.410000) {
-                        TIME_DIFFERENCE = 0.195000 + step;
+                        if (averageTimeDiff > 0.490000) {
+                            TIME_DIFFERENCE = 0.199500 + step;
+                        } else if (averageTimeDiff > 0.480000 && averageTimeDiff < 0.490000) {
+                            TIME_DIFFERENCE = 0.199000 + step;
+                        } else if (averageTimeDiff > 0.470000 && averageTimeDiff < 0.480000) {
+                            TIME_DIFFERENCE = 0.198500 + step;
+                        } else if (averageTimeDiff > 0.460000 && averageTimeDiff < 0.470000) {
+                            TIME_DIFFERENCE = 0.198000 + step;
+                        } else if (averageTimeDiff > 0.450000 && averageTimeDiff < 0.460000) {
+                            TIME_DIFFERENCE = 0.197500 + step;
+                        } else if (averageTimeDiff > 0.440000 && averageTimeDiff < 0.450000) {
+                            TIME_DIFFERENCE = 0.197000 + step;
+                        } else if (averageTimeDiff > 0.430000 && averageTimeDiff < 0.440000) {
+                            TIME_DIFFERENCE = 0.196500 + step;
+                        } else if (averageTimeDiff > 0.420000 && averageTimeDiff < 0.430000) {
+                            TIME_DIFFERENCE = 0.196000 + step;
+                        } else if (averageTimeDiff > 0.410000 && averageTimeDiff < 0.420000) {
+                            TIME_DIFFERENCE = 0.195500 + step;
+                        } else if (averageTimeDiff > 0.400000 && averageTimeDiff < 0.410000) {
+                            TIME_DIFFERENCE = 0.195000 + step;
+                        }
+
+                        //TIME_DIFFERENCE = 0.200000;
+                    } else {
+                        TIME_DIFFERENCE = 0.300000;
                     }
+                    needToGetResultAgain = false;
+                } else if (averageTimeDiff > 0.300000 && averageTimeDiff < 0.400000) {
+                    /***
+                     http://ivi.bupt.edu.cn/hls/sdetv.m3u8@@@@@@@@@@山东教育卫视 这个直播不能同步
+                     0.365758 0.376415 0.385712 0.397755
+                     */
+                    if (videoWrapper->father->useMediaCodec) {
+                        TIME_DIFFERENCE = 0.100000;
+                    } else {
+                        TIME_DIFFERENCE = 0.200000;
+                    }
+                    needToGetResultAgain = false;
+                    if (audioWrapper->father->useMediaCodec) {
+                        //TIME_DIFFERENCE = 0.050000;
+                        TIME_DIFFERENCE = 0.300000;
+                    }
+                } else if (averageTimeDiff > 0.200000 && averageTimeDiff < 0.300000) {
+                    /***
+                     0.204199 0.263926
+                     */
+                    if (videoWrapper->father->useMediaCodec) {
+                        TIME_DIFFERENCE = 0.080000;
+                    } else {
+                        TIME_DIFFERENCE = 0.100000;
+                    }
+                    needToGetResultAgain = false;
+                    if (audioWrapper->father->useMediaCodec) {
+                        audioWrapper->father->useMediaCodec = false;
+                        needToGetResultAgain = true;
+                    }
+                } else if (averageTimeDiff > 0.100000 && averageTimeDiff < 0.200000) {
+                    /***
+                     0.100523 0.127849 0.168335
+                     */
+                    if (videoWrapper->father->useMediaCodec) {
+                        TIME_DIFFERENCE = averageTimeDiff - 0.100000;
+                    } else {
+                        TIME_DIFFERENCE = averageTimeDiff;
+                    }
+                    needToGetResultAgain = false;
+                    if (audioWrapper->father->useMediaCodec) {
+                        audioWrapper->father->useMediaCodec = false;
+                        needToGetResultAgain = true;
+                    }
+                } else if (averageTimeDiff > 0.010000 && averageTimeDiff < 0.100000) {
+                    /***
+                     之前frameRate <= 23时,会走这里.
+                     现在好像当frameRate = 0或者frameRate >= 50时才可能走到这里.
+                     0.014149 0.018936
+                     0.022836 0.023516 0.024403 0.026983 0.027595 0.028610 0.029898
+                     0.030690 0.031515 0.034621 0.035779 0.036042 0.037615 0.038017 0.039632
+                     0.042750 0.043855 0.047141 0.048789
+                     0.052697 0.054136 0.055711 0.059648
+                     0.062606 0.063012 0.064637 0.065509 0.066374 0.067457
+                     0.073902 0.074668 0.079382
+                     0.088914
+                     0.099370
+                     */
+                    TIME_DIFFERENCE = averageTimeDiff + 0.050000;
+                    if (TIME_DIFFERENCE < 0.100000) {
+                        TIME_DIFFERENCE = 0.100000;
+                    }
+                    needToGetResultAgain = false;
+                    if (audioWrapper->father->useMediaCodec) {
+                        audioWrapper->father->useMediaCodec = false;
+                        needToGetResultAgain = true;
+                    }
+                }
 
-                    //TIME_DIFFERENCE = 0.200000;
-                } else {
-                    TIME_DIFFERENCE = 0.300000;
+                // 对4K视频特殊处理
+                if (!needToGetResultAgain
+                    && frameRate >= 45
+                    && videoWrapper->srcWidth >= 3840
+                    && videoWrapper->srcHeight >= 2160) {
+                    // 增大TIME_DIFFERENCE值让视频加快
+                    TIME_DIFFERENCE = averageTimeDiff + 0.200000;
                 }
-                needToGetResultAgain = false;
-            } else if (averageTimeDiff > 0.300000 && averageTimeDiff < 0.400000) {
-                /***
-                 http://ivi.bupt.edu.cn/hls/sdetv.m3u8@@@@@@@@@@山东教育卫视 这个直播不能同步
-                 0.365758 0.376415 0.385712 0.397755
-                 */
-                if (videoWrapper->father->useMediaCodec) {
-                    TIME_DIFFERENCE = 0.100000;
-                } else {
-                    TIME_DIFFERENCE = 0.200000;
-                }
-                needToGetResultAgain = false;
-                if (audioWrapper->father->useMediaCodec) {
-                    //TIME_DIFFERENCE = 0.050000;
-                    TIME_DIFFERENCE = 0.300000;
-                }
-            } else if (averageTimeDiff > 0.200000 && averageTimeDiff < 0.300000) {
-                /***
-                 0.204199 0.263926
-                 */
-                if (videoWrapper->father->useMediaCodec) {
-                    TIME_DIFFERENCE = 0.080000;
-                } else {
-                    TIME_DIFFERENCE = 0.100000;
-                }
-                needToGetResultAgain = false;
-                if (audioWrapper->father->useMediaCodec) {
-                    audioWrapper->father->useMediaCodec = false;
-                    needToGetResultAgain = true;
-                }
-            } else if (averageTimeDiff > 0.100000 && averageTimeDiff < 0.200000) {
-                /***
-                 0.100523 0.127849 0.168335
-                 */
-                if (videoWrapper->father->useMediaCodec) {
-                    TIME_DIFFERENCE = averageTimeDiff - 0.100000;
-                } else {
-                    TIME_DIFFERENCE = averageTimeDiff;
-                }
-                needToGetResultAgain = false;
-                if (audioWrapper->father->useMediaCodec) {
-                    audioWrapper->father->useMediaCodec = false;
-                    needToGetResultAgain = true;
-                }
-            } else if (averageTimeDiff > 0.010000 && averageTimeDiff < 0.100000) {
-                /***
-                 之前frameRate <= 23时,会走这里.
-                 现在好像当frameRate = 0或者frameRate >= 50时才可能走到这里.
-                 0.014149 0.018936
-                 0.022836 0.023516 0.024403 0.026983 0.027595 0.028610 0.029898
-                 0.030690 0.031515 0.034621 0.035779 0.036042 0.037615 0.038017 0.039632
-                 0.042750 0.043855 0.047141 0.048789
-                 0.052697 0.054136 0.055711 0.059648
-                 0.062606 0.063012 0.064637 0.065509 0.066374 0.067457
-                 0.073902 0.074668 0.079382
-                 0.088914
-                 0.099370
-                 */
-                TIME_DIFFERENCE = averageTimeDiff + 0.050000;
-                if (TIME_DIFFERENCE < 0.100000) {
-                    TIME_DIFFERENCE = 0.100000;
-                }
-                needToGetResultAgain = false;
-                if (audioWrapper->father->useMediaCodec) {
-                    audioWrapper->father->useMediaCodec = false;
-                    needToGetResultAgain = true;
-                }
-            }
 
-            // 对4K视频特殊处理
-            if (!needToGetResultAgain
-                && frameRate >= 45
-                && videoWrapper->srcWidth >= 3840
-                && videoWrapper->srcHeight >= 2160) {
-                // 增大TIME_DIFFERENCE值让视频加快
-                TIME_DIFFERENCE = averageTimeDiff + 0.200000;
+                if (needToGetResultAgain) {
+                    runCounts = 0;
+                    averageTimeDiff = 0;
+                    TIME_DIFFERENCE = 0.500000;
+                }
+            } else {
+                TIME_DIFFERENCE = averageTimeDiff + 0.100000;
             }
-
-            if (needToGetResultAgain) {
-                runCounts = 0;
-                averageTimeDiff = 0;
-                TIME_DIFFERENCE = 0.500000;
-            }
-        } else {
-            TIME_DIFFERENCE = averageTimeDiff + 0.100000;
+            LOGI("hope_to_get_a_good_result() TIME_DIFFERENCE: %lf\n", TIME_DIFFERENCE);
         }
-        LOGI("hope_to_get_a_good_result() TIME_DIFFERENCE: %lf\n", TIME_DIFFERENCE);
 
         char info[200];
         if (videoWrapper->father->useMediaCodec
@@ -2545,6 +2547,7 @@ namespace alexander_media_mediacodec {
 
             // 回调(通知到java层)
             onPlayed();
+            hope_to_get_a_good_result();
             runOneTime = false;
         }
 
@@ -2660,8 +2663,8 @@ namespace alexander_media_mediacodec {
             } else {
                 LOGD("handleVideoOutputBuffer() 视频已经准备好,开始播放!!!\n");
                 onPlayed();
-                runOneTime = false;
                 hope_to_get_a_good_result();
+                runOneTime = false;
             }
         }
 
@@ -2835,6 +2838,7 @@ namespace alexander_media_mediacodec {
 
             // 回调(通知到java层)
             onPlayed();
+            hope_to_get_a_good_result();
             runOneTime = false;
         }
 
@@ -3168,15 +3172,14 @@ namespace alexander_media_mediacodec {
             if (wrapper->isPausedForUser
                 || wrapper->isPausedForCache
                 || wrapper->isPausedForSeek) {
-                bool isPausedForUser = wrapper->isPausedForUser;
                 bool isPausedForSeek = wrapper->isPausedForSeek;
+                bool isPausedForUser = wrapper->isPausedForUser;
+                bool isPausedForCache = wrapper->isPausedForCache;
                 if (isPausedForSeek) {
                     if (wrapper->type == TYPE_AUDIO) {
                         LOGD("handleData() wait() Seek  audio start\n");
-                        //LOGD("handleData() audio list1 size: %d\n", wrapper->list1->size());
                     } else {
                         LOGW("handleData() wait() Seek  video start\n");
-                        //LOGD("handleData() video list1 size: %d\n", wrapper->list1->size());
                     }
                     if (wrapper->list1->size() != 0) {
                         std::list<AVPacket>::iterator iter;
@@ -3201,19 +3204,21 @@ namespace alexander_media_mediacodec {
                     } else {
                         LOGW("handleData() wait() User  video start\n");
                     }
-                } else {
+                } else if (isPausedForCache) {
                     if (wrapper->type == TYPE_AUDIO) {
                         LOGE("handleData() wait() Cache audio start 被动暂停\n");
                     } else {
                         LOGE("handleData() wait() Cache video start 被动暂停\n");
                     }
                 }
+
                 notifyToHandleWait(wrapper);
                 if (wrapper->isPausedForUser
                     || wrapper->isPausedForCache
                     || wrapper->isPausedForSeek) {
                     continue;
                 }
+
                 if (isPausedForSeek) {
                     if (wrapper->type == TYPE_AUDIO) {
                         LOGD("handleData() wait() Seek  audio end\n");
@@ -3226,14 +3231,14 @@ namespace alexander_media_mediacodec {
                     } else {
                         LOGW("handleData() wait() User  video end\n");
                     }
-                } else {
+                } else if (isPausedForCache) {
                     if (wrapper->type == TYPE_AUDIO) {
                         LOGE("handleData() wait() Cache audio end   被动暂停\n");
                     } else {
                         LOGE("handleData() wait() Cache video end   被动暂停\n");
                     }
                 }
-            }// 暂停装置 end
+            }
 
             // endregion
 
@@ -3565,7 +3570,7 @@ namespace alexander_media_mediacodec {
                         audioWrapper->father->useMediaCodec = false;
                         // 重新计算TIME_DIFFERENCE值
                         runCounts = 0;
-                        averageTimeDiff = 0;
+                        averageTimeDiff = 0.0;
                         TIME_DIFFERENCE = 0.500000;
 
                         //seekTo(curProgress);
@@ -4489,7 +4494,7 @@ namespace alexander_media_mediacodec {
             return -1;
         }
 
-        LOGD("seekTo() signal() to Read and Handle\n");
+        LOGD("seekTo() notify to Read and Handle\n");
         timeStamp = timestamp;
         /*if (!isLocal && (long long) timestamp == 0) {
             timeStamp = 5;
