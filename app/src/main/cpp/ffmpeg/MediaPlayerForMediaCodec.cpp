@@ -4406,7 +4406,8 @@ namespace alexander_media_mediacodec {
                 audioPlaying = audioWrapper->father->isStarted
                                && audioWrapper->father->isHandling
                                && !audioWrapper->father->isPausedForUser
-                               && !audioWrapper->father->isPausedForCache;
+                               && !audioWrapper->father->isPausedForCache
+                               && !audioWrapper->father->isPausedForSeek;
             } else {
                 audioPlaying = true;
             }
@@ -4418,7 +4419,8 @@ namespace alexander_media_mediacodec {
                 videoPlaying = videoWrapper->father->isStarted
                                && videoWrapper->father->isHandling
                                && !videoWrapper->father->isPausedForUser
-                               && !videoWrapper->father->isPausedForCache;
+                               && !videoWrapper->father->isPausedForCache
+                               && !videoWrapper->father->isPausedForSeek;
             } else {
                 videoPlaying = true;
             }
