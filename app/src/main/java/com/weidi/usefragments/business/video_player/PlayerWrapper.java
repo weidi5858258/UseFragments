@@ -215,6 +215,12 @@ public class PlayerWrapper {
     private JniPlayerActivity mActivity;
     private PlayerService mService;
 
+    /***
+     Configuration.UI_MODE_TYPE_NORMAL     手机
+     Configuration.UI_MODE_TYPE_WATCH      手表
+     Configuration.UI_MODE_TYPE_TELEVISION 电视机
+     */
+    private int whatIsDevice;
     private boolean mIsPhoneDevice;
     // 是否是竖屏 true为竖屏
     private boolean mIsPortraitScreen;
@@ -405,6 +411,11 @@ public class PlayerWrapper {
         mPathTimeMap.clear();
         mContentsMap.clear();
         mCouldPlaybackPathList.clear();
+
+        UiModeManager uiModeManager =
+                (UiModeManager) mContext.getSystemService(Context.UI_MODE_SERVICE);
+        whatIsDevice = uiModeManager.getCurrentModeType();
+        MLog.i(TAG, "onCreate() whatIsDevice: " + whatIsDevice);
 
         mIsPhoneDevice = isPhoneDevice();
         if (mFFMPEGPlayer == null) {
@@ -1326,7 +1337,6 @@ public class PlayerWrapper {
         MLog.d(TAG, "Callback.MSG_ON_CHANGE_WINDOW handlePortraitScreen");
 
         mIsPortraitScreen = true;
-        handleLandscapeScreenFlag = false;
 
         mRootView.setBackgroundColor(
                 mContext.getResources().getColor(android.R.color.transparent));
@@ -1812,23 +1822,15 @@ public class PlayerWrapper {
             edit.commit();
         }
 
-        if (mIsPhoneDevice) {
-            MLog.i(TAG, "Callback.MSG_ON_CHANGE_WINDOW 手机");
-            if (mContext.getResources().getConfiguration().orientation
-                    == Configuration.ORIENTATION_LANDSCAPE) {
-                // 横屏
-                if (!IS_HIKEY970) {
-                    handleLandscapeScreen(0);
-                } else {
-                    // handlePortraitScreenWithHikey970();
-                    handlePortraitScreenWithTV();
-                }
-            } else {
-                // 竖屏
-                handlePortraitScreen();
-            }
+        if (mIsPhoneDevice
+                && mContext.getResources().getConfiguration().orientation
+                == Configuration.ORIENTATION_PORTRAIT) {
+            // MLog.i(TAG, "Callback.MSG_ON_CHANGE_WINDOW 手机");
+            // 手机并且竖屏
+            handlePortraitScreen();
         } else {
-            MLog.i(TAG, "Callback.MSG_ON_CHANGE_WINDOW 电视机");
+            // MLog.i(TAG, "Callback.MSG_ON_CHANGE_WINDOW 电视机");
+            handleScreenFlag = 1;
             handlePortraitScreenWithTV();
         }
     }
@@ -2287,7 +2289,7 @@ public class PlayerWrapper {
         MyToast.show("pause");
     }
 
-    private boolean handleLandscapeScreenFlag = false;
+    private int handleScreenFlag = 1;
 
     @SuppressLint("SourceLockedOrientationActivity")
     private void clickFour() {
@@ -2298,64 +2300,29 @@ public class PlayerWrapper {
             }
         }
 
-        if (mIsPhoneDevice) {
-            if (mService != null) {
-                // 如果当前是横屏
-                if (mContext.getResources().getConfiguration().orientation ==
-                        Configuration.ORIENTATION_LANDSCAPE) {
-                    MLog.d(TAG, "onKeyDown() 4 横屏");
-                    /*if (JniPlayerActivity.isAliveJniPlayerActivity) {
-                        handleLandscapeScreen(0);
-                    } else {
-                    }*/
-                    if (!IS_HIKEY970) {
-                        if (handleLandscapeScreenFlag) {
-                            handleLandscapeScreenFlag = false;
-                            handleLandscapeScreen(1);
-                        } else {
-                            handleLandscapeScreenFlag = true;
-                            handleLandscapeScreen(0);
-                        }
-                    } else {
-                        if (handleLandscapeScreenFlag) {
-                            handleLandscapeScreenFlag = false;
-                            // handleLandscapeScreenWithHikey970();
-                            handleLandscapeScreen(0);
-                        } else {
-                            handleLandscapeScreenFlag = true;
-                            //handlePortraitScreenWithHikey970();
-                            handlePortraitScreenWithTV();
-                        }
-                    }
-                } else if (mContext.getResources().getConfiguration().orientation ==
-                        Configuration.ORIENTATION_PORTRAIT) {
-                    MLog.d(TAG, "onKeyDown() 4 竖屏");
-                    handlePortraitScreen();
-                }
-            } /*else if (mActivity != null) {
-                // 如果当前是横屏
-                if (mContext.getResources().getConfiguration().orientation ==
-                        Configuration.ORIENTATION_LANDSCAPE) {
-                    // 强制竖屏
-                    mActivity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
-                    // 取消全屏操作
-                    setFullscreen(mActivity, false);
-                } else if (mContext.getResources().getConfiguration().orientation ==
-                        Configuration.ORIENTATION_PORTRAIT) {
-                    // 强制横屏
-                    mActivity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
-                    // 执行全屏操作
-                    setFullscreen(mActivity, true);
-                }
-            }*/
-        } else {
-            // 电视机
-            if (handleLandscapeScreenFlag) {
-                handleLandscapeScreenFlag = false;
-                handleLandscapeScreen(0);
+        if (mService != null) {
+            if (mContext.getResources().getConfiguration().orientation ==
+                    Configuration.ORIENTATION_PORTRAIT) {
+                MLog.d(TAG, "onKeyDown() 4 竖屏");
+                handlePortraitScreen();
             } else {
-                handleLandscapeScreenFlag = true;
-                handlePortraitScreenWithTV();
+                MLog.d(TAG, "onKeyDown() 4 横屏");
+                switch (handleScreenFlag) {
+                    case 1:
+                        handleScreenFlag = 2;
+                        handleLandscapeScreen(0);
+                        break;
+                    case 2:
+                        handleScreenFlag = 3;
+                        handleLandscapeScreen(1);
+                        break;
+                    case 3:
+                        handleScreenFlag = 1;
+                        handlePortraitScreenWithTV();
+                        break;
+                    default:
+                        break;
+                }
             }
         }
     }

@@ -572,11 +572,10 @@ public class FfmpegUseMediaCodecDecode {
         mExoAudioTrack = new ExoAudioTrack();
         mExoAudioTrack.mContext = mContext;
         mExoAudioTrack.mime = audioMime;
-        mExoAudioTrack.mMediaFormat = mAudioWrapper.decoderMediaFormat;
+        mExoAudioTrack.mMediaFormat = mediaFormat;
         try {
             mAudioWrapper.decoderMediaCodec =
-                    MediaUtils.getAudioDecoderMediaCodec(
-                            mAudioWrapper.mime, mAudioWrapper.decoderMediaFormat);
+                    MediaUtils.getAudioDecoderMediaCodec(audioMime, mediaFormat);
 
             /*mAudioWrapper.decoderMediaCodec = MediaCodec.createByCodecName(codecName);
             mAudioWrapper.decoderMediaCodec.configure(
