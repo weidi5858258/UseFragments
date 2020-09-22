@@ -114,7 +114,7 @@ public class GetMediaFormat {
                         player.release();
                         player = null;
                         if (mPlayerWrapper != null && needToPlayback) {
-                            mPlayerWrapper.startPlayback();
+                            //mPlayerWrapper.startPlayback();
                         }
                     }
                 }

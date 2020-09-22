@@ -24,7 +24,10 @@ import android.os.SystemClock;
 import android.text.TextUtils;
 import android.text.format.DateUtils;
 import android.util.DisplayMetrics;
+import android.util.Log;
+import android.view.Gravity;
 import android.view.KeyEvent;
+import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
@@ -43,10 +46,8 @@ import android.widget.TextView;
 import com.weidi.eventbus.EventBusUtils;
 import com.weidi.threadpool.ThreadPool;
 import com.weidi.usefragments.R;
-import com.weidi.usefragments.business.contents.Contents;
 import com.weidi.usefragments.tool.Callback;
 import com.weidi.usefragments.tool.JniObject;
-import com.weidi.usefragments.tool.MLog;
 import com.weidi.utils.MyToast;
 
 import java.io.BufferedReader;
@@ -62,10 +63,12 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.util.Map;
 
 import static com.weidi.usefragments.business.video_player.FFMPEG.DO_SOMETHING_CODE_audioHandleData;
 import static com.weidi.usefragments.business.video_player.FFMPEG.DO_SOMETHING_CODE_download;
+import static com.weidi.usefragments.business.video_player.FFMPEG.DO_SOMETHING_CODE_frameByFrame;
+import static com.weidi.usefragments.business.video_player.FFMPEG.DO_SOMETHING_CODE_frameByFrameForFinish;
+import static com.weidi.usefragments.business.video_player.FFMPEG.DO_SOMETHING_CODE_frameByFrameForReady;
 import static com.weidi.usefragments.business.video_player.FFMPEG.DO_SOMETHING_CODE_getDuration;
 import static com.weidi.usefragments.business.video_player.FFMPEG.DO_SOMETHING_CODE_init;
 import static com.weidi.usefragments.business.video_player.FFMPEG.DO_SOMETHING_CODE_initPlayer;
@@ -78,9 +81,6 @@ import static com.weidi.usefragments.business.video_player.FFMPEG.DO_SOMETHING_C
 import static com.weidi.usefragments.business.video_player.FFMPEG.DO_SOMETHING_CODE_setMode;
 import static com.weidi.usefragments.business.video_player.FFMPEG.DO_SOMETHING_CODE_setSurface;
 import static com.weidi.usefragments.business.video_player.FFMPEG.DO_SOMETHING_CODE_stepAdd;
-import static com.weidi.usefragments.business.video_player.FFMPEG.DO_SOMETHING_CODE_frameByFrame;
-import static com.weidi.usefragments.business.video_player.FFMPEG.DO_SOMETHING_CODE_frameByFrameForFinish;
-import static com.weidi.usefragments.business.video_player.FFMPEG.DO_SOMETHING_CODE_frameByFrameForReady;
 import static com.weidi.usefragments.business.video_player.FFMPEG.DO_SOMETHING_CODE_stepSubtract;
 import static com.weidi.usefragments.business.video_player.FFMPEG.DO_SOMETHING_CODE_videoHandleData;
 import static com.weidi.usefragments.business.video_player.FFMPEG.USE_MODE_AAC_H264;
@@ -131,11 +131,12 @@ public class PlayerWrapper {
     private PowerManager.WakeLock mPowerWakeLock;
     private SurfaceHolder mSurfaceHolder;
     private FFMPEG mFFMPEGPlayer;
-    //private SimpleVideoPlayer mSimpleVideoPlayer;
-    private SimplePlayer mSimpleVideoPlayer;
+    private SimpleVideoPlayer mSimpleVideoPlayer;
+    //private SimplePlayer mSimpleVideoPlayer;
     private FfmpegUseMediaCodecDecode mFfmpegUseMediaCodecDecode;
-    private GetMediaFormat mGetMediaFormat;
-    private String mPath;
+    private boolean mIsAddedView = false;
+    private String mPrePath;
+    private String mCurPath;
     private String md5Path;
     // 有些mp3文件含有video,因此播放失败
     private String mType;
@@ -212,13 +213,12 @@ public class PlayerWrapper {
     private int mProgressBarLayoutHeight;
 
     private Context mContext;
-    private JniPlayerActivity mActivity;
     private PlayerService mService;
 
     /***
-     Configuration.UI_MODE_TYPE_NORMAL     手机
-     Configuration.UI_MODE_TYPE_WATCH      手表
-     Configuration.UI_MODE_TYPE_TELEVISION 电视机
+     Configuration.UI_MODE_TYPE_NORMAL     手机   1
+     Configuration.UI_MODE_TYPE_WATCH      手表   6
+     Configuration.UI_MODE_TYPE_TELEVISION 电视机 4
      */
     private int whatIsDevice;
     private boolean mIsPhoneDevice;
@@ -238,16 +238,37 @@ public class PlayerWrapper {
     public void setService(Service service) {
         mService = null;
         if (!(service instanceof PlayerService)) {
-            return;
+            throw new IllegalArgumentException("!(service instanceof PlayerService)");
         }
 
         PlayerService playerService = (PlayerService) service;
         mService = playerService;
         mContext = playerService.getApplicationContext();
 
-        mWindowManager = playerService.mWindowManager;
-        mLayoutParams = playerService.mLayoutParams;
-        mRootView = playerService.mRootView;
+        mWindowManager = (WindowManager) mContext.getSystemService(Context.WINDOW_SERVICE);
+        DisplayMetrics displayMetrics = new DisplayMetrics();
+        mWindowManager.getDefaultDisplay().getRealMetrics(displayMetrics);
+        mScreenWidth = displayMetrics.widthPixels;
+        mScreenHeight = displayMetrics.heightPixels;
+
+        LayoutInflater inflater =
+                (LayoutInflater) mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+        mRootView = inflater.inflate(R.layout.activity_player, null);
+        mLayoutParams = new WindowManager.LayoutParams();
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            mLayoutParams.type = WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY;
+        } else {
+            mLayoutParams.type = WindowManager.LayoutParams.TYPE_PHONE;
+        }
+        mLayoutParams.flags = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE;
+        mLayoutParams.gravity = Gravity.TOP + Gravity.LEFT;
+        // 背景透明
+        // mLayoutParams.format = PixelFormat.RGBA_8888;
+        mLayoutParams.width = mScreenWidth;
+        mLayoutParams.height = 400;
+        mLayoutParams.x = 0;
+        mLayoutParams.y = 0;
+
         mRootView.setOnTouchListener(new PlayerOnTouchListener());
 
         mSurfaceView = mRootView.findViewById(R.id.surfaceView);
@@ -291,81 +312,6 @@ public class PlayerWrapper {
         mVolumeMute.setOnClickListener(mOnClickListener);
     }
 
-    public void setService(Activity activity, Service service) {
-        mActivity = null;
-        mService = null;
-        if (activity != null) {
-            if (!(activity instanceof JniPlayerActivity)) {
-                return;
-            }
-            JniPlayerActivity jniPlayerActivity = (JniPlayerActivity) activity;
-            mActivity = jniPlayerActivity;
-            mContext = jniPlayerActivity.getApplicationContext();
-            mWindowManager = (WindowManager) mContext.getSystemService(Context.WINDOW_SERVICE);
-
-            mSurfaceView = jniPlayerActivity.mSurfaceView;
-            mControllerPanelLayout = jniPlayerActivity.mControllerPanelLayout;
-            mLoadingView = jniPlayerActivity.mLoadingView;
-            mProgressBar = jniPlayerActivity.mProgressBar;
-            mFileNameTV = jniPlayerActivity.mFileNameTV;
-            mProgressTimeTV = jniPlayerActivity.mProgressTimeTV;
-            mDurationTimeTV = jniPlayerActivity.mDurationTimeTV;
-            mPreviousIB = jniPlayerActivity.mPreviousIB;
-            mPlayIB = jniPlayerActivity.mPlayIB;
-            mPauseIB = jniPlayerActivity.mPauseIB;
-            mNextIB = jniPlayerActivity.mNextIB;
-        } else if (service != null) {
-            if (!(service instanceof PlayerService)) {
-                return;
-            }
-            PlayerService playerService = (PlayerService) service;
-            mService = playerService;
-            mContext = playerService.getApplicationContext();
-
-            mWindowManager = playerService.mWindowManager;
-            mLayoutParams = playerService.mLayoutParams;
-            mRootView = playerService.mRootView;
-            mRootView.setOnTouchListener(new PlayerOnTouchListener());
-
-            mSurfaceView = mRootView.findViewById(R.id.surfaceView);
-            mControllerPanelLayout = mRootView.findViewById(R.id.controller_panel_layout);
-            mLoadingView = mRootView.findViewById(R.id.loading_view);
-            mProgressBar = mRootView.findViewById(R.id.progress_bar);
-            mFileNameTV = mRootView.findViewById(R.id.file_name_tv);
-            mProgressTimeTV = mRootView.findViewById(R.id.progress_time_tv);
-            mSeekTimeTV = mRootView.findViewById(R.id.seek_time_tv);
-            mDurationTimeTV = mRootView.findViewById(R.id.duration_time_tv);
-            mPreviousIB = mRootView.findViewById(R.id.button_prev);
-            mPlayIB = mRootView.findViewById(R.id.button_play);
-            mPauseIB = mRootView.findViewById(R.id.button_pause);
-            mNextIB = mRootView.findViewById(R.id.button_next);
-
-            mExitIB = mRootView.findViewById(R.id.button_exit);
-            mExitIB.setVisibility(View.VISIBLE);
-            mDownloadTV = mRootView.findViewById(R.id.download_tv);
-            mVolumeNormal = mRootView.findViewById(R.id.volume_normal);
-            mVolumeMute = mRootView.findViewById(R.id.volume_mute);
-
-            mProgressBarLayout = mRootView.findViewById(R.id.progress_bar_layout);
-            mVideoProgressBar = mRootView.findViewById(R.id.video_progress_bar);
-            mAudioProgressBar = mRootView.findViewById(R.id.audio_progress_bar);
-
-            if (mSP == null) {
-                mSP = mContext.getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE);
-            }
-
-            mSurfaceView.setOnClickListener(mOnClickListener);
-            mPreviousIB.setOnClickListener(mOnClickListener);
-            mPlayIB.setOnClickListener(mOnClickListener);
-            mPauseIB.setOnClickListener(mOnClickListener);
-            mNextIB.setOnClickListener(mOnClickListener);
-            mExitIB.setOnClickListener(mOnClickListener);
-            mDownloadTV.setOnClickListener(mOnClickListener);
-            mVolumeNormal.setOnClickListener(mOnClickListener);
-            mVolumeMute.setOnClickListener(mOnClickListener);
-        }
-    }
-
     /*if (newPath.startsWith("http://")
             || newPath.startsWith("https://")
             || newPath.startsWith("rtmp://")
@@ -373,25 +319,21 @@ public class PlayerWrapper {
             || newPath.startsWith("ftp://")) {
         mIsLocal = false;
     }*/
-    public void setDataSource(String path) {
+    public synchronized void setDataSource(String path) {
         if (TextUtils.isEmpty(path)) {
+            Log.i(TAG, "setDataSource() path is null");
             return;
         }
-        mPath = path;
-        md5Path = md5(path);
-        String newPath = mPath.toLowerCase();
-        if (newPath.startsWith("/storage/")) {
-            mIsLocal = true;
-        } else {
-            mIsLocal = false;
+        mCurPath = path;
+        if (TextUtils.equals(mCurPath, mPrePath)) {
+            Log.i(TAG, "setDataSource() path:\n" + path + "\n正在播放中......");
+            return;
         }
-        if (newPath.endsWith(".h264")) {
-            mIsH264 = true;
-        } else {
-            mIsH264 = false;
-        }
-        MLog.i(TAG, "setDataSource() mIsLocal: " + mIsLocal);
-        MLog.i(TAG, "setDataSource()  mIsH264: " + mIsH264);
+        Log.i(TAG, "setDataSource() mPrePath:\n" + mPrePath);
+        Log.i(TAG, "setDataSource() mCurPath:\n" + mCurPath);
+        mPrePath = mCurPath.substring(0);
+
+        addView();
     }
 
     public void setType(String type) {
@@ -415,7 +357,7 @@ public class PlayerWrapper {
         UiModeManager uiModeManager =
                 (UiModeManager) mContext.getSystemService(Context.UI_MODE_SERVICE);
         whatIsDevice = uiModeManager.getCurrentModeType();
-        MLog.i(TAG, "onCreate() whatIsDevice: " + whatIsDevice);
+        Log.i(TAG, "onCreate() whatIsDevice: " + whatIsDevice);
 
         mIsPhoneDevice = isPhoneDevice();
         if (mFFMPEGPlayer == null) {
@@ -503,10 +445,10 @@ public class PlayerWrapper {
                         mNeedToSyncProgressBar = true;
                         mSeekTimeTV.setVisibility(View.GONE);
                         if (!mIsH264) {
-                            MLog.d(TAG, "MotionEvent.ACTION_UP mProgress: " + mProgress +
+                            Log.d(TAG, "MotionEvent.ACTION_UP mProgress: " + mProgress +
                                     " " + DateUtils.formatElapsedTime(mProgress));
                         } else {
-                            MLog.d(TAG, "MotionEvent.ACTION_UP mProgress: " + mProgress);
+                            Log.d(TAG, "MotionEvent.ACTION_UP mProgress: " + mProgress);
                         }
                         if (mProgress >= 0 && mProgress <= mMediaDuration) {
                             if (TextUtils.equals(whatPlayer, PLAYER_MEDIACODEC)) {
@@ -556,7 +498,7 @@ public class PlayerWrapper {
     // 调用之前,视频路径先设置好
     @SuppressLint("InvalidWakeLockTag")
     public void onResume() {
-        MLog.i(TAG, "onResume()");
+        Log.i(TAG, "onResume()");
         if (mPowerWakeLock == null) {
             // When player view started,wake the lock.
             PowerManager powerManager =
@@ -597,9 +539,68 @@ public class PlayerWrapper {
     }
 
     public void onRelease() {
-        if (mFFMPEGPlayer != null) {
-            mFFMPEGPlayer.releaseAll();
+        if (TextUtils.equals(whatPlayer, PLAYER_MEDIACODEC)) {
+            if (mSimpleVideoPlayer != null) {
+                mSimpleVideoPlayer.release();
+            }
+        } else {
+            if (mFFMPEGPlayer != null) {
+                mFFMPEGPlayer.releaseAll();
+            }
         }
+    }
+
+
+    //private String mCurPath = null;
+
+    @SuppressLint("InvalidWakeLockTag")
+    private void addView() {
+        Log.i(TAG, "addView()    mIsAddedView: " + mIsAddedView);
+        if (mIsAddedView) {
+            onPause();
+            mWindowManager.removeView(mRootView);
+            mIsAddedView = false;
+            return;
+        }
+
+        onResume();
+        mWindowManager.addView(mRootView, mLayoutParams);
+        mIsAddedView = true;
+
+        md5Path = md5(mCurPath);
+        String newPath = mCurPath.toLowerCase();
+        if (newPath.startsWith("/storage/")) {
+            mIsLocal = true;
+        } else {
+            mIsLocal = false;
+        }
+        if (newPath.endsWith(".h264")) {
+            mIsH264 = true;
+        } else {
+            mIsH264 = false;
+        }
+        Log.i(TAG, "addView()        mIsLocal: " + mIsLocal);
+        Log.i(TAG, "addView()         mIsH264: " + mIsH264);
+    }
+
+    public void removeView() {
+        Log.i(TAG, "removeView() mIsAddedView: " + mIsAddedView);
+        mPrePath = null;
+        if (mIsAddedView) {
+            onPause();
+            mWindowManager.removeView(mRootView);
+            mIsAddedView = false;
+        }
+    }
+
+    private boolean needToPlaybackOtherVideo() {
+        if (mPrePath != null) {
+            addView();
+            return true;
+        }
+
+        // 不需要播放另一个视频
+        return false;
     }
 
     private void uiHandleMessage(Message msg) {
@@ -626,21 +627,21 @@ public class PlayerWrapper {
                 }*/
                 break;
             case Callback.MSG_ON_TRANSACT_READY:
-                MLog.d(TAG, "Callback.MSG_ON_TRANSACT_READY");
+                Log.d(TAG, "Callback.MSG_ON_TRANSACT_READY");
                 onReady();
                 break;
             case Callback.MSG_ON_TRANSACT_CHANGE_WINDOW:
-                MLog.d(TAG, "Callback.MSG_ON_TRANSACT_CHANGE_WINDOW");
+                Log.d(TAG, "Callback.MSG_ON_TRANSACT_CHANGE_WINDOW");
                 onChangeWindow(msg);
                 break;
             case Callback.MSG_ON_TRANSACT_PLAYED:
-                MLog.d(TAG, "Callback.MSG_ON_TRANSACT_PLAYED");
+                Log.d(TAG, "Callback.MSG_ON_TRANSACT_PLAYED");
                 mPlayIB.setVisibility(View.VISIBLE);
                 mPauseIB.setVisibility(View.GONE);
                 mLoadingView.setVisibility(View.GONE);
                 break;
             case Callback.MSG_ON_TRANSACT_PAUSED:
-                MLog.d(TAG, "Callback.MSG_ON_TRANSACT_PAUSED");
+                Log.d(TAG, "Callback.MSG_ON_TRANSACT_PAUSED");
                 //mPlayIB.setVisibility(View.GONE);
                 //mPauseIB.setVisibility(View.VISIBLE);
                 if (!mIsLocal) {
@@ -648,13 +649,13 @@ public class PlayerWrapper {
                 }
                 break;
             case Callback.MSG_ON_TRANSACT_FINISHED:
-                MLog.d(TAG, "Callback.MSG_ON_TRANSACT_FINISHED");
+                Log.d(TAG, "Callback.MSG_ON_TRANSACT_FINISHED");
                 onFinished();
                 break;
             case Callback.MSG_ON_TRANSACT_INFO:
                 if (msg.obj != null && msg.obj instanceof String) {
                     String toastInfo = ((String) msg.obj).trim();
-                    MLog.d(TAG, "Callback.MSG_ON_TRANSACT_INFO\n" + toastInfo);
+                    Log.d(TAG, "Callback.MSG_ON_TRANSACT_INFO\n" + toastInfo);
                     //MyToast.show(toastInfo);
                     if (toastInfo.contains("[")
                             && toastInfo.contains("]")) {
@@ -663,7 +664,7 @@ public class PlayerWrapper {
                 }
                 break;
             case Callback.MSG_ON_TRANSACT_ERROR:
-                MLog.d(TAG, "Callback.MSG_ON_TRANSACT_ERROR");
+                Log.d(TAG, "Callback.MSG_ON_TRANSACT_ERROR");
                 // 如果有错误,底层先发送error,然后再finish
                 onError(msg);
                 break;
@@ -677,41 +678,41 @@ public class PlayerWrapper {
 
                 switch (clickCounts) {
                     case 1:
-                        MLog.d(TAG, "clickOne()");
+                        Log.d(TAG, "clickOne()");
                         clickOne();
                         break;
                     case 2:
-                        MLog.d(TAG, "clickTwo()");
+                        Log.d(TAG, "clickTwo()");
                         clickTwo();
                         break;
                     case 3:
-                        MLog.d(TAG, "clickThree()");
+                        Log.d(TAG, "clickThree()");
                         clickThree();
                         break;
                     case 4:
-                        MLog.d(TAG, "clickFour()");
+                        Log.d(TAG, "clickFour()");
                         clickFour();
                         break;
                     case 5:
-                        MLog.d(TAG, "clickFive()");
+                        Log.d(TAG, "clickFive()");
                         clickFive();
                         break;
                     case 6:
-                        MLog.d(TAG, "clickSix()");
+                        Log.d(TAG, "clickSix()");
                         clickSix();
                         break;
                     case 7:
-                        MLog.d(TAG, "clickSeven()");
+                        Log.d(TAG, "clickSeven()");
                         clickSeven();
                         break;
                     case 8:
                         break;
                     case 9:
-                        MLog.d(TAG, "clickNine()");
+                        Log.d(TAG, "clickNine()");
                         clickNine();
                         break;
                     case 10:
-                        MLog.d(TAG, "clickTen()");
+                        Log.d(TAG, "clickTen()");
                         clickTen();
                         break;
                     default:
@@ -810,7 +811,7 @@ public class PlayerWrapper {
                 if (mDownloadClickCounts > 5) {
                     mDownloadClickCounts = 5;
                 }
-                MLog.d(TAG, "threadHandleMessage() mDownloadClickCounts: " +
+                Log.d(TAG, "threadHandleMessage() mDownloadClickCounts: " +
                         mDownloadClickCounts);
 
                 // 点击次数
@@ -845,10 +846,10 @@ public class PlayerWrapper {
                                         "com.weidi.usefragments/files/Movies/";
                         String title;
                         if (mIsLocal) {
-                            title = mPath.substring(
-                                    mPath.lastIndexOf("/") + 1, mPath.lastIndexOf("."));
+                            title = mCurPath.substring(
+                                    mCurPath.lastIndexOf("/") + 1, mCurPath.lastIndexOf("."));
                         } else {
-                            title = mContentsMap.get(mPath);
+                            title = mContentsMap.get(mCurPath);
                         }
                         StringBuilder sb = new StringBuilder();
                         if (TextUtils.isEmpty(title)) {
@@ -933,7 +934,7 @@ public class PlayerWrapper {
     }
 
     // @@@
-    public void startForGetMediaFormat() {
+    private void startForGetMediaFormat() {
         whatPlayer = mSP.getString(PLAYBACK_USE_PLAYER, PLAYER_FFMPEG_MEDIACODEC);
         /*if (TextUtils.equals(whatPlayer, PLAYER_FFMPEG_MEDIACODEC)
                 && !mPath.endsWith(".m4s")
@@ -950,14 +951,14 @@ public class PlayerWrapper {
         startPlayback();
     }
 
-    public void startPlayback() {
-        MLog.d(TAG, "startPlayback() start");
-        if (!mService.mIsAddedView || !mRootView.isShown()) {
-            MLog.e(TAG, "startPlayback() The condition is not satisfied");
+    private void startPlayback() {
+        Log.d(TAG, "startPlayback() start");
+        if (!mIsAddedView || !mRootView.isShown()) {
+            Log.e(TAG, "startPlayback() The condition is not satisfied");
             return;
         }
 
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             /***
              AUDIOFOCUS_LOSS：当本程序正在播放音频时有另一播放器请求获得音频焦点播放音频，那么就会回调该方法并传入此参数
              AUDIOFOCUS_LOSS_TRANSIENT：当另一个播放器请求“短暂”获得音频焦点，传入此参数
@@ -983,14 +984,14 @@ public class PlayerWrapper {
             switch (focusRequest) {
                 case AudioManager.AUDIOFOCUS_REQUEST_FAILED:
                     // 不允许播放
-                    MLog.i(TAG, "startPlayback() AudioManager.AUDIOFOCUS_REQUEST_FAILED");
+                    Log.i(TAG, "startPlayback() AudioManager.AUDIOFOCUS_REQUEST_FAILED");
                     break;
                 case AudioManager.AUDIOFOCUS_REQUEST_GRANTED:
                     // 开始播放
-                    MLog.i(TAG, "startPlayback() AudioManager.AUDIOFOCUS_REQUEST_GRANTED");
+                    Log.i(TAG, "startPlayback() AudioManager.AUDIOFOCUS_REQUEST_GRANTED");
                     break;
                 case AudioManager.AUDIOFOCUS_REQUEST_DELAYED:
-                    MLog.i(TAG, "startPlayback() AudioManager.AUDIOFOCUS_REQUEST_DELAYED");
+                    Log.i(TAG, "startPlayback() AudioManager.AUDIOFOCUS_REQUEST_DELAYED");
                     break;
                 default:
                     break;
@@ -1004,8 +1005,8 @@ public class PlayerWrapper {
         // 底层有关参数的设置
         mFFMPEGPlayer.setHandler(mUiHandler);
         if (TextUtils.equals(whatPlayer, PLAYER_MEDIACODEC)) {
-            //mSimpleVideoPlayer = new SimpleVideoPlayer();
-            mSimpleVideoPlayer = new SimplePlayer();
+            mSimpleVideoPlayer = new SimpleVideoPlayer();
+            //mSimpleVideoPlayer = new SimplePlayer();
             mSimpleVideoPlayer.setContext(mContext);
             mSimpleVideoPlayer.setHandler(mUiHandler);
             mSimpleVideoPlayer.setCallback(mFFMPEGPlayer.mCallback);
@@ -1015,28 +1016,28 @@ public class PlayerWrapper {
         ThreadPool.getFixedThreadPool().execute(new Runnable() {
             @Override
             public void run() {
-                MLog.d(TAG, "startPlayback()                  mPath: " + mPath);
+                Log.d(TAG, "startPlayback()                  mPath: " + mCurPath);
 
                 // region 判断是什么样的文件(一般用于本地文件)
 
                 String tempPath = "";
                 mIsSeparatedAudioVideo = false;
-                if (mPath.endsWith(".m4s")) {
-                    tempPath = mPath.substring(0, mPath.lastIndexOf("/"));
+                if (mCurPath.endsWith(".m4s")) {
+                    tempPath = mCurPath.substring(0, mCurPath.lastIndexOf("/"));
                     File audioFile = new File(tempPath + "/audio.m4s");
                     File videoFile = new File(tempPath + "/video.m4s");
-                    MLog.d(TAG,
+                    Log.d(TAG,
                             "startPlayback()                  audio: " + audioFile.getAbsolutePath());
-                    MLog.d(TAG,
+                    Log.d(TAG,
                             "startPlayback()                  video: " + videoFile.getAbsolutePath());
                     if (audioFile.exists() && videoFile.exists()) {
                         mIsSeparatedAudioVideo = true;
                     }
-                } else if (mPath.endsWith(".h264") || mPath.endsWith(".aac")) {
-                    tempPath = mPath.substring(0, mPath.lastIndexOf("/"));
-                    String fileName = mPath.substring(
-                            mPath.lastIndexOf("/") + 1, mPath.lastIndexOf("."));
-                    MLog.d(TAG, "startPlayback()               fileName: " + fileName);
+                } else if (mCurPath.endsWith(".h264") || mCurPath.endsWith(".aac")) {
+                    tempPath = mCurPath.substring(0, mCurPath.lastIndexOf("/"));
+                    String fileName = mCurPath.substring(
+                            mCurPath.lastIndexOf("/") + 1, mCurPath.lastIndexOf("."));
+                    Log.d(TAG, "startPlayback()               fileName: " + fileName);
                     StringBuilder sb = new StringBuilder(tempPath);
                     sb.append("/");
                     sb.append(fileName);
@@ -1047,15 +1048,15 @@ public class PlayerWrapper {
                     sb.append(fileName);
                     sb.append(".h264");
                     File videoFile = new File(sb.toString());
-                    MLog.d(TAG,
+                    Log.d(TAG,
                             "startPlayback()                  audio: " + audioFile.getAbsolutePath());
-                    MLog.d(TAG,
+                    Log.d(TAG,
                             "startPlayback()                  video: " + videoFile.getAbsolutePath());
                     if (audioFile.exists() && videoFile.exists()) {
                         mIsSeparatedAudioVideo = true;
                     }
                 }
-                MLog.d(TAG, "startPlayback() mIsSeparatedAudioVideo: " + mIsSeparatedAudioVideo);
+                Log.d(TAG, "startPlayback() mIsSeparatedAudioVideo: " + mIsSeparatedAudioVideo);
 
                 // endregion
 
@@ -1063,7 +1064,7 @@ public class PlayerWrapper {
                         && TextUtils.equals(whatPlayer, PLAYER_MEDIACODEC)) {
                     MyToast.show(PLAYER_MEDIACODEC + "模式下不能播放");
                     if (mService != null) {
-                        mService.removeView();
+                        removeView();
                         if (mSurfaceHolder != null) {
                             mSurfaceHolder.removeCallback(mSurfaceCallback);
                             mSurfaceHolder = null;
@@ -1076,7 +1077,7 @@ public class PlayerWrapper {
                     if (TextUtils.equals(whatPlayer, PLAYER_MEDIACODEC)) {
                         mSimpleVideoPlayer.setSurface(mSurfaceHolder.getSurface());
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                            mSimpleVideoPlayer.setDataSource(mPath);
+                            mSimpleVideoPlayer.setDataSource(mCurPath);
                         }
                         /*if (!mSimpleVideoPlayer.initPlayer()) {
                             return;
@@ -1085,7 +1086,7 @@ public class PlayerWrapper {
                         sendEmptyMessage(DO_SOMETHING_CODE_init);
                         if (TextUtils.isEmpty(mType)
                                 || mType.startsWith("video/")) {
-                            if (!mPath.endsWith(".h264")) {
+                            if (!mCurPath.endsWith(".h264")) {
                                 mFFMPEGPlayer.onTransact(DO_SOMETHING_CODE_setMode,
                                         JniObject.obtain().writeInt(
                                                 FFMPEG.USE_MODE_MEDIA_MEDIACODEC));
@@ -1102,7 +1103,7 @@ public class PlayerWrapper {
 
                     if (mPathTimeMap.containsKey(md5Path)) {
                         long position = mPathTimeMap.get(md5Path);
-                        MLog.d(TAG, "startPlayback()               position: " + position);
+                        Log.d(TAG, "startPlayback()               position: " + position);
 
                         if (TextUtils.equals(whatPlayer, PLAYER_MEDIACODEC)) {
                             //mSimpleVideoPlayer.setProgressUs(position * 1000000);
@@ -1114,7 +1115,7 @@ public class PlayerWrapper {
                 } else {
                     sendEmptyMessage(DO_SOMETHING_CODE_init);
                     // [.m4s] or [.h264 and .aac](达不到同步效果)
-                    if (mPath.endsWith(".m4s")) {
+                    if (mCurPath.endsWith(".m4s")) {
                         mFFMPEGPlayer.onTransact(DO_SOMETHING_CODE_setMode,
                                 JniObject.obtain().writeInt(USE_MODE_AUDIO_VIDEO));
                     } else {
@@ -1128,7 +1129,7 @@ public class PlayerWrapper {
                     mFfmpegUseMediaCodecDecode.setSurface(mSurfaceHolder.getSurface());
                     mFFMPEGPlayer.onTransact(DO_SOMETHING_CODE_setSurface,
                             JniObject.obtain()
-                                    .writeString(mPath)
+                                    .writeString(mCurPath)
                                     .writeObject(mSurfaceHolder.getSurface()));
 
                     if (Integer.parseInt(mFFMPEGPlayer.onTransact(
@@ -1152,7 +1153,7 @@ public class PlayerWrapper {
                     }
                 }
 
-                MLog.d(TAG, "startPlayback() end");
+                Log.d(TAG, "startPlayback() end");
             }
         });
     }
@@ -1182,7 +1183,7 @@ public class PlayerWrapper {
             height = resources.getDimensionPixelSize(resourceId);
         }
         // getStatusBarHeight() height: 48 95
-        MLog.d(TAG, "getStatusBarHeight() height: " + height);
+        Log.d(TAG, "getStatusBarHeight() height: " + height);
         return height;
     }
 
@@ -1197,7 +1198,7 @@ public class PlayerWrapper {
         if (resourceId > 0) {
             height = resources.getDimensionPixelSize(resourceId);
         }
-        MLog.d(TAG, "getNavigationBarHeight() height: " + height);
+        Log.d(TAG, "getNavigationBarHeight() height: " + height);
         return height;
     }
 
@@ -1215,7 +1216,7 @@ public class PlayerWrapper {
         } else {
             getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LOW_PROFILE);
         }*/
-        MLog.d(TAG, "Callback.MSG_ON_CHANGE_WINDOW handleLandscapeScreen");
+        Log.d(TAG, "Callback.MSG_ON_CHANGE_WINDOW handleLandscapeScreen");
         if (mVideoWidth == 0 || mVideoHeight == 0) {
             return;
         }
@@ -1233,7 +1234,7 @@ public class PlayerWrapper {
         if (statusBarHeight != 0) {
             statusBarHeight = getStatusBarHeight();
         }
-        MLog.d(TAG, "Callback.MSG_ON_CHANGE_WINDOW              statusBarHeight: " +
+        Log.d(TAG, "Callback.MSG_ON_CHANGE_WINDOW              statusBarHeight: " +
                 statusBarHeight);
 
         // mScreenWidth: 2149 mScreenHeight: 1080
@@ -1242,7 +1243,7 @@ public class PlayerWrapper {
         mWindowManager.getDefaultDisplay().getRealMetrics(displayMetrics);
         mScreenWidth = displayMetrics.widthPixels;
         mScreenHeight = displayMetrics.heightPixels;
-        MLog.d(TAG, "Callback.MSG_ON_CHANGE_WINDOW                 mScreenWidth: " +
+        Log.d(TAG, "Callback.MSG_ON_CHANGE_WINDOW                 mScreenWidth: " +
                 mScreenWidth + " mScreenHeight: " + mScreenHeight);
 
         if (mVideoWidth <= mScreenWidth && mVideoHeight <= mScreenHeight) {
@@ -1264,17 +1265,17 @@ public class PlayerWrapper {
         if (mNeedVideoHeight > mScreenHeight) {
             mNeedVideoHeight = mScreenHeight;
         }
-        MLog.d(TAG, "Callback.MSG_ON_CHANGE_WINDOW              mNeedVideoWidth: " +
+        Log.d(TAG, "Callback.MSG_ON_CHANGE_WINDOW              mNeedVideoWidth: " +
                 mNeedVideoWidth + " mNeedVideoHeight: " + mNeedVideoHeight);
 
         // 控制面板高度
         mControllerPanelLayoutHeight = mControllerPanelLayout.getHeight();
-        MLog.d(TAG, "Callback.MSG_ON_CHANGE_WINDOW mControllerPanelLayoutHeight: " +
+        Log.d(TAG, "Callback.MSG_ON_CHANGE_WINDOW mControllerPanelLayoutHeight: " +
                 mControllerPanelLayoutHeight);
 
         // 生产,消耗进度条高度
         mProgressBarLayoutHeight = mProgressBarLayout.getHeight();
-        MLog.d(TAG, "Callback.MSG_ON_CHANGE_WINDOW     mProgressBarLayoutHeight: " +
+        Log.d(TAG, "Callback.MSG_ON_CHANGE_WINDOW     mProgressBarLayoutHeight: " +
                 mProgressBarLayoutHeight);
         if (mProgressBarLayoutHeight > 0) {
             RelativeLayout.LayoutParams relativeParams =
@@ -1301,7 +1302,7 @@ public class PlayerWrapper {
             relativeParams.height = mNeedVideoHeight;
         }
         mSurfaceView.setLayoutParams(relativeParams);
-        MLog.d(TAG, "Callback.MSG_ON_CHANGE_WINDOW         relativeParams.width: " +
+        Log.d(TAG, "Callback.MSG_ON_CHANGE_WINDOW         relativeParams.width: " +
                 relativeParams.width + " relativeParams.height: " + relativeParams.height);
 
         relativeParams =
@@ -1334,7 +1335,7 @@ public class PlayerWrapper {
 
     // 处理竖屏
     public void handlePortraitScreen() {
-        MLog.d(TAG, "Callback.MSG_ON_CHANGE_WINDOW handlePortraitScreen");
+        Log.d(TAG, "Callback.MSG_ON_CHANGE_WINDOW handlePortraitScreen");
 
         mIsPortraitScreen = true;
 
@@ -1348,11 +1349,11 @@ public class PlayerWrapper {
             String[] positions = position.split(PLAYBACK_WINDOW_POSITION_TAG);
             y = Integer.parseInt(positions[1]);
         }
-        MLog.d(TAG, "Callback.MSG_ON_CHANGE_WINDOW x: " + x + " y: " + y);
+        Log.d(TAG, "Callback.MSG_ON_CHANGE_WINDOW x: " + x + " y: " + y);
 
         // 控制面板高度
         mControllerPanelLayoutHeight = mControllerPanelLayout.getHeight();
-        MLog.d(TAG, "Callback.MSG_ON_CHANGE_WINDOW mControllerPanelLayoutHeight: " +
+        Log.d(TAG, "Callback.MSG_ON_CHANGE_WINDOW mControllerPanelLayoutHeight: " +
                 mControllerPanelLayoutHeight);
 
         // 暂停按钮高度
@@ -1364,12 +1365,12 @@ public class PlayerWrapper {
         mWindowManager.getDefaultDisplay().getRealMetrics(displayMetrics);
         mScreenWidth = displayMetrics.widthPixels;
         mScreenHeight = displayMetrics.heightPixels;
-        MLog.d(TAG, "Callback.MSG_ON_CHANGE_WINDOW                 mScreenWidth: " +
+        Log.d(TAG, "Callback.MSG_ON_CHANGE_WINDOW                 mScreenWidth: " +
                 mScreenWidth + " mScreenHeight: " + mScreenHeight);
 
         // 生产,消耗进度条高度
         mProgressBarLayoutHeight = mProgressBarLayout.getHeight();
-        MLog.d(TAG, "Callback.MSG_ON_CHANGE_WINDOW     mProgressBarLayoutHeight: " +
+        Log.d(TAG, "Callback.MSG_ON_CHANGE_WINDOW     mProgressBarLayoutHeight: " +
                 mProgressBarLayoutHeight);
         if (mProgressBarLayoutHeight > 0) {
             RelativeLayout.LayoutParams relativeParams =
@@ -1397,7 +1398,7 @@ public class PlayerWrapper {
         relativeParams.width = mNeedVideoWidth;
         relativeParams.height = mNeedVideoHeight;
         mSurfaceView.setLayoutParams(relativeParams);
-        MLog.d(TAG, "Callback.MSG_ON_CHANGE_WINDOW              mNeedVideoWidth: " +
+        Log.d(TAG, "Callback.MSG_ON_CHANGE_WINDOW              mNeedVideoWidth: " +
                 mNeedVideoWidth + " mNeedVideoHeight: " + mNeedVideoHeight);
 
         relativeParams =
@@ -1467,7 +1468,7 @@ public class PlayerWrapper {
 
     // 电视机专用
     public void handlePortraitScreenWithTV() {
-        MLog.d(TAG, "Callback.MSG_ON_CHANGE_WINDOW handlePortraitScreenWithTV");
+        Log.d(TAG, "Callback.MSG_ON_CHANGE_WINDOW handlePortraitScreenWithTV");
 
         mIsPortraitScreen = true;
 
@@ -1482,7 +1483,7 @@ public class PlayerWrapper {
             x = Integer.parseInt(positions[0]);
             y = Integer.parseInt(positions[1]);
         }
-        MLog.d(TAG, "Callback.MSG_ON_CHANGE_WINDOW x: " + x + " y: " + y);
+        Log.d(TAG, "Callback.MSG_ON_CHANGE_WINDOW x: " + x + " y: " + y);
 
         int pauseRlHeight = getPauseRlHeight();
 
@@ -1492,14 +1493,14 @@ public class PlayerWrapper {
         mWindowManager.getDefaultDisplay().getRealMetrics(displayMetrics);
         mScreenWidth = displayMetrics.widthPixels;
         mScreenHeight = displayMetrics.heightPixels;
-        MLog.d(TAG, "Callback.MSG_ON_CHANGE_WINDOW                 mScreenWidth: " +
+        Log.d(TAG, "Callback.MSG_ON_CHANGE_WINDOW                 mScreenWidth: " +
                 mScreenWidth + " mScreenHeight: " + mScreenHeight);
 
         mScreenWidth = mScreenWidth / 3;
 
         // 控制面板高度
         mControllerPanelLayoutHeight = mControllerPanelLayout.getHeight();
-        MLog.d(TAG, "Callback.MSG_ON_CHANGE_WINDOW mControllerPanelLayoutHeight: " +
+        Log.d(TAG, "Callback.MSG_ON_CHANGE_WINDOW mControllerPanelLayoutHeight: " +
                 mControllerPanelLayoutHeight);
 
         // 改变SurfaceView高度
@@ -1519,7 +1520,7 @@ public class PlayerWrapper {
         relativeParams.width = mNeedVideoWidth;
         relativeParams.height = mNeedVideoHeight;
         mSurfaceView.setLayoutParams(relativeParams);
-        MLog.d(TAG, "Callback.MSG_ON_CHANGE_WINDOW              mNeedVideoWidth: " +
+        Log.d(TAG, "Callback.MSG_ON_CHANGE_WINDOW              mNeedVideoWidth: " +
                 mNeedVideoWidth + " mNeedVideoHeight: " + mNeedVideoHeight);
 
         relativeParams =
@@ -1565,7 +1566,7 @@ public class PlayerWrapper {
     // Hikey970开发板专用
     @SuppressLint("SourceLockedOrientationActivity")
     public void handleLandscapeScreenWithHikey970() {
-        MLog.d(TAG, "Callback.MSG_ON_CHANGE_WINDOW handleLandscapeScreenWithHikey970");
+        Log.d(TAG, "Callback.MSG_ON_CHANGE_WINDOW handleLandscapeScreenWithHikey970");
 
         getPauseRlHeight();
 
@@ -1580,12 +1581,12 @@ public class PlayerWrapper {
         mWindowManager.getDefaultDisplay().getRealMetrics(displayMetrics);
         mScreenWidth = displayMetrics.widthPixels;
         mScreenHeight = displayMetrics.heightPixels;
-        MLog.d(TAG, "Callback.MSG_ON_CHANGE_WINDOW mScreenWidth: " +
+        Log.d(TAG, "Callback.MSG_ON_CHANGE_WINDOW mScreenWidth: " +
                 mScreenWidth + " mScreenHeight: " + mScreenHeight);
 
         // 控制面板高度
         mControllerPanelLayoutHeight = mControllerPanelLayout.getHeight();
-        MLog.d(TAG, "Callback.MSG_ON_CHANGE_WINDOW mControllerPanelLayoutHeight: " +
+        Log.d(TAG, "Callback.MSG_ON_CHANGE_WINDOW mControllerPanelLayoutHeight: " +
                 mControllerPanelLayoutHeight);
         mControllerPanelLayout.setBackgroundColor(
                 mContext.getResources().getColor(android.R.color.transparent));
@@ -1596,7 +1597,7 @@ public class PlayerWrapper {
         relativeParams.setMargins(0, 0, 0, 0);
         relativeParams.width = mScreenWidth;
         relativeParams.height = mScreenHeight - statusBarHeight - navigationBarHeight;
-        MLog.d(TAG, "Callback.MSG_ON_CHANGE_WINDOW relativeParams.width: " +
+        Log.d(TAG, "Callback.MSG_ON_CHANGE_WINDOW relativeParams.width: " +
                 relativeParams.width + " relativeParams.height: " + relativeParams.height);
         mSurfaceView.setLayoutParams(relativeParams);
 
@@ -1616,7 +1617,7 @@ public class PlayerWrapper {
 
     // Hikey970开发板专用
     public void handlePortraitScreenWithHikey970() {
-        MLog.d(TAG, "Callback.MSG_ON_CHANGE_WINDOW handlePortraitScreenWithHikey970");
+        Log.d(TAG, "Callback.MSG_ON_CHANGE_WINDOW handlePortraitScreenWithHikey970");
 
         int pauseRlHeight = getPauseRlHeight();
 
@@ -1626,14 +1627,14 @@ public class PlayerWrapper {
         mWindowManager.getDefaultDisplay().getRealMetrics(displayMetrics);
         mScreenWidth = displayMetrics.widthPixels;
         mScreenHeight = displayMetrics.heightPixels;
-        MLog.d(TAG, "Callback.MSG_ON_CHANGE_WINDOW mScreenWidth: " +
+        Log.d(TAG, "Callback.MSG_ON_CHANGE_WINDOW mScreenWidth: " +
                 mScreenWidth + " mScreenHeight: " + mScreenHeight);
 
         mScreenWidth = mScreenWidth / 3;
 
         // 控制面板高度
         mControllerPanelLayoutHeight = mControllerPanelLayout.getHeight();
-        MLog.d(TAG, "Callback.MSG_ON_CHANGE_WINDOW mControllerPanelLayoutHeight: " +
+        Log.d(TAG, "Callback.MSG_ON_CHANGE_WINDOW mControllerPanelLayoutHeight: " +
                 mControllerPanelLayoutHeight);
 
         // 改变SurfaceView高度
@@ -1657,7 +1658,7 @@ public class PlayerWrapper {
         relativeParams.width = mNeedVideoWidth;
         relativeParams.height = mNeedVideoHeight;
         mSurfaceView.setLayoutParams(relativeParams);
-        MLog.d(TAG, "Callback.MSG_ON_CHANGE_WINDOW mNeedVideoWidth: " +
+        Log.d(TAG, "Callback.MSG_ON_CHANGE_WINDOW mNeedVideoWidth: " +
                 mNeedVideoWidth + " mNeedVideoHeight: " + mNeedVideoHeight);
 
         relativeParams =
@@ -1747,9 +1748,9 @@ public class PlayerWrapper {
         }
         String title;
         if (mIsLocal) {
-            title = mPath.substring(mPath.lastIndexOf("/") + 1);
+            title = mCurPath.substring(mCurPath.lastIndexOf("/") + 1);
         } else {
-            title = mContentsMap.get(mPath);
+            title = mContentsMap.get(mCurPath);
         }
         if (!TextUtils.isEmpty(title)) {
             mFileNameTV.setText(title);
@@ -1769,9 +1770,9 @@ public class PlayerWrapper {
                     mFFMPEGPlayer.onTransact(
                             DO_SOMETHING_CODE_getDuration, null));
         }
-        MLog.d(TAG, "Callback.MSG_ON_CHANGE_WINDOW               mMediaDuration: " +
+        Log.d(TAG, "Callback.MSG_ON_CHANGE_WINDOW               mMediaDuration: " +
                 mMediaDuration);
-        MLog.d(TAG, "Callback.MSG_ON_CHANGE_WINDOW                   videoWidth: " +
+        Log.d(TAG, "Callback.MSG_ON_CHANGE_WINDOW                   videoWidth: " +
                 mVideoWidth + " videoHeight: " + mVideoHeight);
         if (!mIsH264) {
             String durationTime = DateUtils.formatElapsedTime(mMediaDuration);
@@ -1810,12 +1811,12 @@ public class PlayerWrapper {
                 textInfoScrollView.setVisibility(View.GONE);
             }
 
-            if (!mCouldPlaybackPathList.contains(mPath)) {
-                mCouldPlaybackPathList.add(mPath);
+            if (!mCouldPlaybackPathList.contains(mCurPath)) {
+                mCouldPlaybackPathList.add(mCurPath);
             }
             SharedPreferences.Editor edit = mSP.edit();
             // 保存播放地址
-            edit.putString(PLAYBACK_ADDRESS, mPath);
+            edit.putString(PLAYBACK_ADDRESS, mCurPath);
             // 开始播放设置为false,表示初始化状态
             edit.putBoolean(PLAYBACK_NORMAL_FINISH, false);
             edit.putString(PLAYBACK_MEDIA_TYPE, mType);
@@ -1825,24 +1826,24 @@ public class PlayerWrapper {
         if (mIsPhoneDevice
                 && mContext.getResources().getConfiguration().orientation
                 == Configuration.ORIENTATION_PORTRAIT) {
-            // MLog.i(TAG, "Callback.MSG_ON_CHANGE_WINDOW 手机");
+            // Log.i(TAG, "Callback.MSG_ON_CHANGE_WINDOW 手机");
             // 手机并且竖屏
             handlePortraitScreen();
         } else {
-            // MLog.i(TAG, "Callback.MSG_ON_CHANGE_WINDOW 电视机");
+            // Log.i(TAG, "Callback.MSG_ON_CHANGE_WINDOW 电视机");
             handleScreenFlag = 1;
             handlePortraitScreenWithTV();
         }
     }
 
     private void onFinished() {
-        mFfmpegUseMediaCodecDecode.releaseMediaCodec();
+        if (mFfmpegUseMediaCodecDecode != null)
+            mFfmpegUseMediaCodecDecode.releaseMediaCodec();
 
         if (mHasError) {
             mHasError = false;
-            MLog.d(TAG, "onFinished() restart playback");
+            Log.d(TAG, "onFinished() restart playback");
             // 重新开始播放
-            // startPlayback();
             startForGetMediaFormat();
         } else {
             MyToast.show("Safe Exit");
@@ -1851,25 +1852,16 @@ public class PlayerWrapper {
                 return;
             }
             // 播放结束
-            if (mService != null) {
-                if (!mService.needToPlaybackOtherVideo()) {
-                    mService.removeView();
-                    if (mSurfaceHolder != null) {
-                        mSurfaceHolder.removeCallback(mSurfaceCallback);
-                        mSurfaceHolder = null;
-                    }
-                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-                        mAudioManager.abandonAudioFocusRequest(mAudioFocusRequest);
-                    }
-                    System.gc();
-                }
-            } else if (mActivity != null) {
-                mActivity.finish();
-                mActivity.exitActivity();
+            if (!needToPlaybackOtherVideo()) {
+                removeView();
                 if (mSurfaceHolder != null) {
                     mSurfaceHolder.removeCallback(mSurfaceCallback);
                     mSurfaceHolder = null;
                 }
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    mAudioManager.abandonAudioFocusRequest(mAudioFocusRequest);
+                }
+                System.gc();
             }
         }
         if (TextUtils.isEmpty(mType)
@@ -1889,23 +1881,23 @@ public class PlayerWrapper {
         switch (error) {
             case Callback.ERROR_TIME_OUT:
                 //case Callback.ERROR_DATA_EXCEPTION:
-                MLog.e(TAG, "PlayerWrapper Callback.ERROR_TIME_OUT errorInfo: " + errorInfo);
+                Log.e(TAG, "PlayerWrapper Callback.ERROR_TIME_OUT errorInfo: " + errorInfo);
                 // 需要重新播放
                 mHasError = true;
                 break;
             case Callback.ERROR_FFMPEG_INIT:
-                MLog.e(TAG, "PlayerWrapper Callback.ERROR_FFMPEG_INIT errorInfo: " + errorInfo);
+                Log.e(TAG, "PlayerWrapper Callback.ERROR_FFMPEG_INIT errorInfo: " + errorInfo);
                 if (TextUtils.isEmpty(mType)
                         || mType.startsWith("video/")) {
-                    if (mCouldPlaybackPathList.contains(mPath)
-                            && !mPath.startsWith("http://cache.m.iqiyi.com/")) {
+                    if (mCouldPlaybackPathList.contains(mCurPath)
+                            && !mCurPath.startsWith("http://cache.m.iqiyi.com/")) {
                         // startPlayback();
                         startForGetMediaFormat();
                         break;
                     } else {
                         String path = mSP.getString(PLAYBACK_ADDRESS, null);
-                        if (TextUtils.equals(path, mPath)
-                                && !mPath.startsWith("http://cache.m.iqiyi.com/")) {
+                        if (TextUtils.equals(path, mCurPath)
+                                && !mCurPath.startsWith("http://cache.m.iqiyi.com/")) {
                             // startPlayback();
                             startForGetMediaFormat();
                             break;
@@ -1915,21 +1907,12 @@ public class PlayerWrapper {
 
                 MyToast.show("音视频初始化失败");
                 // 不需要重新播放
-                if (mService != null) {
-                    /*MLog.i(TAG, "PlayerWrapper Callback.ERROR_FFMPEG_INIT " +
-                            "mService.removeView()");*/
-                    mService.removeView();
-                    if (mSurfaceHolder != null) {
-                        mSurfaceHolder.removeCallback(mSurfaceCallback);
-                        mSurfaceHolder = null;
-                    }
-                } else if (mActivity != null) {
-                    mActivity.finish();
-                    //mActivity.exitActivity();
-                    if (mSurfaceHolder != null) {
-                        mSurfaceHolder.removeCallback(mSurfaceCallback);
-                        mSurfaceHolder = null;
-                    }
+                /*Log.i(TAG, "PlayerWrapper Callback.ERROR_FFMPEG_INIT " +
+                        "mService.removeView()");*/
+                removeView();
+                if (mSurfaceHolder != null) {
+                    mSurfaceHolder.removeCallback(mSurfaceCallback);
+                    mSurfaceHolder = null;
                 }
                 break;
             default:
@@ -1977,7 +1960,7 @@ public class PlayerWrapper {
     }
 
     private void updateRootViewLayout(int width, int height, int x, int y) {
-        if (mService != null && mService.mIsAddedView) {
+        if (mIsAddedView) {
             // mLayoutParams.gravity = Gravity.DISPLAY_CLIP_VERTICAL;
             mLayoutParams.width = width;
             mLayoutParams.height = height;
@@ -2013,32 +1996,23 @@ public class PlayerWrapper {
 
     private SurfaceHolder.Callback mSurfaceCallback = new SurfaceHolder.Callback() {
         @Override
-        public void surfaceCreated(
-                SurfaceHolder holder) {
-            MLog.d(TAG, "surfaceCreated()");
+        public void surfaceCreated(SurfaceHolder holder) {
+            Log.d(TAG, "surfaceCreated()");
 
             // startPlayback();
             startForGetMediaFormat();
         }
 
         @Override
-        public void surfaceChanged(
-                SurfaceHolder holder, int format, int width, int height) {
-            MLog.d(TAG, "surfaceChanged() width: " + width + " height: " + height);
+        public void surfaceChanged(SurfaceHolder holder,
+                                   int format, int width, int height) {
+            Log.d(TAG, "surfaceChanged() width: " + width + " height: " + height);
         }
 
         @Override
-        public void surfaceDestroyed(
-                SurfaceHolder holder) {
-            MLog.d(TAG, "surfaceDestroyed()");
-            if (TextUtils.equals(whatPlayer, PLAYER_MEDIACODEC)) {
-                mSimpleVideoPlayer.release();
-            } else {
-                if (mGetMediaFormat != null) {
-                    mGetMediaFormat.release(false);
-                }
-                mFFMPEGPlayer.releaseAll();
-            }
+        public void surfaceDestroyed(SurfaceHolder holder) {
+            Log.d(TAG, "surfaceDestroyed()");
+            onRelease();
         }
     };
 
@@ -2064,7 +2038,7 @@ public class PlayerWrapper {
                                     subtractStep += 524288;// 514KB
                                 }
                             }
-                            MLog.d(TAG, "onClick() subtractStep: " + subtractStep);
+                            Log.d(TAG, "onClick() subtractStep: " + subtractStep);
                             mUiHandler.removeMessages(MSG_SEEK_TO_SUBTRACT);
                             mUiHandler.sendEmptyMessageDelayed(MSG_SEEK_TO_SUBTRACT, 500);
                         }
@@ -2146,7 +2120,7 @@ public class PlayerWrapper {
                                     addStep += 524288;// 514KB
                                 }
                             }
-                            MLog.d(TAG, "onClick() addStep: " + addStep);
+                            Log.d(TAG, "onClick() addStep: " + addStep);
                             mUiHandler.removeMessages(MSG_SEEK_TO_ADD);
                             mUiHandler.sendEmptyMessageDelayed(MSG_SEEK_TO_ADD, 500);
                         }
@@ -2164,9 +2138,8 @@ public class PlayerWrapper {
                     mDownloadClickCounts = 0;
                     mIsDownloading = false;
                     isFrameByFrameMode = false;
-                    if (mService != null) {
-                        mService.removeView();
-                    }
+                    // 表示用户主动关闭,不需要再继续播放
+                    removeView();
                     break;
                 case R.id.volume_normal:
                     mVolumeNormal.setVisibility(View.GONE);
@@ -2272,7 +2245,7 @@ public class PlayerWrapper {
                 EventBusUtils.post(
                         PlayerService.class,
                         PlayerService.COMMAND_SHOW_WINDOW,
-                        new Object[]{mPath, mType});
+                        new Object[]{mCurPath, mType});
                 return;
             }
         }
@@ -2303,10 +2276,10 @@ public class PlayerWrapper {
         if (mService != null) {
             if (mContext.getResources().getConfiguration().orientation ==
                     Configuration.ORIENTATION_PORTRAIT) {
-                MLog.d(TAG, "onKeyDown() 4 竖屏");
+                Log.d(TAG, "onKeyDown() 4 竖屏");
                 handlePortraitScreen();
             } else {
-                MLog.d(TAG, "onKeyDown() 4 横屏");
+                Log.d(TAG, "onKeyDown() 4 横屏");
                 switch (handleScreenFlag) {
                     case 1:
                         handleScreenFlag = 2;
@@ -2404,9 +2377,6 @@ public class PlayerWrapper {
         if (TextUtils.equals(whatPlayer, PLAYER_MEDIACODEC)) {
             mSimpleVideoPlayer.release();
         } else {
-            if (mGetMediaFormat != null) {
-                mGetMediaFormat.release(false);
-            }
             mFFMPEGPlayer.releaseAll();
         }
     }
@@ -2430,11 +2400,11 @@ public class PlayerWrapper {
     }
 
     private void loadContents() {
-        MLog.i(TAG, "loadContents() start");
+        Log.i(TAG, "loadContents() start");
         mContentsMap.clear();
         File[] files = mContext.getExternalFilesDirs(Environment.MEDIA_SHARED);
         if (files == null) {
-            MLog.e(TAG, "loadContents() files is null");
+            Log.e(TAG, "loadContents() files is null");
             return;
         }
         File file = null;
@@ -2442,7 +2412,7 @@ public class PlayerWrapper {
             if (f == null) {
                 continue;
             }
-            MLog.i(TAG, "Environment.MEDIA_SHARED    : " + f.getAbsolutePath());
+            Log.i(TAG, "Environment.MEDIA_SHARED    : " + f.getAbsolutePath());
             file = f;
         }
         if (file != null) {
@@ -2453,17 +2423,12 @@ public class PlayerWrapper {
             file = new File(sb.toString());
             if (file.exists()) {
                 readContents(file);
-                MLog.i(TAG, "loadContents() end");
+                Log.i(TAG, "loadContents() end");
                 return;
             }
         }
 
-        for (Map.Entry<String, String> tempMap : Contents.movieMap.entrySet()) {
-            if (!mContentsMap.containsKey(tempMap.getValue())) {
-                mContentsMap.put(tempMap.getValue(), tempMap.getKey());
-            }
-        }
-        MLog.i(TAG, "loadContents() end");
+        Log.i(TAG, "loadContents() end");
     }
 
     private void readContents(File file) {
@@ -2512,7 +2477,7 @@ public class PlayerWrapper {
                         }
                     }
 
-                    /*MLog.i("player_alexander", "readContents() sb.toString(): " +
+                    /*Log.i("player_alexander", "readContents() sb.toString(): " +
                             sb.toString());*/
                     sb.delete(0, sb.length());
                 }
@@ -2578,18 +2543,18 @@ public class PlayerWrapper {
                 break;
             case KeyEvent.KEYCODE_MEDIA_NEXT:// 87
                 // 双击
-                MLog.d(TAG, "clickTwo()");
+                Log.d(TAG, "clickTwo()");
                 clickTwo();
                 break;
             case KeyEvent.KEYCODE_MEDIA_PREVIOUS:// 88
                 // 三击
-                MLog.d(TAG, "clickThree()");
+                Log.d(TAG, "clickThree()");
                 clickThree();
                 break;
             case KeyEvent.KEYCODE_MEDIA_PLAY:// 126
             case KeyEvent.KEYCODE_MEDIA_PAUSE:// 127
                 // 单击
-                //MLog.d(TAG, "clickOne()");
+                //Log.d(TAG, "clickOne()");
                 //clickOne();
                 break;
             default:
@@ -2640,26 +2605,26 @@ public class PlayerWrapper {
                     switch (focusChange) {
                         case AudioManager.AUDIOFOCUS_GAIN:
                             // Resume playback or Raise it back to normal
-                            MLog.i(TAG, "onAudioFocusChange() AudioManager.AUDIOFOCUS_GAIN");
+                            Log.i(TAG, "onAudioFocusChange() AudioManager.AUDIOFOCUS_GAIN");
                             playPlayerWithTelephonyCall();
                             break;
                         case AudioManager.AUDIOFOCUS_LOSS:
                             //am.unregisterMediaButtonEventReceiver(RemoteControlReceiver);
                             //am.abandonAudioFocus(afChangeListener);
                             // Stop playback
-                            MLog.i(TAG, "onAudioFocusChange() AudioManager.AUDIOFOCUS_LOSS");
+                            Log.i(TAG, "onAudioFocusChange() AudioManager.AUDIOFOCUS_LOSS");
                             pausePlayerWithTelephonyCall();
                             break;
                         case AudioManager.AUDIOFOCUS_LOSS_TRANSIENT:
                             // Pause playback
-                            MLog.i(TAG, "onAudioFocusChange()" +
+                            Log.i(TAG, "onAudioFocusChange()" +
                                     " AudioManager.AUDIOFOCUS_LOSS_TRANSIENT");
                             pausePlayerWithTelephonyCall();
                             break;
                         case AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK:
                             // Pause playback
                             // Lower the volume
-                            MLog.i(TAG, "onAudioFocusChange()" +
+                            Log.i(TAG, "onAudioFocusChange()" +
                                     " AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK");
                             pausePlayerWithTelephonyCall();
                             break;
@@ -2711,7 +2676,7 @@ public class PlayerWrapper {
                     sb.append(PLAYBACK_WINDOW_POSITION_TAG);
                     sb.append(tempY);
                     mSP.edit().putString(PLAYBACK_WINDOW_POSITION, sb.toString()).commit();
-                    // MLog.i(TAG, "Callback.MSG_ON_CHANGE_WINDOW sb.toString(): " + sb.toString());
+                    // Log.i(TAG, "Callback.MSG_ON_CHANGE_WINDOW sb.toString(): " + sb.toString());
                     break;
                 default:
                     break;
@@ -2726,7 +2691,7 @@ public class PlayerWrapper {
         File[] files = mContext.getExternalFilesDirs(Environment.MEDIA_SHARED);
         File file = null;
         for (File f : files) {
-            MLog.i(TAG, "Environment.MEDIA_SHARED    : " + f.getAbsolutePath());
+            Log.i(TAG, "Environment.MEDIA_SHARED    : " + f.getAbsolutePath());
             file = f;
         }
         if (file == null) {
@@ -2745,19 +2710,19 @@ public class PlayerWrapper {
         FileOutputStream os = new FileOutputStream(file, false);
         int readLength = 0;
         byte[] buffer = new byte[1024];
-        MLog.i(TAG, "saveLog() start");
+        Log.i(TAG, "saveLog() start");
         while (-1 != (readLength = inputStream.read(buffer))) {
             os.write(buffer, 0, readLength);
             os.flush();
         }
-        MLog.i(TAG, "saveLog() end");
+        Log.i(TAG, "saveLog() end");
     }
 
     private void readLog() throws Exception {
         File[] files = mContext.getExternalFilesDirs(Environment.MEDIA_SHARED);
         File file = null;
         for (File f : files) {
-            MLog.i(TAG, "Environment.MEDIA_SHARED    : " + f.getAbsolutePath());
+            Log.i(TAG, "Environment.MEDIA_SHARED    : " + f.getAbsolutePath());
             file = f;
         }
         if (file == null) {
@@ -2769,7 +2734,7 @@ public class PlayerWrapper {
 
         mIsReading = true;
         String aLineLog = null;
-        MLog.i(TAG, "readLog() start");
+        Log.i(TAG, "readLog() start");
         while (mIsReading) {
             aLineLog = reader.readLine();
             if (TextUtils.isEmpty(aLineLog)) {
@@ -2778,10 +2743,10 @@ public class PlayerWrapper {
             }
 
             if (aLineLog.contains("DmrPlayerService")) {
-                MLog.d(TAG, "readLog(): \n" + aLineLog);
+                Log.d(TAG, "readLog(): \n" + aLineLog);
             }
         }
-        MLog.i(TAG, "readLog() end");
+        Log.i(TAG, "readLog() end");
     }
 
     public static String md5(String str) {

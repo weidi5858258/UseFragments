@@ -1,6 +1,5 @@
 package com.weidi.usefragments.business.video_player;
 
-import android.annotation.SuppressLint;
 import android.app.Service;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
@@ -18,7 +17,7 @@ import android.os.Message;
 import android.telephony.PhoneStateListener;
 import android.telephony.TelephonyManager;
 import android.text.TextUtils;
-import android.util.DisplayMetrics;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
@@ -28,8 +27,8 @@ import android.view.WindowManager;
 import com.weidi.eventbus.EventBusUtils;
 import com.weidi.usefragments.MainActivity1;
 import com.weidi.usefragments.R;
-import com.weidi.usefragments.receiver.MediaButtonReceiver;
-import com.weidi.usefragments.tool.MLog;
+
+import androidx.media.session.MediaButtonReceiver;
 
 import static com.weidi.usefragments.service.DownloadFileService.PREFERENCES_NAME;
 
@@ -47,67 +46,52 @@ public class PlayerService extends Service {
 
     @Override
     public IBinder onBind(Intent intent) {
-        MLog.i(TAG, "onBind() intent: " + intent);
+        Log.i(TAG, "onBind() intent: " + intent);
         return null;
     }
 
     @Override
     public boolean onUnbind(Intent intent) {
-        MLog.i(TAG, "onUnbind() intent: " + intent);
+        Log.i(TAG, "onUnbind() intent: " + intent);
         return super.onUnbind(intent);
     }
 
     @Override
     public void onCreate() {
         super.onCreate();
-        MLog.i(TAG, "onCreate()");
+        Log.i(TAG, "onCreate()");
         internalCreate();
     }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        MLog.i(TAG, "onStartCommand() intent: " + intent);
+        Log.i(TAG, "onStartCommand() intent: " + intent);
         internalStartCommand(intent, flags, startId);
         return super.onStartCommand(intent, flags, startId);
     }
 
     @Override
     public void onDestroy() {
-        MLog.i(TAG, "onDestroy()");
+        Log.i(TAG, "onDestroy()");
         internalDestroy();
         super.onDestroy();
     }
 
     ////////////////////////////////////////////////////////////////////////
 
-    public static final int MSG_DOWNLOAD_START = 1;
-    public static final int MSG_DOWNLOAD_PAUSE_OR_START = 2;
-    public static final int MSG_DOWNLOAD_STOP = 3;
-    public static final int MSG_IS_DOWNLOADING = 4;
-    public static final int MSG_SET_CALLBACK = 5;
-    public static final int MSG_GET_CONTENT_LENGTH = 6;
-    public static final int MSG_TEST = 1000;
-    private static final int BUFFER = 1024 * 1024 * 2;
-
     private Handler mUiHandler;
     private PlayerWrapper mPlayerWrapper;
-    public boolean mIsAddedView = false;
-    private String mPrePath = null;
-    private String mCurPath = null;
+    private String mPath = null;
 
-    public WindowManager mWindowManager;
-    public WindowManager.LayoutParams mLayoutParams;
-    public View mRootView;
-    private View mTestView;
+    private WindowManager mWindowManager;
+    private View mView;
 
     private void internalCreate() {
-        if (mPlayerWrapper == null) {
-            mPlayerWrapper = new PlayerWrapper();
-        }
-
         EventBusUtils.register(this);
         registerHeadsetPlugReceiver();
         registerTelephonyReceiver();
+
+        initViewForService();
 
         mUiHandler = new Handler(Looper.getMainLooper()) {
             @Override
@@ -115,8 +99,6 @@ public class PlayerService extends Service {
                 PlayerService.this.uiHandleMessage(msg);
             }
         };
-
-        initPlayerWindow();
     }
 
     /***
@@ -164,8 +146,8 @@ public class PlayerService extends Service {
             // app crash后的操作
             SharedPreferences sp = getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE);
             boolean isNormalFinish = sp.getBoolean(PlayerWrapper.PLAYBACK_NORMAL_FINISH, true);
-            mCurPath = sp.getString(PlayerWrapper.PLAYBACK_ADDRESS, null);
-            if (!isNormalFinish && !TextUtils.isEmpty(mCurPath)) {
+            mPath = sp.getString(PlayerWrapper.PLAYBACK_ADDRESS, null);
+            if (!isNormalFinish && !TextUtils.isEmpty(mPath)) {
                 String type = sp.getString(PlayerWrapper.PLAYBACK_MEDIA_TYPE, null);
                 if (TextUtils.isEmpty(type)
                         || type.startsWith("video/")) {
@@ -173,7 +155,9 @@ public class PlayerService extends Service {
                     intent.setClass(getApplicationContext(), MainActivity1.class);
                     startActivity(intent);
 
-                    mPlayerWrapper.setType(type);
+                    if (mPlayerWrapper != null) {
+                        mPlayerWrapper.setType(type);
+                    }
                     mUiHandler.removeMessages(COMMAND_SHOW_WINDOW);
                     mUiHandler.sendEmptyMessageDelayed(COMMAND_SHOW_WINDOW, 3000);
                 }
@@ -182,21 +166,23 @@ public class PlayerService extends Service {
         }
 
         String action = intent.getAction();
-        MLog.d(TAG, "internalStartCommand()   action: " + action);
+        Log.d(TAG, "internalStartCommand()   action: " + action);
         if (!TextUtils.equals(COMMAND_ACTION, action)) {
             return;
         }
-        Uri uri = intent.getData();
-        if (uri != null) {
-            mCurPath = uri.getPath();
-        } else {
-            mCurPath = intent.getStringExtra(COMMAND_PATH);
-        }
-        mPlayerWrapper.setType(intent.getStringExtra(COMMAND_TYPE));
-        MLog.d(TAG, "internalStartCommand() mCurPath: " + mCurPath);
         int commandName = intent.getIntExtra(COMMAND_NAME, 0);
         switch (commandName) {
             case COMMAND_SHOW_WINDOW:
+                Uri uri = intent.getData();
+                if (uri != null) {
+                    mPath = uri.getPath();
+                } else {
+                    mPath = intent.getStringExtra(COMMAND_PATH);
+                }
+                Log.d(TAG, "internalStartCommand() mCurPath: " + mPath);
+                if (mPlayerWrapper != null) {
+                    mPlayerWrapper.setType(intent.getStringExtra(COMMAND_TYPE));
+                }
                 mUiHandler.removeMessages(COMMAND_SHOW_WINDOW);
                 mUiHandler.sendEmptyMessage(COMMAND_SHOW_WINDOW);
                 break;
@@ -209,7 +195,8 @@ public class PlayerService extends Service {
                 mUiHandler.sendEmptyMessage(COMMAND_STOP_SERVICE);
                 break;
             case COMMAND_RESTART_LOAD_CONTENTS:
-                mPlayerWrapper.sendMessageForLoadContents();
+                if (mPlayerWrapper != null)
+                    mPlayerWrapper.sendMessageForLoadContents();
                 break;
             default:
                 break;
@@ -217,9 +204,9 @@ public class PlayerService extends Service {
     }
 
     private void internalDestroy() {
-        mPlayerWrapper.onDestroy();
-        mWindowManager.removeView(mTestView);
-        removeView();
+        if (mPlayerWrapper != null)
+            mPlayerWrapper.onDestroy();
+        mWindowManager.removeView(mView);
         unregisterHeadsetPlugReceiver();
         EventBusUtils.unregister(this);
     }
@@ -229,9 +216,10 @@ public class PlayerService extends Service {
         switch (what) {
             case COMMAND_SHOW_WINDOW:
                 if (objArray != null && objArray.length >= 2) {
-                    mCurPath = (String) objArray[0];
-                    mPlayerWrapper.setDataSource(mCurPath);
-                    mPlayerWrapper.setType((String) objArray[1]);
+                    mPath = (String) objArray[0];
+                    if (mPlayerWrapper != null) {
+                        mPlayerWrapper.setType((String) objArray[1]);
+                    }
                 }
                 mUiHandler.removeMessages(COMMAND_SHOW_WINDOW);
                 mUiHandler.sendEmptyMessage(COMMAND_SHOW_WINDOW);
@@ -259,29 +247,36 @@ public class PlayerService extends Service {
                 mUiHandler.sendEmptyMessage(COMMAND_HANDLE_PORTRAIT_SCREEN);
                 break;
             case KeyEvent.KEYCODE_HEADSETHOOK:// 79
-                mPlayerWrapper.onEvent(KeyEvent.KEYCODE_HEADSETHOOK, null);
+                if (mPlayerWrapper != null)
+                    mPlayerWrapper.onEvent(KeyEvent.KEYCODE_HEADSETHOOK, null);
                 break;
             case KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE:// 85
-                mPlayerWrapper.onEvent(KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE, null);
+                if (mPlayerWrapper != null)
+                    mPlayerWrapper.onEvent(KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE, null);
                 break;
             case KeyEvent.KEYCODE_MEDIA_STOP:// 86
-                mPlayerWrapper.onEvent(KeyEvent.KEYCODE_MEDIA_STOP, null);
+                if (mPlayerWrapper != null)
+                    mPlayerWrapper.onEvent(KeyEvent.KEYCODE_MEDIA_STOP, null);
                 break;
             case KeyEvent.KEYCODE_MEDIA_PREVIOUS:// 88
                 // 三击
-                mPlayerWrapper.onEvent(KeyEvent.KEYCODE_MEDIA_PREVIOUS, null);
+                if (mPlayerWrapper != null)
+                    mPlayerWrapper.onEvent(KeyEvent.KEYCODE_MEDIA_PREVIOUS, null);
                 break;
             case KeyEvent.KEYCODE_MEDIA_NEXT:// 87
                 // 双击
-                mPlayerWrapper.onEvent(KeyEvent.KEYCODE_MEDIA_NEXT, null);
+                if (mPlayerWrapper != null)
+                    mPlayerWrapper.onEvent(KeyEvent.KEYCODE_MEDIA_NEXT, null);
                 break;
             case KeyEvent.KEYCODE_MEDIA_PLAY:// 126
                 // 单击
-                mPlayerWrapper.onEvent(KeyEvent.KEYCODE_MEDIA_PLAY, null);
+                if (mPlayerWrapper != null)
+                    mPlayerWrapper.onEvent(KeyEvent.KEYCODE_MEDIA_PLAY, null);
                 break;
             case KeyEvent.KEYCODE_MEDIA_PAUSE:// 127
                 // 单击
-                mPlayerWrapper.onEvent(KeyEvent.KEYCODE_MEDIA_PAUSE, null);
+                if (mPlayerWrapper != null)
+                    mPlayerWrapper.onEvent(KeyEvent.KEYCODE_MEDIA_PAUSE, null);
                 break;
             default:
                 break;
@@ -296,126 +291,65 @@ public class PlayerService extends Service {
 
         switch (msg.what) {
             case COMMAND_SHOW_WINDOW:
-                addView();
+                if (mPlayerWrapper != null) {
+                    mPlayerWrapper.setDataSource(mPath);
+                }
                 break;
             case COMMAND_HIDE_WINDOW:
-                removeView();
+                if (mPlayerWrapper != null) {
+                    mPlayerWrapper.removeView();
+                }
                 break;
             case COMMAND_STOP_SERVICE:
-                removeView();
+                if (mPlayerWrapper != null) {
+                    mPlayerWrapper.removeView();
+                }
                 stopSelf();
                 break;
             case COMMAND_HANDLE_LANDSCAPE_SCREEN:
-                if (msg.arg1 == 0) {
-                    mPlayerWrapper.handleLandscapeScreen(0);
-                } else {
-                    mPlayerWrapper.handleLandscapeScreen(1);
+                if (mPlayerWrapper != null) {
+                    if (msg.arg1 == 0) {
+                        mPlayerWrapper.handleLandscapeScreen(0);
+                    } else {
+                        mPlayerWrapper.handleLandscapeScreen(1);
+                    }
                 }
                 break;
             case COMMAND_HANDLE_PORTRAIT_SCREEN:
-                mPlayerWrapper.handlePortraitScreen();
+                if (mPlayerWrapper != null) {
+                    mPlayerWrapper.handlePortraitScreen();
+                }
                 break;
             default:
                 break;
         }
     }
 
-    private void initPlayerWindow() {
-        mIsAddedView = false;
-
-        // 屏幕宽高(竖屏时)
-        mWindowManager =
-                (WindowManager) getSystemService(Context.WINDOW_SERVICE);
-        DisplayMetrics displayMetrics = new DisplayMetrics();
-        mWindowManager.getDefaultDisplay().getRealMetrics(displayMetrics);
-        int screenWidth = displayMetrics.widthPixels;// 1080
-        int screenHeight = displayMetrics.heightPixels;// 2244
-        MLog.d(TAG, "initPlayerWindow() screenWidth: " +
-                screenWidth + " screenHeight: " + screenHeight);
-
+    private void initViewForService() {
+        // 为了进程保活
+        mWindowManager = (WindowManager) getSystemService(Context.WINDOW_SERVICE);
         LayoutInflater inflater =
                 (LayoutInflater) getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-        mTestView = inflater.inflate(R.layout.transparent_player, null);
-        mLayoutParams = new WindowManager.LayoutParams();
+        mView = inflater.inflate(R.layout.transparent_player, null);
+        WindowManager.LayoutParams layoutParams = new WindowManager.LayoutParams();
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            mLayoutParams.type = WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY;
+            layoutParams.type = WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY;
         } else {
-            mLayoutParams.type = WindowManager.LayoutParams.TYPE_PHONE;
+            layoutParams.type = WindowManager.LayoutParams.TYPE_PHONE;
         }
-        mLayoutParams.flags = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE;
-        mLayoutParams.gravity = Gravity.TOP + Gravity.LEFT;
-        mLayoutParams.width = 1;// 3
-        mLayoutParams.height = 1;// 5
-        mLayoutParams.x = 0;
-        mLayoutParams.y = 0;
-        mWindowManager.addView(mTestView, mLayoutParams);
-        mTestView.setBackgroundColor(getResources().getColor(R.color.darkorchid));
+        layoutParams.flags = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE;
+        layoutParams.gravity = Gravity.TOP + Gravity.LEFT;
+        layoutParams.width = 1;
+        layoutParams.height = 1;
+        layoutParams.x = 0;
+        layoutParams.y = 0;
+        mWindowManager.addView(mView, layoutParams);
 
-        mRootView = inflater.inflate(R.layout.activity_player, null);
-        mLayoutParams = new WindowManager.LayoutParams();
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            mLayoutParams.type = WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY;
-        } else {
-            mLayoutParams.type = WindowManager.LayoutParams.TYPE_PHONE;
+        if (mPlayerWrapper == null) {
+            mPlayerWrapper = new PlayerWrapper();
         }
-        mLayoutParams.flags = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE;
-        mLayoutParams.gravity = Gravity.TOP + Gravity.LEFT;
-        // 背景透明
-        // mLayoutParams.format = PixelFormat.RGBA_8888;
-        mLayoutParams.width = screenWidth;
-        mLayoutParams.height = 400;
-        mLayoutParams.x = 0;
-        mLayoutParams.y = 0;
-
         mPlayerWrapper.setService(this);
-        mPlayerWrapper.setDataSource(mCurPath);
         mPlayerWrapper.onCreate();
-    }
-
-    @SuppressLint("InvalidWakeLockTag")
-    private void addView() {
-        if (TextUtils.isEmpty(mCurPath)) {
-            MLog.e(TAG, "addView() mCurPath is empty");
-            return;
-        }
-        mPlayerWrapper.setDataSource(mCurPath);
-        MLog.i(TAG, "addView()   mIsAddedView: " + mIsAddedView);
-        if (!mIsAddedView) {
-            mPlayerWrapper.onResume();
-            mWindowManager.addView(mRootView, mLayoutParams);
-            mPrePath = mCurPath.substring(0);
-            //MLog.i(TAG, "addView() mPrePath: " + mPrePath);
-            mIsAddedView = true;
-        } else if (!TextUtils.equals(mCurPath, mPrePath)) {
-            MLog.i(TAG, "addView() onRelease");
-            // 有一个视频已经在播放了,在不关闭浮动窗口的情况下播放另一个视频
-            mPlayerWrapper.onRelease();
-        }
-    }
-
-    public void removeView() {
-        MLog.i(TAG, "removeView() mIsAddedView: " + mIsAddedView);
-        if (mIsAddedView) {
-            mPlayerWrapper.onPause();
-            mWindowManager.removeView(mRootView);
-            mCurPath = null;
-            mPrePath = null;
-            mIsAddedView = false;
-        }
-    }
-
-    public boolean needToPlaybackOtherVideo() {
-        if (!TextUtils.equals(mCurPath, mPrePath)) {
-            MLog.i(TAG, "needToPlaybackOtherVideo() mPrePath: " + mPrePath);
-            MLog.i(TAG, "needToPlaybackOtherVideo() mCurPath: " + mCurPath);
-            // mPlayerWrapper.startPlayback();
-            mPlayerWrapper.startForGetMediaFormat();
-            mPrePath = mCurPath.substring(0);
-            return true;
-        }
-
-        // 不需要播放另一个视频
-        return false;
     }
 
     /////////////////////////////////////////////////////////////////
@@ -434,17 +368,19 @@ public class PlayerService extends Service {
             switch (state) {
                 case TelephonyManager.CALL_STATE_IDLE:
                     // 挂断或启动监听时
-                    MLog.i(TAG, "onCallStateChanged() TelephonyManager.CALL_STATE_IDLE");
-                    mPlayerWrapper.playPlayerWithTelephonyCall();
+                    Log.i(TAG, "onCallStateChanged() TelephonyManager.CALL_STATE_IDLE");
+                    if (mPlayerWrapper != null)
+                        mPlayerWrapper.playPlayerWithTelephonyCall();
                     break;
                 case TelephonyManager.CALL_STATE_RINGING:
                     // 来电
-                    MLog.i(TAG, "onCallStateChanged() TelephonyManager.CALL_STATE_RINGING");
-                    mPlayerWrapper.pausePlayerWithTelephonyCall();
+                    Log.i(TAG, "onCallStateChanged() TelephonyManager.CALL_STATE_RINGING");
+                    if (mPlayerWrapper != null)
+                        mPlayerWrapper.pausePlayerWithTelephonyCall();
                     break;
                 case TelephonyManager.CALL_STATE_OFFHOOK:
                     // 接听
-                    MLog.i(TAG, "onCallStateChanged() TelephonyManager.CALL_STATE_OFFHOOK");
+                    Log.i(TAG, "onCallStateChanged() TelephonyManager.CALL_STATE_OFFHOOK");
                     break;
                 default:
                     break;
@@ -501,11 +437,11 @@ public class PlayerService extends Service {
                 switch (intent.getIntExtra("state", 0)) {
                     case 0:
                         if (DEBUG)
-                            MLog.d(TAG, "HeadsetPlugReceiver headset not connected");
+                            Log.d(TAG, "HeadsetPlugReceiver headset not connected");
                         break;
                     case 1:
                         if (DEBUG)
-                            MLog.d(TAG, "HeadsetPlugReceiver headset has connected");
+                            Log.d(TAG, "HeadsetPlugReceiver headset has connected");
                         break;
                     default:
                 }
