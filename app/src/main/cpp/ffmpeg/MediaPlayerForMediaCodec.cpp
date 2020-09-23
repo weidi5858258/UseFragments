@@ -2560,8 +2560,12 @@ namespace alexander_media_mediacodec {
         // 有时长时才更新时间进度
         if (mediaDuration > 0) {
             curProgress = (long long) audioPts;// 秒
-            if (curProgress > preProgress && curProgress <= mediaDuration) {
-                onProgressUpdated(curProgress);
+            if (curProgress > preProgress) {
+                if (curProgress <= mediaDuration) {
+                    onProgressUpdated(curProgress);
+                } else {
+                    onProgressUpdated(mediaDuration);
+                }
             }
             preProgress = curProgress;
         }
@@ -2912,9 +2916,13 @@ namespace alexander_media_mediacodec {
             }
 
             if (mediaDuration > 0) {
-                curProgress = (long long) audioPts;// 秒
-                if (curProgress > preProgress && curProgress <= mediaDuration) {
-                    onProgressUpdated(curProgress);
+                curProgress = (long long) videoPts;// 秒
+                if (curProgress > preProgress) {
+                    if (curProgress <= mediaDuration) {
+                        onProgressUpdated(curProgress);
+                    } else {
+                        onProgressUpdated(mediaDuration);
+                    }
                 }
                 preProgress = curProgress;
             }

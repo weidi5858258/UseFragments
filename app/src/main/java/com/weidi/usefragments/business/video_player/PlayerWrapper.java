@@ -1948,6 +1948,7 @@ public class PlayerWrapper {
                     mPathTimeMap.remove(md5Path);
                 }
             } else {
+                mPrePath = null;
                 if (mPathTimeMap.containsKey(md5Path)) {
                     mPathTimeMap.remove(md5Path);
                 }
