@@ -2958,6 +2958,8 @@ namespace alexander_media_mediacodec {
                 return 0;
             }
 
+            // region 希望得到一个好结果
+
             if (runCounts < RUN_COUNTS) {
                 timeDiff[runCounts++] = tempTimeDifference;
             } else if (runCounts == RUN_COUNTS) {
@@ -2977,13 +2979,12 @@ namespace alexander_media_mediacodec {
                 hope_to_get_a_good_result();
             }
 
+            // endregion
+
+            // region 等待操作
+
             if (tempTimeDifference > 2.000000) {
-                // 不好的现象.为什么会出现这种情况还不知道?
-                //LOGE("handleVideoDataImpl() audioTimeDifference: %lf\n", audioPts);
-                //LOGE("handleVideoDataImpl() videoTimeDifference: %lf\n", videoPts);
-                //LOGE("handleVideoDataImpl() [video - audio]: %lf\n", tempTimeDifference);
                 videoPts = audioPts + averageTimeDiff;
-                //LOGE("handleVideoDataImpl() videoTimeDifference: %lf\n", videoPts);
             }
             // 如果videoTimeDifference比audioTimeDifference大出了一定的范围
             // 那么说明视频播放快了,应等待音频
@@ -3003,16 +3004,18 @@ namespace alexander_media_mediacodec {
                 av_usleep(1000);
             }
             videoWrapper->father->isSleeping = false;
+
+            // endregion
         }
 
-        // timeDifference = 0.040000
-        // 单位: 毫秒
-        int tempSleep = ((int) ((videoPts - preVideoPts) * 1000)) - 30;
-        if (videoSleepTime != tempSleep) {
-            videoSleepTime = tempSleep;
-            //LOGW("handleVideoDataImpl() videoSleepTime     : %d\n", videoSleepTime);
-        }
         if (videoWrapper->father->isHandling) {
+            // 单位: 毫秒
+            /*int tempSleep = ((int) ((videoPts - preVideoPts) * 1000)) - 30;
+            if (videoSleepTime != tempSleep) {
+                videoSleepTime = tempSleep;
+                //LOGW("handleVideoDataImpl() videoSleepTime     : %d\n", videoSleepTime);
+            }*/
+            videoSleepTime = ((int) ((videoPts - preVideoPts) * 1000)) - 30;
             if (videoSleepTime > 0 && videoSleepTime < 12) {
                 videoSleep(videoSleepTime);
             } else {
@@ -4121,7 +4124,11 @@ namespace alexander_media_mediacodec {
         } else {
             onChangeWindow(videoWrapper->srcWidth, videoWrapper->srcHeight);
             if (audioWrapper->father->streamIndex == -1) {
-                videoSleepTime = (int) (1000 / frameRate);
+                if (frameRate != 0) {
+                    videoSleepTime = (int) (1000 / frameRate);
+                } else {
+                    videoSleepTime = 11;
+                }
             }
         }
 
