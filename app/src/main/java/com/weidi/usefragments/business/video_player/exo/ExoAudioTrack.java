@@ -10,7 +10,7 @@ import android.os.Build;
 import android.text.TextUtils;
 import android.util.Log;
 
-import com.google.android.exoplayer2.audio.AudioCapabilities;
+//import com.google.android.exoplayer2.audio.AudioCapabilities;
 import com.weidi.usefragments.business.video_player.FFMPEG;
 import com.weidi.usefragments.media.MediaUtils;
 
@@ -35,7 +35,7 @@ public class ExoAudioTrack {
      * The minimum audio capabilities supported by all devices.
      */
 
-    private static final AudioCapabilities DEFAULT_AUDIO_CAPABILITIES =
+    /*private static final AudioCapabilities DEFAULT_AUDIO_CAPABILITIES =
             new AudioCapabilities(new int[]{AudioFormat.ENCODING_PCM_16BIT,
                     AudioFormat.ENCODING_AC3,
                     AudioFormat.ENCODING_E_AC3,
@@ -45,7 +45,7 @@ public class ExoAudioTrack {
                     C.ENCODING_AAC_LC,
                     C.ENCODING_AAC_HE_V1,
                     C.ENCODING_AAC_HE_V2,
-                    C.ENCODING_AC4}, 8);
+                    C.ENCODING_AC4}, 8);*/
 
     private static final DecoderInfo PASSTHROUGH_DECODER_INFO =
             new DecoderInfo("OMX.google.raw.decoder", null);
@@ -330,9 +330,10 @@ public class ExoAudioTrack {
             }
         }
 
-        AudioCapabilities audioCapabilities = DEFAULT_AUDIO_CAPABILITIES;
+        /*AudioCapabilities audioCapabilities = DEFAULT_AUDIO_CAPABILITIES;
         boolean isPassthroughSupported = audioCapabilities != null
-                && audioCapabilities.supportsEncoding(getEncodingForMimeType(mime, aacProfile));
+                && audioCapabilities.supportsEncoding(getEncodingForMimeType(mime, aacProfile));*/
+        boolean isPassthroughSupported = false;
         String dualMonoType = null;
         if (format != null) {
             dualMonoType = format.getFrameworkMediaFormatV16().getString(EXO_KEY_DUAL_MONO_TYPE);

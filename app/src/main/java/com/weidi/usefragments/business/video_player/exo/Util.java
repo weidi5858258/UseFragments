@@ -29,9 +29,6 @@ import android.util.Log;
 import android.view.Display;
 import android.view.WindowManager;
 
-import com.google.android.exoplayer2.ExoPlayerLibraryInfo;
-import com.google.android.exoplayer2.upstream.DataSpec;
-
 import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
 import java.io.IOException;
@@ -597,25 +594,6 @@ public final class Util {
   }
 
   /**
-   * Given a {@link DataSpec} and a number of bytes already loaded, returns a {@link DataSpec}
-   * that represents the remainder of the data.
-   *
-   * @param dataSpec The original {@link DataSpec}.
-   * @param bytesLoaded The number of bytes already loaded.
-   * @return A {@link DataSpec} that represents the remainder of the data.
-   */
-  public static DataSpec getRemainderDataSpec(DataSpec dataSpec, int bytesLoaded) {
-    if (bytesLoaded == 0) {
-      return dataSpec;
-    } else {
-      long remainingLength = dataSpec.length == C.LENGTH_UNBOUNDED ? C.LENGTH_UNBOUNDED
-          : dataSpec.length - bytesLoaded;
-      return new DataSpec(dataSpec.uri, dataSpec.position + bytesLoaded, remainingLength,
-          dataSpec.key, dataSpec.flags);
-    }
-  }
-
-  /**
    * Returns the top 32 bits of a long as an integer.
    */
   public static int getTopInt(long value) {
@@ -705,7 +683,7 @@ public final class Util {
       versionName = "?";
     }
     return applicationName + "/" + versionName + " (Linux;Android " + Build.VERSION.RELEASE
-        + ") " + "ExoPlayerLib/" + ExoPlayerLibraryInfo.VERSION;
+        + ") " + "ExoPlayerLib/1.0";
   }
 
   /**

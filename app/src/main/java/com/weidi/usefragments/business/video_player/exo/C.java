@@ -23,8 +23,6 @@ import android.media.MediaCodec;
 import android.media.MediaExtractor;
 import android.os.Build;
 
-import com.google.android.exoplayer2.util.Util;
-
 /**
  * Defines constants that are generally useful throughout the library.
  */

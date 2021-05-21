@@ -61,7 +61,6 @@ public class FfmpegUseMediaCodecDecode {
     public VideoWrapper mVideoWrapper = null;
     private ExoAudioTrack mExoAudioTrack = null;
     private FFMPEG mFFMPEG = null;
-    private GetMediaFormat mGetMediaFormat = null;
 
     public static class SimpleWrapper {
         public String mime = null;
@@ -235,10 +234,6 @@ public class FfmpegUseMediaCodecDecode {
         MLog.i(TAG, "release() end");
     }
 
-    public void setGetMediaFormat(GetMediaFormat getMediaFormat) {
-        mGetMediaFormat = getMediaFormat;
-    }
-
     // video
     private static final int AV_CODEC_ID_HEVC = 173;
     private static final int AV_CODEC_ID_H264 = 27;
@@ -405,82 +400,82 @@ public class FfmpegUseMediaCodecDecode {
         MediaFormat mediaFormat = null;
         String audioMime = null;
         String codecName = null;
-        if (GetMediaFormat.sAudioMediaFormat == null) {
-            useExoPlayerToGetMediaFormat = false;
-            MLog.d(TAG, "initAudioMediaCodec() audio       mimeType: " + jniObject.valueInt);
-            switch (jniObject.valueInt) {
-                // 65536 pcm_s16le ---> audio/raw
-                case AV_CODEC_ID_PCM_S16LE:
-                    audioMime = MediaFormat.MIMETYPE_AUDIO_RAW;
-                    codecName = "OMX.google.raw.decoder";
-                    break;
-                // 65537 pcm_s16be ---> audio/raw
-                case AV_CODEC_ID_PCM_S16BE:
-                    audioMime = MediaFormat.MIMETYPE_AUDIO_RAW;
-                    codecName = "OMX.google.raw.decoder";
-                    break;
-                // 86016 mp2 ---> audio/mpeg-L2
-                case AV_CODEC_ID_MP2:
-                    audioMime = "audio/mpeg-L2";
-                    codecName = "OMX.MTK.AUDIO.DECODER.DSPMP2";
-                    break;
-                // 86017 mp3 ---> audio/mpeg
-                case AV_CODEC_ID_MP3:
-                    audioMime = MediaFormat.MIMETYPE_AUDIO_MPEG;
-                    codecName = "OMX.google.mp3.decoder";
-                    break;
-                // 86018 aac ---> audio/mp4a-latm
-                case AV_CODEC_ID_AAC:
-                    audioMime = MediaFormat.MIMETYPE_AUDIO_AAC;
-                    codecName = "OMX.google.raw.decoder";
-                    break;
-                // 86019 ac3 ---> audio/ac3
-                case AV_CODEC_ID_AC3:
-                    audioMime = MediaFormat.MIMETYPE_AUDIO_AC3;
-                    codecName = "OMX.google.raw.decoder";
-                    break;
-                // 86021 vorbis ---> audio/vorbis
-                case AV_CODEC_ID_VORBIS:
-                    audioMime = MediaFormat.MIMETYPE_AUDIO_VORBIS;
-                    codecName = "OMX.google.vorbis.decoder";
-                    break;
-                // 86024 wmav2 ---> audio/x-ms-wma
-                case AV_CODEC_ID_WMAV2:
-                    audioMime = "audio/x-ms-wma";
-                    codecName = "OMX.MTK.AUDIO.DECODER.DSPWMA";
-                    break;
-                // 86028 flac ---> audio/raw
-                case AV_CODEC_ID_FLAC:
-                    audioMime = MediaFormat.MIMETYPE_AUDIO_RAW;
-                    codecName = "OMX.google.raw.decoder";
-                    break;
-                // 86040
-                case AV_CODEC_ID_QCELP:
-                    //audioMime = MediaFormat.MIMETYPE_AUDIO_QCELP;
-                    //codecName = "";
-                    break;
-                // 86056 eac3 ---> audio/eac3
-                case AV_CODEC_ID_EAC3:
-                    audioMime = MediaFormat.MIMETYPE_AUDIO_EAC3;
-                    codecName = "OMX.google.raw.decoder";
-                    break;
-                // 86065
-                case AV_CODEC_ID_AAC_LATM:
-                    //audioMime = "";
-                    //codecName = "";
-                    break;
-                // 86076
-                case AV_CODEC_ID_OPUS:
-                    //audioMime = MediaFormat.MIMETYPE_AUDIO_OPUS;
-                    //codecName = "";
-                    break;
-                default:
-                    break;
-            }
-        } else {
-            mediaFormat = GetMediaFormat.sVideoMediaFormat;
-            audioMime = mediaFormat.getString(MediaFormat.KEY_MIME);
+        MLog.d(TAG, "initAudioMediaCodec() audio       mimeType: " + jniObject.valueInt);
+        switch (jniObject.valueInt) {
+            // 65536 pcm_s16le ---> audio/raw
+            case AV_CODEC_ID_PCM_S16LE:
+                audioMime = MediaFormat.MIMETYPE_AUDIO_RAW;
+                codecName = "OMX.google.raw.decoder";
+                break;
+            // 65537 pcm_s16be ---> audio/raw
+            case AV_CODEC_ID_PCM_S16BE:
+                audioMime = MediaFormat.MIMETYPE_AUDIO_RAW;
+                codecName = "OMX.google.raw.decoder";
+                break;
+            // 86016 mp2 ---> audio/mpeg-L2
+            case AV_CODEC_ID_MP2:
+                audioMime = "audio/mpeg-L2";
+                codecName = "OMX.MTK.AUDIO.DECODER.DSPMP2";
+                break;
+            // 86017 mp3 ---> audio/mpeg
+            case AV_CODEC_ID_MP3:
+                audioMime = MediaFormat.MIMETYPE_AUDIO_MPEG;
+                codecName = "OMX.google.mp3.decoder";
+                break;
+            // 86018 aac ---> audio/mp4a-latm
+            case AV_CODEC_ID_AAC:
+                audioMime = MediaFormat.MIMETYPE_AUDIO_AAC;
+                codecName = "OMX.google.raw.decoder";
+                break;
+            // 86019 ac3 ---> audio/ac3
+            case AV_CODEC_ID_AC3:
+                audioMime = MediaFormat.MIMETYPE_AUDIO_AC3;
+                codecName = "OMX.google.raw.decoder";
+                break;
+            // 86021 vorbis ---> audio/vorbis
+            case AV_CODEC_ID_VORBIS:
+                audioMime = MediaFormat.MIMETYPE_AUDIO_VORBIS;
+                codecName = "OMX.google.vorbis.decoder";
+                break;
+            // 86024 wmav2 ---> audio/x-ms-wma
+            case AV_CODEC_ID_WMAV2:
+                audioMime = "audio/x-ms-wma";
+                codecName = "OMX.MTK.AUDIO.DECODER.DSPWMA";
+                break;
+            // 86028 flac ---> audio/raw
+            case AV_CODEC_ID_FLAC:
+                audioMime = MediaFormat.MIMETYPE_AUDIO_RAW;
+                codecName = "OMX.google.raw.decoder";
+                break;
+            // 86040
+            case AV_CODEC_ID_QCELP:
+                //audioMime = MediaFormat.MIMETYPE_AUDIO_QCELP;
+                //codecName = "";
+                break;
+            // 86056 eac3 ---> audio/eac3
+            case AV_CODEC_ID_EAC3:
+                audioMime = MediaFormat.MIMETYPE_AUDIO_EAC3;
+                codecName = "OMX.google.raw.decoder";
+                break;
+            // 86065
+            case AV_CODEC_ID_AAC_LATM:
+                //audioMime = "";
+                //codecName = "";
+                break;
+            // 86076
+            case AV_CODEC_ID_OPUS:
+                //audioMime = MediaFormat.MIMETYPE_AUDIO_OPUS;
+                //codecName = "";
+                break;
+            default:
+                break;
         }
+        /*if (GetMediaFormat.sAudioMediaFormat == null) {
+            useExoPlayerToGetMediaFormat = false;
+        } else {
+            //mediaFormat = GetMediaFormat.sVideoMediaFormat;
+            audioMime = mediaFormat.getString(MediaFormat.KEY_MIME);
+        }*/
 
         MLog.d(TAG, "initAudioMediaCodec() audio           mime: " + audioMime);
         if (TextUtils.isEmpty(audioMime)) {
@@ -653,20 +648,20 @@ public class FfmpegUseMediaCodecDecode {
             return false;
         }
 
-        if (GetMediaFormat.sAudioMediaFormat != null) {
-            if (mAudioWrapper.decoderMediaFormat.containsKey("csd-0")) {
-                ByteBuffer buffer = mAudioWrapper.decoderMediaFormat.getByteBuffer("csd-0");
-                byte[] csd_0 = new byte[buffer.limit()];
-                buffer.get(csd_0);
-                MLog.d(TAG, "initAudioMediaCodec() audio \n  csd-0: " + Arrays.toString(csd_0));
-            }
-            if (mAudioWrapper.decoderMediaFormat.containsKey("csd-1")) {
-                ByteBuffer buffer = mAudioWrapper.decoderMediaFormat.getByteBuffer("csd-1");
-                byte[] csd_1 = new byte[buffer.limit()];
-                buffer.get(csd_1);
-                MLog.d(TAG, "initAudioMediaCodec() audio \n  csd-1: " + Arrays.toString(csd_1));
-            }
+        if (mAudioWrapper.decoderMediaFormat.containsKey("csd-0")) {
+            ByteBuffer buffer = mAudioWrapper.decoderMediaFormat.getByteBuffer("csd-0");
+            byte[] csd_0 = new byte[buffer.limit()];
+            buffer.get(csd_0);
+            MLog.d(TAG, "initAudioMediaCodec() audio \n  csd-0: " + Arrays.toString(csd_0));
         }
+        if (mAudioWrapper.decoderMediaFormat.containsKey("csd-1")) {
+            ByteBuffer buffer = mAudioWrapper.decoderMediaFormat.getByteBuffer("csd-1");
+            byte[] csd_1 = new byte[buffer.limit()];
+            buffer.get(csd_1);
+            MLog.d(TAG, "initAudioMediaCodec() audio \n  csd-1: " + Arrays.toString(csd_1));
+        }
+        /*if (GetMediaFormat.sAudioMediaFormat != null) {
+        }*/
 
         MLog.d(TAG, "initAudioMediaCodec() end");
         return true;
@@ -728,67 +723,67 @@ public class FfmpegUseMediaCodecDecode {
         boolean useExoPlayerToGetMediaFormat = true;
         MediaFormat mediaFormat = null;
         String videoMime = null;
-        if (GetMediaFormat.sVideoMediaFormat == null) {
-            useExoPlayerToGetMediaFormat = false;
-            MLog.w(TAG, "initVideoMediaCodec() video       mimeType: " + jniObject.valueInt);
-            // 现在只支持下面这几种硬解码
-            switch (jniObject.valueInt) {
-                // video/hevc
-                case AV_CODEC_ID_HEVC:
-                    videoMime = MediaFormat.MIMETYPE_VIDEO_HEVC;
-                    break;
-                // video/avc
-                case AV_CODEC_ID_H264:
-                    videoMime = MediaFormat.MIMETYPE_VIDEO_AVC;
-                    break;
-                // video/3gpp
-                case AV_CODEC_ID_H263:// 还没有遇到这种视频
-                    videoMime = MediaFormat.MIMETYPE_VIDEO_H263;
-                    break;
-                // video/mp4v-es
-                case AV_CODEC_ID_MPEG4:
-                    videoMime = MediaFormat.MIMETYPE_VIDEO_MPEG4;
-                    break;
-                // video/x-vnd.on2.vp8
-                case AV_CODEC_ID_VP8:
-                    videoMime = MediaFormat.MIMETYPE_VIDEO_VP8;
-                    break;
-                // video/x-vnd.on2.vp9
-                case AV_CODEC_ID_VP9:
-                    videoMime = MediaFormat.MIMETYPE_VIDEO_VP9;
-                    break;
-                // video/mpeg2
-                case AV_CODEC_ID_MPEG2VIDEO:
-                    videoMime = MediaFormat.MIMETYPE_VIDEO_MPEG2;
-                    break;
-                // 上面几种是能解码成功的
+        useExoPlayerToGetMediaFormat = false;
+        MLog.w(TAG, "initVideoMediaCodec() video       mimeType: " + jniObject.valueInt);
+        // 现在只支持下面这几种硬解码
+        switch (jniObject.valueInt) {
+            // video/hevc
+            case AV_CODEC_ID_HEVC:
+                videoMime = MediaFormat.MIMETYPE_VIDEO_HEVC;
+                break;
+            // video/avc
+            case AV_CODEC_ID_H264:
+                videoMime = MediaFormat.MIMETYPE_VIDEO_AVC;
+                break;
+            // video/3gpp
+            case AV_CODEC_ID_H263:// 还没有遇到这种视频
+                videoMime = MediaFormat.MIMETYPE_VIDEO_H263;
+                break;
+            // video/mp4v-es
+            case AV_CODEC_ID_MPEG4:
+                videoMime = MediaFormat.MIMETYPE_VIDEO_MPEG4;
+                break;
+            // video/x-vnd.on2.vp8
+            case AV_CODEC_ID_VP8:
+                videoMime = MediaFormat.MIMETYPE_VIDEO_VP8;
+                break;
+            // video/x-vnd.on2.vp9
+            case AV_CODEC_ID_VP9:
+                videoMime = MediaFormat.MIMETYPE_VIDEO_VP9;
+                break;
+            // video/mpeg2
+            case AV_CODEC_ID_MPEG2VIDEO:
+                videoMime = MediaFormat.MIMETYPE_VIDEO_MPEG2;
+                break;
+            // 上面几种是能解码成功的
 
-                case AV_CODEC_ID_MPEG1VIDEO:// crash
-                    //videoMime = MediaFormat.MIMETYPE_VIDEO_MPEG2;
-                    break;
-                case AV_CODEC_ID_MJPEG:// ok
-                    //videoMime = "video/mjpeg";
-                    break;
-                case AV_CODEC_ID_RV40:
-                    //videoMime = "";
-                    break;
-                case AV_CODEC_ID_VC1:// error
-                case AV_CODEC_ID_WMV3:// crash
-                    //videoMime = "video/x-ms-wmv";
-                    break;
-                case AV_CODEC_ID_VP6:
-                    //videoMime = "";
-                    break;
-                case AV_CODEC_ID_VP6F:// ok
-                    //videoMime = "video/x-vp6";
-                    break;
-                default:
-                    break;
-            }
+            case AV_CODEC_ID_MPEG1VIDEO:// crash
+                //videoMime = MediaFormat.MIMETYPE_VIDEO_MPEG2;
+                break;
+            case AV_CODEC_ID_MJPEG:// ok
+                //videoMime = "video/mjpeg";
+                break;
+            case AV_CODEC_ID_RV40:
+                //videoMime = "";
+                break;
+            case AV_CODEC_ID_VC1:// error
+            case AV_CODEC_ID_WMV3:// crash
+                //videoMime = "video/x-ms-wmv";
+                break;
+            case AV_CODEC_ID_VP6:
+                //videoMime = "";
+                break;
+            case AV_CODEC_ID_VP6F:// ok
+                //videoMime = "video/x-vp6";
+                break;
+            default:
+                break;
+        }
+        /*if (GetMediaFormat.sVideoMediaFormat == null) {
         } else {
             mediaFormat = GetMediaFormat.sVideoMediaFormat;
             videoMime = mediaFormat.getString(MediaFormat.KEY_MIME);
-        }
+        }*/
 
         MLog.w(TAG, "initVideoMediaCodec() video           mime: " + videoMime);
         if (TextUtils.isEmpty(videoMime)) {
@@ -1042,20 +1037,20 @@ public class FfmpegUseMediaCodecDecode {
             return false;
         }
 
-        if (GetMediaFormat.sVideoMediaFormat != null) {
-            if (mVideoWrapper.decoderMediaFormat.containsKey("csd-0")) {
-                ByteBuffer buffer = mVideoWrapper.decoderMediaFormat.getByteBuffer("csd-0");
-                byte[] csd_0 = new byte[buffer.limit()];
-                buffer.get(csd_0);
-                MLog.w(TAG, "initVideoMediaCodec() video \n  csd-0: " + Arrays.toString(csd_0));
-            }
-            if (mVideoWrapper.decoderMediaFormat.containsKey("csd-1")) {
-                ByteBuffer buffer = mVideoWrapper.decoderMediaFormat.getByteBuffer("csd-1");
-                byte[] csd_1 = new byte[buffer.limit()];
-                buffer.get(csd_1);
-                MLog.w(TAG, "initVideoMediaCodec() video \n  csd-1: " + Arrays.toString(csd_1));
-            }
+        if (mVideoWrapper.decoderMediaFormat.containsKey("csd-0")) {
+            ByteBuffer buffer = mVideoWrapper.decoderMediaFormat.getByteBuffer("csd-0");
+            byte[] csd_0 = new byte[buffer.limit()];
+            buffer.get(csd_0);
+            MLog.w(TAG, "initVideoMediaCodec() video \n  csd-0: " + Arrays.toString(csd_0));
         }
+        if (mVideoWrapper.decoderMediaFormat.containsKey("csd-1")) {
+            ByteBuffer buffer = mVideoWrapper.decoderMediaFormat.getByteBuffer("csd-1");
+            byte[] csd_1 = new byte[buffer.limit()];
+            buffer.get(csd_1);
+            MLog.w(TAG, "initVideoMediaCodec() video \n  csd-1: " + Arrays.toString(csd_1));
+        }
+        /*if (GetMediaFormat.sVideoMediaFormat != null) {
+        }*/
 
         MLog.w(TAG, "initVideoMediaCodec() end");
         return true;

@@ -23,9 +23,6 @@ import android.util.Log;
 import android.view.KeyEvent;
 import android.view.Surface;
 
-import com.google.android.exoplayer2.C;
-import com.google.android.exoplayer2.drm.DrmSessionManager;
-import com.google.android.exoplayer2.drm.FrameworkMediaCrypto;
 import com.weidi.threadpool.ThreadPool;
 import com.weidi.usefragments.media.MediaUtils;
 import com.weidi.usefragments.tool.Callback;

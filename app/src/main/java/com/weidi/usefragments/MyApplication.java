@@ -4,38 +4,21 @@ import android.content.Context;
 import android.net.Uri;
 import android.os.AsyncTask;
 
-import com.google.android.exoplayer2.C;
-import com.google.android.exoplayer2.C.ContentType;
-import com.google.android.exoplayer2.DefaultRenderersFactory;
-import com.google.android.exoplayer2.RenderersFactory;
-import com.google.android.exoplayer2.database.DatabaseProvider;
-import com.google.android.exoplayer2.database.ExoDatabaseProvider;
-import com.google.android.exoplayer2.drm.DrmSessionManager;
-import com.google.android.exoplayer2.source.MediaSource;
-import com.google.android.exoplayer2.source.ProgressiveMediaSource;
-import com.google.android.exoplayer2.source.dash.DashMediaSource;
-import com.google.android.exoplayer2.source.hls.HlsMediaSource;
-import com.google.android.exoplayer2.source.smoothstreaming.SsMediaSource;
-import com.google.android.exoplayer2.upstream.DataSource;
-import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory;
-import com.google.android.exoplayer2.upstream.DefaultHttpDataSourceFactory;
-import com.google.android.exoplayer2.upstream.FileDataSource;
-import com.google.android.exoplayer2.upstream.HttpDataSource;
-import com.google.android.exoplayer2.upstream.cache.Cache;
-import com.google.android.exoplayer2.upstream.cache.CacheDataSource;
-import com.google.android.exoplayer2.upstream.cache.CacheDataSourceFactory;
-import com.google.android.exoplayer2.upstream.cache.NoOpCacheEvictor;
-import com.google.android.exoplayer2.upstream.cache.SimpleCache;
-import com.google.android.exoplayer2.util.Util;
 import com.weidi.application.WeidiApplication;
 import com.weidi.dbutil.DbUtils;
 import com.weidi.dbutil.SimpleDao2;
 import com.weidi.usefragments.business.medical_record.MedicalRecordBean;
+import com.weidi.usefragments.business.video_player.exo.C;
+import com.weidi.usefragments.business.video_player.exo.Util;
 import com.weidi.usefragments.tool.MLog;
 
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
+
+import javax.sql.DataSource;
+
+import androidx.constraintlayout.solver.Cache;
 
 /***
  Created by root on 18-12-13.
@@ -121,11 +104,11 @@ public class MyApplication extends WeidiApplication {
 
     protected String userAgent;
 
-    private DatabaseProvider databaseProvider;
+    //private DatabaseProvider databaseProvider;
     private File downloadDirectory;
     private Cache downloadCache;
 
-    public DataSource.Factory buildDataSourceFactory() {
+    /*public DataSource.Factory buildDataSourceFactory() {
         DefaultDataSourceFactory upstreamFactory =
                 new DefaultDataSourceFactory(this, buildHttpDataSourceFactory());
         return buildReadOnlyCacheDataSource(upstreamFactory, getDownloadCache());
@@ -148,7 +131,7 @@ public class MyApplication extends WeidiApplication {
                         ? DefaultRenderersFactory.EXTENSION_RENDERER_MODE_PREFER
                         : DefaultRenderersFactory.EXTENSION_RENDERER_MODE_ON)
                         : DefaultRenderersFactory.EXTENSION_RENDERER_MODE_OFF;
-        return new DefaultRenderersFactory(/* context= */ this)
+        return new DefaultRenderersFactory(*//* context= *//* this)
                 .setExtensionRendererMode(extensionRendererMode);
     }
 
@@ -184,16 +167,18 @@ public class MyApplication extends WeidiApplication {
                 cache,
                 upstreamFactory,
                 new FileDataSource.Factory(),
-                /* cacheWriteDataSinkFactory= */ null,
+                null,
                 CacheDataSource.FLAG_IGNORE_CACHE_ON_ERROR,
-                /* eventListener= */ null);
+                null);
     }
 
     private synchronized Cache getDownloadCache() {
         if (downloadCache == null) {
-            File downloadContentDirectory = new File(getDownloadDirectory(), DOWNLOAD_CONTENT_DIRECTORY);
+            File downloadContentDirectory = new File(getDownloadDirectory(),
+                    DOWNLOAD_CONTENT_DIRECTORY);
             downloadCache =
-                    new SimpleCache(downloadContentDirectory, new NoOpCacheEvictor(), getDatabaseProvider());
+                    new SimpleCache(downloadContentDirectory, new NoOpCacheEvictor(),
+                            getDatabaseProvider());
         }
         return downloadCache;
     }
@@ -213,6 +198,6 @@ public class MyApplication extends WeidiApplication {
             }
         }
         return downloadDirectory;
-    }
+    }*/
 
 }
